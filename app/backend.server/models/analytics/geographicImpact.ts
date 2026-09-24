@@ -10,8 +10,10 @@ import { disasterRecordsTable } from "~/drizzle/schema/disasterRecordsTable";
 import { lossesTable } from "~/drizzle/schema/lossesTable";
 import { damagesTable } from "~/drizzle/schema/damagesTable";
 import { disasterEventTable } from "~/drizzle/schema/disasterEventTable";
-import { disasterRecordsDivisionTable } from "~/drizzle/schema/disasterRecordsDivisionTable";
-import { disasterRecordsGeomTable } from "~/drizzle/schema/disasterRecordsGeomTable";
+import {
+	getDescendantDivisionIds,
+	recordInDivisionCondition,
+} from "~/backend.server/utils/geographicFilters";
 import {
 	divisionTable,
 	type SelectDivision,
@@ -437,28 +439,6 @@ export async function getGeographicImpact(
 	}
 }
 
-/**
- * Returns the division and all of its descendants, within one tenant.
- */
-export async function getDescendantDivisionIds(
-	divisionId: string,
-	countryAccountsId: string,
-): Promise<string[]> {
-	const res = await dr.execute(sql`
-		WITH RECURSIVE tree AS (
-			SELECT id FROM ${divisionTable}
-			WHERE id = ${divisionId}
-				AND country_accounts_id = ${countryAccountsId}
-			UNION
-			SELECT d.id FROM ${divisionTable} d
-			JOIN tree t ON d.parent_id = t.id
-			WHERE d.country_accounts_id = ${countryAccountsId}
-		)
-		SELECT id FROM tree
-	`);
-	return res.rows.map((r) => String(r.id));
-}
-
 const UUID_REGEX =
 	/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -586,44 +566,17 @@ async function getDisasterRecordsForDivision(
 			return [];
 		}
 
-		const linkedToDivision = exists(
-			dr
-				.select({ one: sql`1` })
-				.from(disasterRecordsDivisionTable)
-				.where(
-					and(
-						eq(
-							disasterRecordsDivisionTable.disasterRecordId,
-							disasterRecordsTable.id,
-						),
-						inArray(disasterRecordsDivisionTable.divisionId, descendantIds),
-					),
-				),
-		);
-
-		const geometryInDivision = exists(
-			dr
-				.select({ one: sql`1` })
-				.from(disasterRecordsGeomTable)
-				.innerJoin(divisionTable, eq(divisionTable.id, divisionId))
-				.where(
-					and(
-						eq(
-							disasterRecordsGeomTable.disasterRecordId,
-							disasterRecordsTable.id,
-						),
-						sql`ST_Intersects(${disasterRecordsGeomTable.geom}, ${divisionTable.geom})`,
-					),
-				),
-		);
-
 		const rows = await dr
 			.selectDistinct({ id: disasterRecordsTable.id })
 			.from(disasterRecordsTable)
 			.where(
 				and(
 					...buildRecordConditions(countryAccountsId, filters, sectorIds),
-					or(linkedToDivision, geometryInDivision),
+					recordInDivisionCondition(
+						disasterRecordsTable,
+						divisionId,
+						descendantIds,
+					),
 				),
 			);
 
