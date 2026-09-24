@@ -400,6 +400,13 @@
       "when": 1789455425961,
       "tag": "20260915065705_update_version_no_to_0_3_1",
       "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1790279315863,
+      "tag": "20260924200000_add_missing_gist_indexes",
+      "breakpoints": true
     }
   ]
 }
