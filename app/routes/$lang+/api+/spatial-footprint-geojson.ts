@@ -1,42 +1,38 @@
-import { dr } from "~/db.server";
-import { sql } from "drizzle-orm";
-import { authLoaderApiDocs } from "~/utils/auth";
+import { getRecordDivisionFeature } from "~/backend.server/models/analytics/recordDivisionGeometry";
+import { authLoaderWithPerm } from "~/utils/auth";
+import { getCountryAccountsIdFromSession } from "~/utils/session";
+import { isValidUUID } from "~/utils/id";
 
-export let loader = authLoaderApiDocs(async ({ request }) => {
+export const loader = authLoaderWithPerm("ViewData", async ({ request }) => {
+	const countryAccountsId = await getCountryAccountsIdFromSession(request);
+	if (!countryAccountsId) {
+		throw new Response("Unauthorized", { status: 401 });
+	}
+
 	const url = new URL(request.url);
 	const division_id = url.searchParams.get("division_id");
 	const record_id = url.searchParams.get("record_id");
 
-	if (!division_id || !record_id) {
-		return new Response(JSON.stringify({ error: "Missing parameters" }), {
-			status: 400,
-		});
+	if (
+		!division_id ||
+		!record_id ||
+		!isValidUUID(division_id) ||
+		!isValidUUID(record_id)
+	) {
+		return Response.json({ error: "Missing parameters" }, { status: 400 });
 	}
 
-	const query = sql`
-    SELECT value -> 'geojson' AS geojson
-    FROM disaster_records,
-         jsonb_array_elements(spatial_footprint) AS value
-    WHERE disaster_records.id = ${record_id}
-      AND value -> 'geojson' -> 'properties' ->> 'division_id' = ${division_id}
-    LIMIT 1
-  `;
-
-	const result = await dr.execute(query);
-	const raw = result?.rows?.[0]?.geojson;
-	const geojson = typeof raw === "string" ? JSON.parse(raw) : raw;
-
-	if (!geojson || !geojson.geometry) {
-		return new Response(
-			JSON.stringify({ error: "No matching geojson found" }),
-			{
-				status: 404,
-			},
+	const feature = await getRecordDivisionFeature(
+		countryAccountsId,
+		record_id,
+		division_id,
+	);
+	if (!feature) {
+		return Response.json(
+			{ error: "No matching geojson found" },
+			{ status: 404 },
 		);
 	}
 
-	return new Response(JSON.stringify(geojson), {
-		status: 200,
-		headers: { "Content-Type": "application/json" },
-	});
+	return Response.json(feature);
 });
