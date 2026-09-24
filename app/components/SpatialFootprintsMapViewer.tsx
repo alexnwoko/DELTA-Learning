@@ -107,6 +107,8 @@ const SpatialFootprintsMapViewer: React.FC<SpatialFootprintsMapViewerProps> = ({
 
 		const { coords } = await defaultMapLocation();
 		const strCoords = JSON.stringify(coords);
+		// API routes sit under the language segment of the opener's URL.
+		const urlLang = window.location.pathname.split("/")[1] || "en";
 
 		newTab.document.write(`
       <!DOCTYPE html>
@@ -334,7 +336,7 @@ const SpatialFootprintsMapViewer: React.FC<SpatialFootprintsMapViewerProps> = ({
 
                 console.log("📦 Fetching geometry for key:", key);
 
-                fetch("/api/spatial-footprint-geojson?division_id=" + division_id + "&record_id=" + record_id)
+                fetch("/${urlLang}/api/spatial-footprint-geojson?division_id=" + division_id + "&record_id=" + record_id)
                 .then((res) => res.json())
                 .then((geo) => {
                     if (!geo || !geo.geometry) {
