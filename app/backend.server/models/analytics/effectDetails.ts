@@ -10,8 +10,6 @@ import { lossesTable } from "~/drizzle/schema/lossesTable";
 import { assetTable } from "~/drizzle/schema/assetTable";
 import { damagesTable } from "~/drizzle/schema/damagesTable";
 import { disruptionTable } from "~/drizzle/schema/disruptionTable";
-import { disasterEventTable } from "~/drizzle/schema/disasterEventTable";
-import { hazardousEventTable } from "~/drizzle/schema/hazardousEventTable";
 import { getSectorsByParentId } from "./sectors";
 import {
 	applyGeographicFilters,
@@ -182,20 +180,21 @@ export async function getEffectDetails(
 		);
 	}
 
-	// Handle hazard type filtering
+	// Hazard classification is read from the record itself, as in
+	// hazard-analysis.ts, so records without a disaster event still count.
 	if (filters.hazardTypeId) {
 		baseConditions.push(
-			eq(hazardousEventTable.hipTypeId, filters.hazardTypeId),
+			eq(disasterRecordsTable.hipTypeId, filters.hazardTypeId),
 		);
 	}
 	if (filters.hazardClusterId) {
 		baseConditions.push(
-			eq(hazardousEventTable.hipClusterId, filters.hazardClusterId),
+			eq(disasterRecordsTable.hipClusterId, filters.hazardClusterId),
 		);
 	}
 	if (filters.specificHazardId) {
 		baseConditions.push(
-			eq(hazardousEventTable.hipTypeId, filters.specificHazardId),
+			eq(disasterRecordsTable.hipHazardId, filters.specificHazardId),
 		);
 	}
 
@@ -213,9 +212,11 @@ export async function getEffectDetails(
 					baseConditions,
 				);
 			} else {
-				logger.warn("Division not found, skipping geographic filtering", {
+				// Fail closed: never show national figures under a division.
+				logger.warn("Division not found, returning no records", {
 					divisionId: filters.geographicLevelId,
 				});
+				baseConditions.push(sql`FALSE`);
 			}
 		} catch (error) {
 			logger.error("Error in geographic filtering", {
@@ -223,6 +224,7 @@ export async function getEffectDetails(
 				stack: error instanceof Error ? error.stack : undefined,
 				divisionId: filters.geographicLevelId,
 			});
+			baseConditions.push(sql`FALSE`);
 		}
 	}
 
@@ -295,21 +297,12 @@ export async function getEffectDetails(
         END`.as("totalRecovery"),
 			sectorId: damagesTable.sectorId,
 			attachments: damagesTable.attachments,
-			spatialFootprint: (damagesTable as any).spatialFootprint,
 		})
 		.from(damagesTable)
 		.innerJoin(assetTable, eq(damagesTable.assetId, assetTable.id))
 		.innerJoin(
 			disasterRecordsTable,
 			eq(damagesTable.recordId, disasterRecordsTable.id),
-		)
-		.innerJoin(
-			disasterEventTable,
-			eq(disasterRecordsTable.disasterEventId, disasterEventTable.id),
-		)
-		.innerJoin(
-			hazardousEventTable,
-			eq(disasterEventTable.hazardousEventId, hazardousEventTable.id),
 		)
 		.where(
 			and(
@@ -350,20 +343,11 @@ export async function getEffectDetails(
         END`.as("privateCostTotal"),
 			sectorId: lossesTable.sectorId,
 			attachments: lossesTable.attachments,
-			spatialFootprint: (lossesTable as any).spatialFootprint,
 		})
 		.from(lossesTable)
 		.innerJoin(
 			disasterRecordsTable,
 			eq(lossesTable.recordId, disasterRecordsTable.id),
-		)
-		.innerJoin(
-			disasterEventTable,
-			eq(disasterRecordsTable.disasterEventId, disasterEventTable.id),
-		)
-		.innerJoin(
-			hazardousEventTable,
-			eq(disasterEventTable.hazardousEventId, hazardousEventTable.id),
 		)
 		.where(
 			and(
@@ -389,20 +373,11 @@ export async function getEffectDetails(
 			comment: disruptionTable.comment,
 			sectorId: disruptionTable.sectorId,
 			attachments: disruptionTable.attachments,
-			spatialFootprint: (disruptionTable as any).spatialFootprint,
 		})
 		.from(disruptionTable)
 		.innerJoin(
 			disasterRecordsTable,
 			eq(disruptionTable.recordId, disasterRecordsTable.id),
-		)
-		.innerJoin(
-			disasterEventTable,
-			eq(disasterRecordsTable.disasterEventId, disasterEventTable.id),
-		)
-		.innerJoin(
-			hazardousEventTable,
-			eq(disasterEventTable.hazardousEventId, hazardousEventTable.id),
 		)
 		.where(
 			and(
