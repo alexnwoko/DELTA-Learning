@@ -55,7 +55,6 @@ interface DamageRecord {
 	totalRecovery: string;
 	sectorId: number;
 	attachments: Array<{ url: string; type: string }>;
-	spatialFootprint: any;
 }
 
 interface LossRecord {
@@ -70,7 +69,6 @@ interface LossRecord {
 	privateCostTotal: string | null;
 	sectorId: number;
 	attachments: Array<{ url: string; type: string }>;
-	spatialFootprint: any;
 }
 
 interface DisruptionRecord {
@@ -84,7 +82,6 @@ interface DisruptionRecord {
 	comment: string;
 	sectorId: number;
 	attachments: Array<{ url: string; type: string }>;
-	spatialFootprint: any;
 }
 
 interface TableColumn {
