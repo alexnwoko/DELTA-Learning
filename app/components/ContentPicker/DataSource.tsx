@@ -66,9 +66,14 @@ function buildDrizzleQuery(
 		whereConditions.push(or(...ilikeConditions)); // Merge all ILIKE filters using OR
 	}
 
-	// Apply tenant isolation if tenant context is provided and table has countryAccountsId
-	if (countryAccountsId && config.table.countryAccountsId) {
-		whereConditions.push(eq(config.table.countryAccountsId, countryAccountsId));
+	// Tenant isolation. A tenant-scoped table with no resolved tenant (for
+	// example an anonymous request on a public route) returns no rows.
+	if (config.table.countryAccountsId) {
+		whereConditions.push(
+			countryAccountsId
+				? eq(config.table.countryAccountsId, countryAccountsId)
+				: sql`FALSE`,
+		);
 	}
 
 	//Apply all conditions in a single `.where()` call
@@ -120,17 +125,9 @@ export async function fetchData(
 				}
 			}
 		} else {
-			// Escape search query to avoid SQL injection
-			const safeSearchPattern = `%${searchQuery.replace(/'/g, "''")}%`;
-
-			// Format the SQL query by replacing placeholders
-			const query = pickerConfig.dataSourceSQL
-				.replace(/\[safeSearchPattern\]/g, `%${safeSearchPattern}%`)
-				.replace(/\[limit\]/g, `${limit}`)
-				.replace(/\[offset\]/g, `${offset}`);
-
-			const result = await dr.execute(query);
-			rows = result.rows ?? [];
+			throw new Error(
+				"Content picker requires dataSourceDrizzle; raw SQL data sources are not supported",
+			);
 		}
 
 		const displayNames = await Promise.all(
@@ -234,13 +231,10 @@ export async function getTotalRecords(
 			searchQuery,
 			countryAccountsId,
 		);
-	} else {
-		return await getTotalRecordsSQL(
-			pickerConfig,
-			searchQuery,
-			countryAccountsId,
-		);
 	}
+	throw new Error(
+		"Content picker requires dataSourceDrizzle; raw SQL data sources are not supported",
+	);
 }
 
 async function getTotalRecordsDrizzle(
@@ -274,77 +268,6 @@ async function getTotalRecordsDrizzle(
 		return result[0]?.total ?? 0;
 	} catch (error) {
 		console.error("Error fetching total records (Drizzle):", error);
-		return 0;
-	}
-}
-
-async function getTotalRecordsSQL(
-	pickerConfig: any,
-	searchQuery: string,
-	countryAccountsId?: string,
-) {
-	// Apply tenant filtering if tenant context is provided
-	let tenantFilter = "";
-
-	// Use either the passed tenantContext or the one stored in pickerConfig._tenantContext
-	const effectiveTenantContext =
-		countryAccountsId || pickerConfig._tenantContext;
-
-	if (
-		effectiveTenantContext?.countryAccountId &&
-		pickerConfig.dataSourceSQLTable
-	) {
-		// Check if the table actually has a countryAccountsId column
-		// This is a more flexible approach that works with different table structures
-		try {
-			// Use a safer approach with parameterized queries when possible
-			tenantFilter = ` AND ${pickerConfig.dataSourceSQLTable}.countryAccountsId = '${effectiveTenantContext.countryAccountId}'`;
-		} catch (error) {
-			console.warn(
-				`Could not apply tenant filter to ${pickerConfig.dataSourceSQLTable}:`,
-				error,
-			);
-		}
-	}
-	const mainTableName = pickerConfig.dataSourceSQLTable;
-
-	// Format the SQL query
-	let baseQuery = pickerConfig.dataSourceSQL
-		.replace(/\[safeSearchPattern\]/g, `%${searchQuery}%`)
-		.replace(/\bLIMIT\s+\[\w+\].*/gi, "")
-		.replace(/\bOFFSET\s+\[\w+\].*/gi, "");
-
-	// Apply tenant filter if available
-	if (tenantFilter && baseQuery.includes("WHERE")) {
-		baseQuery = baseQuery.replace(/WHERE/i, `WHERE${tenantFilter} AND`);
-	} else if (tenantFilter) {
-		baseQuery = baseQuery + ` WHERE 1=1${tenantFilter}`;
-	}
-
-	// Construct total records SQL
-	const totalRecordsSQL = sql`
-        SELECT CASE
-            WHEN (
-                SELECT reltuples::bigint 
-                FROM pg_class 
-                WHERE relname = ${mainTableName}
-            ) < 100000 
-            THEN (
-                SELECT COUNT(*) FROM (${sql.raw(baseQuery)}) AS tempTable
-            )
-            ELSE (
-                SELECT reltuples::bigint 
-                FROM pg_class 
-                WHERE relname = ${mainTableName}
-            )
-        END AS total;
-    `;
-
-	try {
-		const totalRecordsResult = await dr.execute(totalRecordsSQL);
-		return totalRecordsResult.rows[0]?.total ?? 0;
-	} catch (error) {
-		console.error("Error fetching total records (SQL):", error);
 		return 0;
 	}
 }
