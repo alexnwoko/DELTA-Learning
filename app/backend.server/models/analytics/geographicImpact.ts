@@ -1,15 +1,4 @@
-import {
-	eq,
-	sql,
-	SQL,
-	and,
-	inArray,
-	gte,
-	lte,
-	exists,
-	or,
-	not,
-} from "drizzle-orm";
+import { eq, sql, SQL, and, inArray, exists, or, not } from "drizzle-orm";
 import { dr } from "~/db.server";
 import createLogger from "~/utils/logger.server";
 
@@ -18,20 +7,17 @@ const logger = createLogger("backend.server/models/analytics/geographicImpact");
 import { sectorDisasterRecordsRelationTable } from "~/drizzle/schema/sectorDisasterRecordsRelationTable";
 import { sectorTable } from "~/drizzle/schema/sectorTable";
 import { disasterRecordsTable } from "~/drizzle/schema/disasterRecordsTable";
-import { hipHazardTable } from "~/drizzle/schema/hipHazardTable";
-import { hipClusterTable } from "~/drizzle/schema/hipClusterTable";
-import { hipTypeTable } from "~/drizzle/schema/hipTypeTable";
 import { lossesTable } from "~/drizzle/schema/lossesTable";
 import { damagesTable } from "~/drizzle/schema/damagesTable";
 import { disasterEventTable } from "~/drizzle/schema/disasterEventTable";
-import { hazardousEventTable } from "~/drizzle/schema/hazardousEventTable";
+import { disasterRecordsDivisionTable } from "~/drizzle/schema/disasterRecordsDivisionTable";
+import { disasterRecordsGeomTable } from "~/drizzle/schema/disasterRecordsGeomTable";
 import {
 	divisionTable,
 	type SelectDivision,
 } from "~/drizzle/schema/divisionTable";
 import { createAssessmentMetadata } from "~/backend.server/utils/disasterCalculations";
 import type { DisasterImpactMetadata } from "~/types/disasterCalculations";
-import { applyHazardFilters } from "~/backend.server/utils/hazardFilters";
 import {
 	parseFlexibleDate,
 	createDateCondition,
@@ -90,7 +76,6 @@ interface GeographicFilters {
 	confidenceLevel?: "low" | "medium" | "high";
 	/** Sector ID for filtering */
 	sectorId?: string;
-	baseQuery?: any;
 }
 
 interface CleanDivisionValues {
@@ -121,20 +106,6 @@ interface GeoJSONFeature {
 interface GeoJSONFeatureCollection {
 	type: "FeatureCollection";
 	features: GeoJSONFeature[];
-}
-
-// Helper function to normalize text for matching
-function normalizeText(text: string): string {
-	const normalized = text
-		.toLowerCase()
-		.normalize("NFKD") // Normalize unicode characters
-		.replace(/[\u0300-\u036f]/g, "") // Remove diacritics
-		.replace(/[^\w\s,-]/g, " ") // Replace special chars with space
-		.replace(/\s+/g, " ") // Clean up multiple spaces
-		.replace(/\b(region|province|city|municipality)\b/g, "") // Remove common geographic terms
-		.trim();
-
-	return normalized;
 }
 
 // Helper function to safely convert money values
@@ -316,146 +287,6 @@ export async function getGeographicImpact(
 			filters.confidenceLevel || "low",
 		);
 
-		// Base conditions for disaster records following DaLA methodology
-		const baseConditions: Array<SQL<unknown>> = [
-			sql<string>`${disasterRecordsTable.approvalStatus} = 'published'`,
-		];
-
-		// Add sector filtering using sectorDisasterRecordsRelationTable
-		if (sectorIds.length > 0) {
-			const sectorCondition = exists(
-				dr
-					.select()
-					.from(sectorDisasterRecordsRelationTable)
-					.where(
-						and(
-							eq(
-								sectorDisasterRecordsRelationTable.disasterRecordId,
-								disasterRecordsTable.id,
-							),
-							inArray(sectorDisasterRecordsRelationTable.sectorId, sectorIds),
-						),
-					),
-			);
-			baseConditions.push(sectorCondition);
-		}
-
-		// Add date range filters if provided
-		if (filters.fromDate) {
-			const parsedFromDate = parseFlexibleDate(filters.fromDate);
-			if (parsedFromDate) {
-				baseConditions.push(
-					createDateCondition(
-						disasterRecordsTable.startDate,
-						parsedFromDate,
-						"gte",
-					),
-				);
-			} else {
-				console.error("[GEOGRAPHIC_IMPACT] Invalid from date format:", {
-					fromDate: filters.fromDate,
-				});
-			}
-		}
-
-		if (filters.toDate) {
-			const parsedToDate = parseFlexibleDate(filters.toDate);
-			if (parsedToDate) {
-				baseConditions.push(
-					createDateCondition(
-						disasterRecordsTable.endDate,
-						parsedToDate,
-						"lte",
-					),
-				);
-			} else {
-				console.error("[GEOGRAPHIC_IMPACT] Invalid to date format:", {
-					toDate: filters.toDate,
-				});
-			}
-		}
-
-		// Add disaster event filter if provided
-		if (filters.disasterEventId) {
-			try {
-				const eventId = filters.disasterEventId;
-				if (eventId) {
-					// Check if it's a UUID (for direct ID matching)
-					const uuidRegex =
-						/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-					if (uuidRegex.test(eventId)) {
-						// Direct ID match for UUID format
-						baseConditions.push(eq(disasterEventTable.id, eventId));
-					} else {
-						// Text search across multiple fields for non-UUID format
-						const searchConditions: SQL<unknown>[] = [];
-						searchConditions.push(
-							sql`LOWER(${
-								disasterEventTable.nameNational
-							}::text) LIKE ${`%${eventId.toLowerCase()}%`}`,
-						);
-						searchConditions.push(
-							sql`LOWER(${disasterEventTable.id}::text) LIKE ${`%${eventId.toLowerCase()}%`}`,
-						);
-						searchConditions.push(sql`
-                            CASE WHEN ${disasterEventTable.glide} IS NOT NULL 
-                            THEN LOWER(${
-															disasterEventTable.glide
-														}) LIKE ${`%${eventId.toLowerCase()}%`}
-                            ELSE FALSE END
-                        `);
-						searchConditions.push(sql`
-                            CASE WHEN ${disasterEventTable.nationalDisasterId} IS NOT NULL 
-                            THEN LOWER(${
-															disasterEventTable.nationalDisasterId
-														}) LIKE ${`%${eventId.toLowerCase()}%`}
-                            ELSE FALSE END
-                        `);
-						searchConditions.push(sql`
-                            CASE WHEN ${disasterEventTable.otherId1} IS NOT NULL 
-                            THEN LOWER(${
-															disasterEventTable.otherId1
-														}) LIKE ${`%${eventId.toLowerCase()}%`}
-                            ELSE FALSE END
-                        `);
-
-						baseConditions.push(...searchConditions);
-					}
-				}
-			} catch (error) {
-				console.error(
-					"[GEOGRAPHIC_IMPACT] Error applying disaster event filter:",
-					error,
-				);
-			}
-		}
-
-		// Add base query builder for disaster records, supporting hazard filters with joins in applyHazardFilters()
-		let queryBuilder = dr.select().from(disasterRecordsTable);
-
-		// Hazard filtering with improved hierarchical structure handling
-		await applyHazardFilters(
-			{
-				hazardTypeId: filters.hazardTypeId,
-				hazardClusterId: filters.hazardClusterId,
-				specificHazardId: filters.specificHazardId,
-			},
-			dr,
-			baseConditions,
-			eq,
-			hipTypeTable,
-			hipClusterTable,
-			hipHazardTable,
-			hazardousEventTable,
-			disasterEventTable,
-			disasterRecordsTable,
-			queryBuilder,
-		);
-
-		// Finalize query with all base conditions
-		queryBuilder.where(and(...baseConditions));
-
 		// Get divisions with complete fields and apply geographic level filter
 		const baseDivisionsQuery = dr
 			.select({
@@ -527,7 +358,6 @@ export async function getGeographicImpact(
 							disasterEvent: filters.disasterEventId,
 							assessmentType: filters.assessmentType,
 							confidenceLevel: filters.confidenceLevel,
-							baseQuery: queryBuilder.where(and(...baseConditions)),
 						},
 						sectorIds,
 					);
@@ -607,69 +437,139 @@ export async function getGeographicImpact(
 	}
 }
 
+/**
+ * Returns the division and all of its descendants, within one tenant.
+ */
 export async function getDescendantDivisionIds(
 	divisionId: string,
+	countryAccountsId: string,
 ): Promise<string[]> {
-	try {
-		const allDivisions = await dr
-			.select({
-				id: divisionTable.id,
-				parentId: divisionTable.parentId,
-			})
-			.from(divisionTable);
+	const res = await dr.execute(sql`
+		WITH RECURSIVE tree AS (
+			SELECT id FROM ${divisionTable}
+			WHERE id = ${divisionId}
+				AND country_accounts_id = ${countryAccountsId}
+			UNION
+			SELECT d.id FROM ${divisionTable} d
+			JOIN tree t ON d.parent_id = t.id
+			WHERE d.country_accounts_id = ${countryAccountsId}
+		)
+		SELECT id FROM tree
+	`);
+	return res.rows.map((r) => String(r.id));
+}
 
-		const childrenMap = new Map<string, string[]>();
-		for (const { id, parentId } of allDivisions) {
-			if (parentId === null) continue;
-			if (!childrenMap.has(parentId)) childrenMap.set(parentId, []);
-			childrenMap.get(parentId)!.push(id);
-		}
+const UUID_REGEX =
+	/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-		const result = new Set<string>();
-		const queue = [divisionId];
-		let processedCount = 0;
-
-		while (queue.length) {
-			const current = queue.pop()!;
-			processedCount++;
-			const children = childrenMap.get(current) || [];
-
-			for (const child of children) {
-				if (!result.has(child)) {
-					result.add(child);
-					queue.push(child);
-				}
-			}
-		}
-
-		const descendants = [divisionId, ...Array.from(result)];
-
-		return descendants;
-	} catch (error) {
-		console.error("[DESCENDANT_DIVISIONS] Error finding descendants:", {
-			divisionId,
-			error: error instanceof Error ? error.message : String(error),
-			stack: error instanceof Error ? error.stack : undefined,
-		});
-		return [divisionId]; // Return at least the input division
+/**
+ * Matches records to a disaster event, by id or by a text search across the
+ * event's name and identifiers (any field may match).
+ */
+function disasterEventCondition(eventId: string): SQL {
+	if (UUID_REGEX.test(eventId)) {
+		return eq(disasterRecordsTable.disasterEventId, eventId);
 	}
+	const pattern = `%${eventId.toLowerCase()}%`;
+	return exists(
+		dr
+			.select({ one: sql`1` })
+			.from(disasterEventTable)
+			.where(
+				and(
+					eq(disasterEventTable.id, disasterRecordsTable.disasterEventId),
+					or(
+						sql`LOWER(${disasterEventTable.nameNational}::text) LIKE ${pattern}`,
+						sql`LOWER(${disasterEventTable.id}::text) LIKE ${pattern}`,
+						sql`LOWER(${disasterEventTable.glide}) LIKE ${pattern}`,
+						sql`LOWER(${disasterEventTable.nationalDisasterId}) LIKE ${pattern}`,
+						sql`LOWER(${disasterEventTable.otherId1}) LIKE ${pattern}`,
+					),
+				),
+			),
+	);
 }
 
 /**
- * Finds disaster records that geographically intersect with a given division.
+ * Record-level filters shared by every division query: tenant, published
+ * status, HIPs classification, sector, date range and disaster event.
  *
- * Uses a multi-strategy spatial matching approach:
- * 1. **JSONB path matching**: division IDs stored in `geojson.properties.division_ids`
- *    or `geojson.dts_info.division_ids` / `division_id`
- * 2. **Geographic level name matching**: `geographic_level` field matching division name
- * 3. **Coordinate containment**: markers (points), circles, rectangles, polygons, lines
- * 4. **GeoJSON feature geometry**: Point and LineString features
+ * The hazard classification is read from the record itself, as in
+ * hazard-analysis.ts, so records without a linked disaster event still count.
+ */
+function buildRecordConditions(
+	countryAccountsId: string,
+	filters: GeographicFilters | undefined,
+	sectorIds: string[],
+): SQL[] {
+	const conditions: SQL[] = [
+		eq(disasterRecordsTable.countryAccountsId, countryAccountsId),
+		sql`${disasterRecordsTable.approvalStatus} = 'published'`,
+	];
+
+	if (filters?.hazardType) {
+		conditions.push(eq(disasterRecordsTable.hipTypeId, filters.hazardType));
+	}
+	if (filters?.hazardCluster) {
+		conditions.push(
+			eq(disasterRecordsTable.hipClusterId, filters.hazardCluster),
+		);
+	}
+	if (filters?.specificHazard) {
+		conditions.push(
+			eq(disasterRecordsTable.hipHazardId, filters.specificHazard),
+		);
+	}
+
+	if (sectorIds.length > 0) {
+		conditions.push(
+			exists(
+				dr
+					.select({ one: sql`1` })
+					.from(sectorDisasterRecordsRelationTable)
+					.where(
+						and(
+							eq(
+								sectorDisasterRecordsRelationTable.disasterRecordId,
+								disasterRecordsTable.id,
+							),
+							inArray(sectorDisasterRecordsRelationTable.sectorId, sectorIds),
+						),
+					),
+			),
+		);
+	}
+
+	if (filters?.startDate) {
+		const from = parseFlexibleDate(filters.startDate);
+		if (from) {
+			conditions.push(
+				createDateCondition(disasterRecordsTable.startDate, from, "gte"),
+			);
+		}
+	}
+	if (filters?.endDate) {
+		const to = parseFlexibleDate(filters.endDate);
+		if (to) {
+			conditions.push(
+				createDateCondition(disasterRecordsTable.endDate, to, "lte"),
+			);
+		}
+	}
+
+	if (filters?.disasterEvent) {
+		conditions.push(disasterEventCondition(filters.disasterEvent));
+	}
+
+	return conditions;
+}
+
+/**
+ * Finds the published records that fall within a division.
  *
- * After the SQL spatial query, a TypeScript-level re-verification filter runs to confirm
- * matches using the same metadata checks (division IDs, geographic level names, geometry
- * validity). This catches false positives from the SQL path-matching.
- *
- * Falls back to text matching on `locationDesc` if no spatial matches are found.
+ * A record falls within a division when it is linked to the division or one
+ * of its descendants (disaster_records_division), or when one of its drawn
+ * geometries intersects the division (disaster_records_geom).
  */
 async function getDisasterRecordsForDivision(
 	countryAccountsId: string,
@@ -678,440 +578,56 @@ async function getDisasterRecordsForDivision(
 	sectorIds: string[] = [],
 ): Promise<string[]> {
 	try {
-		// Fetch division data first to ensure it exists and has valid geometry
-		const division = await dr
-			.select({
-				id: divisionTable.id,
-				geom: divisionTable.geom,
-			})
-			.from(divisionTable)
-			.where(eq(divisionTable.id, divisionId));
-
-		if (division.length === 0 || !division[0].geom) {
+		const descendantIds = await getDescendantDivisionIds(
+			divisionId,
+			countryAccountsId,
+		);
+		if (descendantIds.length === 0) {
 			return [];
 		}
 
-		// Build conditions array
-		const conditions: Array<SQL<unknown>> = [];
-
-		// Add tenant isolation filter
-		conditions.push(
-			sql<string>`${disasterRecordsTable.countryAccountsId} = ${countryAccountsId}`,
-		);
-
-		// Add approval status filter
-		conditions.push(
-			sql<string>`${disasterRecordsTable.approvalStatus} = 'published'`,
-		);
-
-		// Add hazard conditions from baseQuery if present
-		if (filters?.hazardType) {
-			conditions.push(eq(hazardousEventTable.hipTypeId, filters.hazardType));
-		}
-		if (filters?.hazardCluster) {
-			conditions.push(
-				eq(hazardousEventTable.hipClusterId, filters.hazardCluster),
-			);
-		}
-		if (filters?.specificHazard) {
-			conditions.push(
-				eq(hazardousEventTable.hipHazardId, filters.specificHazard),
-			);
-		}
-
-		// Add sector filter with hierarchy support
-		if (sectorIds.length > 0) {
-			conditions.push(
-				inArray(sectorDisasterRecordsRelationTable.sectorId, sectorIds),
-			);
-		}
-
-		// Add date filters if specified
-		if (filters?.startDate) {
-			conditions.push(gte(disasterRecordsTable.startDate, filters.startDate));
-		}
-		if (filters?.endDate) {
-			conditions.push(lte(disasterRecordsTable.endDate, filters.endDate));
-		}
-
-		// Add disaster event filter if provided
-		if (filters?.disasterEvent) {
-			try {
-				const eventId = filters.disasterEvent;
-				if (eventId) {
-					// Check if it's a UUID (for direct ID matching)
-					const uuidRegex =
-						/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-					if (uuidRegex.test(eventId)) {
-						// Direct ID match for UUID format
-						conditions.push(eq(disasterEventTable.id, eventId));
-					} else {
-						// Text search across multiple fields for non-UUID format
-						const searchConditions: Array<SQL<string>> = [];
-
-						if (disasterEventTable.nameNational) {
-							searchConditions.push(
-								sql<string>`LOWER(${
-									disasterEventTable.nameNational
-								}::text) LIKE ${`%${eventId.toLowerCase()}%`}`,
-							);
-						}
-
-						searchConditions.push(
-							sql<string>`LOWER(${
-								disasterEventTable.id
-							}::text) LIKE ${`%${eventId.toLowerCase()}%`}`,
-						);
-
-						if (disasterEventTable.glide) {
-							searchConditions.push(
-								sql<string>`CASE WHEN ${disasterEventTable.glide} IS NOT NULL 
-                                    THEN LOWER(${
-																			disasterEventTable.glide
-																		}) LIKE ${`%${eventId.toLowerCase()}%`}
-                                    ELSE FALSE END`,
-							);
-						}
-
-						if (disasterEventTable.nationalDisasterId) {
-							searchConditions.push(
-								sql<string>`CASE WHEN ${disasterEventTable.nationalDisasterId} IS NOT NULL 
-                                    THEN LOWER(${
-																			disasterEventTable.nationalDisasterId
-																		}) LIKE ${`%${eventId.toLowerCase()}%`}
-                                    ELSE FALSE END`,
-							);
-						}
-
-						if (disasterEventTable.otherId1) {
-							searchConditions.push(
-								sql<string>`CASE WHEN ${disasterEventTable.otherId1} IS NOT NULL 
-                                    THEN LOWER(${
-																			disasterEventTable.otherId1
-																		}) LIKE ${`%${eventId.toLowerCase()}%`}
-                                    ELSE FALSE END`,
-							);
-						}
-
-						// Add the OR condition for text search if we have any conditions
-						conditions.push(...searchConditions);
-					}
-				}
-			} catch (error) {
-				console.error(error);
-			}
-		}
-
-		// Build base query
-		const query = dr
-			.select({
-				id: disasterRecordsTable.id,
-				locationDesc: disasterRecordsTable.locationDesc,
-				spatialFootprint: (disasterRecordsTable as any).spatialFootprint,
-				sectorId: sectorDisasterRecordsRelationTable.sectorId,
-				withDamage: sectorDisasterRecordsRelationTable.withDamage,
-				damageCost: sectorDisasterRecordsRelationTable.damageCost,
-				damageCostCurrency:
-					sectorDisasterRecordsRelationTable.damageCostCurrency,
-			})
-			.from(disasterRecordsTable)
-			.innerJoin(
-				sectorDisasterRecordsRelationTable,
-				eq(
-					sectorDisasterRecordsRelationTable.disasterRecordId,
-					disasterRecordsTable.id,
-				),
-			);
-
-		const descendantIds = await getDescendantDivisionIds(divisionId);
-
-		const quoted = descendantIds.map((id) => `@ == "${id}"`).join(" || ");
-
-		// First try to get records with spatial data
-		const spatialQuery = query.where(
-			and(
-				...conditions,
-				sql`${(disasterRecordsTable as any).spatialFootprint} IS NOT NULL`,
-				or(
-					sql.raw(
-						`jsonb_path_exists("disaster_records"."spatial_footprint", '$[*].geojson.properties.division_ids[*] ? (${quoted})')`,
-					),
-					sql.raw(
-						`jsonb_path_exists("disaster_records"."spatial_footprint", '$[*].geojson.dts_info.division_ids[*] ? (${quoted})')`,
-					),
-					sql.raw(
-						`jsonb_path_exists("disaster_records"."spatial_footprint", '$[*].geojson.dts_info.division_id ? (@ == "${divisionId}")')`,
-					),
-					sql.raw(`EXISTS (
-                        SELECT 1 FROM jsonb_array_elements("disaster_records"."spatial_footprint") AS footprint
-                        WHERE footprint->>'geographic_level' IN (
-                            SELECT name->>'en' 
-                            FROM "division"
-                            WHERE id = '${divisionId}'
-                        )
-                    )`),
-					sql.raw(`EXISTS (
-                        SELECT 1 FROM jsonb_array_elements("disaster_records"."spatial_footprint") AS footprint,
-                        jsonb_array_elements(footprint->'map_coords'->'coordinates') AS coord
-                        WHERE ST_Contains(
-                            (SELECT geom FROM "division" WHERE id = '${divisionId}'),
-                            ST_SetSRID(ST_MakePoint(
-                                (coord->>1)::float,  -- longitude (first element)
-                                (coord->>0)::float   -- latitude (second element)
-                            ), 4326)
-                        )
-                    )`),
-					sql.raw(`EXISTS (
-                        SELECT 1 FROM jsonb_array_elements("disaster_records"."spatial_footprint") AS footprint
-                        WHERE footprint->'map_coords'->>'mode' = 'circle'
-                        AND ST_Intersects(
-                            (SELECT geom FROM "division" WHERE id = '${divisionId}'),
-                            ST_Buffer(
-                                ST_SetSRID(ST_MakePoint(
-                                    (footprint->'map_coords'->'center'->>1)::float,
-                                    (footprint->'map_coords'->'center'->>0)::float
-                                ), 4326),
-                                (footprint->'map_coords'->>'radius')::float / 111320.0  -- Convert meters to degrees (approximate)
-                            )
-                        )
-                    )`),
-					sql.raw(`EXISTS (
-                        SELECT 1 FROM jsonb_array_elements("disaster_records"."spatial_footprint") AS footprint
-                        WHERE footprint->'map_coords'->>'mode' = 'rectangle'
-                        AND ST_Intersects(
-                            (SELECT geom FROM "division" WHERE id = '${divisionId}'),
-                            ST_MakeEnvelope(
-                                (footprint->'map_coords'->'coordinates'->0->1)::float,  -- lon1
-                                (footprint->'map_coords'->'coordinates'->0->0)::float,  -- lat1
-                                (footprint->'map_coords'->'coordinates'->1->1)::float,  -- lon2
-                                (footprint->'map_coords'->'coordinates'->1->0)::float,  -- lat2
-                                4326
-                            )
-                        )
-                    )`),
-					sql.raw(`EXISTS (
-                        SELECT 1 FROM jsonb_array_elements("disaster_records"."spatial_footprint") AS footprint
-                        WHERE footprint->'map_coords'->>'mode' = 'polygon'
-                        AND ST_Intersects(
-                            (SELECT geom FROM "division" WHERE id = '${divisionId}'),
-                            ST_SetSRID(ST_MakePolygon(
-                                ST_MakeLine(
-                                    ARRAY(
-                                        SELECT ST_MakePoint(
-                                            (coord->>1)::float,
-                                            (coord->>0)::float
-                                        )
-                                        FROM (
-                                            SELECT CASE 
-                                                WHEN array_position(ARRAY(
-                                                    SELECT jsonb_array_elements((footprint->'map_coords'->'coordinates')::jsonb)
-                                                ), coord) = (
-                                                    SELECT COUNT(*) 
-                                                    FROM jsonb_array_elements((footprint->'map_coords'->'coordinates')::jsonb)
-                                                )
-                                                AND (
-                                                    SELECT element->0 
-                                                    FROM jsonb_array_elements((footprint->'map_coords'->'coordinates')::jsonb) element 
-                                                    LIMIT 1
-                                                ) != coord->0
-                                                OR (
-                                                    SELECT element->1 
-                                                    FROM jsonb_array_elements((footprint->'map_coords'->'coordinates')::jsonb) element 
-                                                    LIMIT 1
-                                                ) != coord->1
-                                                THEN (
-                                                    SELECT jsonb_build_array(
-                                                        element->0,
-                                                        element->1
-                                                    )::jsonb
-                                                    FROM jsonb_array_elements((footprint->'map_coords'->'coordinates')::jsonb) element 
-                                                    LIMIT 1
-                                                )
-                                                ELSE coord
-                                            END AS coord
-                                            FROM jsonb_array_elements((footprint->'map_coords'->'coordinates')::jsonb) AS coord
-                                        ) AS coords
-                                    )
-                                )
-                            ), 4326)
-                        )
-                    )`),
-					sql.raw(`EXISTS (
-                        SELECT 1 FROM jsonb_array_elements("disaster_records"."spatial_footprint") AS footprint
-                        WHERE footprint->'map_coords'->>'mode' = 'lines'
-                        AND ST_Intersects(
-                            (SELECT geom FROM "division" WHERE id = '${divisionId}'),
-                            ST_SetSRID(ST_MakeLine(
-                                ARRAY(
-                                    SELECT ST_MakePoint(
-                                        (coord->>1)::float,  -- longitude
-                                        (coord->>0)::float   -- latitude
-                                    )
-                                    FROM jsonb_array_elements(footprint->'map_coords'->'coordinates') AS coord
-                                )
-                            ), 4326)
-                        )
-                    )`),
-					sql.raw(`EXISTS (
-                        SELECT 1 FROM jsonb_array_elements("disaster_records"."spatial_footprint") AS footprint,
-                        jsonb_array_elements(footprint->'geojson'->'features') AS feature
-                        WHERE feature->'geometry'->>'type' = 'LineString'
-                        AND ST_Intersects(
-                            (SELECT geom FROM "division" WHERE id = '${divisionId}'),
-                            ST_SetSRID(ST_MakeLine(
-                                ARRAY(
-                                    SELECT ST_MakePoint(
-                                        (coord->>0)::float,  -- longitude
-                                        (coord->>1)::float   -- latitude
-                                    )
-                                    FROM jsonb_array_elements(feature->'geometry'->'coordinates') AS coord
-                                )
-                            ), 4326)
-                        )
-                    )`),
-					sql.raw(`EXISTS (
-                        SELECT 1 FROM jsonb_array_elements("disaster_records"."spatial_footprint") AS footprint,
-                        jsonb_array_elements(footprint->'geojson'->'features') AS feature
-                        WHERE feature->'geometry'->>'type' = 'Point'
-                        AND ST_Contains(
-                            (SELECT geom FROM "division" WHERE id = '${divisionId}'),
-                            ST_SetSRID(ST_MakePoint(
-                                (feature->'geometry'->'coordinates'->>0)::float,
-                                (feature->'geometry'->'coordinates'->>1)::float
-                            ), 4326)
-                        )
-                    )`),
-				),
-			),
-		);
-
-		// Execute spatial query
-		const spatialRecords = await spatialQuery;
-
-		const regionResult = await dr.execute(
-			sql`SELECT name->>'en' as name FROM "division" WHERE name->>'en' IS NOT NULL`,
-		);
-		const regionNames = regionResult.rows.map((r) => r.name);
-		const regionNameSet = new Set(regionNames);
-		const descendantStrSet = new Set(descendantIds.map(String));
-
-		const confirmed = spatialRecords.filter((record) => {
-			const footprint = record.spatialFootprint;
-			if (!Array.isArray(footprint)) {
-				return false;
-			}
-
-			const isValid = footprint.some((feature) => {
-				const geojson = feature.geojson || {};
-				const props = geojson.properties || {};
-				const dts = geojson.dts_info || {};
-				const mapCoords = feature.map_coords || {};
-
-				// Check all possible division ID locations
-				const ids1 = Array.isArray(props.division_ids)
-					? props.division_ids.map(String)
-					: [];
-				const ids2 = Array.isArray(dts.division_ids)
-					? dts.division_ids.map(String)
-					: [];
-				const id2 = dts.division_id ? String(dts.division_id) : null;
-
-				const matchedId = [...ids1, ...ids2, id2].some(
-					(id) => id && descendantStrSet.has(id),
-				);
-				const geographicLevel = feature.geographic_level;
-				const matchedName = regionNameSet.has(geographicLevel);
-
-				// Check for spatial matches based on geometry type
-				const hasValidGeometry =
-					// GeoJSON Point Features
-					geojson.features?.some(
-						(f: { geometry?: { type: string } }) =>
-							f.geometry?.type === "Point" || f.geometry?.type === "LineString",
-					) ||
-					// Map coordinates Points
-					(mapCoords.mode === "markers" &&
-						Array.isArray(mapCoords.coordinates)) ||
-					// Lines
-					(mapCoords.mode === "lines" &&
-						Array.isArray(mapCoords.coordinates)) ||
-					// Circle Areas
-					(mapCoords.mode === "circle" &&
-						mapCoords.center &&
-						mapCoords.radius) ||
-					// Rectangle Areas
-					(mapCoords.mode === "rectangle" &&
-						Array.isArray(mapCoords.coordinates) &&
-						mapCoords.coordinates.length >= 2) ||
-					// Polygon Areas
-					(mapCoords.mode === "polygon" &&
-						Array.isArray(mapCoords.coordinates) &&
-						mapCoords.coordinates.length >= 3);
-
-				// Record is valid if it has either:
-				// 1. Matching metadata (division IDs or geographic level)
-				// 2. Valid spatial geometry that was matched by SQL spatial queries
-				if (!matchedId && !matchedName && !hasValidGeometry) {
-					return false;
-				}
-				return true;
-			});
-
-			return isValid;
-		});
-
-		// Use verified records for the rest of the function
-		spatialRecords.length = 0;
-		spatialRecords.push(...confirmed);
-
-		// If no spatial matches, try text matching as fallback
-		if (spatialRecords.length === 0) {
-			try {
-				// Fetch division name for text matching
-				const divisionDetails = await dr
-					.select({
-						id: divisionTable.id,
-						name: divisionTable.name,
-					})
-					.from(divisionTable)
-					.where(eq(divisionTable.id, divisionId));
-
-				if (divisionDetails.length > 0 && divisionDetails[0].name) {
-					const divisionName = divisionDetails[0].name.en || "";
-					const normalizedDivName = normalizeText(divisionName);
-
-					const textQuery = query.where(
-						and(
-							...conditions,
-							sql<string>`(
-                            ${disasterRecordsTable.locationDesc} = ${divisionId} OR
-                            ${disasterRecordsTable.locationDesc} LIKE ${`%${divisionId}%`} OR
-                            LOWER(${
-															disasterRecordsTable.locationDesc
-														}) LIKE ${`%${normalizedDivName.toLowerCase()}%`} OR
-                            ${disasterRecordsTable.locationDesc} LIKE ${`%${divisionName}%`}
-                        )`,
+		const linkedToDivision = exists(
+			dr
+				.select({ one: sql`1` })
+				.from(disasterRecordsDivisionTable)
+				.where(
+					and(
+						eq(
+							disasterRecordsDivisionTable.disasterRecordId,
+							disasterRecordsTable.id,
 						),
-					);
+						inArray(disasterRecordsDivisionTable.divisionId, descendantIds),
+					),
+				),
+		);
 
-					const textRecords = await textQuery;
+		const geometryInDivision = exists(
+			dr
+				.select({ one: sql`1` })
+				.from(disasterRecordsGeomTable)
+				.innerJoin(divisionTable, eq(divisionTable.id, divisionId))
+				.where(
+					and(
+						eq(
+							disasterRecordsGeomTable.disasterRecordId,
+							disasterRecordsTable.id,
+						),
+						sql`ST_Intersects(${disasterRecordsGeomTable.geom}, ${divisionTable.geom})`,
+					),
+				),
+		);
 
-					return [...spatialRecords, ...textRecords].map((r) => r.id);
-				} else {
-				}
-			} catch (error) {
-				console.error("[DISASTER_RECORDS] Error in text matching:", {
-					divisionId,
-					error: error instanceof Error ? error.message : String(error),
-					stack: error instanceof Error ? error.stack : undefined,
-				});
-			}
-		}
+		const rows = await dr
+			.selectDistinct({ id: disasterRecordsTable.id })
+			.from(disasterRecordsTable)
+			.where(
+				and(
+					...buildRecordConditions(countryAccountsId, filters, sectorIds),
+					or(linkedToDivision, geometryInDivision),
+				),
+			);
 
-		const finalRecordIds = spatialRecords.map((r) => r.id);
-
-		return finalRecordIds;
+		return rows.map((r) => r.id);
 	} catch (error) {
 		console.error(
 			"[DISASTER_RECORDS] Critical error getting disaster records:",
@@ -1258,7 +774,7 @@ async function aggregateDamagesData(
 			.where(
 				and(
 					inArray(disasterRecordsTable.id, recordIds),
-					sectorIds
+					sectorIds?.length
 						? inArray(sectorDisasterRecordsRelationTable.sectorId, sectorIds)
 						: undefined,
 				),
@@ -1288,7 +804,9 @@ async function aggregateDamagesData(
 			.where(
 				and(
 					inArray(disasterRecordsTable.id, recordIds),
-					sectorIds ? inArray(damagesTable.sectorId, sectorIds) : undefined,
+					sectorIds?.length
+						? inArray(damagesTable.sectorId, sectorIds)
+						: undefined,
 					not(
 						exists(
 							dr
@@ -1302,7 +820,7 @@ async function aggregateDamagesData(
 										),
 										eq(sectorDisasterRecordsRelationTable.withDamage, true),
 										sql`${sectorDisasterRecordsRelationTable.damageCost} IS NOT NULL`,
-										sectorIds
+										sectorIds?.length
 											? inArray(
 													sectorDisasterRecordsRelationTable.sectorId,
 													sectorIds,
@@ -1405,7 +923,7 @@ async function aggregateLossesData(
 			.where(
 				and(
 					inArray(disasterRecordsTable.id, recordIds),
-					sectorIds
+					sectorIds?.length
 						? inArray(sectorDisasterRecordsRelationTable.sectorId, sectorIds)
 						: undefined,
 				),
@@ -1438,7 +956,9 @@ async function aggregateLossesData(
 			.where(
 				and(
 					inArray(disasterRecordsTable.id, recordIds),
-					sectorIds ? inArray(lossesTable.sectorId, sectorIds) : undefined,
+					sectorIds?.length
+						? inArray(lossesTable.sectorId, sectorIds)
+						: undefined,
 					not(
 						exists(
 							dr
@@ -1452,7 +972,7 @@ async function aggregateLossesData(
 										),
 										eq(sectorDisasterRecordsRelationTable.withLosses, true),
 										sql`${sectorDisasterRecordsRelationTable.lossesCost} IS NOT NULL`,
-										sectorIds
+										sectorIds?.length
 											? inArray(
 													sectorDisasterRecordsRelationTable.sectorId,
 													sectorIds,
