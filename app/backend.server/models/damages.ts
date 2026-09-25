@@ -726,7 +726,7 @@ export async function damagesIdByImportIdAndCountryAccountsId(
 		.from(damagesTable)
 		.innerJoin(
 			disasterRecordsTable,
-			eq(damagesTable.sectorId, disasterRecordsTable.id),
+			eq(damagesTable.recordId, disasterRecordsTable.id),
 		)
 		.where(
 			and(
