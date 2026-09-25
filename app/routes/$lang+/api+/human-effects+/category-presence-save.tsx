@@ -13,6 +13,7 @@ import {
 	categoryPresenceSet,
 } from "~/backend.server/models/human_effects";
 import { apiAuth } from "~/backend.server/models/api_key";
+import { disasterRecordsById } from "~/backend.server/models/disaster_record";
 import { BackendContext } from "~/backend.server/context";
 
 export const loader = authLoaderApi(async () => {
@@ -34,6 +35,16 @@ export const action = authActionApi(async (actionArgs) => {
 	const countryAccountsId = apiKey.countryAccountsId;
 	if (!countryAccountsId) {
 		throw new Response("Unauthorized", { status: 401 });
+	}
+	if (!recordId) {
+		throw new Response("Missing recordId parameter", { status: 400 });
+	}
+	// The record must belong to the API key's tenant, as in save.tsx.
+	const disasterRecord = await disasterRecordsById(recordId, countryAccountsId);
+	if (!disasterRecord) {
+		throw new Response(`Disaster record with id = ${recordId} not found`, {
+			status: 404,
+		});
 	}
 
 	let d;
