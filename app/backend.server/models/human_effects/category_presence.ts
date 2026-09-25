@@ -117,12 +117,38 @@ export async function categoryPresenceGet(
 	return res;
 }
 
+/**
+ * Derives category presence after a save. true (Yes) where any row holds a
+ * value, including a stored 0 (a confirmed zero); false (No) only where the
+ * existing flag is an explicit No and no value exists; otherwise null (not
+ * specified). See _docs/human-direct-effects.md.
+ */
+export function derivePresence(
+	defs: Pick<Def, "role" | "jsName">[],
+	rows: Record<string, unknown>[],
+	existing: Record<string, boolean | null | undefined>,
+): Record<string, boolean | null> {
+	const res: Record<string, boolean | null> = {};
+	for (const def of defs) {
+		if (def.role !== "metric" || !def.jsName) {
+			continue;
+		}
+		const hasValue = rows.some((row) => row[def.jsName] != null);
+		res[def.jsName] = hasValue
+			? true
+			: existing[def.jsName] === false
+				? false
+				: null;
+	}
+	return res;
+}
+
 export async function categoryPresenceSet(
 	tx: Tx,
 	recordId: string,
 	tblId: HumanEffectsTable,
 	defs: Def[],
-	data: Record<string, boolean>,
+	data: Record<string, boolean | null>,
 ) {
 	// validate that it's not some other string
 	tableFromType(tblId);
@@ -176,4 +202,3 @@ export async function categoryPresenceDeleteAll(tx: Tx, recordId: string) {
 		.delete(humanCategoryPresenceTable)
 		.where(eq(humanCategoryPresenceTable.recordId, recordId));
 }
-

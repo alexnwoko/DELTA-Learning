@@ -8,6 +8,7 @@ export {
 	categoryPresenceGet,
 	categoryPresenceSet,
 	categoryPresenceDeleteAll,
+	derivePresence,
 } from "./category_presence";
 export {
 	totalGroupGet,
