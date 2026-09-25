@@ -282,7 +282,7 @@ export async function getTotalDsgTable(
 	tblId: HumanEffectsTable,
 	recordId: string,
 	defs: Def[],
-): Promise<Record<string, number>> {
+): Promise<Record<string, number | null>> {
 	let t = tableFromType(tblId);
 	let h = humanDsgTable;
 
@@ -315,11 +315,12 @@ export async function getTotalDsgTable(
 		throw new Error("got more than 1 row for get");
 	}
 
-	let res: Record<string, number> = {};
+	// A metric with no stored value stays null (not reported), never 0.
+	let res: Record<string, number | null> = {};
 	let metricDefs = defs.filter((d) => d.role === "metric");
 
 	for (let def of metricDefs) {
-		res[def.jsName] = 0;
+		res[def.jsName] = null;
 	}
 
 	if (rows.length === 0) {

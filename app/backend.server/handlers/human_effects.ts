@@ -9,6 +9,7 @@ import {
 	get,
 	categoryPresenceSet,
 	categoryPresenceGet,
+	derivePresence,
 	categoryPresenceDeleteAll,
 	totalGroupGet,
 	totalGroupSet,
@@ -270,40 +271,20 @@ export async function saveHumanEffectsData(
 					defs,
 				);
 				if (currentData.ok) {
-					// Calculate category presence based on current data
-					const categoryPresence: Record<string, boolean> = {};
-
-					// First, initialize all metric fields to true
-					for (const def of defs) {
-						if (def.role === "metric" && def.jsName) {
-							// Use the JavaScript name for the presence flag (categoryPresenceSet will map to DB column)
-							categoryPresence[def.jsName] = true;
-						}
-					}
-
-					// Check each row for each metric field
-					for (const row of currentData.data) {
-						const rowData = row as unknown as Record<string, any>;
-						for (const def of defs) {
-							if (
-								def.role === "metric" &&
-								def.jsName &&
-								rowData[def.jsName] != null
-							) {
-								// If we find any non-null value, set presence to true
-								categoryPresence[def.jsName] = false;
-							}
-						}
-					}
-
-					/*
-					// Debug log the presence data being sent
-					console.log('Updating category presence:', {
+					// Presence follows the data, but an explicitly stored No is kept
+					// when no value exists (solution pack decision 3, P-1).
+					const existingPresence = await categoryPresenceGet(
+						tx,
 						recordId,
-						table: d.table,
-						presence: categoryPresence,
-						data: currentData.data
-					});*/
+						countryAccountsId,
+						d.table,
+						defs,
+					);
+					const categoryPresence = derivePresence(
+						defs,
+						currentData.data as unknown as Record<string, unknown>[],
+						existingPresence,
+					);
 
 					// Update category presence
 					await categoryPresenceSet(
