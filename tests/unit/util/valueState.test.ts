@@ -27,6 +27,7 @@ describe("valueState", () => {
 			recordsZeroConfirmed: 1,
 			recordsNotReported: 2,
 			recordsTotal: 5,
+			recordsFlagged: 0,
 		});
 	});
 
@@ -63,6 +64,18 @@ describe("valueState", () => {
 				{ minCoverage: 0.25, minRecords: 1 },
 			),
 		).toMatchObject({ value: null, valueState: "insufficient_reporting" });
+	});
+
+	it("carries the plausibility-flagged count", () => {
+		expect(
+			measureValue({
+				sum: 9,
+				reported: 2,
+				zeroConfirmed: 0,
+				total: 2,
+				flagged: "1",
+			}),
+		).toMatchObject({ value: 9, recordsFlagged: 1 });
 	});
 
 	it("parses database strings and treats a non-numeric sum as null", () => {

@@ -1,5 +1,9 @@
 import { and, eq, gte, lte, SQL, sql } from "drizzle-orm";
 import { measureValue, type MeasureValue } from "~/utils/valueState";
+import {
+	plausibilitySourceFields,
+	type PlausibilityMeasure,
+} from "~/utils/plausibility";
 import { dr } from "~/db.server";
 import { disasterEventTable } from "~/drizzle/schema/disasterEventTable";
 import { disasterRecordsDivisionTable } from "~/drizzle/schema/disasterRecordsDivisionTable";
@@ -186,6 +190,31 @@ const HUMAN_EFFECT_MEASURES = [
 type HumanEffectMeasure = (typeof HUMAN_EFFECT_MEASURES)[number];
 
 /**
+ * True when the record's plausibility flags (legacy_data.migration) name any
+ * of the source fields that feed one of the measures (solution pack C30).
+ */
+function plausibilityFlagged(
+	legacyData: SQL,
+	measures: PlausibilityMeasure[],
+): SQL {
+	const fields = measures.flatMap((m) => plausibilitySourceFields(m));
+	return sql`EXISTS (
+		SELECT 1
+		FROM jsonb_array_elements(
+			CASE
+				WHEN jsonb_typeof(${legacyData} -> 'migration' -> 'plausibility_flags') = 'array'
+					THEN ${legacyData} -> 'migration' -> 'plausibility_flags'
+				ELSE '[]'::jsonb
+			END
+		) AS pf
+		WHERE pf -> 'fields' ?| ARRAY[${sql.join(
+			fields.map((f) => sql`${f}`),
+			sql`, `,
+		)}]::text[]
+	)`;
+}
+
+/**
  * Per-measure sum and record counts from human_category_presence, for the
  * records in `filtered_records`. A record counts as reported when its total is
  * above 0; as a confirmed zero when its total is 0 with a Yes flag, or when it
@@ -202,7 +231,10 @@ function humanEffectMeasuresSelect(): SQL {
 			COUNT(*) FILTER (
 				WHERE (${total} = 0 AND ${flag} IS TRUE)
 					OR (${flag} IS FALSE AND COALESCE(${total}, 0) = 0)
-			) AS ${sql.raw(`"${m}_zero"`)}`;
+			) AS ${sql.raw(`"${m}_zero"`)},
+			COUNT(*) FILTER (
+				WHERE ${plausibilityFlagged(sql.raw(`rec."legacy_data"`), [m])}
+			) AS ${sql.raw(`"${m}_flagged"`)}`;
 	});
 	return sql.join([...parts, sql`COUNT(*) AS records_total`], sql`, `);
 }
@@ -345,6 +377,8 @@ export async function getAffectedPeopleByHazardFilters(
           FROM filtered_records fr
           LEFT JOIN "human_category_presence" hcp
             ON hcp."record_id" = fr.record_id
+          LEFT JOIN "disaster_records" rec
+            ON rec."id" = fr.record_id
         `;
 
 	const result = await dr.execute(rawQuery);
@@ -357,6 +391,7 @@ export async function getAffectedPeopleByHazardFilters(
 				reported: row[`${m}_reported`] as number | string,
 				zeroConfirmed: row[`${m}_zero`] as number | string,
 				total: row.records_total as number | string,
+				flagged: row[`${m}_flagged`] as number | string,
 			}),
 		]),
 	) as Record<HumanEffectMeasure, MeasureValue>;
@@ -1512,8 +1547,10 @@ export async function getTotalDeathsByDivision(
 			OR (hcp."deaths" IS FALSE AND COALESCE(hcp."deaths_total", 0) = 0),
 			false
 		  ) AS is_zero
+		  ,${plausibilityFlagged(sql.raw(`rec."legacy_data"`), ["deaths"])} AS is_flagged
 		FROM filtered_records fr
 		LEFT JOIN "human_category_presence" hcp ON hcp."record_id" = fr.record_id
+		LEFT JOIN "disaster_records" rec ON rec."id" = fr.record_id
 	  ),
 	  record_level1 AS (
 		SELECT DISTINCT
@@ -1552,6 +1589,7 @@ export async function getTotalDeathsByDivision(
 		COUNT(*) FILTER (WHERE rv.is_reported) AS reported,
 		COUNT(*) FILTER (WHERE rv.is_zero AND NOT rv.is_reported) AS zero_confirmed,
 		COUNT(*) AS records_total,
+		COUNT(*) FILTER (WHERE rv.is_flagged) AS flagged_records,
 		COUNT(*) FILTER (WHERE rlc.level1_count > 1) AS shared_records
 	  FROM record_level1 rl
 	  INNER JOIN record_level1_counts rlc
@@ -1570,6 +1608,7 @@ export async function getTotalDeathsByDivision(
 			reported: row.reported,
 			zeroConfirmed: row.zero_confirmed,
 			total: row.records_total,
+			flagged: row.flagged_records,
 		});
 		return {
 			divisionId: row.division_id,
@@ -1728,8 +1767,10 @@ export async function getTotalAffectedPeopleByDivision(
 			(hcp."affected_direct_total" = 0 AND hcp."affected_direct" IS TRUE) OR (hcp."affected_direct" IS FALSE AND COALESCE(hcp."affected_direct_total", 0) = 0),
 			false
 		  ) AS is_zero
+		  ,${plausibilityFlagged(sql.raw(`rec."legacy_data"`), ["injured", "missing", "displaced", "affected_direct"])} AS is_flagged
 		FROM filtered_records fr
 		LEFT JOIN "human_category_presence" hcp ON hcp."record_id" = fr.record_id
+		LEFT JOIN "disaster_records" rec ON rec."id" = fr.record_id
 	  ),
 	  record_level1 AS (
 		SELECT DISTINCT
@@ -1766,6 +1807,7 @@ export async function getTotalAffectedPeopleByDivision(
 		COUNT(*) FILTER (WHERE rv.is_reported) AS reported,
 		COUNT(*) FILTER (WHERE rv.is_zero AND NOT rv.is_reported) AS zero_confirmed,
 		COUNT(*) AS records_total,
+		COUNT(*) FILTER (WHERE rv.is_flagged) AS flagged_records,
 		COUNT(*) FILTER (WHERE rlc.level1_count > 1) AS shared_records
 	  FROM record_level1 rl
 	  INNER JOIN record_level1_counts rlc
@@ -1784,6 +1826,7 @@ export async function getTotalAffectedPeopleByDivision(
 			reported: row.reported,
 			zeroConfirmed: row.zero_confirmed,
 			total: row.records_total,
+			flagged: row.flagged_records,
 		});
 		return {
 			divisionId: row.division_id,
