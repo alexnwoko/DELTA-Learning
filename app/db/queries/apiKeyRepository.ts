@@ -1,4 +1,4 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { dr, Tx } from "../../db.server";
 import { apiKeyTable, InsertApiKey } from "~/drizzle/schema/apiKeyTable";
 import { randomBytes } from "crypto";
@@ -12,6 +12,18 @@ export const ApiKeyRepository = {
 		return dr.query.apiKeyTable.findFirst({
 			where: eq(apiKeyTable.id, id),
 			with: { managedByUser: true },
+		});
+	},
+
+	// Tenant-scoped read for the settings pages. It never returns secret
+	// material, and a key of another tenant reads as not found.
+	getByIdForTenant: (id: string, countryAccountsId: string) => {
+		return dr.query.apiKeyTable.findFirst({
+			columns: { secret: false },
+			where: and(
+				eq(apiKeyTable.id, id),
+				eq(apiKeyTable.countryAccountsId, countryAccountsId),
+			),
 		});
 	},
 
