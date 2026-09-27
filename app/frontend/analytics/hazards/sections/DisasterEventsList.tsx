@@ -99,9 +99,14 @@ const DisasterEventsList: React.FC<DisasterEventsListProps> = ({
 											)}
 										</td>
 										<td>
-											{formatNumberWithoutDecimals(
-												disasterSummaryRecord.totalAffectedPeople,
-											)}
+											{disasterSummaryRecord.totalAffectedPeople === null
+												? ctx.t({
+														code: "analysis.not_reported",
+														msg: "Not reported",
+													})
+												: formatNumberWithoutDecimals(
+														disasterSummaryRecord.totalAffectedPeople,
+													)}
 										</td>
 									</tr>
 								);

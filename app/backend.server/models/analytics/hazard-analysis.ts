@@ -136,9 +136,9 @@ export async function getDisasterEventCountByYear(
 		conditions.push(lte(disasterEventTable.endDate, toDate));
 	}
 
-	const yearExpr = sql<number>`
-  COALESCE(
-    EXTRACT(YEAR FROM TO_DATE(
+	// An event without a readable end date has no year: NULL, never year 0 (C09).
+	const yearExpr = sql<number | null>`
+  EXTRACT(YEAR FROM TO_DATE(
       ${disasterEventTable.endDate},
       CASE
         WHEN ${disasterEventTable.endDate} ~ '^[0-9]{4}$' THEN 'YYYY'
@@ -146,9 +146,7 @@ export async function getDisasterEventCountByYear(
         WHEN ${disasterEventTable.endDate} ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN 'YYYY-MM-DD'
         ELSE NULL
       END
-    )),
-    0
-  )
+    ))
 `;
 
 	const result = await dr
@@ -161,10 +159,12 @@ export async function getDisasterEventCountByYear(
 		.groupBy(yearExpr)
 		.orderBy(yearExpr);
 
-	return result.map((r) => ({
-		year: Number(r.year),
-		count: Number(r.disaster_count),
-	}));
+	return result
+		.filter((r) => r.year !== null)
+		.map((r) => ({
+			year: Number(r.year),
+			count: Number(r.disaster_count),
+		}));
 }
 
 interface AffectedPeopleResult {
@@ -1968,7 +1968,8 @@ export interface DisasterSummary {
 	provinceAffected: string;
 	totalDamages: number;
 	totalLosses: number;
-	totalAffectedPeople: number;
+	/** null when no record of the event reported a people-affected component. */
+	totalAffectedPeople: number | null;
 }
 
 export async function getDisasterSummary(
@@ -2200,41 +2201,40 @@ export async function getDisasterSummary(
 	}
 
 	// ---- Step 7: Get affected people ----
+	// Composite of injured, missing, displaced and directly affected from the
+	// presence totals, reported components only: null when no record of the
+	// event reported any component (TR-076, pack C10).
 	const affectedRes = await dr.execute(sql`
     SELECT dr."disaster_event_id",
-           COALESCE(SUM(
-             COALESCE(mis.missing, 0) +
-             COALESCE(dsp.displaced, 0) +
-             COALESCE(inj.injured, 0) +
-             COALESCE(aff.direct, 0)
-           ), 0) AS total_affected
+           SUM(
+             CASE WHEN hcp."injured_total" > 0 THEN hcp."injured_total" ELSE 0 END +
+             CASE WHEN hcp."missing_total" > 0 THEN hcp."missing_total" ELSE 0 END +
+             CASE WHEN hcp."displaced_total" > 0 THEN hcp."displaced_total" ELSE 0 END +
+             CASE WHEN hcp."affected_direct_total" > 0 THEN hcp."affected_direct_total" ELSE 0 END
+           ) FILTER (
+             WHERE hcp."injured_total" > 0 OR hcp."missing_total" > 0
+               OR hcp."displaced_total" > 0 OR hcp."affected_direct_total" > 0
+           ) AS total_affected
     FROM "disaster_records" dr
-		LEFT JOIN "human_dsg" hd
-			ON dr."id" = hd."record_id"
-			AND hd."sex" IS NULL
-			AND hd."age" IS NULL
-			AND hd."disability" IS NULL
-			AND hd."global_poverty_line" IS NULL
-			AND hd."national_poverty_line" IS NULL
-    LEFT JOIN "missing" mis ON hd."id" = mis."dsg_id"
-    LEFT JOIN "displaced" dsp ON hd."id" = dsp."dsg_id"
-    LEFT JOIN "injured" inj ON hd."id" = inj."dsg_id"
-    LEFT JOIN "affected" aff ON hd."id" = aff."dsg_id"
+    LEFT JOIN "human_category_presence" hcp ON hcp."record_id" = dr."id"
 		WHERE dr."id" = ANY(ARRAY[${sql.raw(recordIdsList)}]::uuid[])
     GROUP BY dr."disaster_event_id"
   `);
-	const affectedByEvent = new Map<string, number>();
+	const affectedByEvent = new Map<string, number | null>();
 	for (const r of affectedRes.rows as Array<{
 		disaster_event_id: string;
-		total_affected: number;
+		total_affected: number | string | null;
 	}>) {
-		affectedByEvent.set(r.disaster_event_id, Number(r.total_affected) || 0);
+		affectedByEvent.set(
+			r.disaster_event_id,
+			r.total_affected === null ? null : Number(r.total_affected),
+		);
 	}
 
 	// ---- Step 8: Map everything to DisasterSummary ----
 	return disasterEvents.map((e) => {
 		const totals = totalsByEvent.get(e.id) ?? { damages: 0, losses: 0 };
-		const totalAffected = affectedByEvent.get(e.id) ?? 0;
+		const totalAffected = affectedByEvent.get(e.id) ?? null;
 		return {
 			disasterId: e.id,
 			disasterName: e.name_national ?? "Unnamed Disaster",
