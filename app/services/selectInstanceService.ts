@@ -7,7 +7,10 @@ import { BackendContext } from "~/backend.server/context";
 import { CountryAccountsRepository } from "~/db/queries/countryAccountsRepository";
 import { CountryRepository } from "~/db/queries/countriesRepository";
 import { InstanceSystemSettingRepository } from "~/db/queries/instanceSystemSettingRepository";
-import { UserCountryAccountRepository } from "~/db/queries/userCountryAccountsRepository";
+import {
+	UserCountryAccountRepository,
+	getUserCountryAccountsByUserIdAndCountryAccountsId,
+} from "~/db/queries/userCountryAccountsRepository";
 import {
 	countryAccountStatuses,
 	SelectCountryAccounts,
@@ -121,6 +124,30 @@ export const SelectInstanceService = {
 
 		const errors: Record<string, string> = {};
 		if (!countryAccountsId || typeof countryAccountsId !== "string") {
+			errors.countryInstance = "Select an instance first";
+			return {
+				ok: false,
+				errors,
+			};
+		}
+
+		// Only a signed-in member of an active instance may select it; the
+		// loader offers exactly this set, and the session tenant scopes all data.
+		const userSession = await getUserFromSession(request);
+		if (!userSession) {
+			return redirectLangFromRoute(args, "/user/login");
+		}
+		const membership = await getUserCountryAccountsByUserIdAndCountryAccountsId(
+			userSession.user.id,
+			countryAccountsId,
+		);
+		const countryAccount = membership
+			? await CountryAccountsRepository.getById(countryAccountsId)
+			: null;
+		if (
+			!countryAccount ||
+			countryAccount.status !== countryAccountStatuses.ACTIVE
+		) {
 			errors.countryInstance = "Select an instance first";
 			return {
 				ok: false,
