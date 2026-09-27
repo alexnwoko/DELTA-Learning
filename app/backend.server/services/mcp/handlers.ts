@@ -7,6 +7,7 @@ import {
 } from "./utils";
 import { getReadOnlyEntityFields } from "./tools";
 import { callInternalApi } from "./client";
+import { McpInputError } from "./policy";
 import { DOCS, HUMAN_EFFECTS_DOCS } from "./docs";
 
 export async function executeFields(
@@ -27,7 +28,7 @@ export async function executeFields(
 		const table = args.table || "Deaths";
 
 		if (!recordId) {
-			throw new Error("recordId is required for human-effects");
+			throw new McpInputError("recordId is required for human-effects");
 		}
 
 		const validTables = [
@@ -38,12 +39,12 @@ export async function executeFields(
 			"Displaced",
 		];
 		if (!validTables.includes(table)) {
-			throw new Error(`table must be one of: ${validTables.join(", ")}`);
+			throw new McpInputError(`table must be one of: ${validTables.join(", ")}`);
 		}
 
 		const data = await callInternalApi(
 			request,
-			`/${lang}/api/${entityPath}/list?recordId=${recordId}&table=${table}`,
+			`/${encodeURIComponent(lang)}/api/${entityPath}/list?recordId=${encodeURIComponent(recordId)}&table=${encodeURIComponent(table)}`,
 		);
 
 		const columnNames = data.defs.map((def: any) => def.jsName || def.dbName);
@@ -59,7 +60,7 @@ export async function executeFields(
 
 	const response = await callInternalApi(
 		request,
-		`/${lang}/api/${entityPath}/fields`,
+		`/${encodeURIComponent(lang)}/api/${entityPath}/fields`,
 	);
 
 	return JSON.stringify(response, null, 2);
@@ -76,7 +77,7 @@ export async function executeList(
 		const table = args.table || "Deaths";
 
 		if (!recordId) {
-			throw new Error("recordId is required for human-effects");
+			throw new McpInputError("recordId is required for human-effects");
 		}
 
 		const validTables = [
@@ -87,13 +88,13 @@ export async function executeList(
 			"Displaced",
 		];
 		if (!validTables.includes(table)) {
-			throw new Error(`table must be one of: ${validTables.join(", ")}`);
+			throw new McpInputError(`table must be one of: ${validTables.join(", ")}`);
 		}
 
 		const entityPath = getEntityPath(entity);
 		const result = await callInternalApi(
 			request,
-			`/${lang}/api/${entityPath}/list?recordId=${recordId}&table=${table}`,
+			`/${encodeURIComponent(lang)}/api/${entityPath}/list?recordId=${encodeURIComponent(recordId)}&table=${encodeURIComponent(table)}`,
 		);
 
 		return JSON.stringify(result, null, 2);
@@ -103,16 +104,16 @@ export async function executeList(
 	const pageSize = args.pageSize || 50;
 
 	if (page < 1) {
-		throw new Error("page must be >= 1");
+		throw new McpInputError("page must be >= 1");
 	}
 	if (pageSize < 1 || pageSize > 1000) {
-		throw new Error("pageSize must be between 1 and 1000");
+		throw new McpInputError("pageSize must be between 1 and 1000");
 	}
 
 	const entityPath = getEntityPath(entity);
 	const result = await callInternalApi(
 		request,
-		`/${lang}/api/${entityPath}/list?page=${page}&pageSize=${pageSize}`,
+		`/${encodeURIComponent(lang)}/api/${entityPath}/list?page=${encodeURIComponent(page)}&pageSize=${encodeURIComponent(pageSize)}`,
 	);
 
 	return JSON.stringify(result.data, null, 2);
@@ -127,19 +128,19 @@ export async function executeAdd(
 	const records = args.records;
 
 	if (!Array.isArray(records)) {
-		throw new Error("records must be an array");
+		throw new McpInputError("records must be an array");
 	}
 	if (records.length === 0) {
-		throw new Error("records array cannot be empty");
+		throw new McpInputError("records array cannot be empty");
 	}
 	if (records.length > 100) {
-		throw new Error("records array cannot exceed 100 items");
+		throw new McpInputError("records array cannot exceed 100 items");
 	}
 
 	const entityPath = getEntityPath(entity);
 	const result = await callInternalApi(
 		request,
-		`/${lang}/api/${entityPath}/add`,
+		`/${encodeURIComponent(lang)}/api/${entityPath}/add`,
 		"POST",
 		records,
 	);
@@ -156,25 +157,25 @@ export async function executeUpdate(
 	const records = args.records;
 
 	if (!Array.isArray(records)) {
-		throw new Error("records must be an array");
+		throw new McpInputError("records must be an array");
 	}
 	if (records.length === 0) {
-		throw new Error("records array cannot be empty");
+		throw new McpInputError("records array cannot be empty");
 	}
 	if (records.length > 100) {
-		throw new Error("records array cannot exceed 100 items");
+		throw new McpInputError("records array cannot exceed 100 items");
 	}
 
 	for (const record of records) {
 		if (!record.id) {
-			throw new Error("each record must include an id field for update");
+			throw new McpInputError("each record must include an id field for update");
 		}
 	}
 
 	const entityPath = getEntityPath(entity);
 	const result = await callInternalApi(
 		request,
-		`/${lang}/api/${entityPath}/update`,
+		`/${encodeURIComponent(lang)}/api/${entityPath}/update`,
 		"POST",
 		records,
 	);
@@ -190,23 +191,23 @@ export async function executeHumanEffectsSave(
 	const data = args.data;
 
 	if (!data) {
-		throw new Error("data is required for human-effects");
+		throw new McpInputError("data is required for human-effects");
 	}
 	if (!data.recordId) {
-		throw new Error("recordId is required for human-effects");
+		throw new McpInputError("recordId is required for human-effects");
 	}
 	if (!data.table) {
-		throw new Error("table is required for human-effects");
+		throw new McpInputError("table is required for human-effects");
 	}
 
 	const validTables = ["Deaths", "Injured", "Missing", "Affected", "Displaced"];
 	if (!validTables.includes(data.table)) {
-		throw new Error(`table must be one of: ${validTables.join(", ")}`);
+		throw new McpInputError(`table must be one of: ${validTables.join(", ")}`);
 	}
 
 	const result = await callInternalApi(
 		request,
-		`/${lang}/api/human-effects/save?recordId=${data.recordId}`,
+		`/${encodeURIComponent(lang)}/api/human-effects/save?recordId=${encodeURIComponent(data.recordId)}`,
 		"POST",
 		data,
 	);
@@ -223,20 +224,20 @@ export async function executeHumanEffectsClear(
 	const table = args.table;
 
 	if (!recordId) {
-		throw new Error("recordId is required for human-effects");
+		throw new McpInputError("recordId is required for human-effects");
 	}
 	if (!table) {
-		throw new Error("table is required for human-effects");
+		throw new McpInputError("table is required for human-effects");
 	}
 
 	const validTables = ["Deaths", "Injured", "Missing", "Affected", "Displaced"];
 	if (!validTables.includes(table)) {
-		throw new Error(`table must be one of: ${validTables.join(", ")}`);
+		throw new McpInputError(`table must be one of: ${validTables.join(", ")}`);
 	}
 
 	const result = await callInternalApi(
 		request,
-		`/${lang}/api/human-effects/clear?recordId=${recordId}&table=${table}`,
+		`/${encodeURIComponent(lang)}/api/human-effects/clear?recordId=${encodeURIComponent(recordId)}&table=${encodeURIComponent(table)}`,
 		"POST",
 	);
 
@@ -251,23 +252,23 @@ export async function executeHumanEffectsCategoryPresenceSave(
 	const data = args.data;
 
 	if (!data) {
-		throw new Error("data is required for human-effects");
+		throw new McpInputError("data is required for human-effects");
 	}
 	if (!data.recordId) {
-		throw new Error("recordId is required for human-effects");
+		throw new McpInputError("recordId is required for human-effects");
 	}
 	if (!data.table) {
-		throw new Error("table is required for human-effects");
+		throw new McpInputError("table is required for human-effects");
 	}
 
 	const validTables = ["Deaths", "Injured", "Missing", "Affected", "Displaced"];
 	if (!validTables.includes(data.table)) {
-		throw new Error(`table must be one of: ${validTables.join(", ")}`);
+		throw new McpInputError(`table must be one of: ${validTables.join(", ")}`);
 	}
 
 	const result = await callInternalApi(
 		request,
-		`/${lang}/api/human-effects/category-presence-save?recordId=${data.recordId}`,
+		`/${encodeURIComponent(lang)}/api/human-effects/category-presence-save?recordId=${encodeURIComponent(data.recordId)}`,
 		"POST",
 		data,
 	);
@@ -296,11 +297,11 @@ export async function executeTool(
 	const { entity, action } = parseToolName(toolName);
 
 	if (!isValidEntity(entity)) {
-		throw new Error(`Invalid entity: ${entity}`);
+		throw new McpInputError(`Invalid entity: ${entity}`);
 	}
 
 	if (!isActionAllowed(entity, action)) {
-		throw new Error(`${entity} is read-only, cannot ${action}`);
+		throw new McpInputError(`${entity} is read-only, cannot ${action}`);
 	}
 
 	switch (action) {
@@ -316,12 +317,12 @@ export async function executeTool(
 			if (entity === "human-effects") {
 				return await executeHumanEffectsSave(request, lang, args);
 			}
-			throw new Error(`save action not supported for ${entity}`);
+			throw new McpInputError(`save action not supported for ${entity}`);
 		case "clear":
 			if (entity === "human-effects") {
 				return await executeHumanEffectsClear(request, lang, args);
 			}
-			throw new Error(`clear action not supported for ${entity}`);
+			throw new McpInputError(`clear action not supported for ${entity}`);
 		case "category-presence-save":
 			if (entity === "human-effects") {
 				return await executeHumanEffectsCategoryPresenceSave(
@@ -330,15 +331,15 @@ export async function executeTool(
 					args,
 				);
 			}
-			throw new Error(
+			throw new McpInputError(
 				`category-presence-save action not supported for ${entity}`,
 			);
 		case "docs":
 			if (entity === "human-effects") {
 				return await executeHumanEffectsDocs();
 			}
-			throw new Error(`docs action not supported for ${entity}`);
+			throw new McpInputError(`docs action not supported for ${entity}`);
 		default:
-			throw new Error(`Unknown action: ${action}`);
+			throw new McpInputError(`Unknown action: ${action}`);
 	}
 }

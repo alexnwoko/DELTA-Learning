@@ -6,6 +6,11 @@ vi.mock("~/backend.server/models/api_key", () => ({
 	apiAuth: vi.fn(),
 }));
 
+const callInternalApiMock = vi.fn();
+vi.mock("~/backend.server/services/mcp/client", () => ({
+	callInternalApi: (...args: any[]) => callInternalApiMock(...args),
+}));
+
 const BASE_URL = "http://localhost:3000/en/api/mcp";
 
 function createRequest(body: unknown, headers?: HeadersInit): Request {
@@ -27,6 +32,9 @@ async function callLoader(request: Request): Promise<Response> {
 describe("mcp.ts", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		vi.unstubAllEnvs();
+		// The endpoint is off by default (plan item 12); these tests exercise it enabled.
+		vi.stubEnv("MCP_ENABLED", "true");
 	});
 
 	describe("action", () => {
@@ -334,9 +342,12 @@ describe("mcp.ts", () => {
 			expect(data.message).toBe("MCP endpoint - use POST for MCP requests");
 		});
 
-		it("should return SSE stream for text/event-stream", async () => {
+		it("should return SSE stream for text/event-stream with a valid tenant key", async () => {
+			vi.mocked(apiAuthModule.apiAuth).mockResolvedValue({
+				countryAccountsId: "tenant-1",
+			} as any);
 			const request = new Request(BASE_URL, {
-				headers: { Accept: "text/event-stream" },
+				headers: { Accept: "text/event-stream", "X-Auth": "key" },
 			});
 
 			const response = await callLoader(request);
@@ -346,5 +357,133 @@ describe("mcp.ts", () => {
 			expect(response.headers.get("Connection")).toBe("keep-alive");
 			expect(response.body).toBeInstanceOf(ReadableStream);
 		});
+	});
+});
+
+describe("mcp.ts platform security (plan item 12)", () => {
+	const authed = () =>
+		vi.mocked(apiAuthModule.apiAuth).mockResolvedValue({
+			countryAccountsId: "tenant-1",
+		} as any);
+
+	const rpc = (method: string, params?: unknown) =>
+		createRequest({ jsonrpc: "2.0", id: "t", method, params }, { "X-Auth": "key" });
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+		vi.unstubAllEnvs();
+	});
+
+	it("answers 404 on POST and GET while MCP_ENABLED is not set", async () => {
+		authed();
+		expect((await callAction(rpc("tools/list"))).status).toBe(404);
+		const sse = new Request(BASE_URL, {
+			headers: { Accept: "text/event-stream", "X-Auth": "key" },
+		});
+		expect((await callLoader(sse)).status).toBe(404);
+	});
+
+	it("refuses to open the SSE stream without a valid key", async () => {
+		vi.stubEnv("MCP_ENABLED", "true");
+		vi.mocked(apiAuthModule.apiAuth).mockRejectedValue(
+			new Response("Unauthorized", { status: 401 }),
+		);
+		const sse = new Request(BASE_URL, { headers: { Accept: "text/event-stream" } });
+		const res = await callLoader(sse);
+		expect(res.status).toBe(401);
+		expect(res.headers.get("Content-Type")).not.toBe("text/event-stream");
+	});
+
+	it("refuses to open the SSE stream for a key with no tenant", async () => {
+		vi.stubEnv("MCP_ENABLED", "true");
+		vi.mocked(apiAuthModule.apiAuth).mockResolvedValue({
+			countryAccountsId: null,
+		} as any);
+		const sse = new Request(BASE_URL, {
+			headers: { Accept: "text/event-stream", "X-Auth": "key" },
+		});
+		expect((await callLoader(sse)).status).toBe(401);
+	});
+
+	it("lists and runs no write tools by default (read-only)", async () => {
+		vi.stubEnv("MCP_ENABLED", "true");
+		authed();
+		const list = await (await callAction(rpc("tools/list"))).json();
+		const names: string[] = list.result.tools.map((t: any) => t.name);
+		expect(names).toContain("disaster-record_list");
+		expect(names.some((n) => /_(add|update|save|clear|category-presence-save)$/.test(n))).toBe(false);
+
+		const call = await (
+			await callAction(
+				rpc("tools/call", { name: "disaster-record_add", arguments: { records: [{}] } }),
+			)
+		).json();
+		expect(call.error.message).toBe("Tool not available");
+		expect(callInternalApiMock).not.toHaveBeenCalled();
+	});
+
+	it("lists write tools only when MCP_READ_ONLY=false", async () => {
+		vi.stubEnv("MCP_ENABLED", "true");
+		vi.stubEnv("MCP_READ_ONLY", "false");
+		authed();
+		const list = await (await callAction(rpc("tools/list"))).json();
+		const names: string[] = list.result.tools.map((t: any) => t.name);
+		expect(names).toContain("disaster-record_add");
+	});
+
+	it("limits tools to MCP_TOOL_ALLOWLIST when it is set", async () => {
+		vi.stubEnv("MCP_ENABLED", "true");
+		vi.stubEnv("MCP_TOOL_ALLOWLIST", "docs, disaster-record_list");
+		authed();
+		const list = await (await callAction(rpc("tools/list"))).json();
+		expect(list.result.tools.map((t: any) => t.name).sort()).toEqual([
+			"disaster-record_list",
+			"docs",
+		]);
+		const call = await (
+			await callAction(rpc("tools/call", { name: "hazardous-event_list", arguments: {} }))
+		).json();
+		expect(call.error.message).toBe("Tool not available");
+	});
+
+	it("returns a generic message when the internal API fails", async () => {
+		vi.stubEnv("MCP_ENABLED", "true");
+		authed();
+		callInternalApiMock.mockRejectedValue(
+			new Error('{"ok":false,"detail":"internal row 42 of another tenant"}'),
+		);
+		const call = await (
+			await callAction(rpc("tools/call", { name: "disaster-record_list", arguments: {} }))
+		).json();
+		expect(call.error.message).toBe("Tool execution failed");
+		expect(JSON.stringify(call)).not.toContain("another tenant");
+	});
+
+	it("keeps input validation messages that describe the caller's own input", async () => {
+		vi.stubEnv("MCP_ENABLED", "true");
+		authed();
+		const call = await (
+			await callAction(
+				rpc("tools/call", { name: "disaster-record_list", arguments: { page: -1 } }),
+			)
+		).json();
+		expect(call.error.message).toBe("page must be >= 1");
+	});
+
+	it("encodes ids in internal API URLs", async () => {
+		vi.stubEnv("MCP_ENABLED", "true");
+		authed();
+		callInternalApiMock.mockResolvedValue({ data: [] });
+		await callAction(
+			rpc("tools/call", {
+				name: "human-effects_list",
+				arguments: { recordId: "a&table=Deaths/../x?y=1", table: "Deaths" },
+			}),
+		);
+		const endpoint: string = callInternalApiMock.mock.calls[0][1];
+		expect(endpoint).toContain(
+			"recordId=" + encodeURIComponent("a&table=Deaths/../x?y=1"),
+		);
+		expect(endpoint.match(/table=/g)?.length).toBe(1);
 	});
 });
