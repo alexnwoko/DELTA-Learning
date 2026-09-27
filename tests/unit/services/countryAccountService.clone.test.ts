@@ -365,4 +365,16 @@ describe("CountryAccountService.clone", () => {
 		expect(clonedRows[0].recordingOrganizationId).not.toBe("old-org-1");
 		expect(clonedRows[0].recordingOrganizationId).toEqual(expect.any(String));
 	}, 20000);
+
+	it("copies no API key rows into the cloned country account", async () => {
+		apiKeyRepositoryGetByCountryAccountsIdMock.mockResolvedValue([
+			{ id: "old-key-1", countryAccountsId: "source-ca", name: "k" },
+		]);
+		const { CountryAccountService } =
+			await import("~/services/countryAccountService");
+
+		await CountryAccountService.clone("source-ca", "Training copy");
+
+		expect(apiKeyRepositoryCreateManyMock).not.toHaveBeenCalled();
+	}, 20000);
 });

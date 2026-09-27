@@ -37,9 +37,12 @@ export function contextMixin(): Record<string, unknown> {
 export const REDACT_PATHS = [
 	"req.headers.authorization",
 	"req.headers.cookie",
+	'req.headers["x-auth"]',
 	"*.password",
 	"*.token",
 	"*.secret",
+	"*.secretHash",
+	"*.secret_hash",
 ];
 
 /**

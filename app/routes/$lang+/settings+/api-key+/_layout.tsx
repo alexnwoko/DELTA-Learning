@@ -21,7 +21,7 @@ interface EnhancedApiKey {
 	createdAt: Date;
 	managedByUserId: string;
 	managedByUser: { email: string };
-	secret: string;
+	keyPrefix: string;
 }
 
 export const loader = authLoaderWithPerm("ViewData", async (loaderArgs) => {
@@ -50,20 +50,9 @@ export default function ApiKeysPage() {
 		[ld.items, tableFirst, tableRows],
 	);
 
+	// Only the prefix is stored in readable form; the full secret is shown once, at creation.
 	const secretTemplate = (item: EnhancedApiKey) => (
-		<span className="flex items-center gap-1">
-			<span>{item.secret.slice(0, 5)}</span>
-			<Button
-				type="button"
-				text
-				size="small"
-				aria-label={ctx.t({ code: "common.copy", msg: "Copy" })}
-				onClick={() => navigator.clipboard.writeText(item.secret)}
-				className="!p-1"
-			>
-				<i className="pi pi-copy text-xs" aria-hidden="true" />
-			</Button>
-		</span>
+		<span className="font-mono">{item.keyPrefix}…</span>
 	);
 
 	const actionsBodyTemplate = (item: EnhancedApiKey) => (
