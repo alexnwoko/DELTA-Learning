@@ -1,5 +1,9 @@
 import { and, eq, gte, lte, SQL, sql } from "drizzle-orm";
-import { measureValue, type MeasureValue } from "~/utils/valueState";
+import {
+	measureValue,
+	PROVISIONAL_ZERO_COVERAGE,
+	type MeasureValue,
+} from "~/utils/valueState";
 import {
 	plausibilitySourceFields,
 	type PlausibilityMeasure,
@@ -386,13 +390,16 @@ export async function getAffectedPeopleByHazardFilters(
 	const measures = Object.fromEntries(
 		HUMAN_EFFECT_MEASURES.map((m) => [
 			m,
-			measureValue({
-				sum: row[`${m}_sum`] as number | string | null,
-				reported: row[`${m}_reported`] as number | string,
-				zeroConfirmed: row[`${m}_zero`] as number | string,
-				total: row.records_total as number | string,
-				flagged: row[`${m}_flagged`] as number | string,
-			}),
+			measureValue(
+				{
+					sum: row[`${m}_sum`] as number | string | null,
+					reported: row[`${m}_reported`] as number | string,
+					zeroConfirmed: row[`${m}_zero`] as number | string,
+					total: row.records_total as number | string,
+					flagged: row[`${m}_flagged`] as number | string,
+				},
+				PROVISIONAL_ZERO_COVERAGE,
+			),
 		]),
 	) as Record<HumanEffectMeasure, MeasureValue>;
 
@@ -1603,13 +1610,16 @@ export async function getTotalDeathsByDivision(
 	const result = await dr.execute(rawQuery);
 
 	return result.rows.map((row: any) => {
-		const measure = measureValue({
-			sum: row.value_sum,
-			reported: row.reported,
-			zeroConfirmed: row.zero_confirmed,
-			total: row.records_total,
-			flagged: row.flagged_records,
-		});
+		const measure = measureValue(
+			{
+				sum: row.value_sum,
+				reported: row.reported,
+				zeroConfirmed: row.zero_confirmed,
+				total: row.records_total,
+				flagged: row.flagged_records,
+			},
+			PROVISIONAL_ZERO_COVERAGE,
+		);
 		return {
 			divisionId: row.division_id,
 			totalDeaths: measure.value,
@@ -1821,13 +1831,16 @@ export async function getTotalAffectedPeopleByDivision(
 	const result = await dr.execute(rawQuery);
 
 	return result.rows.map((row: any) => {
-		const measure = measureValue({
-			sum: row.value_sum,
-			reported: row.reported,
-			zeroConfirmed: row.zero_confirmed,
-			total: row.records_total,
-			flagged: row.flagged_records,
-		});
+		const measure = measureValue(
+			{
+				sum: row.value_sum,
+				reported: row.reported,
+				zeroConfirmed: row.zero_confirmed,
+				total: row.records_total,
+				flagged: row.flagged_records,
+			},
+			PROVISIONAL_ZERO_COVERAGE,
+		);
 		return {
 			divisionId: row.division_id,
 			totalAffected: measure.value,

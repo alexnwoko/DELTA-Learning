@@ -46,6 +46,17 @@ export interface CoverageRule {
 	minRecords: number;
 }
 
+/**
+ * Coverage rule applied to every aggregate zero on the analytics screens
+ * (solution pack V-5, C11). The 25% share is the provisional V-5 value. The
+ * minimum record count is not yet ruled (pack decision 8); 1 adds no test
+ * beyond "at least one confirming record" until it is.
+ */
+export const PROVISIONAL_ZERO_COVERAGE: CoverageRule = {
+	minCoverage: 0.25,
+	minRecords: 1,
+};
+
 function toCount(v: number | string | null | undefined): number {
 	const n = Number(v);
 	return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;

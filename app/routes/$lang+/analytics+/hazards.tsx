@@ -204,6 +204,8 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 			measure: {
 				value: number | null;
 				valueState: ValueState;
+				recordsZeroConfirmed: number;
+				recordsTotal: number;
 				recordsFlagged: number;
 			};
 			sharedRecords: number;
@@ -218,11 +220,11 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 				: "not_reported";
 			const value = row?.measure.value ?? null;
 			const shown =
-				value === null
-					? valueState === "zero_confirmed"
-						? "0 (confirmed)"
-						: "not reported"
-					: formatNumberWithoutDecimals(value);
+				value !== null
+					? formatNumberWithoutDecimals(value)
+					: valueState === "insufficient_reporting"
+						? `too few records confirm zero (${row?.measure.recordsZeroConfirmed ?? 0} of ${row?.measure.recordsTotal ?? 0})`
+						: "not reported";
 			const shared =
 				row && row.sharedRecords > 0
 					? ` (${row.sharedRecords} record(s) also counted in another division)`
@@ -534,6 +536,15 @@ export default function HazardAnalysis() {
 										actionData.totalInternationalPoorPeople
 									}
 									totalNationalPoorPeople={actionData.totalNationalPoorPeople}
+									valueStates={{
+										deaths: actionData.humanEffectMeasures.deaths.valueState,
+										injured: actionData.humanEffectMeasures.injured.valueState,
+										missing: actionData.humanEffectMeasures.missing.valueState,
+										displaced:
+											actionData.humanEffectMeasures.displaced.valueState,
+										affectedDirect:
+											actionData.humanEffectMeasures.affected_direct.valueState,
+									}}
 									flaggedRecords={{
 										deaths:
 											actionData.humanEffectMeasures.deaths.recordsFlagged,
