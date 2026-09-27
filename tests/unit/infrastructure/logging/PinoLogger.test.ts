@@ -144,6 +144,28 @@ describe("PinoLogger — redaction (ADR-004)", () => {
 		expect(rawOutput).not.toContain("hunter2");
 	});
 
+	it("redacts the X-Auth API key header value from emitted output", () => {
+		const { instance, getLines } = createTestPino({ redact: REDACT_PATHS });
+		const logger = new PinoLogger(instance);
+
+		logger.info({ req: { headers: { "x-auth": "raw-api-key-value" } } });
+
+		const rawOutput = JSON.stringify(getLines());
+		expect(rawOutput).not.toContain("raw-api-key-value");
+	});
+
+	it("redacts a stored API key hash from emitted output", () => {
+		const { instance, getLines } = createTestPino({ redact: REDACT_PATHS });
+		const logger = new PinoLogger(instance);
+
+		logger.info({ apiKey: { secretHash: "stored-hash-value" } });
+		logger.info({ row: { secret_hash: "stored-hash-column" } });
+
+		const rawOutput = JSON.stringify(getLines());
+		expect(rawOutput).not.toContain("stored-hash-value");
+		expect(rawOutput).not.toContain("stored-hash-column");
+	});
+
 	it("documents that wildcard redact paths only match one level of nesting", () => {
 		// fast-redact (Pino's redaction engine) does not support a recursive wildcard.
 		const { instance, getLines } = createTestPino({ redact: REDACT_PATHS });

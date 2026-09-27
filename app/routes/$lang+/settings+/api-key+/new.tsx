@@ -11,10 +11,7 @@ import {
 	authActionWithPerm,
 	authLoaderWithPerm,
 } from "~/utils/auth";
-import {
-	getCountryAccountsIdFromSession,
-	redirectWithMessage,
-} from "~/utils/session";
+import { getCountryAccountsIdFromSession } from "~/utils/session";
 
 import { ViewContext } from "~/frontend/context";
 
@@ -34,16 +31,14 @@ export const action = authActionWithPerm("EditAPIKeys", async (actionArgs) => {
 		return { ok: false, error: backendCtx.t({ code: "common.name_required", msg: "Name is required" }) };
 	}
 
-	await ApiKeyRepository.create({
+	const [created] = await ApiKeyRepository.create({
 		name,
 		managedByUserId: auth.user?.id,
 		countryAccountsId,
 	});
 
-	return redirectWithMessage(actionArgs, "/settings/api-key", {
-		type: "success",
-		text: backendCtx.t({ code: "common.changes_saved", msg: "Changes saved" }),
-	});
+	// The raw secret leaves the server once, in this response. Only its hash is stored.
+	return { ok: true as const, name, secret: created.secret };
 });
 
 export default function ApiKeyNewPage() {
@@ -57,6 +52,48 @@ export default function ApiKeyNewPage() {
 	const [nameValue, setNameValue] = useState("");
 
 	const nameError = actionData && !actionData.ok ? actionData.error : "";
+	const createdSecret = actionData && actionData.ok ? actionData.secret : "";
+
+	if (createdSecret) {
+		return (
+			<Dialog
+				header={ctx.t({ code: "api_keys.key_created", msg: "API key created" })}
+				visible
+				modal
+				onHide={() => navigate(ctx.url("/settings/api-key/"))}
+				className="w-[32rem] max-w-full"
+			>
+				<p className="mb-3">
+					{ctx.t({
+						code: "api_keys.copy_secret_now",
+						msg: "Copy this key now. It will not be shown again. If you lose it, delete the key and create a new one.",
+					})}
+				</p>
+				<div className="mb-3 flex items-center gap-2">
+					<InputText
+						id="created-api-key-secret"
+						value={createdSecret}
+						readOnly
+						className="w-full font-mono"
+						onFocus={(e) => e.target.select()}
+					/>
+					<Button
+						type="button"
+						icon="pi pi-copy"
+						aria-label={ctx.t({ code: "common.copy", msg: "Copy" })}
+						onClick={() => navigator.clipboard.writeText(createdSecret)}
+					/>
+				</div>
+				<div className="mt-4 flex justify-end">
+					<Button
+						type="button"
+						label={ctx.t({ code: "common.done", msg: "Done" })}
+						onClick={() => navigate(ctx.url("/settings/api-key/"))}
+					/>
+				</div>
+			</Dialog>
+		);
+	}
 
 	return (
 		<Dialog

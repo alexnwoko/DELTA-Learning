@@ -1,15 +1,19 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { dr, Tx } from "../../db.server";
-import { apiKeyTable, InsertApiKey } from "~/drizzle/schema/apiKeyTable";
-import { randomBytes } from "crypto";
+import { apiKeyTable } from "~/drizzle/schema/apiKeyTable";
+import {
+	API_KEY_PREFIX_LENGTH,
+	generateApiKeySecret,
+	hashApiKeySecret,
+} from "~/backend.server/models/api_key_secret";
 
-function generateSecret(): string {
-	return randomBytes(32).toString("hex");
-}
+// Reads for display never return secret material.
+const displayColumns = { secret: false, secretHash: false } as const;
 
 export const ApiKeyRepository = {
 	getById: (id: string) => {
 		return dr.query.apiKeyTable.findFirst({
+			columns: displayColumns,
 			where: eq(apiKeyTable.id, id),
 			with: { managedByUser: true },
 		});
@@ -19,7 +23,7 @@ export const ApiKeyRepository = {
 	// material, and a key of another tenant reads as not found.
 	getByIdForTenant: (id: string, countryAccountsId: string) => {
 		return dr.query.apiKeyTable.findFirst({
-			columns: { secret: false },
+			columns: displayColumns,
 			where: and(
 				eq(apiKeyTable.id, id),
 				eq(apiKeyTable.countryAccountsId, countryAccountsId),
@@ -29,13 +33,15 @@ export const ApiKeyRepository = {
 
 	getByCountryAccountsIdWithUser: (countryAccountsId: string) => {
 		return dr.query.apiKeyTable.findMany({
+			columns: displayColumns,
 			where: eq(apiKeyTable.countryAccountsId, countryAccountsId),
 			orderBy: [desc(apiKeyTable.name)],
 			with: { managedByUser: true },
 		});
 	},
 
-	create: (
+	// Returns the raw secret once. Only its hash and prefix are stored.
+	create: async (
 		data: {
 			name: string;
 			managedByUserId?: string | null;
@@ -43,17 +49,20 @@ export const ApiKeyRepository = {
 		},
 		tx?: Tx,
 	) => {
-		return (tx ?? dr)
+		const secret = generateApiKeySecret();
+		const rows = await (tx ?? dr)
 			.insert(apiKeyTable)
 			.values({
 				createdAt: sql`CURRENT_TIMESTAMP`,
 				name: data.name,
 				managedByUserId: data.managedByUserId!,
-				secret: generateSecret(),
+				secretHash: hashApiKeySecret(secret),
+				keyPrefix: secret.slice(0, API_KEY_PREFIX_LENGTH),
 				countryAccountsId: data.countryAccountsId ?? null,
 			})
 			.returning({ id: apiKeyTable.id })
 			.execute();
+		return rows.map((row) => ({ ...row, secret }));
 	},
 
 	update: (id: string, name: string, tx?: Tx) => {
@@ -81,14 +90,10 @@ export const ApiKeyRepository = {
 			.where(eq(apiKeyTable.countryAccountsId, countryAccountsId));
 	},
 
-	getBySecret: (secret: string, tx?: Tx) => {
+	getBySecretHash: (secretHash: string, tx?: Tx) => {
 		return (tx ?? dr)
 			.select()
 			.from(apiKeyTable)
-			.where(eq(apiKeyTable.secret, secret));
-	},
-
-	createMany: (data: InsertApiKey[], tx?: Tx) => {
-		return (tx ?? dr).insert(apiKeyTable).values(data).returning().execute();
+			.where(eq(apiKeyTable.secretHash, secretHash));
 	},
 };
