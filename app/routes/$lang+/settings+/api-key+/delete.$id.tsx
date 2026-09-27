@@ -6,16 +6,17 @@ import { Toast } from "primereact/toast";
 
 import { BackendContext } from "~/backend.server/context";
 import { ApiKeyRepository } from "~/db/queries/apiKeyRepository";
-import { authActionWithPerm, authLoaderPublicOrWithPerm } from "~/utils/auth";
+import { authActionWithPerm, authLoaderWithPerm } from "~/utils/auth";
 import { getCountryAccountsIdFromSession, redirectWithMessage } from "~/utils/session";
 import { ViewContext } from "~/frontend/context";
 
-export const loader = authLoaderPublicOrWithPerm("EditAPIKeys", async (loaderArgs) => {
+export const loader = authLoaderWithPerm("EditAPIKeys", async (loaderArgs) => {
 	const { request } = loaderArgs;
 	const countryAccountsId = await getCountryAccountsIdFromSession(request);
-	const selectedApiKey = (await ApiKeyRepository.getById(loaderArgs.params.id!)) ?? null;
+	const selectedApiKey =
+		(await ApiKeyRepository.getByIdForTenant(loaderArgs.params.id!, countryAccountsId)) ?? null;
 
-	if (!selectedApiKey || selectedApiKey.countryAccountsId !== countryAccountsId) {
+	if (!selectedApiKey) {
 		throw new Response("Not Found", { status: 404 });
 	}
 
@@ -31,8 +32,8 @@ export const action = authActionWithPerm("EditAPIKeys", async (actionArgs) => {
 		return { ok: false, error: "Missing ID" };
 	}
 
-	const existing = await ApiKeyRepository.getById(params.id);
-	if (!existing || existing.countryAccountsId !== countryAccountsId) {
+	const existing = await ApiKeyRepository.getByIdForTenant(params.id, countryAccountsId);
+	if (!existing) {
 		throw new Response("Not Found", { status: 404 });
 	}
 
