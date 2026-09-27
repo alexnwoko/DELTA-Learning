@@ -8,7 +8,7 @@ import {
 } from "~/backend.server/models/api_key_secret";
 
 // Reads for display never return secret material.
-const displayColumns = { secret: false, secretHash: false } as const;
+const displayColumns = { secretHash: false } as const;
 
 export const ApiKeyRepository = {
 	getById: (id: string) => {

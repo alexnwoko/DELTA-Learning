@@ -6,7 +6,7 @@ import { hashApiKeySecret } from "~/backend.server/models/api_key_secret";
 // Used by frontend/api_key.tsx
 export interface UserCentricApiKeyFields extends Omit<
 	SelectApiKey,
-	"id" | "secret" | "secretHash" | "keyPrefix" | "createdAt" | "updatedAt"
+	"id" | "secretHash" | "keyPrefix" | "createdAt" | "updatedAt"
 > {
 	assignedToUserId?: string;
 }
@@ -17,7 +17,7 @@ export type ApiKeyViewModel = NonNullable<
 >;
 
 // What API handlers receive: the key's identity and tenant, never its secret.
-export type AuthenticatedApiKey = Omit<SelectApiKey, "secret" | "secretHash">;
+export type AuthenticatedApiKey = Omit<SelectApiKey, "secretHash">;
 
 export async function apiAuth(request: Request): Promise<AuthenticatedApiKey> {
 	const authToken = request.headers.get("X-Auth");
@@ -40,6 +40,6 @@ export async function apiAuth(request: Request): Promise<AuthenticatedApiKey> {
 		throw new Response("Unauthorized", { status: 401 });
 	}
 
-	const { secret: _secret, secretHash: _secretHash, ...authenticated } = key[0];
+	const { secretHash: _secretHash, ...authenticated } = key[0];
 	return authenticated;
 }

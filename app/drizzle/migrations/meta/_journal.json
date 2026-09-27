@@ -414,6 +414,13 @@
       "when": 1790550000000,
       "tag": "20260927230000_hash_api_key_secrets",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1790550060000,
+      "tag": "20260927230100_drop_api_key_plaintext_secret",
+      "breakpoints": true
     }
   ]
 }
