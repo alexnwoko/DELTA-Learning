@@ -7,12 +7,14 @@ import { ViewContext } from "~/frontend/context";
 
 interface HumanAffectsProps {
 	ctx: ViewContext;
-	totalPeopleAffected: number;
-	totalDeaths: number;
-	totalInjured: number;
-	totalMissing: number;
-	totalPeopleDirectlyAffected: number;
-	totalDisplaced: number;
+	totalPeopleAffected: number | null;
+	/** True when only some components of the composite were reported. */
+	totalPeopleAffectedPartial?: boolean;
+	totalDeaths: number | null;
+	totalInjured: number | null;
+	totalMissing: number | null;
+	totalPeopleDirectlyAffected: number | null;
+	totalDisplaced: number | null;
 	noOfMen: number;
 	noOfWomen: number;
 	noOfNonBinary: number;
@@ -27,6 +29,7 @@ interface HumanAffectsProps {
 const HumanAffects: React.FC<HumanAffectsProps> = ({
 	ctx,
 	totalPeopleAffected,
+	totalPeopleAffectedPartial,
 	totalDeaths,
 	totalInjured,
 	totalMissing,
@@ -42,6 +45,12 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 	totalInternationalPoorPeople,
 	totalNationalPoorPeople,
 }) => {
+	// A null figure was not reported; it is never shown as 0 (TR-076).
+	const formatFigure = (v: number | null) =>
+		v === null
+			? ctx.t({ code: "analysis.not_reported", msg: "Not reported" })
+			: formatNumberWithoutDecimals(v);
+
 	// TODO: translate
 	const data = [
 		{
@@ -122,7 +131,16 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 						</h3>
 						<div className="dts-indicator dts-indicator--target-box-g">
 							<span className="dts-indicator__value">
-								{formatNumberWithoutDecimals(totalPeopleAffected)}
+								{formatFigure(totalPeopleAffected)}
+								{totalPeopleAffectedPartial && (
+									<span className="dts-indicator__note">
+										{" "}
+										{ctx.t({
+											code: "analysis.partial_figure",
+											msg: "(partial: not all components reported)",
+										})}
+									</span>
+								)}
 							</span>
 						</div>
 					</div>
@@ -167,7 +185,7 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 								style={{ width: "60px", height: "60px" }}
 							/>
 							<span style={{ marginLeft: "130px", fontSize: "1.2em" }}>
-								{formatNumberWithoutDecimals(totalDeaths)}
+								{formatFigure(totalDeaths)}
 							</span>
 						</div>
 					</div>
@@ -210,7 +228,7 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 								style={{ width: "60px", height: "60px" }}
 							/>
 							<span style={{ marginLeft: "150px", fontSize: "1.2em" }}>
-								{formatNumberWithoutDecimals(totalInjured)}
+								{formatFigure(totalInjured)}
 							</span>
 						</div>
 					</div>
@@ -259,7 +277,7 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 								style={{ width: "60px", height: "60px" }}
 							/>
 							<span style={{ marginLeft: "150px", fontSize: "1.2em" }}>
-								{formatNumberWithoutDecimals(totalMissing)}
+								{formatFigure(totalMissing)}
 							</span>
 						</div>
 					</div>
@@ -311,7 +329,7 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 								style={{ width: "60px", height: "60px" }}
 							/>
 							<span style={{ marginLeft: "250px", fontSize: "1.2em" }}>
-								{formatNumberWithoutDecimals(totalPeopleDirectlyAffected)}
+								{formatFigure(totalPeopleDirectlyAffected)}
 							</span>
 						</div>
 					</div>
@@ -355,7 +373,7 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 								style={{ width: "60px", height: "60px" }}
 							/>
 							<span style={{ marginLeft: "250px", fontSize: "1.2em" }}>
-								{formatNumberWithoutDecimals(totalDisplaced)}
+								{formatFigure(totalDisplaced)}
 							</span>
 						</div>
 					</div>

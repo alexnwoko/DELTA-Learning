@@ -1,4 +1,5 @@
 import { and, eq, gte, lte, SQL, sql } from "drizzle-orm";
+import { measureValue, type MeasureValue } from "~/utils/valueState";
 import { dr } from "~/db.server";
 import { disasterEventTable } from "~/drizzle/schema/disasterEventTable";
 import { disasterRecordsDivisionTable } from "~/drizzle/schema/disasterRecordsDivisionTable";
@@ -163,12 +164,47 @@ export async function getDisasterEventCountByYear(
 }
 
 interface AffectedPeopleResult {
-	totalDeaths: number;
-	totalInjured: number;
-	totalMissing: number;
-	totalDisplaced: number;
-	totalAffectedDirect: number;
-	totalAffectedIndirect: number;
+	/** null when no record in scope reported the measure (never a false 0). */
+	totalDeaths: number | null;
+	totalInjured: number | null;
+	totalMissing: number | null;
+	totalDisplaced: number | null;
+	totalAffectedDirect: number | null;
+	totalAffectedIndirect: number | null;
+	/** Value, state and record counts per measure (TR-076, pack C10). */
+	measures: Record<HumanEffectMeasure, MeasureValue>;
+}
+
+const HUMAN_EFFECT_MEASURES = [
+	"deaths",
+	"injured",
+	"missing",
+	"displaced",
+	"affected_direct",
+	"affected_indirect",
+] as const;
+type HumanEffectMeasure = (typeof HUMAN_EFFECT_MEASURES)[number];
+
+/**
+ * Per-measure sum and record counts from human_category_presence, for the
+ * records in `filtered_records`. A record counts as reported when its total is
+ * above 0; as a confirmed zero when its total is 0 with a Yes flag, or when it
+ * holds an explicit No with no value; otherwise as not reported. Totals are
+ * read from the presence table, so the disaggregation cube is never summed.
+ */
+function humanEffectMeasuresSelect(): SQL {
+	const parts = HUMAN_EFFECT_MEASURES.map((m) => {
+		const flag = sql.raw(`hcp."${m}"`);
+		const total = sql.raw(`hcp."${m}_total"`);
+		return sql`
+			SUM(${total}) FILTER (WHERE ${total} > 0) AS ${sql.raw(`"${m}_sum"`)},
+			COUNT(*) FILTER (WHERE ${total} > 0) AS ${sql.raw(`"${m}_reported"`)},
+			COUNT(*) FILTER (
+				WHERE (${total} = 0 AND ${flag} IS TRUE)
+					OR (${flag} IS FALSE AND COALESCE(${total}, 0) = 0)
+			) AS ${sql.raw(`"${m}_zero"`)}`;
+	});
+	return sql.join([...parts, sql`COUNT(*) AS records_total`], sql`, `);
 }
 
 /**
@@ -249,10 +285,10 @@ export async function getAffectedPeopleByHazardFilters(
 	const needsGeographicFilter =
 		geographicLevelId && geographicLevelId.trim() !== "";
 
-	let rawQuery: SQL;
-
+	// Records in scope; every record counts, including those with no
+	// human-effects rows, so "not reported" is measured rather than dropped.
+	let filteredRecords: SQL;
 	if (needsGeographicFilter) {
-		// WITH geographic filtering
 		const geoConditions = [
 			...whereConditions,
 			sql`drd."division_id" IS NOT NULL`,
@@ -262,11 +298,8 @@ export async function getAffectedPeopleByHazardFilters(
                 WHERE id = ${geographicLevelId}
             )`,
 		];
-
-		const combinedWhereClause = sql`WHERE ${and(...geoConditions)}`;
-
-		rawQuery = sql`
-          WITH RECURSIVE division_hierarchy AS (
+		filteredRecords = sql`
+          division_hierarchy AS (
             SELECT id, parent_id, id AS level1_id
             FROM "division"
             WHERE parent_id IS NULL
@@ -282,71 +315,47 @@ export async function getAffectedPeopleByHazardFilters(
 			  ON dr."id" = drd."disaster_record_id"
             LEFT JOIN division_hierarchy dh 
 			  ON drd."division_id" = dh.id
-            ${combinedWhereClause}
-          )
-          SELECT 
-            COALESCE(SUM(dth.deaths), 0) AS total_deaths,
-            COALESCE(SUM(inj.injured), 0) AS total_injured,
-            COALESCE(SUM(mis.missing), 0) AS total_missing,
-            COALESCE(SUM(dsp.displaced), 0) AS total_displaced,
-            COALESCE(SUM(aff.direct), 0) AS total_affected_direct,
-            COALESCE(SUM(aff.indirect), 0) AS total_affected_indirect
-          FROM filtered_records fr
-          LEFT JOIN "human_dsg" hd 
-            ON fr.record_id = hd.record_id
-            AND hd.sex IS NULL 
-            AND hd.age IS NULL 
-            AND hd.disability IS NULL 
-            AND hd.global_poverty_line IS NULL 
-            AND hd.national_poverty_line IS NULL
-          LEFT JOIN "deaths" dth ON hd.id = dth.dsg_id
-          LEFT JOIN "injured" inj ON hd.id = inj.dsg_id
-          LEFT JOIN "missing" mis ON hd.id = mis.dsg_id
-          LEFT JOIN "displaced" dsp ON hd.id = dsp.dsg_id
-          LEFT JOIN "affected" aff ON hd.id = aff.dsg_id
-        `;
+            WHERE ${and(...geoConditions)}
+          )`;
 	} else {
-		// WITHOUT geographic filtering - simpler query
-		const combinedWhereClause =
-			whereConditions.length > 0
-				? sql`WHERE ${and(...whereConditions)}`
-				: sql``;
-
-		rawQuery = sql`
-          SELECT 
-            COALESCE(SUM(dth.deaths), 0) AS total_deaths,
-            COALESCE(SUM(inj.injured), 0) AS total_injured,
-            COALESCE(SUM(mis.missing), 0) AS total_missing,
-            COALESCE(SUM(dsp.displaced), 0) AS total_displaced,
-            COALESCE(SUM(aff.direct), 0) AS total_affected_direct,
-            COALESCE(SUM(aff.indirect), 0) AS total_affected_indirect
-          FROM "disaster_records" dr
-          INNER JOIN "human_dsg" hd 
-            ON dr.id = hd.record_id
-            AND hd.sex IS NULL 
-            AND hd.age IS NULL 
-            AND hd.disability IS NULL 
-            AND hd.global_poverty_line IS NULL 
-            AND hd.national_poverty_line IS NULL
-          LEFT JOIN "deaths" dth ON hd.id = dth.dsg_id
-          LEFT JOIN "injured" inj ON hd.id = inj.dsg_id
-          LEFT JOIN "missing" mis ON hd.id = mis.dsg_id
-          LEFT JOIN "displaced" dsp ON hd.id = dsp.dsg_id
-          LEFT JOIN "affected" aff ON hd.id = aff.dsg_id
-          ${combinedWhereClause}
-        `;
+		filteredRecords = sql`
+          filtered_records AS (
+            SELECT dr."id" AS record_id
+            FROM "disaster_records" dr
+            WHERE ${and(...whereConditions)}
+          )`;
 	}
 
+	const rawQuery = sql`
+          WITH RECURSIVE ${filteredRecords}
+          SELECT ${humanEffectMeasuresSelect()}
+          FROM filtered_records fr
+          LEFT JOIN "human_category_presence" hcp
+            ON hcp."record_id" = fr.record_id
+        `;
+
 	const result = await dr.execute(rawQuery);
-	const row = result.rows[0] || {};
+	const row: Record<string, unknown> = result.rows[0] || {};
+	const measures = Object.fromEntries(
+		HUMAN_EFFECT_MEASURES.map((m) => [
+			m,
+			measureValue({
+				sum: row[`${m}_sum`] as number | string | null,
+				reported: row[`${m}_reported`] as number | string,
+				zeroConfirmed: row[`${m}_zero`] as number | string,
+				total: row.records_total as number | string,
+			}),
+		]),
+	) as Record<HumanEffectMeasure, MeasureValue>;
 
 	return {
-		totalDeaths: Number(row.total_deaths ?? 0),
-		totalInjured: Number(row.total_injured ?? 0),
-		totalMissing: Number(row.total_missing ?? 0),
-		totalDisplaced: Number(row.total_displaced ?? 0),
-		totalAffectedDirect: Number(row.total_affected_direct ?? 0),
-		totalAffectedIndirect: Number(row.total_affected_indirect ?? 0),
+		totalDeaths: measures.deaths.value,
+		totalInjured: measures.injured.value,
+		totalMissing: measures.missing.value,
+		totalDisplaced: measures.displaced.value,
+		totalAffectedDirect: measures.affected_direct.value,
+		totalAffectedIndirect: measures.affected_indirect.value,
+		measures,
 	};
 }
 
