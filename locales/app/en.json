@@ -587,7 +587,7 @@
   {
     "id": "analysis.hazards_analysis",
     "translation": "Hazards analysis",
-    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:403"
+    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:414"
   },
   {
     "id": "analysis.homeless_people",
@@ -1077,7 +1077,7 @@
   {
     "id": "analysis.select_and_apply_filters",
     "translation": "Please select and apply filters above to view the analysis.",
-    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:451"
+    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:462"
   },
   {
     "id": "analysis.select_and_apply_filters_above",
@@ -1297,12 +1297,17 @@
   {
     "id": "analysis.welcome_hazard_dashboard",
     "translation": "Welcome to the hazard dashboard! 🌟",
-    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:445"
+    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:456"
   },
   {
     "id": "analysis.welcome_to_sectors_dashboard",
     "translation": "Welcome to the sectors dashboard! 🌟",
     "description": "File: app/routes/$lang+/analytics+/sectors.tsx:835"
+  },
+  {
+    "id": "analysis.zero_confirmed",
+    "translation": "Zero, confirmed",
+    "description": "File: app/components/MapChart.tsx:455"
   },
   {
     "id": "analysis.zero_impact_confirmed",
@@ -5167,7 +5172,7 @@
   {
     "id": "geographies.unknown_division",
     "translation": "Unknown division",
-    "description": "Unknown geographic division. File: app/routes/$lang+/analytics+/hazards.tsx:356"
+    "description": "Unknown geographic division. File: app/routes/$lang+/analytics+/hazards.tsx:367"
   },
   {
     "id": "geographies.update_division",
@@ -5527,17 +5532,17 @@
   {
     "id": "hip.unknown_cluster",
     "translation": "Unknown cluster",
-    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:348"
+    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:359"
   },
   {
     "id": "hip.unknown_hazard",
     "translation": "Unknown hazard",
-    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:344"
+    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:355"
   },
   {
     "id": "hip.unknown_type",
     "translation": "Unknown type",
-    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:352"
+    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:363"
   },
   {
     "id": "home",
@@ -6132,7 +6137,7 @@
   {
     "id": "meta.hazards_analysis",
     "translation": "Hazards analysis",
-    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:550"
+    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:561"
   },
   {
     "id": "meta.invite_user",
