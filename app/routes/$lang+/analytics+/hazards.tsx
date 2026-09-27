@@ -41,6 +41,7 @@ import {
 	getCountryAccountsIdFromSession,
 	getCountrySettingsFromSession,
 } from "~/utils/session";
+import type { ValueState } from "~/utils/valueState";
 import { formatNumberWithoutDecimals } from "~/utils/currency";
 
 import { ViewContext } from "~/frontend/context";
@@ -55,6 +56,8 @@ interface interfaceMap {
 	description: string;
 	colorPercentage: number;
 	geojson: any;
+	/** Map state; a division with no record in scope is not_reported. */
+	valueState?: ValueState;
 }
 
 /**
@@ -190,41 +193,49 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 		};
 	});
 
-	// Build deathsGeoData
-	const maxDeaths = Math.max(...deathsByDivision.map((d) => d.totalDeaths), 1);
-	const deathsGeoData: interfaceMap[] = geographicLevel1.map((division) => {
-		const divisionDeaths = deathsByDivision.find(
-			(d) => d.divisionId === division.id.toString(),
-		);
-		const total = divisionDeaths ? divisionDeaths.totalDeaths : 0;
-		return {
-			total,
-			name: division.name["en"] || "Unknown",
-			description: `Total Deaths: ${formatNumberWithoutDecimals(total)}`,
-			colorPercentage: total / maxDeaths,
-			geojson: division.geojson || {},
-		};
-	});
-
-	// Build affectedPeopleGeoData
-	const maxAffected = Math.max(
-		...affectedPeopleByDivision.map((a) => a.totalAffected),
-		1,
-	);
-	const affectedPeopleGeoData: interfaceMap[] = geographicLevel1.map(
-		(division) => {
-			const divisionAffected = affectedPeopleByDivision.find(
-				(a) => a.divisionId === division.id.toString(),
-			);
-			const total = divisionAffected ? divisionAffected.totalAffected : 0;
+	// Build deathsGeoData and affectedPeopleGeoData from value states: a
+	// division without a reported value is never drawn as 0 (TR-076, C10).
+	// A record touching several divisions counts in each, so division figures
+	// are not additive; the description says so where it applies.
+	const stateGeoData = (
+		rows: {
+			divisionId: string;
+			measure: { value: number | null; valueState: ValueState };
+			sharedRecords: number;
+		}[],
+		label: string,
+	): interfaceMap[] => {
+		const maxValue = Math.max(...rows.map((r) => r.measure.value ?? 0), 1);
+		return geographicLevel1.map((division) => {
+			const row = rows.find((r) => r.divisionId === division.id.toString());
+			const valueState: ValueState = row
+				? row.measure.valueState
+				: "not_reported";
+			const value = row?.measure.value ?? null;
+			const shown =
+				value === null
+					? valueState === "zero_confirmed"
+						? "0 (confirmed)"
+						: "not reported"
+					: formatNumberWithoutDecimals(value);
+			const shared =
+				row && row.sharedRecords > 0
+					? ` (${row.sharedRecords} record(s) also counted in another division)`
+					: "";
 			return {
-				total,
+				total: value ?? 0,
 				name: division.name["en"] || "Unknown",
-				description: `Total affected People: ${formatNumberWithoutDecimals(total)}`,
-				colorPercentage: total / maxAffected,
+				description: `${label}: ${shown}${shared}`,
+				colorPercentage: (value ?? 0) / maxValue,
 				geojson: division.geojson || {},
+				valueState,
 			};
-		},
+		});
+	};
+	const deathsGeoData = stateGeoData(deathsByDivision, "Total Deaths");
+	const affectedPeopleGeoData = stateGeoData(
+		affectedPeopleByDivision,
+		"Total affected People",
 	);
 
 	// Build disasterEventGeoData

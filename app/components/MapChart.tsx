@@ -6,6 +6,7 @@ import {
 	useRef,
 	useCallback,
 } from "react";
+import type { ValueState } from "~/utils/valueState";
 import { ViewContext } from "~/frontend/context";
 import { formatNumberWithoutDecimals } from "~/utils/currency";
 
@@ -25,6 +26,8 @@ type MapChartProps = {
 		geojson: any;
 		colorPercentage?: number;
 		description?: string;
+		/** When set, drives the map state (TR-076); otherwise 0 means no data. */
+		valueState?: ValueState;
 	}[];
 	legendMaxColor?: string;
 	legendTitle?: string;
@@ -37,7 +40,21 @@ type DataSourceType = {
 	geojson: any;
 	colorPercentage?: number;
 	description?: string;
+	valueState?: ValueState;
 }[];
+
+// Map states: a value is shaded; a confirmed zero is white with a dashed
+// outline; anything else (not reported, insufficient, no records) is grey.
+// Grey and white never mean the same thing.
+const NO_DATA_FILL = "#c9ced6";
+const hasValue = (r: { total: number; valueState?: ValueState }) =>
+	r.valueState ? r.valueState === "reported" : r.total !== 0;
+const isZeroConfirmed = (r: { valueState?: ValueState }) =>
+	r.valueState === "zero_confirmed";
+const isNoData = (r: { total: number; valueState?: ValueState }) =>
+	r.valueState
+		? r.valueState !== "reported" && r.valueState !== "zero_confirmed"
+		: r.total === 0;
 
 const glbMapperJS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
 const glbMapperCSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
@@ -216,15 +233,20 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 					return;
 				}
 
-				const minVal = Math.min(...dataSource.map((region) => region.total));
-				const maxVal = Math.max(...dataSource.map((region) => region.total));
+				const shaded = dataSource
+					.filter(hasValue)
+					.map((region) => region.total);
+				const minVal = shaded.length ? Math.min(...shaded) : 0;
+				const maxVal = shaded.length ? Math.max(...shaded) : 0;
 
 				setMinTotal(minVal);
 				setMaxTotal(maxVal);
 
 				const newData = dataSource.map((region) => ({
 					...region,
-					colorPercentage: getOpacityForRange(region.total, minVal, maxVal),
+					colorPercentage: hasValue(region)
+						? getOpacityForRange(region.total, minVal, maxVal)
+						: 0,
 				}));
 
 				setUpdatedDataSource(newData);
@@ -257,13 +279,31 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 							}
 
 							const geojsonLayer = L.geoJSON(region.geojson, {
-								style: () => ({
-									color: currentLegendMaxColor,
-									fillColor: currentLegendMaxColor,
-									weight: 1.2,
-									opacity: 1,
-									fillOpacity: region.colorPercentage,
-								}),
+								style: () =>
+									isZeroConfirmed(region)
+										? {
+												color: currentLegendMaxColor,
+												fillColor: "#ffffff",
+												weight: 1.2,
+												opacity: 1,
+												dashArray: "4 3",
+												fillOpacity: 1,
+											}
+										: region.valueState && isNoData(region)
+											? {
+													color: "#8a929c",
+													fillColor: NO_DATA_FILL,
+													weight: 1,
+													opacity: 1,
+													fillOpacity: 0.7,
+												}
+											: {
+													color: currentLegendMaxColor,
+													fillColor: currentLegendMaxColor,
+													weight: 1.2,
+													opacity: 1,
+													fillOpacity: region.colorPercentage,
+												},
 							});
 
 							if (geojsonLayer.getPopup()) {
@@ -278,7 +318,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
                   font-size: 1.2em; 
                   text-align: left;">
                   <strong style="font-size: 1.2em; display: block;">${region.name}</strong>
-                  ${region.total > 0 ? `<p>${region?.description || ""}</p>` : ""}
+                  ${region.valueState || region.total > 0 ? `<p>${region?.description || ""}</p>` : ""}
                 </div>
               `,
 							);
@@ -325,7 +365,9 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 			),
 		).sort((a, b) => a - b);
 
-		const hasNoData = updatedDataSource.some((item) => item.total === 0);
+		const hasNoData = updatedDataSource.some(isNoData);
+		const hasZeroConfirmed = updatedDataSource.some(isZeroConfirmed);
+		const usesStates = updatedDataSource.some((item) => item.valueState);
 
 		return (
 			<div style={{ position: "relative" }}>
@@ -339,66 +381,33 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 					}}
 				></div>
 
-				{isMapRendered && (hasNoData || uniqueOpacities.length > 0) && (
-					<div
-						id={`${componentId}_map-legend`}
-						style={{
-							position: "absolute",
-							bottom: "10px",
-							right: "10px",
-							background: "white",
-							padding: "10px",
-							borderRadius: "5px",
-							boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.3)",
-							fontSize: "14px",
-							lineHeight: "1.5",
-							whiteSpace: "nowrap",
-						}}
-					>
-						<strong>{currentLegendTitle}</strong>
-						<ul style={{ listStyle: "none", padding: 0, margin: "5px 0 0 0" }}>
-							{hasNoData && (
-								<li
-									style={{
-										marginBottom: "5px",
-										display: "flex",
-										alignItems: "center",
-									}}
-								>
-									<span
-										style={{
-											display: "inline-flex",
-											width: "14px",
-											height: "14px",
-											justifyContent: "center",
-											alignItems: "center",
-											border: `1px solid ${currentLegendMaxColor}`,
-											marginRight: "8px",
-										}}
-									>
-										<div
-											style={{
-												width: "12px",
-												height: "12px",
-												backgroundColor: "#ffffff",
-											}}
-										></div>
-									</span>
-									{ctx.t({ code: "common.no_data", msg: "No data" })}
-								</li>
-							)}
-							{uniqueOpacities.map((opacity, index) => {
-								// Calculate the corresponding total value for this opacity
-								const normalizedOpacity = (opacity - 0.1) / 0.9; // Reverse the opacity calculation
-								const totalValue =
-									minTotal + normalizedOpacity * (maxTotal - minTotal);
-								return (
+				{isMapRendered &&
+					(hasNoData || hasZeroConfirmed || uniqueOpacities.length > 0) && (
+						<div
+							id={`${componentId}_map-legend`}
+							style={{
+								position: "absolute",
+								bottom: "10px",
+								right: "10px",
+								background: "white",
+								padding: "10px",
+								borderRadius: "5px",
+								boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.3)",
+								fontSize: "14px",
+								lineHeight: "1.5",
+								whiteSpace: "nowrap",
+							}}
+						>
+							<strong>{currentLegendTitle}</strong>
+							<ul
+								style={{ listStyle: "none", padding: 0, margin: "5px 0 0 0" }}
+							>
+								{hasNoData && (
 									<li
-										key={index}
 										style={{
+											marginBottom: "5px",
 											display: "flex",
 											alignItems: "center",
-											marginBottom: "5px",
 										}}
 									>
 										<span
@@ -416,18 +425,80 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 												style={{
 													width: "12px",
 													height: "12px",
-													backgroundColor: currentLegendMaxColor,
-													opacity: opacity,
+													backgroundColor: usesStates
+														? NO_DATA_FILL
+														: "#ffffff",
 												}}
 											></div>
 										</span>
-										{`<= ${formatNumberWithoutDecimals(Math.ceil(totalValue))}`}
+										{ctx.t({ code: "common.no_data", msg: "No data" })}
 									</li>
-								);
-							})}
-						</ul>
-					</div>
-				)}
+								)}
+								{hasZeroConfirmed && (
+									<li
+										style={{
+											marginBottom: "5px",
+											display: "flex",
+											alignItems: "center",
+										}}
+									>
+										<span
+											style={{
+												display: "inline-flex",
+												width: "14px",
+												height: "14px",
+												border: `1px dashed ${currentLegendMaxColor}`,
+												backgroundColor: "#ffffff",
+												marginRight: "8px",
+											}}
+										></span>
+										{ctx.t({
+											code: "analysis.zero_confirmed",
+											msg: "Zero, confirmed",
+										})}
+									</li>
+								)}
+								{uniqueOpacities.map((opacity, index) => {
+									// Calculate the corresponding total value for this opacity
+									const normalizedOpacity = (opacity - 0.1) / 0.9; // Reverse the opacity calculation
+									const totalValue =
+										minTotal + normalizedOpacity * (maxTotal - minTotal);
+									return (
+										<li
+											key={index}
+											style={{
+												display: "flex",
+												alignItems: "center",
+												marginBottom: "5px",
+											}}
+										>
+											<span
+												style={{
+													display: "inline-flex",
+													width: "14px",
+													height: "14px",
+													justifyContent: "center",
+													alignItems: "center",
+													border: `1px solid ${currentLegendMaxColor}`,
+													marginRight: "8px",
+												}}
+											>
+												<div
+													style={{
+														width: "12px",
+														height: "12px",
+														backgroundColor: currentLegendMaxColor,
+														opacity: opacity,
+													}}
+												></div>
+											</span>
+											{`<= ${formatNumberWithoutDecimals(Math.ceil(totalValue))}`}
+										</li>
+									);
+								})}
+							</ul>
+						</div>
+					)}
 			</div>
 		);
 	},

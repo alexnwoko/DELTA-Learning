@@ -2072,7 +2072,11 @@ export async function getTotalLossesByDivision(
 
 interface DeathsByDivision {
 	divisionId: string;
-	totalDeaths: number;
+	/** null unless a record in the division reported deaths. */
+	totalDeaths: number | null;
+	measure: MeasureValue;
+	/** Records also counted in another division: figures are not additive. */
+	sharedRecords: number;
 }
 
 export async function getTotalDeathsByDivision(
@@ -2167,20 +2171,20 @@ export async function getTotalDeathsByDivision(
 		FROM "disaster_records" dr
 		${recordsWhereClause}
 	  ),
-	  deaths_by_record AS (
+	  record_value AS (
+		-- Full record value; reported when the total is above 0, confirmed
+		-- zero on a 0 total with Yes or an explicit No (TR-076, pack C10).
 		SELECT
 		  fr.record_id,
-		  COALESCE(SUM(COALESCE(dth.deaths, 0)), 0) AS total_deaths
+		  CASE WHEN hcp."deaths_total" > 0 THEN hcp."deaths_total" END AS v,
+		  COALESCE(hcp."deaths_total" > 0, false) AS is_reported,
+		  COALESCE(
+			(hcp."deaths_total" = 0 AND hcp."deaths" IS TRUE)
+			OR (hcp."deaths" IS FALSE AND COALESCE(hcp."deaths_total", 0) = 0),
+			false
+		  ) AS is_zero
 		FROM filtered_records fr
-		LEFT JOIN "human_dsg" hd
-		  ON fr.record_id = hd."record_id"
-		  AND hd."sex" IS NULL
-		  AND hd."age" IS NULL
-		  AND hd."disability" IS NULL
-		  AND hd."global_poverty_line" IS NULL
-		  AND hd."national_poverty_line" IS NULL
-		LEFT JOIN "deaths" dth ON hd."id" = dth."dsg_id"
-		GROUP BY fr.record_id
+		LEFT JOIN "human_category_presence" hcp ON hcp."record_id" = fr.record_id
 	  ),
 	  record_level1 AS (
 		SELECT DISTINCT
@@ -2213,32 +2217,47 @@ export async function getTotalDeathsByDivision(
 		FROM record_level1
 		GROUP BY record_id
 	  )
-	  SELECT 
+	  SELECT
 		rl.level1_id AS division_id,
-		COALESCE(
-			SUM(dbr.total_deaths / NULLIF(rlc.level1_count, 0)),
-			0
-		) AS total_deaths
-	  FROM deaths_by_record dbr
-	  INNER JOIN record_level1 rl
-		on rl.record_id = dbr.record_id
+		SUM(rv.v) AS value_sum,
+		COUNT(*) FILTER (WHERE rv.is_reported) AS reported,
+		COUNT(*) FILTER (WHERE rv.is_zero AND NOT rv.is_reported) AS zero_confirmed,
+		COUNT(*) AS records_total,
+		COUNT(*) FILTER (WHERE rlc.level1_count > 1) AS shared_records
+	  FROM record_level1 rl
 	  INNER JOIN record_level1_counts rlc
-		on rlc.record_id = dbr.record_id
+		on rlc.record_id = rl.record_id
+	  INNER JOIN record_value rv
+		on rv.record_id = rl.record_id
 	  GROUP BY rl.level1_id
 	`;
 
 	// Execute the query
 	const result = await dr.execute(rawQuery);
 
-	return result.rows.map((row: any) => ({
-		divisionId: row.division_id,
-		totalDeaths: Number(row.total_deaths),
-	}));
+	return result.rows.map((row: any) => {
+		const measure = measureValue({
+			sum: row.value_sum,
+			reported: row.reported,
+			zeroConfirmed: row.zero_confirmed,
+			total: row.records_total,
+		});
+		return {
+			divisionId: row.division_id,
+			totalDeaths: measure.value,
+			measure,
+			sharedRecords: Number(row.shared_records),
+		};
+	});
 }
 
 interface AffectedPeopleByDivision {
 	divisionId: string;
-	totalAffected: number;
+	/** null unless a record in the division reported a component. */
+	totalAffected: number | null;
+	measure: MeasureValue;
+	/** Records also counted in another division: figures are not additive. */
+	sharedRecords: number;
 }
 
 export async function getTotalAffectedPeopleByDivision(
@@ -2359,28 +2378,29 @@ export async function getTotalAffectedPeopleByDivision(
 		WHERE dr."approvalStatus" IN ('published', 'validated')
 		  AND dr."disaster_event_id" IN (SELECT fe."id" FROM filtered_events fe)
 	  ),
-	  affected_by_record AS (
-		SELECT 
+	  record_value AS (
+		-- Composite of injured, missing, displaced and directly affected, from
+		-- reported components only; the full value counts in every division
+		-- the record touches (no even split).
+		SELECT
 		  fr.record_id,
-		  COALESCE(SUM(
-			COALESCE("injured"."injured", 0) +
-			COALESCE("missing"."missing", 0) +
-			COALESCE("displaced"."displaced", 0) +
-			COALESCE("affected"."direct", 0)
-		  ), 0) AS total_affected
+		  NULLIF(
+			CASE WHEN hcp."injured_total" > 0 THEN hcp."injured_total" ELSE 0 END +
+			CASE WHEN hcp."missing_total" > 0 THEN hcp."missing_total" ELSE 0 END +
+			CASE WHEN hcp."displaced_total" > 0 THEN hcp."displaced_total" ELSE 0 END +
+			CASE WHEN hcp."affected_direct_total" > 0 THEN hcp."affected_direct_total" ELSE 0 END,
+			0
+		  ) AS v,
+		  COALESCE(hcp."injured_total" > 0 OR hcp."missing_total" > 0 OR hcp."displaced_total" > 0 OR hcp."affected_direct_total" > 0, false) AS is_reported,
+		  COALESCE(
+			(hcp."injured_total" = 0 AND hcp."injured" IS TRUE) OR (hcp."injured" IS FALSE AND COALESCE(hcp."injured_total", 0) = 0) OR
+			(hcp."missing_total" = 0 AND hcp."missing" IS TRUE) OR (hcp."missing" IS FALSE AND COALESCE(hcp."missing_total", 0) = 0) OR
+			(hcp."displaced_total" = 0 AND hcp."displaced" IS TRUE) OR (hcp."displaced" IS FALSE AND COALESCE(hcp."displaced_total", 0) = 0) OR
+			(hcp."affected_direct_total" = 0 AND hcp."affected_direct" IS TRUE) OR (hcp."affected_direct" IS FALSE AND COALESCE(hcp."affected_direct_total", 0) = 0),
+			false
+		  ) AS is_zero
 		FROM filtered_records fr
-		LEFT JOIN "human_dsg"
-		  ON fr.record_id = "human_dsg"."record_id"
-		  AND "human_dsg"."sex" IS NULL
-		  AND "human_dsg"."age" IS NULL
-		  AND "human_dsg"."disability" IS NULL
-		  AND "human_dsg"."global_poverty_line" IS NULL
-		  AND "human_dsg"."national_poverty_line" IS NULL
-		LEFT JOIN "injured" ON "human_dsg"."id" = "injured"."dsg_id"
-		LEFT JOIN "missing" ON "human_dsg"."id" = "missing"."dsg_id"
-		LEFT JOIN "displaced" ON "human_dsg"."id" = "displaced"."dsg_id"
-		LEFT JOIN "affected" ON "human_dsg"."id" = "affected"."dsg_id"
-		GROUP BY fr.record_id
+		LEFT JOIN "human_category_presence" hcp ON hcp."record_id" = fr.record_id
 	  ),
 	  record_level1 AS (
 		SELECT DISTINCT
@@ -2411,27 +2431,38 @@ export async function getTotalAffectedPeopleByDivision(
 		FROM record_level1
 		GROUP BY record_id
 	  )
-	  SELECT 
+	  SELECT
 		rl.level1_id AS division_id,
-		COALESCE(
-			SUM(COALESCE(abr.total_affected, 0) / NULLIF(rlc.level1_count, 0)),
-			0
-		) AS total_affected
+		SUM(rv.v) AS value_sum,
+		COUNT(*) FILTER (WHERE rv.is_reported) AS reported,
+		COUNT(*) FILTER (WHERE rv.is_zero AND NOT rv.is_reported) AS zero_confirmed,
+		COUNT(*) AS records_total,
+		COUNT(*) FILTER (WHERE rlc.level1_count > 1) AS shared_records
 	  FROM record_level1 rl
 	  INNER JOIN record_level1_counts rlc
 		on rlc.record_id = rl.record_id
-	  LEFT JOIN affected_by_record abr
-		on abr.record_id = rl.record_id
+	  INNER JOIN record_value rv
+		on rv.record_id = rl.record_id
 	  GROUP BY rl.level1_id
 	`;
 
 	// Execute the query
 	const result = await dr.execute(rawQuery);
 
-	return result.rows.map((row: any) => ({
-		divisionId: row.division_id,
-		totalAffected: Number(row.total_affected),
-	}));
+	return result.rows.map((row: any) => {
+		const measure = measureValue({
+			sum: row.value_sum,
+			reported: row.reported,
+			zeroConfirmed: row.zero_confirmed,
+			total: row.records_total,
+		});
+		return {
+			divisionId: row.division_id,
+			totalAffected: measure.value,
+			measure,
+			sharedRecords: Number(row.shared_records),
+		};
+	});
 }
 
 interface DisasterEventCountByDivision {
