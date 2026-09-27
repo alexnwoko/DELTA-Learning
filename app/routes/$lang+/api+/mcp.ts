@@ -15,8 +15,22 @@ import {
 	getAllResources,
 	getResourceContent,
 } from "~/backend.server/services/mcp/resources";
+import {
+	clientSafeErrorMessage,
+	isToolPermitted,
+	mcpPolicyFromEnv,
+} from "~/backend.server/services/mcp/policy";
+import { getPinoLogger } from "~/infrastructure/logging/PinoLogger.server";
+
+// While MCP_ENABLED is off the endpoint does not exist for callers.
+function notFound() {
+	return new Response("Not Found", { status: 404 });
+}
 
 export async function action({ request }: ActionFunctionArgs) {
+	const policy = mcpPolicyFromEnv();
+	if (!policy.enabled) return notFound();
+
 	try {
 		const apiKey = await apiAuth(request);
 		if (!apiKey.countryAccountsId) {
@@ -86,7 +100,13 @@ export async function action({ request }: ActionFunctionArgs) {
 			);
 
 		case "tools/list":
-			return Response.json(successResponse(req.id, { tools: getAllTools() }));
+			return Response.json(
+				successResponse(req.id, {
+					tools: getAllTools().filter((tool) =>
+						isToolPermitted(tool.name, policy),
+					),
+				}),
+			);
 
 		case "tools/call":
 			const params = req.params;
@@ -116,6 +136,12 @@ export async function action({ request }: ActionFunctionArgs) {
 			const name = params.name;
 			const toolArgs = params.arguments || {};
 
+			if (!isToolPermitted(name, policy)) {
+				return Response.json(
+					errorResponse(req.id, -32601, "Tool not available"),
+				);
+			}
+
 			try {
 				const result = await executeTool(request, lang, name, toolArgs);
 
@@ -130,12 +156,10 @@ export async function action({ request }: ActionFunctionArgs) {
 					}),
 				);
 			} catch (error) {
+				// Internal API errors can carry other records or stack detail; log them, return a generic message.
+				getPinoLogger().warn({ msg: "mcp tool failed", tool: name, err: error });
 				return Response.json(
-					errorResponse(
-						req.id,
-						-32000,
-						error instanceof Error ? error.message : String(error),
-					),
+					errorResponse(req.id, -32000, clientSafeErrorMessage(error)),
 				);
 			}
 
@@ -265,30 +289,45 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
-	console.log("[MCP Loader] Request:", request.method, request.url);
+	if (!mcpPolicyFromEnv().enabled) return notFound();
+
 	const accept = request.headers.get("Accept") || "";
-	console.log("[MCP Loader] Accept:", accept);
 
 	if (accept.includes("text/event-stream")) {
-		console.log("[MCP Loader] SSE connection established");
+		// The stream stays open for up to an hour, so only a valid tenant key may open it.
+		try {
+			const apiKey = await apiAuth(request);
+			if (!apiKey.countryAccountsId) {
+				return new Response("Unauthorized", { status: 401 });
+			}
+		} catch {
+			return new Response("Unauthorized", { status: 401 });
+		}
+
 		const encoder = new TextEncoder();
 		const postEndpoint = new URL(request.url).pathname;
 
+		let keepAlive: ReturnType<typeof setInterval> | undefined;
+		let closeTimer: ReturnType<typeof setTimeout> | undefined;
 		const stream = new ReadableStream({
 			start(controller) {
-				console.log("[MCP Loader] Sending endpoint event:", postEndpoint);
 				controller.enqueue(
 					encoder.encode(`event: endpoint\ndata: ${postEndpoint}\n\n`),
 				);
 
-				const keepAlive = setInterval(() => {
+				keepAlive = setInterval(() => {
 					controller.enqueue(encoder.encode(": keepalive\n\n"));
 				}, 30000);
 
-				setTimeout(() => {
+				closeTimer = setTimeout(() => {
 					clearInterval(keepAlive);
 					controller.close();
 				}, 3600000);
+			},
+			// The client went away: stop the timers so they do not outlive it.
+			cancel() {
+				clearInterval(keepAlive);
+				clearTimeout(closeTimer);
 			},
 		});
 
@@ -301,6 +340,5 @@ export async function loader({ request }: LoaderFunctionArgs) {
 		});
 	}
 
-	console.log("[MCP Loader] Returning JSON response");
 	return Response.json({ message: "MCP endpoint - use POST for MCP requests" });
 }
