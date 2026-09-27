@@ -689,64 +689,83 @@ export function createActionWithCountryAccountsId<T>(
 	});
 }
 
-interface CreateViewLoaderArgs<T, E extends Record<string, any> = {}> {
-	getById: (ctx: BackendContext, id: string) => Promise<T | null>;
-	// getByIdAndCountryAccountsId: (id: string, countryAccountsId:string) => Promise<T | null>;
-	extra?: (item?: T) => Promise<E>;
-	// countryAccountsId: string;
+// View loaders read an item only through a tenant-scoped getter. The getter
+// receives the session tenant and must return null for another tenant's item.
+// Every miss returns 404, so a caller cannot tell "not yours" from "not there".
+type TenantScopedGetById<T> = (
+	ctx: BackendContext,
+	id: string,
+	countryAccountsId: string,
+) => Promise<T | null | undefined>;
+
+type TenantOwned = { countryAccountsId: string | null };
+
+async function getTenantItem<T extends TenantOwned>(
+	ctx: BackendContext,
+	loaderArgs: LoaderFunctionArgs,
+	getByIdForTenant: TenantScopedGetById<T>,
+): Promise<T> {
+	const countryAccountsId = await getCountryAccountsIdFromSession(
+		loaderArgs.request,
+	);
+	if (!countryAccountsId) {
+		throw new Response("Not Found", { status: 404 });
+	}
+	const item = await getItem2(ctx, loaderArgs.params, (ctx, id) =>
+		getByIdForTenant(ctx, id, countryAccountsId),
+	);
+	// Defence in depth: a getter that ignores the tenant still cannot leak.
+	if (!item || item.countryAccountsId !== countryAccountsId) {
+		throw new Response("Not Found", { status: 404 });
+	}
+	return item;
 }
 
-export function createViewLoader<T, E extends Record<string, any> = {}>(
-	args: CreateViewLoaderArgs<T, E>,
-) {
+interface CreateViewLoaderArgs<
+	T extends TenantOwned,
+	E extends Record<string, any> = {},
+> {
+	getByIdForTenant: TenantScopedGetById<T>;
+	extra?: (item?: T) => Promise<E>;
+}
+
+export function createViewLoader<
+	T extends TenantOwned,
+	E extends Record<string, any> = {},
+>(args: CreateViewLoaderArgs<T, E>) {
 	return authLoaderWithPerm("ViewData", async (loaderArgs) => {
 		const ctx = new BackendContext(loaderArgs);
-		const { params } = loaderArgs;
-
-		// const item = await getItem2(params,  args.getByIdAndCountryAccountsId/*, args.countryAccountsId*/);
-		const item = await getItem2(ctx, params, args.getById);
-		if (!item) {
-			throw new Response("Not Found", { status: 404 });
-		}
+		const item = await getTenantItem(ctx, loaderArgs, args.getByIdForTenant);
 		let extra = (await args.extra?.(item)) || {};
 		return { item, ...extra };
 	});
 }
 
 interface CreateViewLoaderPublicApprovedArgs<
-	T extends { approvalStatus: string },
+	T extends { approvalStatus: string } & TenantOwned,
 > {
-	getById: (ctx: BackendContext, id: string) => Promise<T | null | undefined>;
-	// getByIdAndCountryAccountsId: (id: string, countryAccountsId: string) => Promise<T | null | undefined>;
+	getByIdForTenant: TenantScopedGetById<T>;
 }
 
 interface CreateViewLoaderPublicApprovedWithAuditLogArgs<
-	T extends { approvalStatus: string },
+	T extends { approvalStatus: string } & TenantOwned,
 > {
-	getById: (ctx: BackendContext, id: string) => Promise<T | null | undefined>;
-	// getByIdAndCountryAccountsId: (id: string, countryAccountsId: string) => Promise<T | null | undefined>;
+	getByIdForTenant: TenantScopedGetById<T>;
 	recordId: string;
 	tableName: string;
 }
 
 export function createViewLoaderPublicApproved<
-	T extends { approvalStatus: string },
->(args: CreateViewLoaderPublicApprovedArgs<T> /*, countryAccountsId: string*/) {
+	T extends { approvalStatus: string } & TenantOwned,
+>(args: CreateViewLoaderPublicApprovedArgs<T>) {
 	return async (loaderArgs: LoaderFunctionArgs) => {
 		return authLoaderPublicOrWithPerm("ViewData", async (loaderArgs) => {
 			const ctx = new BackendContext(loaderArgs);
-			const { params } = loaderArgs;
-			// const item = await getItem2(params,  args.getByIdAndCountryAccountsId, countryAccountsId);
-			const item = await getItem2(ctx, params, args.getById);
-			if (!item) {
-				throw new Response("Not Found", { status: 404 });
-			}
+			const item = await getTenantItem(ctx, loaderArgs, args.getByIdForTenant);
 			const isPublic = authLoaderIsPublic(loaderArgs);
 			if (isPublic) {
 				if (item.approvalStatus != "published") {
-					throw new Response("Permission denied, item is private", {
-						status: 404,
-					});
+					throw new Response("Not Found", { status: 404 });
 				}
 			}
 			return { item, isPublic };
@@ -755,24 +774,16 @@ export function createViewLoaderPublicApproved<
 }
 
 export function createViewLoaderPublicApprovedWithAuditLog<
-	T extends { approvalStatus: string },
->(
-	args: CreateViewLoaderPublicApprovedWithAuditLogArgs<T> /*, countryAccountsId: string*/,
-) {
+	T extends { approvalStatus: string } & TenantOwned,
+>(args: CreateViewLoaderPublicApprovedWithAuditLogArgs<T>) {
 	return async (loaderArgs: LoaderFunctionArgs) => {
 		return authLoaderPublicOrWithPerm("ViewData", async (loaderArgs) => {
 			const ctx = new BackendContext(loaderArgs);
-			const { params } = loaderArgs;
-			const item = await getItem2(ctx, params, args.getById);
-			if (!item) {
-				throw new Response("Not Found", { status: 404 });
-			}
+			const item = await getTenantItem(ctx, loaderArgs, args.getByIdForTenant);
 			const isPublic = authLoaderIsPublic(loaderArgs);
 			if (isPublic) {
 				if (item.approvalStatus != "published") {
-					throw new Response("Permission denied, item is private", {
-						status: 404,
-					});
+					throw new Response("Not Found", { status: 404 });
 				}
 			}
 

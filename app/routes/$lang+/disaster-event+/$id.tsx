@@ -476,6 +476,27 @@ async function getLinkedViewData(args: {
 	};
 }
 
+// disasterEventById has no tenant filter and throws on a miss, so check the
+// tenant first and return null for another tenant's event.
+async function disasterEventByIdForTenant(
+	ctx: BackendContext,
+	id: string,
+	countryAccountsId: string,
+) {
+	const owned = await dr
+		.select({ id: disasterEventTable.id })
+		.from(disasterEventTable)
+		.where(
+			and(
+				eq(disasterEventTable.id, id),
+				eq(disasterEventTable.countryAccountsId, countryAccountsId),
+			),
+		)
+		.limit(1);
+	if (owned.length === 0) return null;
+	return disasterEventById(ctx, id);
+}
+
 export const loader = async (args: LoaderFunctionArgs) => {
 	const { request, params } = args;
 
@@ -487,15 +508,16 @@ export const loader = async (args: LoaderFunctionArgs) => {
 	const userSession = await optionalUser(args);
 	const countryAccountsId = await getCountryAccountsIdFromSession(request);
 	const userId = userSession ? await getUserIdFromSession(request) : null;
+	if (!countryAccountsId) {
+		throw new Response("Unauthorized, no selected instance", { status: 401 });
+	}
 
 	const loaderFunction = createViewLoaderPublicApproved({
-		getById: disasterEventById,
+		getByIdForTenant: disasterEventByIdForTenant,
 	});
 
+	// The loader reads through the tenant-scoped getter; another tenant's item is 404.
 	const result = await loaderFunction(args);
-	if (result.item.countryAccountsId !== countryAccountsId) {
-		throw new Response("Unauthorized access", { status: 401 });
-	}
 
 	const disasterEventAttachments =
 		await DisasterEventAttachmentRepository.getByDisasterEventId(
