@@ -917,7 +917,7 @@
   {
     "id": "analysis.not_reported",
     "translation": "Not reported",
-    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:65"
+    "description": "File: app/frontend/analytics/hazards/sections/DisasterEventsList.tsx:103"
   },
   {
     "id": "analysis.number_of_deaths",
