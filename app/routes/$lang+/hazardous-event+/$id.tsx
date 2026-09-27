@@ -7,7 +7,8 @@ import {
 
 import { ViewScreenPublicApproved } from "~/frontend/form";
 import { hazardousEventById } from "~/backend.server/models/event";
-import { getTableName } from "drizzle-orm";
+import { and, eq, getTableName } from "drizzle-orm";
+import { dr } from "~/db.server";
 import { hazardousEventTable } from "~/drizzle/schema/hazardousEventTable";
 import { LoaderFunctionArgs } from "react-router";
 import { optionalUser } from "~/utils/auth";
@@ -26,6 +27,27 @@ interface LoaderData {
 	auditLogs?: any[];
 }
 
+// hazardousEventById throws when its tenant filter finds nothing, so check
+// the tenant first and return null for another tenant's event.
+async function hazardousEventByIdForTenant(
+	ctx: BackendContext,
+	id: string,
+	countryAccountsId: string,
+) {
+	const owned = await dr
+		.select({ id: hazardousEventTable.id })
+		.from(hazardousEventTable)
+		.where(
+			and(
+				eq(hazardousEventTable.id, id),
+				eq(hazardousEventTable.countryAccountsId, countryAccountsId),
+			),
+		)
+		.limit(1);
+	if (owned.length === 0) return null;
+	return hazardousEventById(ctx, id, countryAccountsId);
+}
+
 export const loader = async (
 	loaderArgs: LoaderFunctionArgs,
 ): Promise<LoaderData> => {
@@ -40,20 +62,21 @@ export const loader = async (
 	const userSession = await optionalUser(loaderArgs);
 	const countryAccountsId = await getCountryAccountsIdFromSession(request);
 	const userId = userSession ? await getUserIdFromSession(request) : null;
+	if (!countryAccountsId) {
+		throw new Response("Unauthorized, no selected instance", { status: 401 });
+	}
 	const loaderFunction = userSession
 		? createViewLoaderPublicApprovedWithAuditLog({
-				getById: hazardousEventById,
+				getByIdForTenant: hazardousEventByIdForTenant,
 				recordId: id,
 				tableName: getTableName(hazardousEventTable),
 			})
 		: createViewLoaderPublicApproved({
-				getById: hazardousEventById,
+				getByIdForTenant: hazardousEventByIdForTenant,
 			});
 
+	// The loader reads through the tenant-scoped getter; another tenant's item is 404.
 	const result = await loaderFunction(loaderArgs);
-	if (result.item.countryAccountsId !== countryAccountsId) {
-		throw new Response("Unauthorized access", { status: 403 });
-	}
 
 	const returnAssignees =
 		userSession && countryAccountsId
