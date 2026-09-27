@@ -41,11 +41,11 @@ describe("hashed API keys", () => {
 			managedByUserId: ids.userId,
 			countryAccountsId: ids.countryAccountId,
 		});
-		// A key as the backfill migration leaves it: plaintext kept, hash and
-		// prefix computed in SQL with the same expression as the migration.
+		// A key as the backfill migration leaves it: hash and prefix computed
+		// in SQL with the same expression as migration 20260927230000.
 		await dr.execute(sql`
-			INSERT INTO api_key (id, name, user_id, country_accounts_id, secret, secret_hash, key_prefix)
-			VALUES (${legacyId}, 'legacy', ${ids.userId}, ${ids.countryAccountId}, ${legacySecret},
+			INSERT INTO api_key (id, name, user_id, country_accounts_id, secret_hash, key_prefix)
+			VALUES (${legacyId}, 'legacy', ${ids.userId}, ${ids.countryAccountId},
 				encode(sha256(convert_to(${legacySecret}, 'UTF8')), 'hex'), left(${legacySecret}, 8))
 		`);
 	});
@@ -57,13 +57,20 @@ describe("hashed API keys", () => {
 		await cleanupTestUser(ids);
 	});
 
+	it("has no plaintext secret column", async () => {
+		const res = await dr.execute(sql`
+			SELECT 1 FROM information_schema.columns
+			WHERE table_name = 'api_key' AND column_name = 'secret'
+		`);
+		expect(res.rows.length).toBe(0);
+	});
+
 	it("returns the raw secret once and stores only its SHA-256 hash and prefix", async () => {
 		expect(created.secret).toMatch(/^[0-9a-f]{64}$/);
 		const res = await dr.execute(
-			sql`SELECT secret, secret_hash, key_prefix FROM api_key WHERE id = ${created.id}`,
+			sql`SELECT secret_hash, key_prefix FROM api_key WHERE id = ${created.id}`,
 		);
 		const row = res.rows[0] as any;
-		expect(row.secret).toBeNull();
 		expect(row.secret_hash).toBe(
 			createHash("sha256").update(created.secret).digest("hex"),
 		);

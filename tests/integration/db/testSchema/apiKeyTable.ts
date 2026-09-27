@@ -11,8 +11,6 @@ import { userTable } from "./userTable";
 export const apiKeyTable = pgTable("api_key", {
 	...createdUpdatedTimestamps,
 	id: ourRandomUUID(),
-	// Legacy plaintext column: nullable, never written, dropped by a later migration.
-	secret: text("secret").unique(),
 	// SHA-256 of the raw secret (hex). The raw secret is shown once at creation.
 	secretHash: text("secret_hash").notNull().unique(),
 	// First characters of the raw secret, so users can tell keys apart.
