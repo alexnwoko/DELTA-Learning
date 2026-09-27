@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { measureValue, VALUE_STATES } from "~/utils/valueState";
+import {
+	measureValue,
+	PROVISIONAL_ZERO_COVERAGE,
+	VALUE_STATES,
+} from "~/utils/valueState";
 
 // Approved states (TR-076 plus the aggregate-only state): reported,
 // zero_confirmed, not_reported, not_applicable, suppressed,
@@ -64,6 +68,31 @@ describe("valueState", () => {
 				{ minCoverage: 0.25, minRecords: 1 },
 			),
 		).toMatchObject({ value: null, valueState: "insufficient_reporting" });
+	});
+
+	it("applies the provisional V-5 rule: Angola, Benguela / Lobito, missing", () => {
+		// 8 records in scope, none reported, 1 confirmed zero (DIX:ago:285):
+		// 12.5% is below 25%, so no zero is shown.
+		expect(
+			measureValue(
+				{ sum: null, reported: 0, zeroConfirmed: 1, total: 8 },
+				PROVISIONAL_ZERO_COVERAGE,
+			),
+		).toMatchObject({ value: null, valueState: "insufficient_reporting" });
+		// The bound is inclusive: 2 of 8 (25%) shows a confirmed zero.
+		expect(
+			measureValue(
+				{ sum: null, reported: 0, zeroConfirmed: 2, total: 8 },
+				PROVISIONAL_ZERO_COVERAGE,
+			),
+		).toMatchObject({ value: 0, valueState: "zero_confirmed" });
+		// A reported value is never affected by the rule.
+		expect(
+			measureValue(
+				{ sum: 5, reported: 1, zeroConfirmed: 0, total: 8 },
+				PROVISIONAL_ZERO_COVERAGE,
+			),
+		).toMatchObject({ value: 5, valueState: "reported" });
 	});
 
 	it("carries the plausibility-flagged count", () => {

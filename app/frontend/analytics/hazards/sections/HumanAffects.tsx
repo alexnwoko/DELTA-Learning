@@ -4,6 +4,7 @@ import EmptyChartPlaceholder from "~/components/EmptyChartPlaceholder";
 import { formatNumberWithoutDecimals } from "~/utils/currency";
 import { Tooltip } from "primereact/tooltip";
 import { ViewContext } from "~/frontend/context";
+import type { ValueState } from "~/utils/valueState";
 
 interface HumanAffectsProps {
 	ctx: ViewContext;
@@ -25,6 +26,14 @@ interface HumanAffectsProps {
 	totalInternationalPoorPeople: number | null;
 	totalNationalPoorPeople: number | null;
 	/** Records carrying a sex / age breakdown, out of records in scope. */
+	/** State of each headline figure, so a null is labelled by its cause. */
+	valueStates?: {
+		deaths?: ValueState;
+		injured?: ValueState;
+		missing?: ValueState;
+		displaced?: ValueState;
+		affectedDirect?: ValueState;
+	};
 	/** Records flagged for review that feed each figure (C30). */
 	flaggedRecords?: {
 		deaths?: number;
@@ -55,15 +64,22 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 	totalDisability,
 	totalInternationalPoorPeople,
 	totalNationalPoorPeople,
+	valueStates,
 	flaggedRecords,
 	genderCoverage,
 	ageCoverage,
 }) => {
-	// A null figure was not reported; it is never shown as 0 (TR-076).
-	const formatFigure = (v: number | null) =>
-		v === null
-			? ctx.t({ code: "analysis.not_reported", msg: "Not reported" })
-			: formatNumberWithoutDecimals(v);
+	// A null figure is never shown as 0 (TR-076). It is either not reported,
+	// or too few records confirm zero to show a zero (V-5).
+	const formatFigure = (v: number | null, state?: ValueState) =>
+		v !== null
+			? formatNumberWithoutDecimals(v)
+			: state === "insufficient_reporting"
+				? ctx.t({
+						code: "analysis.insufficient_reporting",
+						msg: "Too few records confirm zero",
+					})
+				: ctx.t({ code: "analysis.not_reported", msg: "Not reported" });
 
 	// TODO: translate
 	const data = [
@@ -234,7 +250,7 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 								style={{ width: "60px", height: "60px" }}
 							/>
 							<span style={{ marginLeft: "130px", fontSize: "1.2em" }}>
-								{formatFigure(totalDeaths)}
+								{formatFigure(totalDeaths, valueStates?.deaths)}
 								{flaggedNote(flaggedRecords?.deaths)}
 							</span>
 						</div>
@@ -278,7 +294,7 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 								style={{ width: "60px", height: "60px" }}
 							/>
 							<span style={{ marginLeft: "150px", fontSize: "1.2em" }}>
-								{formatFigure(totalInjured)}
+								{formatFigure(totalInjured, valueStates?.injured)}
 								{flaggedNote(flaggedRecords?.injured)}
 							</span>
 						</div>
@@ -328,7 +344,7 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 								style={{ width: "60px", height: "60px" }}
 							/>
 							<span style={{ marginLeft: "150px", fontSize: "1.2em" }}>
-								{formatFigure(totalMissing)}
+								{formatFigure(totalMissing, valueStates?.missing)}
 								{flaggedNote(flaggedRecords?.missing)}
 							</span>
 						</div>
@@ -381,7 +397,10 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 								style={{ width: "60px", height: "60px" }}
 							/>
 							<span style={{ marginLeft: "250px", fontSize: "1.2em" }}>
-								{formatFigure(totalPeopleDirectlyAffected)}
+								{formatFigure(
+									totalPeopleDirectlyAffected,
+									valueStates?.affectedDirect,
+								)}
 								{flaggedNote(flaggedRecords?.affectedDirect)}
 							</span>
 						</div>
@@ -426,7 +445,7 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 								style={{ width: "60px", height: "60px" }}
 							/>
 							<span style={{ marginLeft: "250px", fontSize: "1.2em" }}>
-								{formatFigure(totalDisplaced)}
+								{formatFigure(totalDisplaced, valueStates?.displaced)}
 								{flaggedNote(flaggedRecords?.displaced)}
 							</span>
 						</div>
