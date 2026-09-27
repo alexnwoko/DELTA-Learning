@@ -5,10 +5,33 @@ import { humanCategoryPresenceTable } from "~/drizzle/schema/humanCategoryPresen
 import { humanDsgTable } from "~/drizzle/schema/humanDsgTable";
 import { disasterEventTable } from "~/drizzle/schema/disasterEventTable";
 import { affectedTablesAndCols } from "./affected-people-tables";
+import {
+	getDescendantDivisionIds,
+	recordInDivisionCondition,
+} from "~/backend.server/utils/geographicFilters";
 
 interface Conditions {
 	divisionId?: string;
+	/** The division and its descendants, resolved once in getAffected. */
+	divisionIds?: string[];
 	publishedOnly?: boolean;
+}
+
+/**
+ * Records in the division or any of its descendants, through the shared
+ * membership rule used by every analytics view (solution pack C18).
+ */
+function divisionCondition(conditions?: Conditions) {
+	if (!conditions?.divisionId) {
+		return undefined;
+	}
+	return recordInDivisionCondition(
+		disasterRecordsTable,
+		conditions.divisionId,
+		conditions.divisionIds?.length
+			? conditions.divisionIds
+			: [conditions.divisionId],
+	);
 }
 
 export async function getAffected(
@@ -16,6 +39,12 @@ export async function getAffected(
 	disasterEventId: string,
 	conditions?: Conditions,
 ) {
+	if (conditions?.divisionId && !conditions.divisionIds) {
+		conditions = {
+			...conditions,
+			divisionIds: await getDescendantDivisionIds(conditions.divisionId),
+		};
+	}
 	let res = {
 		noDisaggregations: await totalsForEachTable(
 			tx,
@@ -122,14 +151,7 @@ async function totalsForOneTable(
 					eq(dr.approvalStatus, "published"),
 					eq(dr.approvalStatus, "validated"),
 				),
-				conditions?.divisionId
-					? sql`EXISTS (
-					SELECT 1
-					FROM disaster_records_division drd
-					WHERE drd.disaster_record_id = ${dr.id}
-						AND drd.division_id = ${conditions.divisionId}::uuid
-				)`
-					: undefined,
+				divisionCondition(conditions),
 				conditions?.publishedOnly
 					? eq(dr.approvalStatus, "published")
 					: undefined,
@@ -425,14 +447,7 @@ async function countsForOneTable(
 						WHERE jsonb_typeof(value) != 'null'
 					) = 0
 				)`,
-				conditions?.divisionId
-					? sql`EXISTS (
-					SELECT 1
-					FROM disaster_records_division drd
-					WHERE drd.disaster_record_id = ${dr.id}
-						AND drd.division_id = ${conditions.divisionId}::uuid
-				)`
-					: undefined,
+				divisionCondition(conditions),
 				conditions?.publishedOnly
 					? eq(dr.approvalStatus, "published")
 					: undefined,
