@@ -378,12 +378,25 @@ export default function HazardAnalysis() {
 				)?.name["en"] || unknownGeographicDivision
 			: null;
 
-	const totalPeopleAffected = actionData
-		? Number(actionData.totalAffectedDirect) +
-			Number(actionData.totalDisplaced) +
-			Number(actionData.totalInjured) +
-			Number(actionData.totalMissing)
-		: 0;
+	// Composite of reported components only: null when none was reported,
+	// flagged partial when only some were (a missing component is never 0).
+	const peopleAffectedComponents: (number | null)[] = actionData
+		? [
+				actionData.totalAffectedDirect,
+				actionData.totalDisplaced,
+				actionData.totalInjured,
+				actionData.totalMissing,
+			]
+		: [];
+	const reportedComponents = peopleAffectedComponents.filter(
+		(v): v is number => v !== null,
+	);
+	const totalPeopleAffected = reportedComponents.length
+		? reportedComponents.reduce((a, b) => a + b, 0)
+		: null;
+	const totalPeopleAffectedPartial =
+		reportedComponents.length > 0 &&
+		reportedComponents.length < peopleAffectedComponents.length;
 
 	return (
 		<MainContainer
@@ -481,6 +494,7 @@ export default function HazardAnalysis() {
 								<HumanAffects
 									ctx={ctx}
 									totalPeopleAffected={totalPeopleAffected}
+									totalPeopleAffectedPartial={totalPeopleAffectedPartial}
 									totalDeaths={actionData.totalDeaths}
 									totalDisplaced={actionData.totalDisplaced}
 									totalInjured={actionData.totalInjured}
