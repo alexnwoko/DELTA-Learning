@@ -22,7 +22,8 @@ export async function apiAuth(request: Request): Promise<SelectApiKey> {
 	}
 	const key = await ApiKeyRepository.getBySecret(authToken);
 
-	if (!key) {
+	// getBySecret returns an array; an unknown key is an empty array.
+	if (!key || key.length === 0) {
 		throw new Response("Unauthorized", { status: 401 });
 	}
 
