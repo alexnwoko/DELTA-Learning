@@ -31,7 +31,13 @@ type MapChartProps = {
 	}[];
 	legendMaxColor?: string;
 	legendTitle?: string;
-	mapMode?: "default" | "light" | "dark";
+	/**
+	 * Raster tile URL for an optional basemap. None by default: the
+	 * divisions carry the map, and no external tile service is called
+	 * (geoportal requirements VIS-F01, no API keys in the client). Set this
+	 * only to a self-hosted tile service.
+	 */
+	basemapUrl?: string;
 };
 
 type DataSourceType = {
@@ -108,17 +114,6 @@ const getOpacityForRange = (value: number, min: number, max: number) => {
 	return 0.1 + normalizedValue * 0.9;
 };
 
-const getTileLayer = (mapMode: string) => {
-	switch (mapMode) {
-		case "light":
-			return "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
-		case "dark":
-			return "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
-		default:
-			return "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-	}
-};
-
 const MapChart = forwardRef<MapChartRef, MapChartProps>(
 	(
 		{
@@ -127,7 +122,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 			dataSource = [],
 			legendMaxColor = "#333333",
 			legendTitle = "Legend",
-			mapMode = "light",
+			basemapUrl,
 		},
 		ref,
 	) => {
@@ -255,11 +250,9 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 					if (!mapRef.current) {
 						console.log("Creating new Leaflet map...");
 						mapRef.current = L.map(componentId, { preferCanvas: true });
-						L.tileLayer(getTileLayer(mapMode), {
-							attribution: "",
-							subdomains: "abcd",
-							maxZoom: 20,
-						}).addTo(mapRef.current);
+						if (basemapUrl) {
+							L.tileLayer(basemapUrl, { maxZoom: 20 }).addTo(mapRef.current);
+						}
 					} else {
 						console.log("Clearing previous layers...");
 						mapRef.current.eachLayer((layer: any) => {
@@ -346,7 +339,13 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 					}, 500);
 				}, 500);
 			},
-			[isClient, isLeafletLoaded, currentLegendMaxColor, mapMode, componentId],
+			[
+				isClient,
+				isLeafletLoaded,
+				currentLegendMaxColor,
+				basemapUrl,
+				componentId,
+			],
 		);
 
 		useEffect(() => {
@@ -377,7 +376,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 						height: "500px",
 						width: "100%",
 						zIndex: "0",
-						backgroundColor: "#b2d2dd",
+						backgroundColor: "#f3f4f6",
 					}}
 				></div>
 
