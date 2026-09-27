@@ -71,15 +71,15 @@ describe("valueState", () => {
 	});
 
 	it("applies the provisional V-5 rule: Angola, Benguela / Lobito, missing", () => {
-		// 8 records in scope, none reported, 1 confirmed zero (DIX:ago:285):
-		// 12.5% is below 25%, so no zero is shown.
+		// 9 records in scope, none reported, 1 confirmed zero: 11.1% is below
+		// 25%, so no zero is shown.
 		expect(
 			measureValue(
-				{ sum: null, reported: 0, zeroConfirmed: 1, total: 8 },
+				{ sum: null, reported: 0, zeroConfirmed: 1, total: 9 },
 				PROVISIONAL_ZERO_COVERAGE,
 			),
 		).toMatchObject({ value: null, valueState: "insufficient_reporting" });
-		// The bound is inclusive: 2 of 8 (25%) shows a confirmed zero.
+		// The bound is inclusive: 2 of 8 (exactly 25%) shows a confirmed zero.
 		expect(
 			measureValue(
 				{ sum: null, reported: 0, zeroConfirmed: 2, total: 8 },
