@@ -794,6 +794,10 @@ async function aggregateDamagesData(
 
 		// Process sector overrides first
 		for (const row of sectorOverrides) {
+			// Undated rows stay in the total but have no year (C09).
+			if (row.year == null) {
+				continue;
+			}
 			const year = Number(row.year);
 			if (isNaN(year)) {
 				continue;
@@ -806,6 +810,10 @@ async function aggregateDamagesData(
 
 		// Then add detailed damages where there are no overrides
 		for (const row of detailedDamages) {
+			// Undated rows stay in the total but have no year (C09).
+			if (row.year == null) {
+				continue;
+			}
 			const year = Number(row.year);
 			if (isNaN(year)) {
 				continue;
@@ -946,6 +954,10 @@ async function aggregateLossesData(
 
 		// Process sector overrides first
 		for (const row of sectorOverrides) {
+			// Undated rows stay in the total but have no year (C09).
+			if (row.year == null) {
+				continue;
+			}
 			const year = Number(row.year);
 			if (isNaN(year)) {
 				continue;
@@ -959,6 +971,10 @@ async function aggregateLossesData(
 
 		// Then add detailed losses where there are no overrides
 		for (const row of detailedLosses) {
+			// Undated rows stay in the total but have no year (C09).
+			if (row.year == null) {
+				continue;
+			}
 			const year = Number(row.year);
 			if (isNaN(year)) {
 				continue;

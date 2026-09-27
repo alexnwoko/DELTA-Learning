@@ -741,8 +741,12 @@ const getEventCountsByYear = async (
 	// Process events and count them for each year they span
 	const yearCounts = new Map<number, number>();
 	for (const event of eventYearSpans) {
-		const startYear = event.startYear;
-		const endYear = event.endYear || event.startYear; // fallback to startYear if no end date
+		// An undated event has no year to count in (C09).
+		if (event.startYear == null) {
+			continue;
+		}
+		const startYear = Number(event.startYear);
+		const endYear = event.endYear == null ? startYear : Number(event.endYear); // fallback to startYear if no end date
 
 		// Count event for each year in its duration
 		for (let year = startYear; year <= endYear; year++) {
