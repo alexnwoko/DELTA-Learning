@@ -1667,7 +1667,7 @@
   {
     "id": "common.all",
     "translation": "All",
-    "description": "File: app/routes/$lang+/settings+/assets+/_layout.tsx:157"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:172"
   },
   {
     "id": "common.apply",
@@ -2662,7 +2662,7 @@
   {
     "id": "common.signin",
     "translation": "Sign-in",
-    "description": "File: app/components/RegularMenuBar.tsx:213"
+    "description": "File: app/components/RegularMenuBar.tsx:219"
   },
   {
     "id": "common.something_went_wrong",
@@ -6232,72 +6232,77 @@
   {
     "id": "nav.about",
     "translation": "About",
-    "description": "File: app/components/RegularMenuBar.tsx:298"
+    "description": "File: app/components/RegularMenuBar.tsx:317"
   },
   {
     "id": "nav.about_the_system",
     "translation": "About the system",
-    "description": "File: app/components/RegularMenuBar.tsx:302"
+    "description": "File: app/components/RegularMenuBar.tsx:321"
   },
   {
     "id": "nav.access_management",
     "translation": "Access management",
-    "description": "File: app/components/RegularMenuBar.tsx:366"
+    "description": "File: app/components/RegularMenuBar.tsx:387"
   },
   {
     "id": "nav.analysis",
     "translation": "Analysis",
-    "description": "File: app/components/RegularMenuBar.tsx:266"
+    "description": "File: app/components/RegularMenuBar.tsx:272"
+  },
+  {
+    "id": "nav.analysis.data_quality_review",
+    "translation": "Data quality review",
+    "description": "File: app/components/RegularMenuBar.tsx:302"
   },
   {
     "id": "nav.analysis.disaster_events",
     "translation": "Disaster events",
-    "description": "File: app/components/RegularMenuBar.tsx:284"
+    "description": "File: app/components/RegularMenuBar.tsx:292"
   },
   {
     "id": "nav.analysis.hazards",
     "translation": "Hazards",
-    "description": "File: app/components/RegularMenuBar.tsx:277"
+    "description": "File: app/components/RegularMenuBar.tsx:285"
   },
   {
     "id": "nav.analysis.sectors",
     "translation": "Sectors",
-    "description": "File: app/components/RegularMenuBar.tsx:270"
+    "description": "File: app/components/RegularMenuBar.tsx:278"
   },
   {
     "id": "nav.api_keys",
     "translation": "API keys",
-    "description": "File: app/components/RegularMenuBar.tsx:401"
+    "description": "File: app/components/RegularMenuBar.tsx:422"
   },
   {
     "id": "nav.assets",
     "translation": "Assets",
-    "description": "File: app/components/RegularMenuBar.tsx:407"
+    "description": "File: app/components/RegularMenuBar.tsx:428"
   },
   {
     "id": "nav.change_password",
     "translation": "Change password",
-    "description": "File: app/components/RegularMenuBar.tsx:54"
+    "description": "File: app/components/RegularMenuBar.tsx:55"
   },
   {
     "id": "nav.data",
     "translation": "Data",
-    "description": "File: app/components/RegularMenuBar.tsx:226"
+    "description": "File: app/components/RegularMenuBar.tsx:232"
   },
   {
     "id": "nav.disaster_events",
     "translation": "Disaster events",
-    "description": "File: app/components/RegularMenuBar.tsx:240"
+    "description": "File: app/components/RegularMenuBar.tsx:246"
   },
   {
     "id": "nav.disaster_records",
     "translation": "Disaster records",
-    "description": "File: app/components/RegularMenuBar.tsx:250"
+    "description": "File: app/components/RegularMenuBar.tsx:256"
   },
   {
     "id": "nav.faq",
     "translation": "FAQ",
-    "description": "File: app/components/RegularMenuBar.tsx:342"
+    "description": "File: app/components/RegularMenuBar.tsx:361"
   },
   {
     "id": "nav.general",
@@ -6307,12 +6312,12 @@
   {
     "id": "nav.geographic_levels",
     "translation": "Geographic levels",
-    "description": "File: app/components/RegularMenuBar.tsx:386"
+    "description": "File: app/components/RegularMenuBar.tsx:407"
   },
   {
     "id": "nav.hazardous_events",
     "translation": "Hazardous events",
-    "description": "File: app/components/RegularMenuBar.tsx:230"
+    "description": "File: app/components/RegularMenuBar.tsx:236"
   },
   {
     "id": "nav.hazards",
@@ -6322,17 +6327,17 @@
   {
     "id": "nav.human_effects",
     "translation": "Human effects",
-    "description": "File: app/components/RegularMenuBar.tsx:413"
+    "description": "File: app/components/RegularMenuBar.tsx:434"
   },
   {
     "id": "nav.methodologies",
     "translation": "Methodologies",
-    "description": "File: app/components/RegularMenuBar.tsx:327"
+    "description": "File: app/components/RegularMenuBar.tsx:346"
   },
   {
     "id": "nav.organization_management",
     "translation": "Organization management",
-    "description": "File: app/components/RegularMenuBar.tsx:376"
+    "description": "File: app/components/RegularMenuBar.tsx:397"
   },
   {
     "id": "nav.organizations",
@@ -6342,27 +6347,27 @@
   {
     "id": "nav.partners",
     "translation": "Partners",
-    "description": "File: app/components/RegularMenuBar.tsx:321"
+    "description": "File: app/components/RegularMenuBar.tsx:340"
   },
   {
     "id": "nav.profile",
     "translation": "Profile",
-    "description": "File: app/components/RegularMenuBar.tsx:47"
+    "description": "File: app/components/RegularMenuBar.tsx:48"
   },
   {
     "id": "nav.sectors",
     "translation": "Sectors",
-    "description": "File: app/components/RegularMenuBar.tsx:395"
+    "description": "File: app/components/RegularMenuBar.tsx:416"
   },
   {
     "id": "nav.settings",
     "translation": "Settings",
-    "description": "File: app/components/RegularMenuBar.tsx:352"
+    "description": "File: app/components/RegularMenuBar.tsx:371"
   },
   {
     "id": "nav.sign_out",
     "translation": "Sign out",
-    "description": "File: app/components/RegularMenuBar.tsx:74"
+    "description": "File: app/components/RegularMenuBar.tsx:75"
   },
   {
     "id": "nav.super_admin",
@@ -6372,27 +6377,27 @@
   {
     "id": "nav.support",
     "translation": "Support",
-    "description": "File: app/components/RegularMenuBar.tsx:336"
+    "description": "File: app/components/RegularMenuBar.tsx:355"
   },
   {
     "id": "nav.switch_instance",
     "translation": "Switch",
-    "description": "File: app/components/RegularMenuBar.tsx:141"
+    "description": "File: app/components/RegularMenuBar.tsx:142"
   },
   {
     "id": "nav.system_settings",
     "translation": "System settings",
-    "description": "File: app/components/RegularMenuBar.tsx:356"
+    "description": "File: app/components/RegularMenuBar.tsx:377"
   },
   {
     "id": "nav.technical_specifications",
     "translation": "Technical specifications",
-    "description": "File: app/components/RegularMenuBar.tsx:312"
+    "description": "File: app/components/RegularMenuBar.tsx:331"
   },
   {
     "id": "nav.totp_2fa",
     "translation": "TOTP (2FA)",
-    "description": "File: app/components/RegularMenuBar.tsx:64"
+    "description": "File: app/components/RegularMenuBar.tsx:65"
   },
   {
     "id": "no_disaster_events_found",
@@ -6448,6 +6453,131 @@
     "id": "page_not_found_message",
     "translation": "The page you are looking for might have been removed, renamed, or is temporarily unavailable.",
     "description": "File: app/routes/$.tsx:27"
+  },
+  {
+    "id": "plausibility.code.hazard_effect_mismatch",
+    "translation": "Effect implausible for the hazard",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:54"
+  },
+  {
+    "id": "plausibility.code.identical_across_fields",
+    "translation": "Same value in unrelated fields",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:49"
+  },
+  {
+    "id": "plausibility.code.implausible_magnitude",
+    "translation": "Value above a plausible magnitude",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:44"
+  },
+  {
+    "id": "plausibility.code.sentinel_magnitude",
+    "translation": "Placeholder or sentinel value",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:59"
+  },
+  {
+    "id": "plausibility.col.date",
+    "translation": "Date",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:247"
+  },
+  {
+    "id": "plausibility.col.figures",
+    "translation": "Figures affected",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:291"
+  },
+  {
+    "id": "plausibility.col.flags",
+    "translation": "Flags",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:268"
+  },
+  {
+    "id": "plausibility.col.location",
+    "translation": "Location",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:253"
+  },
+  {
+    "id": "plausibility.col.record",
+    "translation": "Record",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:234"
+  },
+  {
+    "id": "plausibility.col.status",
+    "translation": "Status",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:262"
+  },
+  {
+    "id": "plausibility.count",
+    "translation": "{shown} of {total} flagged records",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:212"
+  },
+  {
+    "id": "plausibility.empty",
+    "translation": "No record in this instance carries a plausibility flag.",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:228"
+  },
+  {
+    "id": "plausibility.filter.figure",
+    "translation": "Figure affected",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:187"
+  },
+  {
+    "id": "plausibility.filter.flag",
+    "translation": "Flag type",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:161"
+  },
+  {
+    "id": "plausibility.intro",
+    "translation": "These records carry source values that look implausible, for example the same large number in two unrelated fields. The values have not been changed. Figures that include them are marked 'flagged for review'. Check each record against its source and correct it through the record screens where needed.",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:152"
+  },
+  {
+    "id": "plausibility.measure.affected_direct",
+    "translation": "Affected (direct)",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:82"
+  },
+  {
+    "id": "plausibility.measure.affected_indirect",
+    "translation": "Affected (indirect)",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:87"
+  },
+  {
+    "id": "plausibility.measure.deaths",
+    "translation": "Deaths",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:71"
+  },
+  {
+    "id": "plausibility.measure.displaced",
+    "translation": "Displaced",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:77"
+  },
+  {
+    "id": "plausibility.measure.houses_damaged",
+    "translation": "Houses damaged",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:97"
+  },
+  {
+    "id": "plausibility.measure.houses_destroyed",
+    "translation": "Houses destroyed",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:92"
+  },
+  {
+    "id": "plausibility.measure.injured",
+    "translation": "Injured",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:73"
+  },
+  {
+    "id": "plausibility.measure.missing",
+    "translation": "Missing",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:75"
+  },
+  {
+    "id": "plausibility.no_people_figure",
+    "translation": "No people or housing figure",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:304"
+  },
+  {
+    "id": "plausibility.title",
+    "translation": "Data quality review",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:145"
   },
   {
     "id": "profile.first_name_required",
