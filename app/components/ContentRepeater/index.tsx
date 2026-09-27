@@ -23,6 +23,7 @@ import {
 import "./assets/content-repeater.css";
 import "./assets/mapper.css";
 import { ViewContext } from "~/frontend/context";
+import { getBasemapConfig } from "~/utils/basemap";
 
 declare namespace L {
 	export const map: any;
@@ -555,13 +556,13 @@ export const ContentRepeater = forwardRef<HTMLDivElement, ContentRepeaterProps>(
 				// Initialize the map
 				const { coords, bounds } = await defaultMapLocation();
 				mapRef.current = L.map(`${id}_mapper_container`, { dragging: true });
-				L.tileLayer(
-					"https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-					{
-						attribution:
-							'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
-					},
-				).addTo(mapRef.current);
+				const basemap = getBasemapConfig();
+				if (basemap) {
+					L.tileLayer(basemap.url, {
+						attribution: basemap.attribution,
+						maxZoom: basemap.maxZoom,
+					}).addTo(mapRef.current);
+				}
 				if (bounds) {
 					mapRef.current.fitBounds(bounds, { padding: [50, 50] });
 				} else {
@@ -634,10 +635,8 @@ export const ContentRepeater = forwardRef<HTMLDivElement, ContentRepeaterProps>(
 					}
 				}
 
-				// Remove Ukrainian Flag
-				document
-					.querySelector(".leaflet-control-attribution.leaflet-control a")
-					?.remove();
+				// Hide the Leaflet prefix link; keep the basemap data attribution.
+				mapRef.current.attributionControl?.setPrefix(false);
 
 				// Reset the mode select dropdown
 				const modeSelect = document.getElementById(

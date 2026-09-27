@@ -5,6 +5,7 @@ import { DataView } from "primereact/dataview";
 import LinkedHazardousEventCard from "~/frontend/disaster-event/LinkedHazardousEventCard";
 import LinkedDisasterRecordCard from "~/frontend/disaster-event/LinkedDisasterRecordCard";
 import { ViewContext } from "~/frontend/context";
+import { getBasemapConfig } from "~/utils/basemap";
 
 type LinkedEventOption = {
 	id: string;
@@ -329,12 +330,13 @@ function ReviewLocationMap({
 			const map = L.map(mapContainerRef.current, { preferCanvas: true });
 			mapRef.current = map;
 
-			L.tileLayer(
-				"https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-				{
-					attribution: "",
-				},
-			).addTo(map);
+			const basemap = getBasemapConfig();
+			if (basemap) {
+				L.tileLayer(basemap.url, {
+					attribution: basemap.attribution,
+					maxZoom: basemap.maxZoom,
+				}).addTo(map);
+			}
 
 			const bounds = L.latLngBounds([]);
 

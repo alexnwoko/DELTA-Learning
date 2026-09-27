@@ -7,6 +7,7 @@ import {
 	checkShapeAgainstDivisions,
 } from "~/utils/spatialUtils";
 import { ViewContext } from "~/frontend/context";
+import { basemapConfigForInlineScript } from "~/utils/basemap";
 
 declare namespace L {
 	export const map: any;
@@ -912,9 +913,11 @@ export const previewMap = (items: any) => {
 
             const map = L.map("map", { preferCanvas: true }); //.setView([43.833, 87.616], 2);
 
-            L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-                attribution: "",
-            }).addTo(map);
+            const basemap = ${basemapConfigForInlineScript()};
+            map.attributionControl.setPrefix(false);
+            if (basemap) {
+              L.tileLayer(basemap.url, { attribution: basemap.attribution, maxZoom: basemap.maxZoom }).addTo(map);
+            }
 
             const items = \`${items}\`;
             const boundsArray = [];
@@ -973,13 +976,6 @@ export const previewMap = (items: any) => {
               adjustZoomBasedOnDistance(map, geoJsonLayers);
             }, 500);
 
-            setTimeout(() => {
-              // Remove attribution links
-              const attributionElement = document.querySelector(".leaflet-control-attribution.leaflet-control a");
-              if (attributionElement) {
-                attributionElement.remove();
-              }
-            }, 10);
         };
       </script>
       </body>

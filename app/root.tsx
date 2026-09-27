@@ -30,6 +30,8 @@ import { configAuthSupportedForm } from "~/utils/config";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 import { PrimeReactProvider } from "primereact/api";
+import { setBasemapConfig } from "~/utils/basemap";
+import { resolveBasemapConfig } from "~/utils/basemap.server";
 
 import { loadTranslations } from "./backend.server/translations";
 import { createTranslationScript } from "./frontend/translations";
@@ -164,6 +166,7 @@ export const loader = async (
 				DTS_INSTANCE_CTRY_ISO3: dtsInstanceCtryIso3,
 				SUPPORT_EMAIL: process.env.SUPPORT_EMAIL || "",
 				SUPPORT_URL: process.env.SUPPORT_URL || "",
+				BASEMAP: resolveBasemapConfig(),
 			},
 		},
 		{
@@ -176,6 +179,8 @@ export const loader = async (
 
 export default function Screen() {
 	const loaderData = useLoaderData();
+	// Before any child renders, so preview windows and maps read the same basemap.
+	setBasemapConfig((loaderData as any)?.env?.BASEMAP);
 	const location = useLocation();
 	const matches = useMatches();
 	let ctx = new ViewContext();

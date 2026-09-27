@@ -1,4 +1,5 @@
 import React from "react";
+import { basemapConfigForInlineScript } from "~/utils/basemap";
 
 type SpatialFootprintsMapViewerProps = {
 	dataSource: { id: string }[]; // Define a stricter type for dataSource
@@ -239,7 +240,11 @@ const SpatialFootprintsMapViewer: React.FC<SpatialFootprintsMapViewerProps> = ({
 
           window.onload = () => {
             const map = L.map("map");
-            L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", { attribution: "" }).addTo(map);
+            const basemap = ${basemapConfigForInlineScript()};
+            map.attributionControl.setPrefix(false);
+            if (basemap) {
+              L.tileLayer(basemap.url, { attribution: basemap.attribution, maxZoom: basemap.maxZoom }).addTo(map);
+            }
 
             const items = ${JSON.stringify(items)};
             const defaultKeys = ${JSON.stringify(defaultKeys)};
@@ -456,13 +461,6 @@ const SpatialFootprintsMapViewer: React.FC<SpatialFootprintsMapViewerProps> = ({
                 adjustZoomBasedOnDistance(map, Object.values(layers));
                 lazyLoadMissingGeometries();
 
-                setTimeout(() => {
-                  // Remove attribution links
-                  const attributionElement = document.querySelector(".leaflet-control-attribution.leaflet-control a");
-                  if (attributionElement) {
-                    attributionElement.remove();
-                  }
-                }, 50);
             }, 300);
           };
 

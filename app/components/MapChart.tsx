@@ -8,7 +8,12 @@ import {
 } from "react";
 import type { ValueState } from "~/utils/valueState";
 import { ViewContext } from "~/frontend/context";
+import { getBasemapConfig } from "~/utils/basemap";
 import { formatNumberWithoutDecimals } from "~/utils/currency";
+
+// Any basemap in DELTA is OpenStreetMap-derived (ODbL), so attribution is never empty.
+const OSM_ATTRIBUTION_FALLBACK =
+	'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 export type MapChartRef = {
 	getDataSource: () => DataSourceType;
@@ -32,12 +37,14 @@ type MapChartProps = {
 	legendMaxColor?: string;
 	legendTitle?: string;
 	/**
-	 * Raster tile URL for an optional basemap. None by default: the
-	 * divisions carry the map, and no external tile service is called
-	 * (geoportal requirements VIS-F01, no API keys in the client). Set this
-	 * only to a self-hosted tile service.
+	 * Raster tile URL for the basemap. Omitted: the shared basemap config
+	 * (BASEMAP_TILE_URL; none when unset outside development). null: no
+	 * basemap for this map. Set a URL only for a self-hosted tile service
+	 * (geoportal requirement VIS-F01, no API keys in the client).
 	 */
-	basemapUrl?: string;
+	basemapUrl?: string | null;
+	/** HTML attribution for basemapUrl. Defaults to the shared config's. */
+	basemapAttribution?: string;
 };
 
 type DataSourceType = {
@@ -123,6 +130,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 			legendMaxColor = "#333333",
 			legendTitle = "Legend",
 			basemapUrl,
+			basemapAttribution,
 		},
 		ref,
 	) => {
@@ -250,8 +258,18 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 					if (!mapRef.current) {
 						console.log("Creating new Leaflet map...");
 						mapRef.current = L.map(componentId, { preferCanvas: true });
-						if (basemapUrl) {
-							L.tileLayer(basemapUrl, { maxZoom: 20 }).addTo(mapRef.current);
+						const shared = getBasemapConfig();
+						const tileUrl =
+							basemapUrl === undefined ? shared?.url : basemapUrl;
+						if (tileUrl) {
+							mapRef.current.attributionControl?.setPrefix(false);
+							L.tileLayer(tileUrl, {
+								attribution:
+									basemapAttribution ??
+									shared?.attribution ??
+									OSM_ATTRIBUTION_FALLBACK,
+								maxZoom: shared?.maxZoom ?? 19,
+							}).addTo(mapRef.current);
 						}
 					} else {
 						console.log("Clearing previous layers...");
@@ -329,13 +347,6 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 						setTimeout(() => {
 							makeLegendDraggable();
 						}, 1000);
-
-						const attributionElement = document.querySelector(
-							".leaflet-control-attribution.leaflet-control a",
-						);
-						if (attributionElement) {
-							attributionElement.remove();
-						}
 					}, 500);
 				}, 500);
 			},
@@ -344,6 +355,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 				isLeafletLoaded,
 				currentLegendMaxColor,
 				basemapUrl,
+				basemapAttribution,
 				componentId,
 			],
 		);
