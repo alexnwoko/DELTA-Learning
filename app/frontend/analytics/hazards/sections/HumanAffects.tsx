@@ -15,15 +15,18 @@ interface HumanAffectsProps {
 	totalMissing: number | null;
 	totalPeopleDirectlyAffected: number | null;
 	totalDisplaced: number | null;
-	noOfMen: number;
-	noOfWomen: number;
-	noOfNonBinary: number;
-	totalChildren: number;
-	totalAdults: number;
-	totalSeniors: number;
-	totalDisability: number;
-	totalInternationalPoorPeople: number;
-	totalNationalPoorPeople: number;
+	noOfMen: number | null;
+	noOfWomen: number | null;
+	noOfNonBinary: number | null;
+	totalChildren: number | null;
+	totalAdults: number | null;
+	totalSeniors: number | null;
+	totalDisability: number | null;
+	totalInternationalPoorPeople: number | null;
+	totalNationalPoorPeople: number | null;
+	/** Records carrying a sex / age breakdown, out of records in scope. */
+	genderCoverage?: { recordsWithBreakdown: number; recordsTotal: number };
+	ageCoverage?: { recordsWithBreakdown: number; recordsTotal: number };
 }
 
 const HumanAffects: React.FC<HumanAffectsProps> = ({
@@ -44,6 +47,8 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 	totalDisability,
 	totalInternationalPoorPeople,
 	totalNationalPoorPeople,
+	genderCoverage,
+	ageCoverage,
 }) => {
 	// A null figure was not reported; it is never shown as 0 (TR-076).
 	const formatFigure = (v: number | null) =>
@@ -55,9 +60,9 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 	const data = [
 		{
 			name: "",
-			Male: noOfMen,
-			Female: noOfWomen,
-			"Other non-Binary": noOfNonBinary,
+			Male: noOfMen ?? 0,
+			Female: noOfWomen ?? 0,
+			"Other non-Binary": noOfNonBinary ?? 0,
 		},
 	];
 
@@ -65,9 +70,9 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 	const ageData = [
 		{
 			name: "",
-			"Children (0 - 14)": totalChildren,
-			"Adults (15 - 64)": totalAdults,
-			"Seniors (65+)": totalSeniors,
+			"Children (0 - 14)": totalChildren ?? 0,
+			"Adults (15 - 64)": totalAdults ?? 0,
+			"Seniors (65+)": totalSeniors ?? 0,
 		},
 	];
 
@@ -75,19 +80,38 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 	const disbilityAndPovertyData = [
 		{
 			name: "",
-			"Persons with disabilities": totalDisability,
-			"Persons living in poverty (national)": totalNationalPoorPeople,
-			"Persons living in poverty (international)": totalInternationalPoorPeople,
+			"Persons with disabilities": totalDisability ?? 0,
+			"Persons living in poverty (national)": totalNationalPoorPeople ?? 0,
+			"Persons living in poverty (international)":
+				totalInternationalPoorPeople ?? 0,
 		},
 	];
 
 	// Helper functions to check if data exists for charts
-	const hasGenderData = noOfMen > 0 || noOfWomen > 0 || noOfNonBinary > 0;
-	const hasAgeData = totalChildren > 0 || totalAdults > 0 || totalSeniors > 0;
-	const hasDisabilityPovertyData =
-		totalDisability > 0 ||
-		totalNationalPoorPeople > 0 ||
-		totalInternationalPoorPeople > 0;
+	// A null value means no record carries the breakdown (TR-076).
+	const anyPositive = (...vs: (number | null)[]) =>
+		vs.some((v) => v !== null && v > 0);
+	const hasGenderData = anyPositive(noOfMen, noOfWomen, noOfNonBinary);
+	const hasAgeData = anyPositive(totalChildren, totalAdults, totalSeniors);
+	const hasDisabilityPovertyData = anyPositive(
+		totalDisability,
+		totalNationalPoorPeople,
+		totalInternationalPoorPeople,
+	);
+	const coverageNote = (
+		c: { recordsWithBreakdown: number; recordsTotal: number } | undefined,
+	) =>
+		c ? (
+			<p className="dts-body-text">
+				{ctx.t(
+					{
+						code: "analysis.breakdown_coverage",
+						msg: "Based on {with} of {total} records with this breakdown",
+					},
+					{ with: c.recordsWithBreakdown, total: c.recordsTotal },
+				)}
+			</p>
+		) : null;
 
 	return (
 		<>
@@ -409,10 +433,13 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 							</div>
 						</h3>
 						{hasGenderData ? (
-							<HorizontalBarChart
-								data={data}
-								imgSrc="/assets/icons/Male&Female.svg"
-							/>
+							<>
+								<HorizontalBarChart
+									data={data}
+									imgSrc="/assets/icons/Male&Female.svg"
+								/>
+								{coverageNote(genderCoverage)}
+							</>
 						) : (
 							<EmptyChartPlaceholder ctx={ctx} height={220} />
 						)}
@@ -480,10 +507,13 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 							</div>
 						</h3>
 						{hasAgeData ? (
-							<HorizontalBarChart
-								data={ageData}
-								imgSrc="/assets/icons/Male&Female.svg"
-							/>
+							<>
+								<HorizontalBarChart
+									data={ageData}
+									imgSrc="/assets/icons/Male&Female.svg"
+								/>
+								{coverageNote(ageCoverage)}
+							</>
 						) : (
 							<EmptyChartPlaceholder ctx={ctx} height={220} />
 						)}

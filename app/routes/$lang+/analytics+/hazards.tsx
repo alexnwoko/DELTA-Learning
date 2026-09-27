@@ -129,7 +129,7 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 
 	const disasterCount = await getDisasterEventCount(filters);
 	const yearlyDisasterCounts = await getDisasterEventCountByYear(filters);
-	const { totalMen, totalWomen, totalNonBinary } =
+	const { totalMen, totalWomen, totalNonBinary, genderCoverage } =
 		await getGenderTotalsByHazardFilters(filters);
 	const {
 		totalDeaths,
@@ -139,7 +139,7 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 		totalAffectedDirect,
 		totalAffectedIndirect,
 	} = await getAffectedPeopleByHazardFilters(filters);
-	const { totalChildren, totalAdults, totalSeniors } =
+	const { totalChildren, totalAdults, totalSeniors, ageCoverage } =
 		await getAgeTotalsByHazardFilters(filters);
 	const totalDisability = await getDisabilityTotalByHazardFilters(filters);
 	const totalInternationalPoorPeople =
@@ -280,6 +280,8 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 		totalDisability,
 		totalInternationalPoorPeople,
 		totalNationalPoorPeople,
+		genderCoverage,
+		ageCoverage,
 		totalDamages,
 		totalLosses,
 		totalDamagesByYear,
@@ -522,6 +524,8 @@ export default function HazardAnalysis() {
 										actionData.totalInternationalPoorPeople
 									}
 									totalNationalPoorPeople={actionData.totalNationalPoorPeople}
+									genderCoverage={actionData.genderCoverage}
+									ageCoverage={actionData.ageCoverage}
 								/>
 							)}
 

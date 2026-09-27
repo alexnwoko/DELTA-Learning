@@ -208,24 +208,13 @@ function humanEffectMeasuresSelect(): SQL {
 }
 
 /**
- * Aggregates human impact data (deaths, injured, missing, displaced, affected)
- * from disaster records filtered by hazard type, geography, and date range.
- *
- * Builds two different SQL queries depending on whether geographic filtering is needed:
- * - **With geography**: uses a recursive CTE (`division_hierarchy`) to traverse the
- *   division tree, `LEFT JOIN LATERAL` to unnest JSON spatial footprint arrays, and
- *   JSON path queries to match division IDs in two different JSON structures.
- * - **Without geography**: simpler direct join on disaster_records.
- *
- * Both paths join `human_dsg` with `IS NULL` filters on all dimension columns
- * (sex, age, disability, poverty lines) to select only aggregate (non-disaggregated) rows,
- * then LEFT JOIN the five effect tables (deaths, injured, missing, displaced, affected).
- *
- * Date filtering handles three variable-precision text formats: YYYY, YYYY-MM, YYYY-MM-DD.
+ * Records in scope for the human-effects figures: tenant, approval basis,
+ * HIPs, date range and, when set, the level-1 division. Returns the CTE body
+ * (division_hierarchy when needed, then filtered_records) to follow
+ * WITH RECURSIVE. Every record counts, including those with no
+ * human-effects rows, so "not reported" is measured rather than dropped.
  */
-export async function getAffectedPeopleByHazardFilters(
-	filters: HazardFilters,
-): Promise<AffectedPeopleResult> {
+function humanEffectsFilteredRecords(filters: HazardFilters): SQL {
 	const {
 		countryAccountsId,
 		hazardTypeId,
@@ -326,6 +315,30 @@ export async function getAffectedPeopleByHazardFilters(
           )`;
 	}
 
+	return filteredRecords;
+}
+
+/**
+ * Aggregates human impact data (deaths, injured, missing, displaced, affected)
+ * from disaster records filtered by hazard type, geography, and date range.
+ *
+ * Builds two different SQL queries depending on whether geographic filtering is needed:
+ * - **With geography**: uses a recursive CTE (`division_hierarchy`) to traverse the
+ *   division tree, `LEFT JOIN LATERAL` to unnest JSON spatial footprint arrays, and
+ *   JSON path queries to match division IDs in two different JSON structures.
+ * - **Without geography**: simpler direct join on disaster_records.
+ *
+ * Both paths join `human_dsg` with `IS NULL` filters on all dimension columns
+ * (sex, age, disability, poverty lines) to select only aggregate (non-disaggregated) rows,
+ * then LEFT JOIN the five effect tables (deaths, injured, missing, displaced, affected).
+ *
+ * Date filtering handles three variable-precision text formats: YYYY, YYYY-MM, YYYY-MM-DD.
+ */
+export async function getAffectedPeopleByHazardFilters(
+	filters: HazardFilters,
+): Promise<AffectedPeopleResult> {
+	const filteredRecords = humanEffectsFilteredRecords(filters);
+
 	const rawQuery = sql`
           WITH RECURSIVE ${filteredRecords}
           SELECT ${humanEffectMeasuresSelect()}
@@ -359,867 +372,183 @@ export async function getAffectedPeopleByHazardFilters(
 	};
 }
 
-interface GenderTotals {
-	totalMen: number;
-	totalWomen: number;
-	totalNonBinary: number;
+type DisaggregationDimension =
+	| "sex"
+	| "age"
+	| "disability"
+	| "global_poverty_line"
+	| "national_poverty_line";
+
+const DISAGGREGATION_DIMENSIONS: DisaggregationDimension[] = [
+	"sex",
+	"age",
+	"disability",
+	"global_poverty_line",
+	"national_poverty_line",
+];
+
+export interface DisaggregationCoverage {
+	/** Records in scope with at least one value broken down by the dimension. */
+	recordsWithBreakdown: number;
+	/** All records in scope. */
+	recordsTotal: number;
 }
+
 /**
- * Aggregates total affected people broken down by gender (men, women, non-binary).
- *
- * Same structural complexity as `getAffectedPeopleByHazardFilters` but additionally
- * uses `CASE WHEN hd.sex = 'm'/'f'/'o'` conditional aggregation to pivot rows into
- * columns. Each gender total sums six metrics: deaths, missing, affected (direct +
- * indirect), injured, and displaced.
- *
- * Key difference from `getAffectedPeopleByHazardFilters`: the `human_dsg` join
- * deliberately excludes `sex` from the `IS NULL` filter list (only filters age,
- * disability, poverty lines) since sex is the grouping dimension here.
- *
- * Gender codes: 'm' = men, 'f' = women, 'o' = non-binary.
+ * People affected (injured, missing, displaced, directly affected) broken down
+ * by one dimension. Only rows split by that dimension alone are read: every
+ * other dimension and the custom columns must be empty, so cross-tab rows
+ * (for example sex by age) are never counted twice. A category is null when no
+ * record in scope carries the breakdown (TR-076, pack C10).
  */
+async function getDisaggregationPanel(
+	filters: HazardFilters,
+	dimension: DisaggregationDimension,
+): Promise<{
+	byCategory: Record<string, number>;
+	coverage: DisaggregationCoverage;
+}> {
+	const others = DISAGGREGATION_DIMENSIONS.filter((d) => d !== dimension).map(
+		(d) => sql.raw(`hd."${d}" IS NULL`),
+	);
+	const dim = sql.raw(`hd."${dimension}"`);
+	const rawQuery = sql`
+          WITH RECURSIVE ${humanEffectsFilteredRecords(filters)},
+          dim_rows AS (
+            SELECT
+              hd."record_id",
+              ${dim}::text AS category,
+              (CASE WHEN inj."injured" > 0 THEN inj."injured" ELSE 0 END +
+               CASE WHEN mis."missing" > 0 THEN mis."missing" ELSE 0 END +
+               CASE WHEN dsp."displaced" > 0 THEN dsp."displaced" ELSE 0 END +
+               CASE WHEN aff."direct" > 0 THEN aff."direct" ELSE 0 END) AS v,
+              (inj."injured" IS NOT NULL OR mis."missing" IS NOT NULL
+               OR dsp."displaced" IS NOT NULL OR aff."direct" IS NOT NULL) AS has_value
+            FROM filtered_records fr
+            INNER JOIN "human_dsg" hd ON hd."record_id" = fr.record_id
+            LEFT JOIN "injured" inj ON inj."dsg_id" = hd."id"
+            LEFT JOIN "missing" mis ON mis."dsg_id" = hd."id"
+            LEFT JOIN "displaced" dsp ON dsp."dsg_id" = hd."id"
+            LEFT JOIN "affected" aff ON aff."dsg_id" = hd."id"
+            WHERE ${dim} IS NOT NULL
+              AND ${and(...others)}
+              AND (
+                hd."custom" IS NULL
+                OR hd."custom" = '{}'::jsonb
+                OR (
+                  SELECT COUNT(*)
+                  FROM jsonb_each(hd."custom")
+                  WHERE jsonb_typeof(value) != 'null'
+                ) = 0
+              )
+          ),
+          by_category AS (
+            SELECT category, SUM(v) AS total
+            FROM dim_rows
+            WHERE has_value
+            GROUP BY category
+          )
+          SELECT
+            (SELECT COUNT(*) FROM filtered_records) AS records_total,
+            (SELECT COUNT(DISTINCT "record_id") FROM dim_rows WHERE has_value) AS records_with_breakdown,
+            (SELECT jsonb_object_agg(category, total) FROM by_category) AS by_category
+        `;
+	const result = await dr.execute(rawQuery);
+	const row: Record<string, unknown> = result.rows[0] || {};
+	const raw = (row.by_category ?? {}) as Record<string, unknown>;
+	const byCategory: Record<string, number> = {};
+	for (const [k, v] of Object.entries(raw)) {
+		const n = Number(v);
+		if (Number.isFinite(n)) byCategory[k] = n;
+	}
+	return {
+		byCategory,
+		coverage: {
+			recordsWithBreakdown: Number(row.records_with_breakdown ?? 0),
+			recordsTotal: Number(row.records_total ?? 0),
+		},
+	};
+}
+
+/**
+ * A category's value within the records that carry the breakdown: 0 when those
+ * records hold none in the category, null when no record carries the breakdown.
+ */
+function categoryValue(
+	panel: {
+		byCategory: Record<string, number>;
+		coverage: DisaggregationCoverage;
+	},
+	...categories: string[]
+): number | null {
+	if (panel.coverage.recordsWithBreakdown === 0) {
+		return null;
+	}
+	return categories.reduce((sum, c) => sum + (panel.byCategory[c] ?? 0), 0);
+}
+
+interface GenderTotals {
+	totalMen: number | null;
+	totalWomen: number | null;
+	totalNonBinary: number | null;
+	genderCoverage: DisaggregationCoverage;
+}
+
+/** People affected by sex (m, f, o); null when no record carries a sex breakdown. */
 export async function getGenderTotalsByHazardFilters(
 	filters: HazardFilters,
 ): Promise<GenderTotals> {
-	const {
-		countryAccountsId,
-		hazardTypeId,
-		hazardClusterId,
-		specificHazardId,
-		geographicLevelId,
-		fromDate,
-		toDate,
-	} = filters;
-
-	// Build WHERE conditions for disaster_records
-	const whereConditions: SQL[] = [];
-	whereConditions.push(
-		sql`"approvalStatus" IN (${"published"}, ${"validated"})`,
-	);
-	whereConditions.push(sql`"country_accounts_id" = ${countryAccountsId}`);
-	if (hazardTypeId) whereConditions.push(sql`"hip_type_id" = ${hazardTypeId}`);
-	if (hazardClusterId)
-		whereConditions.push(sql`"hip_cluster_id" = ${hazardClusterId}`);
-	if (specificHazardId)
-		whereConditions.push(sql`"hip_hazard_id" = ${specificHazardId}`);
-
-	if (fromDate || toDate) {
-		const from = fromDate || "0001-01-01";
-		const to = toDate || "9999-12-31";
-		whereConditions.push(sql`
-        (
-          CASE 
-            WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM-DD')
-            WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM')
-            WHEN dr."start_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."start_date", 'YYYY')
-            ELSE NULL
-          END IS NULL OR 
-          CASE 
-            WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM-DD')
-            WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM')
-            WHEN dr."start_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."start_date", 'YYYY')
-            ELSE NULL
-          END <= ${to}::date
-        ) AND (
-          CASE 
-            WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM-DD')
-            WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM')
-            WHEN dr."end_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."end_date", 'YYYY')
-            ELSE NULL
-          END IS NULL OR 
-          CASE 
-            WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM-DD')
-            WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM')
-            WHEN dr."end_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."end_date", 'YYYY')
-            ELSE NULL
-          END >= ${from}::date
-        )
-      `);
-	}
-
-	// Check if we need geographic filtering
-	const needsGeographicFilter =
-		geographicLevelId && geographicLevelId.trim() !== "";
-
-	let rawQuery: SQL;
-
-	if (needsGeographicFilter) {
-		// WITH geographic filtering
-		const geoConditions = [
-			...whereConditions,
-			sql`drd."division_id" IS NOT NULL`,
-			sql`dh.level1_id IN (
-                SELECT level1_id 
-                FROM division_hierarchy 
-                WHERE id = ${geographicLevelId}
-            )`,
-		];
-
-		const combinedWhereClause = sql`WHERE ${and(...geoConditions)}`;
-
-		rawQuery = sql`
-          WITH RECURSIVE division_hierarchy AS (
-            SELECT id, parent_id, id AS level1_id
-            FROM "division"
-            WHERE parent_id IS NULL
-            UNION ALL
-            SELECT d.id, d.parent_id, dh.level1_id
-            FROM "division" d
-            INNER JOIN division_hierarchy dh ON d.parent_id = dh.id
-          ),
-          filtered_records AS (
-            SELECT DISTINCT dr."id" AS record_id
-            FROM "disaster_records" dr
-			LEFT JOIN "disaster_records_division" drd
-			  ON dr."id" = drd."disaster_record_id"
-            LEFT JOIN division_hierarchy dh 
-			  ON drd."division_id" = dh.id
-            ${combinedWhereClause}
-          )
-          SELECT 
-            COALESCE(SUM(CASE WHEN hd.sex = 'm' THEN (
-              COALESCE(mis.missing, 0) + 
-              COALESCE(aff.direct, 0) + 
-              COALESCE(inj.injured, 0) + 
-              COALESCE(dsp.displaced, 0)
-            ) ELSE 0 END), 0) AS total_men,
-            COALESCE(SUM(CASE WHEN hd.sex = 'f' THEN (
-              COALESCE(mis.missing, 0) + 
-              COALESCE(aff.direct, 0) + 
-              COALESCE(inj.injured, 0) + 
-              COALESCE(dsp.displaced, 0)
-            ) ELSE 0 END), 0) AS total_women,
-            COALESCE(SUM(CASE WHEN hd.sex = 'o' THEN (
-              COALESCE(mis.missing, 0) + 
-              COALESCE(aff.direct, 0) + 
-              COALESCE(inj.injured, 0) + 
-              COALESCE(dsp.displaced, 0)
-            ) ELSE 0 END), 0) AS total_non_binary
-          FROM filtered_records fr
-          LEFT JOIN "human_dsg" hd 
-            ON fr.record_id = hd.record_id
-            AND hd.age IS NULL 
-            AND hd.disability IS NULL 
-            AND hd.global_poverty_line IS NULL 
-            AND hd.national_poverty_line IS NULL 
-          LEFT JOIN "deaths" dth ON hd.id = dth.dsg_id
-          LEFT JOIN "injured" inj ON hd.id = inj.dsg_id
-          LEFT JOIN "missing" mis ON hd.id = mis.dsg_id
-          LEFT JOIN "displaced" dsp ON hd.id = dsp.dsg_id
-          LEFT JOIN "affected" aff ON hd.id = aff.dsg_id
-        `;
-	} else {
-		// WITHOUT geographic filtering - simpler query
-		const combinedWhereClause =
-			whereConditions.length > 0
-				? sql`WHERE ${and(...whereConditions)}`
-				: sql``;
-
-		rawQuery = sql`
-          WITH filtered_records AS (
-            SELECT dr."id" AS record_id
-            FROM "disaster_records" dr
-            ${combinedWhereClause}
-          )
-          SELECT 
-            COALESCE(SUM(CASE WHEN hd.sex = 'm' THEN (
-              COALESCE(mis.missing, 0) + 
-              COALESCE(aff.direct, 0) + 
-              COALESCE(inj.injured, 0) + 
-              COALESCE(dsp.displaced, 0)
-            ) ELSE 0 END), 0) AS total_men,
-            COALESCE(SUM(CASE WHEN hd.sex = 'f' THEN (
-              COALESCE(mis.missing, 0) + 
-              COALESCE(aff.direct, 0) + 
-              COALESCE(inj.injured, 0) + 
-              COALESCE(dsp.displaced, 0)
-            ) ELSE 0 END), 0) AS total_women,
-            COALESCE(SUM(CASE WHEN hd.sex = 'o' THEN (
-              COALESCE(mis.missing, 0) + 
-              COALESCE(aff.direct, 0) + 
-              COALESCE(inj.injured, 0) + 
-              COALESCE(dsp.displaced, 0)
-            ) ELSE 0 END), 0) AS total_non_binary
-          FROM filtered_records fr
-          LEFT JOIN "human_dsg" hd 
-            ON fr.record_id = hd.record_id
-            AND hd.age IS NULL 
-            AND hd.disability IS NULL 
-            AND hd.global_poverty_line IS NULL 
-            AND hd.national_poverty_line IS NULL 
-          LEFT JOIN "deaths" dth ON hd.id = dth.dsg_id
-          LEFT JOIN "injured" inj ON hd.id = inj.dsg_id
-          LEFT JOIN "missing" mis ON hd.id = mis.dsg_id
-          LEFT JOIN "displaced" dsp ON hd.id = dsp.dsg_id
-          LEFT JOIN "affected" aff ON hd.id = aff.dsg_id
-        `;
-	}
-
-	// Execute the query
-	const result = await dr.execute(rawQuery);
-
-	// Return the aggregated totals
-	const row = result.rows[0] || {};
+	const panel = await getDisaggregationPanel(filters, "sex");
 	return {
-		totalMen: Number(row.total_men ?? 0),
-		totalWomen: Number(row.total_women ?? 0),
-		totalNonBinary: Number(row.total_non_binary ?? 0),
+		totalMen: categoryValue(panel, "m"),
+		totalWomen: categoryValue(panel, "f"),
+		totalNonBinary: categoryValue(panel, "o"),
+		genderCoverage: panel.coverage,
 	};
 }
 
 interface AgeTotals {
-	totalChildren: number;
-	totalAdults: number;
-	totalSeniors: number;
+	totalChildren: number | null;
+	totalAdults: number | null;
+	totalSeniors: number | null;
+	ageCoverage: DisaggregationCoverage;
 }
 
+/** People affected by age group; null when no record carries an age breakdown. */
 export async function getAgeTotalsByHazardFilters(
 	filters: HazardFilters,
 ): Promise<AgeTotals> {
-	const {
-		countryAccountsId,
-		hazardTypeId,
-		hazardClusterId,
-		specificHazardId,
-		geographicLevelId,
-		fromDate,
-		toDate,
-	} = filters;
-
-	// Build WHERE conditions for disaster_records
-	const whereConditions: SQL[] = [];
-	whereConditions.push(
-		sql`dr."approvalStatus" IN (${"published"}, ${"validated"})`,
-	);
-	whereConditions.push(sql`dr."country_accounts_id" = ${countryAccountsId}`);
-	if (hazardTypeId)
-		whereConditions.push(sql`dr."hip_type_id" = ${hazardTypeId}`);
-	if (hazardClusterId)
-		whereConditions.push(sql`dr."hip_cluster_id" = ${hazardClusterId}`);
-	if (specificHazardId)
-		whereConditions.push(sql`dr."hip_hazard_id" = ${specificHazardId}`);
-
-	if (fromDate || toDate) {
-		const from = fromDate || "0001-01-01";
-		const to = toDate || "9999-12-31";
-		whereConditions.push(sql`
-        (
-          CASE 
-            WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM-DD')
-            WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM')
-            WHEN dr."start_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."start_date", 'YYYY')
-            ELSE NULL
-          END IS NULL OR 
-          CASE 
-            WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM-DD')
-            WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM')
-            WHEN dr."start_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."start_date", 'YYYY')
-            ELSE NULL
-          END <= ${to}::date
-        ) AND (
-          CASE 
-            WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM-DD')
-            WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM')
-            WHEN dr."end_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."end_date", 'YYYY')
-            ELSE NULL
-          END IS NULL OR 
-          CASE 
-            WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM-DD')
-            WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM')
-            WHEN dr."end_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."end_date", 'YYYY')
-            ELSE NULL
-          END >= ${from}::date
-        )
-      `);
-	}
-
-	// Check if we need geographic filtering
-	const needsGeographicFilter =
-		geographicLevelId && geographicLevelId.trim() !== "";
-
-	let rawQuery: SQL;
-
-	if (needsGeographicFilter) {
-		// WITH geographic filtering
-		const geoConditions = [
-			...whereConditions,
-			sql`drd."division_id" IS NOT NULL`,
-			sql`dh.level1_id IN (
-                SELECT level1_id 
-                FROM division_hierarchy 
-                WHERE id = ${geographicLevelId}
-            )`,
-		];
-
-		const combinedWhereClause = sql`WHERE ${and(...geoConditions)}`;
-
-		rawQuery = sql`
-          WITH RECURSIVE division_hierarchy AS (
-            SELECT id, parent_id, id AS level1_id
-            FROM "division"
-            WHERE parent_id IS NULL
-            UNION ALL
-            SELECT d.id, d.parent_id, dh.level1_id
-            FROM "division" d
-            INNER JOIN division_hierarchy dh ON d.parent_id = dh.id
-          ),
-          filtered_records AS (
-            SELECT DISTINCT dr."id" AS record_id
-            FROM "disaster_records" dr
-			LEFT JOIN "disaster_records_division" drd
-			  ON dr."id" = drd."disaster_record_id"
-            LEFT JOIN division_hierarchy dh 
-			  ON drd."division_id" = dh.id
-            ${combinedWhereClause}
-          )
-          SELECT 
-            COALESCE(SUM(CASE WHEN hd.age = '0-14' THEN (
-              COALESCE(mis.missing, 0) + 
-              COALESCE(aff.direct, 0) + 
-              COALESCE(inj.injured, 0) + 
-              COALESCE(dsp.displaced, 0)
-            ) ELSE 0 END), 0) AS total_children,
-            COALESCE(SUM(CASE WHEN hd.age = '15-64' THEN (
-              COALESCE(mis.missing, 0) + 
-              COALESCE(aff.direct, 0) + 
-              COALESCE(inj.injured, 0) + 
-              COALESCE(dsp.displaced, 0)
-            ) ELSE 0 END), 0) AS total_adults,
-            COALESCE(SUM(CASE WHEN hd.age = '65+' THEN (
-              COALESCE(mis.missing, 0) + 
-              COALESCE(aff.direct, 0) + 
-              COALESCE(inj.injured, 0) + 
-              COALESCE(dsp.displaced, 0)
-            ) ELSE 0 END), 0) AS total_seniors
-          FROM filtered_records fr
-          LEFT JOIN "human_dsg" hd 
-            ON fr.record_id = hd.record_id
-            AND hd.disability IS NULL 
-            AND hd.global_poverty_line IS NULL 
-            AND hd.national_poverty_line IS NULL
-          LEFT JOIN "deaths" dth ON hd.id = dth.dsg_id
-          LEFT JOIN "injured" inj ON hd.id = inj.dsg_id
-          LEFT JOIN "missing" mis ON hd.id = mis.dsg_id
-          LEFT JOIN "displaced" dsp ON hd.id = dsp.dsg_id
-          LEFT JOIN "affected" aff ON hd.id = aff.dsg_id
-        `;
-	} else {
-		// WITHOUT geographic filtering - simpler query
-		const combinedWhereClause =
-			whereConditions.length > 0
-				? sql`WHERE ${and(...whereConditions)}`
-				: sql``;
-
-		rawQuery = sql`
-          SELECT 
-            COALESCE(SUM(CASE WHEN hd.age = '0-14' THEN (
-              COALESCE(mis.missing, 0) + 
-              COALESCE(aff.direct, 0) + 
-              COALESCE(inj.injured, 0) + 
-              COALESCE(dsp.displaced, 0)
-            ) ELSE 0 END), 0) AS total_children,
-            COALESCE(SUM(CASE WHEN hd.age = '15-64' THEN (
-              COALESCE(mis.missing, 0) + 
-              COALESCE(aff.direct, 0) + 
-              COALESCE(inj.injured, 0) + 
-              COALESCE(dsp.displaced, 0)
-            ) ELSE 0 END), 0) AS total_adults,
-            COALESCE(SUM(CASE WHEN hd.age = '65+' THEN (
-              COALESCE(mis.missing, 0) + 
-              COALESCE(aff.direct, 0) + 
-              COALESCE(inj.injured, 0) + 
-              COALESCE(dsp.displaced, 0)
-            ) ELSE 0 END), 0) AS total_seniors
-          FROM "disaster_records" dr
-          INNER JOIN "human_dsg" hd 
-            ON dr.id = hd.record_id
-            AND hd.disability IS NULL 
-            AND hd.global_poverty_line IS NULL 
-            AND hd.national_poverty_line IS NULL
-          LEFT JOIN "deaths" dth ON hd.id = dth.dsg_id
-          LEFT JOIN "injured" inj ON hd.id = inj.dsg_id
-          LEFT JOIN "missing" mis ON hd.id = mis.dsg_id
-          LEFT JOIN "displaced" dsp ON hd.id = dsp.dsg_id
-          LEFT JOIN "affected" aff ON hd.id = aff.dsg_id
-          ${combinedWhereClause}
-        `;
-	}
-
-	// Execute the query
-	const result = await dr.execute(rawQuery);
-
-	// Return the aggregated totals
-	const row = result.rows[0] || {};
+	const panel = await getDisaggregationPanel(filters, "age");
 	return {
-		totalChildren: Number(row.total_children ?? 0),
-		totalAdults: Number(row.total_adults ?? 0),
-		totalSeniors: Number(row.total_seniors ?? 0),
+		totalChildren: categoryValue(panel, "0-14"),
+		totalAdults: categoryValue(panel, "15-64"),
+		totalSeniors: categoryValue(panel, "65+"),
+		ageCoverage: panel.coverage,
 	};
 }
 
+/** People affected with a disability (any stored disability value). */
 export async function getDisabilityTotalByHazardFilters(
 	filters: HazardFilters,
-): Promise<number> {
-	const {
-		countryAccountsId,
-		hazardTypeId,
-		hazardClusterId,
-		specificHazardId,
-		geographicLevelId,
-		fromDate,
-		toDate,
-	} = filters;
-
-	// Build WHERE conditions for disaster_records
-	const whereConditions: SQL[] = [];
-	whereConditions.push(sql`dr."approvalStatus" IN ('published', 'validated')`);
-	whereConditions.push(sql`dr."country_accounts_id" = ${countryAccountsId}`);
-	if (hazardTypeId)
-		whereConditions.push(sql`dr."hip_type_id" = ${hazardTypeId}`);
-	if (hazardClusterId)
-		whereConditions.push(sql`dr."hip_cluster_id" = ${hazardClusterId}`);
-	if (specificHazardId)
-		whereConditions.push(sql`dr."hip_hazard_id" = ${specificHazardId}`);
-
-	if (fromDate || toDate) {
-		const from = fromDate || "0001-01-01";
-		const to = toDate || "9999-12-31";
-		whereConditions.push(sql`
-        (
-          CASE 
-            WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM-DD')
-            WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM')
-            WHEN dr."start_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."start_date", 'YYYY')
-            ELSE NULL
-          END IS NULL OR 
-          CASE 
-            WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM-DD')
-            WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM')
-            WHEN dr."start_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."start_date", 'YYYY')
-            ELSE NULL
-          END <= ${to}::date
-        ) AND (
-          CASE 
-            WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM-DD')
-            WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM')
-            WHEN dr."end_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."end_date", 'YYYY')
-            ELSE NULL
-          END IS NULL OR 
-          CASE 
-            WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM-DD')
-            WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM')
-            WHEN dr."end_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."end_date", 'YYYY')
-            ELSE NULL
-          END >= ${from}::date
-        )
-      `);
-	}
-
-	// Check if we need geographic filtering
-	const needsGeographicFilter =
-		geographicLevelId && geographicLevelId.trim() !== "";
-
-	let rawQuery: SQL;
-
-	if (needsGeographicFilter) {
-		// WITH geographic filtering
-		const geoConditions = [
-			...whereConditions,
-			sql`drd."division_id" IS NOT NULL`,
-			sql`dh.level1_id IN (
-                SELECT level1_id 
-                FROM division_hierarchy 
-                WHERE id = ${geographicLevelId}
-            )`,
-		];
-
-		const combinedWhereClause = sql`WHERE ${and(...geoConditions)}`;
-
-		rawQuery = sql`
-          WITH RECURSIVE division_hierarchy AS (
-            SELECT id, parent_id, id AS level1_id
-            FROM "division"
-            WHERE parent_id IS NULL
-            UNION ALL
-            SELECT d.id, d.parent_id, dh.level1_id
-            FROM "division" d
-            INNER JOIN division_hierarchy dh ON d.parent_id = dh.id
-          ),
-          filtered_records AS (
-            SELECT DISTINCT dr."id" AS record_id
-            FROM "disaster_records" dr
-			LEFT JOIN "disaster_records_division" drd
-			  ON dr."id" = drd."disaster_record_id"
-            LEFT JOIN division_hierarchy dh 
-			  ON drd."division_id" = dh.id
-            ${combinedWhereClause}
-          )
-          SELECT 
-            COALESCE(SUM(
-              COALESCE(mis.missing, 0) + 
-              COALESCE(aff.direct, 0) + 
-              COALESCE(inj.injured, 0) + 
-              COALESCE(dsp.displaced, 0)
-            ), 0) AS total_disability
-          FROM filtered_records fr
-          LEFT JOIN "human_dsg" hd 
-            ON fr.record_id = hd.record_id
-            AND hd.age IS NULL 
-            AND hd.global_poverty_line IS NULL 
-            AND hd.national_poverty_line IS NULL
-            AND hd.disability IS NOT NULL 
-            AND hd.disability != 'none'
-          LEFT JOIN "deaths" dth ON hd.id = dth.dsg_id
-          LEFT JOIN "injured" inj ON hd.id = inj.dsg_id
-          LEFT JOIN "missing" mis ON hd.id = mis.dsg_id
-          LEFT JOIN "displaced" dsp ON hd.id = dsp.dsg_id
-          LEFT JOIN "affected" aff ON hd.id = aff.dsg_id
-        `;
-	} else {
-		// WITHOUT geographic filtering - simpler query
-		const combinedWhereClause =
-			whereConditions.length > 0
-				? sql`WHERE ${and(...whereConditions)}`
-				: sql``;
-
-		rawQuery = sql`
-          SELECT 
-            COALESCE(SUM(
-              COALESCE(mis.missing, 0) + 
-              COALESCE(aff.direct, 0) + 
-              COALESCE(inj.injured, 0) + 
-              COALESCE(dsp.displaced, 0)
-            ), 0) AS total_disability
-          FROM "disaster_records" dr
-          INNER JOIN "human_dsg" hd 
-            ON dr.id = hd.record_id
-            AND hd.age IS NULL 
-            AND hd.global_poverty_line IS NULL 
-            AND hd.national_poverty_line IS NULL
-            AND hd.disability IS NOT NULL 
-            AND hd.disability != 'none'
-          LEFT JOIN "deaths" dth ON hd.id = dth.dsg_id
-          LEFT JOIN "injured" inj ON hd.id = inj.dsg_id
-          LEFT JOIN "missing" mis ON hd.id = mis.dsg_id
-          LEFT JOIN "displaced" dsp ON hd.id = dsp.dsg_id
-          LEFT JOIN "affected" aff ON hd.id = aff.dsg_id
-          ${combinedWhereClause}
-        `;
-	}
-
-	// Execute the query
-	const result = await dr.execute(rawQuery);
-
-	// Return the aggregated total
-	const row = result.rows[0] || {};
-	return Number(row.total_disability ?? 0);
+): Promise<number | null> {
+	const panel = await getDisaggregationPanel(filters, "disability");
+	return categoryValue(panel, ...Object.keys(panel.byCategory));
 }
+
+/** People affected below the international poverty line. */
 export async function getInternationalPovertyTotalByHazardFilters(
 	filters: HazardFilters,
-): Promise<number> {
-	const {
-		countryAccountsId,
-		hazardTypeId,
-		hazardClusterId,
-		specificHazardId,
-		geographicLevelId,
-		fromDate,
-		toDate,
-	} = filters;
-
-	// Build WHERE conditions for disaster_records
-	const whereConditions: SQL[] = [];
-	whereConditions.push(sql`dr."approvalStatus" IN ('published', 'validated')`);
-	whereConditions.push(sql`dr."country_accounts_id" = ${countryAccountsId}`);
-	if (hazardTypeId)
-		whereConditions.push(sql`dr."hip_type_id" = ${hazardTypeId}`);
-	if (hazardClusterId)
-		whereConditions.push(sql`dr."hip_cluster_id" = ${hazardClusterId}`);
-	if (specificHazardId)
-		whereConditions.push(sql`dr."hip_hazard_id" = ${specificHazardId}`);
-
-	if (fromDate || toDate) {
-		const from = fromDate || "0001-01-01";
-		const to = toDate || "9999-12-31";
-		whereConditions.push(sql`
-        (
-          CASE 
-            WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM-DD')
-            WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM')
-            WHEN dr."start_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."start_date", 'YYYY')
-            ELSE NULL
-          END IS NULL OR 
-          CASE 
-            WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM-DD')
-            WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM')
-            WHEN dr."start_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."start_date", 'YYYY')
-            ELSE NULL
-          END <= ${to}::date
-        ) AND (
-          CASE 
-            WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM-DD')
-            WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM')
-            WHEN dr."end_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."end_date", 'YYYY')
-            ELSE NULL
-          END IS NULL OR 
-          CASE 
-            WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM-DD')
-            WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM')
-            WHEN dr."end_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."end_date", 'YYYY')
-            ELSE NULL
-          END >= ${from}::date
-        )
-      `);
-	}
-
-	// Check if we need geographic filtering
-	const needsGeographicFilter =
-		geographicLevelId && geographicLevelId.trim() !== "";
-
-	let rawQuery: SQL;
-
-	if (needsGeographicFilter) {
-		// WITH geographic filtering
-		const geoConditions = [
-			...whereConditions,
-			sql`drd."division_id" IS NOT NULL`,
-			sql`dh.level1_id IN (
-                SELECT level1_id 
-                FROM division_hierarchy 
-                WHERE id = ${geographicLevelId}
-            )`,
-		];
-
-		const combinedWhereClause = sql`WHERE ${and(...geoConditions)}`;
-
-		rawQuery = sql`
-          WITH RECURSIVE division_hierarchy AS (
-            SELECT id, parent_id, id AS level1_id
-            FROM "division"
-            WHERE parent_id IS NULL
-            UNION ALL
-            SELECT d.id, d.parent_id, dh.level1_id
-            FROM "division" d
-            INNER JOIN division_hierarchy dh ON d.parent_id = dh.id
-          ),
-          filtered_records AS (
-            SELECT DISTINCT dr."id" AS record_id
-            FROM "disaster_records" dr
-			LEFT JOIN "disaster_records_division" drd
-			  ON dr."id" = drd."disaster_record_id"
-            LEFT JOIN division_hierarchy dh 
-			  ON drd."division_id" = dh.id
-            ${combinedWhereClause}
-          )
-          SELECT 
-            COALESCE(SUM(
-              COALESCE(mis.missing, 0) + 
-              COALESCE(aff.direct, 0) + 
-              COALESCE(inj.injured, 0) + 
-              COALESCE(dsp.displaced, 0)
-            ), 0) AS total_poverty
-          FROM filtered_records fr
-          LEFT JOIN "human_dsg" hd 
-            ON fr.record_id = hd.record_id
-            AND hd.age IS NULL
-            AND hd.disability IS NULL
-            AND hd.national_poverty_line IS NULL
-            AND hd.global_poverty_line = 'below'
-          LEFT JOIN "deaths" dth ON hd.id = dth.dsg_id
-          LEFT JOIN "injured" inj ON hd.id = inj.dsg_id
-          LEFT JOIN "missing" mis ON hd.id = mis.dsg_id
-          LEFT JOIN "displaced" dsp ON hd.id = dsp.dsg_id
-          LEFT JOIN "affected" aff ON hd.id = aff.dsg_id
-        `;
-	} else {
-		// WITHOUT geographic filtering - simpler query
-		const combinedWhereClause =
-			whereConditions.length > 0
-				? sql`WHERE ${and(...whereConditions)}`
-				: sql``;
-
-		rawQuery = sql`
-          SELECT 
-            COALESCE(SUM(
-              COALESCE(mis.missing, 0) + 
-              COALESCE(aff.direct, 0) + 
-              COALESCE(inj.injured, 0) + 
-              COALESCE(dsp.displaced, 0)
-            ), 0) AS total_poverty
-          FROM "disaster_records" dr
-          INNER JOIN "human_dsg" hd 
-            ON dr.id = hd.record_id
-            AND hd.age IS NULL
-            AND hd.disability IS NULL
-            AND hd.national_poverty_line IS NULL
-            AND hd.global_poverty_line = 'below'
-          LEFT JOIN "deaths" dth ON hd.id = dth.dsg_id
-          LEFT JOIN "injured" inj ON hd.id = inj.dsg_id
-          LEFT JOIN "missing" mis ON hd.id = mis.dsg_id
-          LEFT JOIN "displaced" dsp ON hd.id = dsp.dsg_id
-          LEFT JOIN "affected" aff ON hd.id = aff.dsg_id
-          ${combinedWhereClause}
-        `;
-	}
-
-	// Execute the query
-	const result = await dr.execute(rawQuery);
-
-	return Number(result.rows[0]?.total_poverty ?? 0);
+): Promise<number | null> {
+	const panel = await getDisaggregationPanel(filters, "global_poverty_line");
+	return categoryValue(panel, "below");
 }
 
+/** People affected below the national poverty line. */
 export async function getNationalPovertyTotalByHazardFilters(
 	filters: HazardFilters,
-): Promise<number> {
-	const {
-		countryAccountsId,
-		hazardTypeId,
-		hazardClusterId,
-		specificHazardId,
-		geographicLevelId,
-		fromDate,
-		toDate,
-	} = filters;
-
-	// Build WHERE conditions for disaster_records
-	const whereConditions: SQL[] = [];
-	whereConditions.push(sql`dr."approvalStatus" IN ('published', 'validated')`);
-	whereConditions.push(sql`dr."country_accounts_id" = ${countryAccountsId}`);
-	if (hazardTypeId)
-		whereConditions.push(sql`dr."hip_type_id" = ${hazardTypeId}`);
-	if (hazardClusterId)
-		whereConditions.push(sql`dr."hip_cluster_id" = ${hazardClusterId}`);
-	if (specificHazardId)
-		whereConditions.push(sql`dr."hip_hazard_id" = ${specificHazardId}`);
-
-	if (fromDate || toDate) {
-		const from = fromDate || "0001-01-01";
-		const to = toDate || "9999-12-31";
-		whereConditions.push(sql`
-        (
-          CASE 
-            WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM-DD')
-            WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM')
-            WHEN dr."start_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."start_date", 'YYYY')
-            ELSE NULL
-          END IS NULL OR 
-          CASE 
-            WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM-DD')
-            WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM')
-            WHEN dr."start_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."start_date", 'YYYY')
-            ELSE NULL
-          END <= ${to}::date
-        ) AND (
-          CASE 
-            WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM-DD')
-            WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM')
-            WHEN dr."end_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."end_date", 'YYYY')
-            ELSE NULL
-          END IS NULL OR 
-          CASE 
-            WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM-DD')
-            WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM')
-            WHEN dr."end_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."end_date", 'YYYY')
-            ELSE NULL
-          END >= ${from}::date
-        )
-      `);
-	}
-
-	// Check if we need geographic filtering
-	const needsGeographicFilter =
-		geographicLevelId && geographicLevelId.trim() !== "";
-
-	let rawQuery: SQL;
-
-	if (needsGeographicFilter) {
-		// WITH geographic filtering
-		const geoConditions = [
-			...whereConditions,
-			sql`drd."division_id" IS NOT NULL`,
-			sql`dh.level1_id IN (
-                SELECT level1_id 
-                FROM division_hierarchy 
-                WHERE id = ${geographicLevelId}
-            )`,
-		];
-
-		const combinedWhereClause = sql`WHERE ${and(...geoConditions)}`;
-
-		rawQuery = sql`
-          WITH RECURSIVE division_hierarchy AS (
-            SELECT id, parent_id, id AS level1_id
-            FROM "division"
-            WHERE parent_id IS NULL
-            UNION ALL
-            SELECT d.id, d.parent_id, dh.level1_id
-            FROM "division" d
-            INNER JOIN division_hierarchy dh ON d.parent_id = dh.id
-          ),
-          filtered_records AS (
-            SELECT DISTINCT dr."id" AS record_id
-            FROM "disaster_records" dr
-			LEFT JOIN "disaster_records_division" drd
-			  ON dr."id" = drd."disaster_record_id"
-            LEFT JOIN division_hierarchy dh 
-			  ON drd."division_id" = dh.id
-            ${combinedWhereClause}
-          )
-          SELECT 
-            COALESCE(SUM(
-              COALESCE(mis.missing, 0) + 
-              COALESCE(aff.direct, 0) + 
-              COALESCE(inj.injured, 0) + 
-              COALESCE(dsp.displaced, 0)
-            ), 0) AS total_poverty
-          FROM filtered_records fr
-          LEFT JOIN "human_dsg" hd 
-            ON fr.record_id = hd.record_id
-            AND hd.age IS NULL
-            AND hd.disability IS NULL
-            AND hd.global_poverty_line IS NULL
-            AND hd.national_poverty_line = 'below'
-          LEFT JOIN "deaths" dth ON hd.id = dth.dsg_id
-          LEFT JOIN "injured" inj ON hd.id = inj.dsg_id
-          LEFT JOIN "missing" mis ON hd.id = mis.dsg_id
-          LEFT JOIN "displaced" dsp ON hd.id = dsp.dsg_id
-          LEFT JOIN "affected" aff ON hd.id = aff.dsg_id
-        `;
-	} else {
-		// WITHOUT geographic filtering - simpler query
-		const combinedWhereClause =
-			whereConditions.length > 0
-				? sql`WHERE ${and(...whereConditions)}`
-				: sql``;
-
-		rawQuery = sql`
-          SELECT 
-            COALESCE(SUM(
-              COALESCE(mis.missing, 0) + 
-              COALESCE(aff.direct, 0) + 
-              COALESCE(inj.injured, 0) + 
-              COALESCE(dsp.displaced, 0)
-            ), 0) AS total_poverty
-          FROM "disaster_records" dr
-          INNER JOIN "human_dsg" hd 
-            ON dr.id = hd.record_id
-            AND hd.age IS NULL
-            AND hd.disability IS NULL
-            AND hd.global_poverty_line IS NULL
-            AND hd.national_poverty_line = 'below'
-          LEFT JOIN "deaths" dth ON hd.id = dth.dsg_id
-          LEFT JOIN "injured" inj ON hd.id = inj.dsg_id
-          LEFT JOIN "missing" mis ON hd.id = mis.dsg_id
-          LEFT JOIN "displaced" dsp ON hd.id = dsp.dsg_id
-          LEFT JOIN "affected" aff ON hd.id = aff.dsg_id
-          ${combinedWhereClause}
-        `;
-	}
-
-	// Execute the query
-	const result = await dr.execute(rawQuery);
-
-	return Number(result.rows[0]?.total_poverty ?? 0);
+): Promise<number | null> {
+	const panel = await getDisaggregationPanel(filters, "national_poverty_line");
+	return categoryValue(panel, "below");
 }
 
 /**
