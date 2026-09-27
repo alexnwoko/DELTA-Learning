@@ -77,6 +77,7 @@ describe("getAffectedPeopleByHazardFilters value states", () => {
 			recordsZeroConfirmed: 2,
 			recordsNotReported: 2,
 			recordsTotal: 5,
+			recordsFlagged: 0,
 		});
 	});
 

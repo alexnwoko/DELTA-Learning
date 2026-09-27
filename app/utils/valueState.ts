@@ -22,6 +22,8 @@ export interface MeasureValue {
 	recordsZeroConfirmed: number;
 	recordsNotReported: number;
 	recordsTotal: number;
+	/** Records whose plausibility flags concern this measure (C30); 0 if none. */
+	recordsFlagged: number;
 }
 
 export interface MeasureCounts {
@@ -33,6 +35,8 @@ export interface MeasureCounts {
 	zeroConfirmed: number | string;
 	/** All records in scope, whatever their state. */
 	total: number | string;
+	/** Records flagged for review on this measure (C30). */
+	flagged?: number | string;
 }
 
 export interface CoverageRule {
@@ -81,6 +85,7 @@ export function measureValue(
 		recordsZeroConfirmed,
 		recordsNotReported,
 		recordsTotal,
+		recordsFlagged: toCount(counts.flagged),
 	};
 
 	const sum = toValue(counts.sum);

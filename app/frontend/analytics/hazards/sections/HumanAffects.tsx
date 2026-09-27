@@ -25,6 +25,14 @@ interface HumanAffectsProps {
 	totalInternationalPoorPeople: number | null;
 	totalNationalPoorPeople: number | null;
 	/** Records carrying a sex / age breakdown, out of records in scope. */
+	/** Records flagged for review that feed each figure (C30). */
+	flaggedRecords?: {
+		deaths?: number;
+		injured?: number;
+		missing?: number;
+		displaced?: number;
+		affectedDirect?: number;
+	};
 	genderCoverage?: { recordsWithBreakdown: number; recordsTotal: number };
 	ageCoverage?: { recordsWithBreakdown: number; recordsTotal: number };
 }
@@ -47,6 +55,7 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 	totalDisability,
 	totalInternationalPoorPeople,
 	totalNationalPoorPeople,
+	flaggedRecords,
 	genderCoverage,
 	ageCoverage,
 }) => {
@@ -98,6 +107,22 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 		totalNationalPoorPeople,
 		totalInternationalPoorPeople,
 	);
+	// Plausibility caveat: values are unchanged; flagged records await review
+	// by the national focal point (C30).
+	const flaggedNote = (n: number | undefined) =>
+		n && n > 0 ? (
+			<span className="dts-indicator__note">
+				{" "}
+				{ctx.t(
+					{
+						code: "analysis.records_flagged_for_review",
+						msg: "({n} record(s) flagged for review)",
+					},
+					{ n },
+				)}
+			</span>
+		) : null;
+
 	const coverageNote = (
 		c: { recordsWithBreakdown: number; recordsTotal: number } | undefined,
 	) =>
@@ -210,6 +235,7 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 							/>
 							<span style={{ marginLeft: "130px", fontSize: "1.2em" }}>
 								{formatFigure(totalDeaths)}
+								{flaggedNote(flaggedRecords?.deaths)}
 							</span>
 						</div>
 					</div>
@@ -253,6 +279,7 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 							/>
 							<span style={{ marginLeft: "150px", fontSize: "1.2em" }}>
 								{formatFigure(totalInjured)}
+								{flaggedNote(flaggedRecords?.injured)}
 							</span>
 						</div>
 					</div>
@@ -302,6 +329,7 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 							/>
 							<span style={{ marginLeft: "150px", fontSize: "1.2em" }}>
 								{formatFigure(totalMissing)}
+								{flaggedNote(flaggedRecords?.missing)}
 							</span>
 						</div>
 					</div>
@@ -354,6 +382,7 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 							/>
 							<span style={{ marginLeft: "250px", fontSize: "1.2em" }}>
 								{formatFigure(totalPeopleDirectlyAffected)}
+								{flaggedNote(flaggedRecords?.affectedDirect)}
 							</span>
 						</div>
 					</div>
@@ -398,6 +427,7 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 							/>
 							<span style={{ marginLeft: "250px", fontSize: "1.2em" }}>
 								{formatFigure(totalDisplaced)}
+								{flaggedNote(flaggedRecords?.displaced)}
 							</span>
 						</div>
 					</div>

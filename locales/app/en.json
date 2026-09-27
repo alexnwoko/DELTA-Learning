@@ -252,7 +252,7 @@
   {
     "id": "analysis.affected_population_icon",
     "translation": "Affected population icon",
-    "description": "Alt text for the icon that represents the affected population File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:348"
+    "description": "Alt text for the icon that represents the affected population File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:376"
   },
   {
     "id": "analysis.affiliated_records",
@@ -262,7 +262,7 @@
   {
     "id": "analysis.age_group_distribution_tooltip",
     "translation": "Distribution of affected people by age group",
-    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:499"
+    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:529"
   },
   {
     "id": "analysis.apply_filters",
@@ -287,7 +287,7 @@
   {
     "id": "analysis.breakdown_coverage",
     "translation": "Based on {with} of {total} records with this breakdown",
-    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:106"
+    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:131"
   },
   {
     "id": "analysis.children_adults_and_seniors_affected",
@@ -367,7 +367,7 @@
   {
     "id": "analysis.dead_icon",
     "translation": "Dead icon",
-    "description": "Alt text for the icon that represents a deceased person File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:204"
+    "description": "Alt text for the icon that represents a deceased person File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:229"
   },
   {
     "id": "analysis.death",
@@ -377,7 +377,7 @@
   {
     "id": "analysis.deaths",
     "translation": "Deaths",
-    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:176"
+    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:201"
   },
   {
     "id": "analysis.description",
@@ -397,7 +397,7 @@
   {
     "id": "analysis.disability_poverty_distribution_tooltip",
     "translation": "Distribution of affected people by disability and poverty status",
-    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:463"
+    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:493"
   },
   {
     "id": "analysis.disaster_event",
@@ -472,7 +472,7 @@
   {
     "id": "analysis.distribution_of_affected_people_by_gender",
     "translation": "Distribution of affected people by gender",
-    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:425"
+    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:455"
   },
   {
     "id": "analysis.distribution_of_impacts_geographic_levels",
@@ -592,7 +592,7 @@
   {
     "id": "analysis.hazards_analysis",
     "translation": "Hazards analysis",
-    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:416"
+    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:426"
   },
   {
     "id": "analysis.homeless_people",
@@ -602,7 +602,7 @@
   {
     "id": "analysis.human_direct_effects",
     "translation": "Human direct effects",
-    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:120"
+    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:145"
   },
   {
     "id": "analysis.human_effects",
@@ -707,7 +707,7 @@
   {
     "id": "analysis.injured_icon",
     "translation": "Injured Icon",
-    "description": "Alt text for the icon that represents injured people File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:247"
+    "description": "Alt text for the icon that represents injured people File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:273"
   },
   {
     "id": "analysis.injuries",
@@ -717,7 +717,7 @@
   {
     "id": "analysis.internally_displaced_icon",
     "translation": "Internally displaced Icon",
-    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:393"
+    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:422"
   },
   {
     "id": "analysis.invalid_data_structure",
@@ -782,7 +782,7 @@
   {
     "id": "analysis.missing_icon",
     "translation": "Missing Icon",
-    "description": "Alt text for the icon that represents missing persons File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:296"
+    "description": "Alt text for the icon that represents missing persons File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:323"
   },
   {
     "id": "analysis.most_damaging_events",
@@ -917,7 +917,7 @@
   {
     "id": "analysis.not_reported",
     "translation": "Not reported",
-    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:56"
+    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:65"
   },
   {
     "id": "analysis.number_of_deaths",
@@ -952,7 +952,7 @@
   {
     "id": "analysis.partial_figure",
     "translation": "(partial: not all components reported)",
-    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:162"
+    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:187"
   },
   {
     "id": "analysis.people_affected",
@@ -962,7 +962,7 @@
   {
     "id": "analysis.people_directly_affected",
     "translation": "People directly affected",
-    "description": "Label for people directly affected by the hazard File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:314"
+    "description": "Label for people directly affected by the hazard File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:342"
   },
   {
     "id": "analysis.people_directly_affected_old_desinventar",
@@ -988,6 +988,11 @@
     "id": "analysis.public_cost",
     "translation": "Public cost",
     "description": "File: app/routes/$lang+/analytics+/disaster-events.sector.tsx:572"
+  },
+  {
+    "id": "analysis.records_flagged_for_review",
+    "translation": "({n} record(s) flagged for review)",
+    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:116"
   },
   {
     "id": "analysis.recovery",
@@ -1082,7 +1087,7 @@
   {
     "id": "analysis.select_and_apply_filters",
     "translation": "Please select and apply filters above to view the analysis.",
-    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:464"
+    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:474"
   },
   {
     "id": "analysis.select_and_apply_filters_above",
@@ -1242,22 +1247,22 @@
   {
     "id": "analysis.total_number_of_deaths",
     "translation": "Total number of deaths",
-    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:183"
+    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:208"
   },
   {
     "id": "analysis.total_number_of_displaced",
     "translation": "Total number of displaced people",
-    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:372"
+    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:401"
   },
   {
     "id": "analysis.total_number_of_injured",
     "translation": "Total number of injured",
-    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:226"
+    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:252"
   },
   {
     "id": "analysis.total_number_of_missing",
     "translation": "Total number of missing persons",
-    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:275"
+    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:302"
   },
   {
     "id": "analysis.total_people_affected",
@@ -1267,12 +1272,12 @@
   {
     "id": "analysis.total_people_affected_tooltip",
     "translation": "Total people affected is the sum of injured, missing, directly affected people and displaced",
-    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:146"
+    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:171"
   },
   {
     "id": "analysis.total_people_directly_affected",
     "translation": "Total number of people directly affected",
-    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:327"
+    "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:355"
   },
   {
     "id": "analysis.type",
@@ -1302,7 +1307,7 @@
   {
     "id": "analysis.welcome_hazard_dashboard",
     "translation": "Welcome to the hazard dashboard! 🌟",
-    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:458"
+    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:468"
   },
   {
     "id": "analysis.welcome_to_sectors_dashboard",
@@ -5177,7 +5182,7 @@
   {
     "id": "geographies.unknown_division",
     "translation": "Unknown division",
-    "description": "Unknown geographic division. File: app/routes/$lang+/analytics+/hazards.tsx:369"
+    "description": "Unknown geographic division. File: app/routes/$lang+/analytics+/hazards.tsx:379"
   },
   {
     "id": "geographies.update_division",
@@ -5537,17 +5542,17 @@
   {
     "id": "hip.unknown_cluster",
     "translation": "Unknown cluster",
-    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:361"
+    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:371"
   },
   {
     "id": "hip.unknown_hazard",
     "translation": "Unknown hazard",
-    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:357"
+    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:367"
   },
   {
     "id": "hip.unknown_type",
     "translation": "Unknown type",
-    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:365"
+    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:375"
   },
   {
     "id": "home",
@@ -6142,7 +6147,7 @@
   {
     "id": "meta.hazards_analysis",
     "translation": "Hazards analysis",
-    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:565"
+    "description": "File: app/routes/$lang+/analytics+/hazards.tsx:588"
   },
   {
     "id": "meta.invite_user",

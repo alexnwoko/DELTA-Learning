@@ -138,6 +138,7 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 		totalDisplaced,
 		totalAffectedDirect,
 		totalAffectedIndirect,
+		measures: humanEffectMeasures,
 	} = await getAffectedPeopleByHazardFilters(filters);
 	const { totalChildren, totalAdults, totalSeniors, ageCoverage } =
 		await getAgeTotalsByHazardFilters(filters);
@@ -200,7 +201,11 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 	const stateGeoData = (
 		rows: {
 			divisionId: string;
-			measure: { value: number | null; valueState: ValueState };
+			measure: {
+				value: number | null;
+				valueState: ValueState;
+				recordsFlagged: number;
+			};
 			sharedRecords: number;
 		}[],
 		label: string,
@@ -222,10 +227,14 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 				row && row.sharedRecords > 0
 					? ` (${row.sharedRecords} record(s) also counted in another division)`
 					: "";
+			const flagged =
+				row && row.measure.recordsFlagged > 0
+					? `; ${row.measure.recordsFlagged} record(s) flagged for review`
+					: "";
 			return {
 				total: value ?? 0,
 				name: division.name["en"] || "Unknown",
-				description: `${label}: ${shown}${shared}`,
+				description: `${label}: ${shown}${shared}${flagged}`,
 				colorPercentage: (value ?? 0) / maxValue,
 				geojson: division.geojson || {},
 				valueState,
@@ -282,6 +291,7 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 		totalNationalPoorPeople,
 		genderCoverage,
 		ageCoverage,
+		humanEffectMeasures,
 		totalDamages,
 		totalLosses,
 		totalDamagesByYear,
@@ -524,6 +534,19 @@ export default function HazardAnalysis() {
 										actionData.totalInternationalPoorPeople
 									}
 									totalNationalPoorPeople={actionData.totalNationalPoorPeople}
+									flaggedRecords={{
+										deaths:
+											actionData.humanEffectMeasures.deaths.recordsFlagged,
+										injured:
+											actionData.humanEffectMeasures.injured.recordsFlagged,
+										missing:
+											actionData.humanEffectMeasures.missing.recordsFlagged,
+										displaced:
+											actionData.humanEffectMeasures.displaced.recordsFlagged,
+										affectedDirect:
+											actionData.humanEffectMeasures.affected_direct
+												.recordsFlagged,
+									}}
 									genderCoverage={actionData.genderCoverage}
 									ageCoverage={actionData.ageCoverage}
 								/>
