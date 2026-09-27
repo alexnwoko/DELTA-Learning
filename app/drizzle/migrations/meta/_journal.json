@@ -407,6 +407,13 @@
       "when": 1790279315863,
       "tag": "20260924200000_add_missing_gist_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1790596800000,
+      "tag": "20260928120000_geo_read_model",
+      "breakpoints": true
     }
   ]
 }
