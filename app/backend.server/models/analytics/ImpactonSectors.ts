@@ -19,6 +19,7 @@ import {
 } from "~/backend.server/utils/dateFilters";
 import createLogger from "~/utils/logger.server";
 import { BackendContext } from "~/backend.server/context";
+import { approvalBasis, type ApprovalAudience } from "~/utils/approvalBasis";
 
 // Create logger for this backend module
 const logger = createLogger("backend.server/models/analytics/ImpactOnSectors");
@@ -103,6 +104,7 @@ interface SectorImpactData {
 const getDisasterRecordsForSector = async (
 	ctx: BackendContext,
 	countryAccountsId: string,
+	audience: ApprovalAudience,
 	sectorId: string,
 	filters?: Filters,
 ): Promise<string[]> => {
@@ -113,7 +115,7 @@ const getDisasterRecordsForSector = async (
 
 		// Initialize conditions array with tenant isolation
 		let conditions: SQL[] = [
-			sql`${disasterRecordsTable.approvalStatus} IN ('published', 'validated')`,
+			approvalBasis(audience, disasterRecordsTable),
 			sql`${disasterRecordsTable.countryAccountsId} = ${countryAccountsId}`,
 		];
 
@@ -773,6 +775,7 @@ const getEventCountsByYear = async (
 export async function fetchSectorImpactData(
 	ctx: BackendContext,
 	countryAccountsId: string,
+	audience: ApprovalAudience,
 	sectorId: string,
 	filters?: Filters,
 	currency?: string,
@@ -781,6 +784,7 @@ export async function fetchSectorImpactData(
 		const recordIds = await getDisasterRecordsForSector(
 			ctx,
 			countryAccountsId,
+			audience,
 			sectorId,
 			filters,
 		);

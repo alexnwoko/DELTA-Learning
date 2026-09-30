@@ -40,10 +40,16 @@ import {
 import { CommonData } from "~/backend.server/handlers/commondata";
 
 import { ViewContext } from "~/frontend/context";
+import { ProvisionalFiguresNotice } from "~/frontend/analytics/ProvisionalFiguresNotice";
 
 import { LangLink } from "~/utils/link";
 import { urlLang } from "~/utils/url";
 import { getSectorImpactTotal } from "~/backend.server/handlers/analytics/ImpactonSectors";
+import { approvalAudienceFromRequest } from "~/backend.server/approvalAudience.server";
+import {
+	basisIncludesProvisional,
+	rowOnApprovalBasis,
+} from "~/utils/approvalBasis";
 import { getCurrencySymbol } from "~/utils/currency";
 import { Tooltip } from "primereact/tooltip";
 import { BackendContext } from "~/backend.server/context";
@@ -131,6 +137,7 @@ export const loader = authLoaderPublicOrWithPerm(
 
 		// Use the shared public tenant context for analytics
 		const countryAccountsId = await getCountryAccountsIdFromSession(request);
+		const audience = await approvalAudienceFromRequest(request);
 		const countDivisionByLevel1 =
 			await getCountDivisionByLevel1(countryAccountsId);
 		const geoLevelSelectorOverride = countDivisionByLevel1 === 1 ? 2 : 1; // Adjust geographic level to level 2 if only one value exists in level 1 division
@@ -138,6 +145,10 @@ export const loader = authLoaderPublicOrWithPerm(
 		if (qsDisEventId) {
 			// Pass public tenant context for analytics access
 			record = await disasterEventById(ctx, qsDisEventId).catch(console.error);
+			// C23: an event outside the approval basis is not shown.
+			if (record && !rowOnApprovalBasis(audience, record)) {
+				record = undefined;
+			}
 			if (record) {
 				try {
 					if (record.countryAccountsId !== countryAccountsId) {
@@ -154,6 +165,7 @@ export const loader = authLoaderPublicOrWithPerm(
 						ctx,
 						qsDisEventId,
 						true,
+						audience,
 					);
 					for (const item of recordsRelatedSectors) {
 						if (item.relatedAncestorsDescendants) {
@@ -176,6 +188,7 @@ export const loader = authLoaderPublicOrWithPerm(
 								qsDisEventId,
 								ancestorIds,
 								currency,
+								audience,
 							);
 
 							// Populate sectorData - will be used for the sector filter
@@ -247,11 +260,15 @@ export const loader = authLoaderPublicOrWithPerm(
 					sectorBarChartData = Object.values(sectorBarChartData);
 
 					countRelatedDisasterRecords =
-						await disasterEvent_DisasterRecordsCount__ById(qsDisEventId);
+						await disasterEvent_DisasterRecordsCount__ById(
+							qsDisEventId,
+							audience,
+						);
 
 					const damagesTotal = await getSectorImpactTotal({
 						impact: "damages",
 						countryAccountsId: countryAccountsId,
+						audience,
 						type: {
 							disasterEventId: qsDisEventId,
 						},
@@ -259,6 +276,7 @@ export const loader = authLoaderPublicOrWithPerm(
 					const lossesTotal = await getSectorImpactTotal({
 						impact: "losses",
 						countryAccountsId: countryAccountsId,
+						audience,
 						type: {
 							disasterEventId: qsDisEventId,
 						},
@@ -283,7 +301,7 @@ export const loader = authLoaderPublicOrWithPerm(
 					totalAffectedPeople2 = await getAffected(
 						dr, 
 						qsDisEventId,
-						{ publishedOnly: false },
+						{ audience },
 					);
 
 					const divisionLevel1 = await getDivisionByLevel(
@@ -294,6 +312,7 @@ export const loader = authLoaderPublicOrWithPerm(
 						const lossesMapTotal = await getSectorImpactTotal({
 							impact: "losses",
 							countryAccountsId: countryAccountsId,
+							audience,
 							type: {
 								disasterEventId: qsDisEventId,
 							},
@@ -302,6 +321,7 @@ export const loader = authLoaderPublicOrWithPerm(
 						const damagesMapTotal = await getSectorImpactTotal({
 							impact: "damages",
 							countryAccountsId: countryAccountsId,
+							audience,
 							type: {
 								disasterEventId: qsDisEventId,
 							},
@@ -310,7 +330,7 @@ export const loader = authLoaderPublicOrWithPerm(
 						const humanEffectsPerDivision = await getAffected(
 							dr,
 							qsDisEventId,
-							{ divisionId: item.id, publishedOnly: false },
+							{ divisionId: item.id, audience },
 						);
 
 						// Populate the geoData for the map for the human effects
@@ -398,6 +418,7 @@ export const loader = authLoaderPublicOrWithPerm(
 			sectorBarChartData: sectorBarChartData,
 			sectorParentArray: sectorParentArray,
 			currency,
+			provisional: basisIncludesProvisional(audience),
 		};
 	},
 );
@@ -454,6 +475,7 @@ function DisasterEventsAnalysisContent() {
 			sectorBarChartData: interfaceBarChart[];
 			sectorParentArray: interfaceSector[];
 			currency: string;
+			provisional: boolean;
 		} & CommonData
 	>();
 
@@ -689,6 +711,7 @@ function DisasterEventsAnalysisContent() {
 						<section className="dts-page-section">
 							<div className="mg-container">
 								<h2 className="dts-heading-2">{ld.cpDisplayName}</h2>
+								<ProvisionalFiguresNotice ctx={ctx} show={ld.provisional} />
 								<p>
 									<strong>
 										{ctx.t({

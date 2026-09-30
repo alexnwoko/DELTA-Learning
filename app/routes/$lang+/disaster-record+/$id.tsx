@@ -216,6 +216,8 @@ export const loader = async (args: LoaderFunctionArgs) => {
 		hipHazard: hipHazard || undefined,
 		hipCluster: hipCluster || undefined,
 		hipType: hipType || undefined,
+		// C23: migrated record not yet published; labelled in signed-in views.
+		provisional: result.provisional,
 	};
 
 	return {

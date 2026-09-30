@@ -1,4 +1,5 @@
 import { SQL, sql, eq, and, inArray, desc, exists } from "drizzle-orm";
+import { approvalBasis, type ApprovalAudience } from "~/utils/approvalBasis";
 import { dr as db } from "~/db.server";
 import createLogger from "~/utils/logger.server";
 
@@ -70,12 +71,13 @@ const getAllSubsectorIds = async (sectorId: string): Promise<string[]> => {
 
 async function buildFilterConditions(
 	countryAccountsId: string,
+	audience: ApprovalAudience,
 	params: MostDamagingEventsParams,
 ): Promise<{ conditions: SQL<unknown>[]; sectorIds?: string[] }> {
 	let conditions: SQL[] = [
 		// Apply tenant isolation filter
 		eq(disasterRecordsTable.countryAccountsId, countryAccountsId),
-		sql`${disasterRecordsTable.approvalStatus} IN ('published', 'validated')`,
+		approvalBasis(audience, disasterRecordsTable),
 	];
 
 	let sectorIds: string[] | undefined;
@@ -229,6 +231,7 @@ async function buildFilterConditions(
  */
 export async function getMostDamagingEvents(
 	countryAccountsId: string,
+	audience: ApprovalAudience,
 	params: MostDamagingEventsParams,
 ): Promise<PaginatedResult> {
 	const startTime = Date.now();
@@ -244,6 +247,7 @@ export async function getMostDamagingEvents(
 		// Build filter conditions with improved geographic filtering
 		const { conditions, sectorIds } = await buildFilterConditions(
 			countryAccountsId,
+			audience,
 			params,
 		);
 

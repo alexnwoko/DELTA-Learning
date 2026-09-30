@@ -1,4 +1,5 @@
 import { entityValidationAssignmentTable } from "~/drizzle/schema/entityValidationAssignmentTable";
+import { approvalBasis } from "~/utils/approvalBasis";
 import { hazardousEventTable } from "~/drizzle/schema/hazardousEventTable";
 
 import { authLoaderIsPublic } from "~/utils/auth";
@@ -108,8 +109,11 @@ export async function hazardousEventsLoader(args: LoaderFunctionArgs) {
 		filters.hipTypeId
 			? eq(hazardousEventTable.hipTypeId, filters.hipTypeId)
 			: undefined,
+		// C23: public requests see the public approval basis only.
 		filters.approvalStatus
-			? eq(hazardousEventTable.approvalStatus, filters.approvalStatus)
+			? approvalBasis("public", {
+					approvalStatus: hazardousEventTable.approvalStatus,
+				})
 			: undefined,
 
 		// Date range filters (for event dates, not record creation)

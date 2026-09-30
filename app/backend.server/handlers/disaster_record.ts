@@ -1,4 +1,5 @@
 import { sectorDisasterRecordsRelationTable } from "~/drizzle/schema/sectorDisasterRecordsRelationTable";
+import { approvalBasis, provisionalSql } from "~/utils/approvalBasis";
 import { disasterRecordsTable } from "~/drizzle/schema/disasterRecordsTable";
 import { disasterEventTable } from "~/drizzle/schema/disasterEventTable";
 
@@ -97,8 +98,9 @@ export async function disasterRecordLoader(args: disasterRecordLoaderArgs) {
 		countryAccountsId
 			? eq(disasterRecordsTable.countryAccountsId, countryAccountsId)
 			: undefined,
+		// C23: public requests see the public approval basis only.
 		filters.approvalStatus
-			? eq(disasterRecordsTable.approvalStatus, filters.approvalStatus)
+			? approvalBasis("public", disasterRecordsTable)
 			: undefined,
 		filters.disasterEventUUID
 			? eq(disasterRecordsTable.disasterEventId, filters.disasterEventUUID)
@@ -244,6 +246,8 @@ export async function disasterRecordLoader(args: disasterRecordLoaderArgs) {
 				id: disasterRecordsTable.id,
 				disasterEventId: disasterRecordsTable.disasterEventId,
 				approvalStatus: disasterRecordsTable.approvalStatus,
+				// C23: migrated and not yet published, labelled "Provisional".
+				provisional: provisionalSql(disasterRecordsTable),
 				startDate: disasterRecordsTable.startDate,
 				endDate: disasterRecordsTable.endDate,
 				createdAt: disasterRecordsTable.createdAt,

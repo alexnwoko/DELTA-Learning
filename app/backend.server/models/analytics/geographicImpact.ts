@@ -20,6 +20,7 @@ import {
 } from "~/drizzle/schema/divisionTable";
 import { createAssessmentMetadata } from "~/backend.server/utils/disasterCalculations";
 import type { DisasterImpactMetadata } from "~/types/disasterCalculations";
+import { approvalBasis, type ApprovalAudience } from "~/utils/approvalBasis";
 import {
 	parseFlexibleDate,
 	createDateCondition,
@@ -258,6 +259,7 @@ function isValidGeoJSON(value: any): boolean {
 
 export async function getGeographicImpact(
 	countryAccountsId: string,
+	audience: ApprovalAudience,
 	filters: GeographicImpactFilters,
 ): Promise<GeographicImpactResult> {
 	try {
@@ -350,6 +352,7 @@ export async function getGeographicImpact(
 				try {
 					const disasterRecords = await getDisasterRecordsForDivision(
 						countryAccountsId,
+						audience,
 						division.id,
 						{
 							startDate: filters.fromDate,
@@ -471,20 +474,21 @@ function disasterEventCondition(eventId: string): SQL {
 }
 
 /**
- * Record-level filters shared by every division query: tenant, published
- * status, HIPs classification, sector, date range and disaster event.
+ * Record-level filters shared by every division query: tenant, approval
+ * basis (C23), HIPs classification, sector, date range and disaster event.
  *
  * The hazard classification is read from the record itself, as in
  * hazard-analysis.ts, so records without a linked disaster event still count.
  */
 function buildRecordConditions(
 	countryAccountsId: string,
+	audience: ApprovalAudience,
 	filters: GeographicFilters | undefined,
 	sectorIds: string[],
 ): SQL[] {
 	const conditions: SQL[] = [
 		eq(disasterRecordsTable.countryAccountsId, countryAccountsId),
-		sql`${disasterRecordsTable.approvalStatus} = 'published'`,
+		approvalBasis(audience, disasterRecordsTable),
 	];
 
 	if (filters?.hazardType) {
@@ -553,6 +557,7 @@ function buildRecordConditions(
  */
 async function getDisasterRecordsForDivision(
 	countryAccountsId: string,
+	audience: ApprovalAudience,
 	divisionId: string,
 	filters?: GeographicFilters,
 	sectorIds: string[] = [],
@@ -571,7 +576,12 @@ async function getDisasterRecordsForDivision(
 			.from(disasterRecordsTable)
 			.where(
 				and(
-					...buildRecordConditions(countryAccountsId, filters, sectorIds),
+					...buildRecordConditions(
+						countryAccountsId,
+						audience,
+						filters,
+						sectorIds,
+					),
 					recordInDivisionCondition(
 						disasterRecordsTable,
 						divisionId,
@@ -597,6 +607,7 @@ async function getDisasterRecordsForDivision(
 
 export async function fetchGeographicImpactData(
 	countryAccountsId: string,
+	audience: ApprovalAudience,
 	divisionId: string,
 	filters?: GeographicFilters,
 ): Promise<{
@@ -619,6 +630,7 @@ export async function fetchGeographicImpactData(
 		// Get disaster records for the division with improved spatial handling
 		const recordIds = await getDisasterRecordsForDivision(
 			countryAccountsId,
+			audience,
 			divisionId,
 			filters,
 		);
@@ -1003,11 +1015,12 @@ async function aggregateLossesData(
  */
 export async function getGeographicImpactGeoJSON(
 	countryAccountsId: string,
+	audience: ApprovalAudience,
 	sectorId: string,
 	subSectorId?: string,
 ): Promise<GeoJSONFeatureCollection> {
 	try {
-		const result = await getGeographicImpact(countryAccountsId, {
+		const result = await getGeographicImpact(countryAccountsId, audience, {
 			sectorId,
 			subSectorId,
 		});

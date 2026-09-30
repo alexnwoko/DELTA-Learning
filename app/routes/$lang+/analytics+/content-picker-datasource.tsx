@@ -6,6 +6,7 @@ import {
 import { contentPickerConfig } from "./content-picker-config";
 import { getCountryAccountsIdFromSession } from "~/utils/session";
 import { BackendContext } from "~/backend.server/context";
+import { approvalAudienceFromRequest } from "~/backend.server/approvalAudience.server";
 
 export const loader = authLoaderPublicOrWithPerm(
 	"ViewData",
@@ -18,14 +19,15 @@ export const loader = authLoaderPublicOrWithPerm(
 		const limit = parseInt(url.searchParams.get("limit") || "10", 10);
 		const view = url.searchParams.get("view") || "0"; // Default to 0
 		const ctx = new BackendContext(loaderArgs);
+		const audience = await approvalAudienceFromRequest(request);
 
 		// Use a dictionary for better readability & scalability
 		const configMap: Record<string, any> = {
-			"0": contentPickerConfig(ctx),
+			"0": contentPickerConfig(ctx, audience),
 		};
 
 		// Fallback to default if view is invalid
-		const config = configMap[view] || contentPickerConfig(ctx);
+		const config = configMap[view] || contentPickerConfig(ctx, audience);
 
 		// Extract tenant context from user session or use public tenant context if no user session
 		const countryAccountsId = await getCountryAccountsIdFromSession(request);

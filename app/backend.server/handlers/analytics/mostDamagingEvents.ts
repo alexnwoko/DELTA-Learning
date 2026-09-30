@@ -5,6 +5,7 @@ import {
 	type SortDirection,
 } from "~/backend.server/models/analytics/mostDamagingEvents";
 import { sanitizeInput } from "~/utils/security";
+import type { ApprovalAudience } from "~/utils/approvalBasis";
 import { createAssessmentMetadata } from "~/backend.server/utils/disasterCalculations";
 
 interface MostDamagingEventsRequestParams {
@@ -30,6 +31,7 @@ const VALID_SORT_COLUMNS: readonly SortColumn[] = [
 
 export async function handleMostDamagingEventsRequest(
 	countryAccountsId: string,
+	audience: ApprovalAudience,
 	params: MostDamagingEventsRequestParams,
 ) {
 	try {
@@ -109,7 +111,11 @@ export async function handleMostDamagingEventsRequest(
 		};
 
 		// Get the data from the model with tenant context
-		const result = await getMostDamagingEvents(countryAccountsId, modelParams);
+		const result = await getMostDamagingEvents(
+			countryAccountsId,
+			audience,
+			modelParams,
+		);
 
 		return {
 			success: true,

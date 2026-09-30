@@ -1,4 +1,5 @@
 import { dr, Tx } from "~/db.server";
+import { approvalBasis } from "~/utils/approvalBasis";
 import { sectorDisasterRecordsRelationTable } from "~/drizzle/schema/sectorDisasterRecordsRelationTable";
 import { nonecoLossesTable } from "~/drizzle/schema/nonecoLossesTable";
 import { disasterRecordsTable } from "~/drizzle/schema/disasterRecordsTable";
@@ -780,7 +781,7 @@ export async function disasterRecordsBasicInfoById(idStr: string) {
 		.where(
 			and(
 				eq(disasterRecordsTable.id, id),
-				eq(disasterRecordsTable.approvalStatus, "published"), // Only published records are accessible
+				approvalBasis("public", disasterRecordsTable), // C23 public basis
 			),
 		)
 		.limit(1);
