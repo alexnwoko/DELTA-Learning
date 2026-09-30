@@ -1,4 +1,5 @@
 import { and, eq, gte, lte, SQL, sql } from "drizzle-orm";
+import { divisionAndDescendantsSql } from "~/backend.server/utils/geographicFilters";
 import {
 	measureValue,
 	PROVISIONAL_ZERO_COVERAGE,
@@ -70,7 +71,7 @@ export async function getDisasterEventCount(
 				SELECT 1
 				FROM disaster_event_division ded
 				WHERE ded.disaster_event_id = ${disasterEventTable.id}
-					AND ded.division_id = ${geographicLevelId}::uuid
+					AND ded.division_id IN ${divisionAndDescendantsSql(geographicLevelId, countryAccountsId)}
 			)`,
 		);
 	}
@@ -134,7 +135,7 @@ export async function getDisasterEventCountByYear(
 				SELECT 1
 				FROM disaster_event_division ded
 				WHERE ded.disaster_event_id = ${disasterEventTable.id}
-					AND ded.division_id = ${geographicLevelId}::uuid
+					AND ded.division_id IN ${divisionAndDescendantsSql(geographicLevelId, countryAccountsId)}
 			)`,
 		);
 	}
@@ -2019,7 +2020,7 @@ export async function getDisasterSummary(
 			SELECT 1
 			FROM disaster_event_division ded
 			WHERE ded.disaster_event_id = disaster_event.id
-				AND ded.division_id = ${geographicLevelId}::uuid
+				AND ded.division_id IN ${divisionAndDescendantsSql(geographicLevelId, countryAccountsId)}
 		)`);
 	}
 	if (fromDate || toDate) {
@@ -2098,7 +2099,8 @@ export async function getDisasterSummary(
 			provinceAffected: "",
 			totalDamages: 0,
 			totalLosses: 0,
-			totalAffectedPeople: 0,
+			// No records: the event has no reported people figure (TR-076).
+			totalAffectedPeople: null,
 		}));
 
 	// ---- Step 3: Get all sector_disaster_records_relation entries ----
