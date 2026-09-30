@@ -723,7 +723,9 @@ async function processSingleDivision(
 			const geoJsonPath = geoJsonLookup.get(normalizedFilename);
 
 			if (!geoJsonPath) {
-				throw new ImportError(`GeoJSON file not found: ${division.geodataFile}`);
+				throw new ImportError(
+					`GeoJSON file not found: ${division.geodataFile}`,
+				);
 			}
 
 			try {
@@ -1266,9 +1268,13 @@ export async function update(
 	}
 }
 
-export async function divisionById(id: string, countryAccountsId: string) {
+export async function divisionById(
+	id: string,
+	countryAccountsId: string,
+	db: Tx = dr,
+) {
 	try {
-		return await dr.transaction(async (tx: Tx) => {
+		return await db.transaction(async (tx: Tx) => {
 			try {
 				const res = await tx.query.divisionTable.findFirst({
 					where: and(
@@ -1339,9 +1345,10 @@ export async function getAllChildren(
 export async function getAllIdOnly(
 	divisionId: string,
 	countryAccountsId: string,
+	db: Tx = dr,
 ) {
 	try {
-		return await dr.transaction(async (tx: Tx) => {
+		return await db.transaction(async (tx: Tx) => {
 			try {
 				const res = await tx.execute(sql`
 					WITH RECURSIVE ParentCTE AS (
@@ -1392,9 +1399,13 @@ export async function getAllIdOnly(
 	}
 }
 
-export async function getParent(divisionId: string, countryAccountsId: string) {
+export async function getParent(
+	divisionId: string,
+	countryAccountsId: string,
+	db: Tx = dr,
+) {
 	try {
-		return await dr.transaction(async (tx: Tx) => {
+		return await db.transaction(async (tx: Tx) => {
 			try {
 				const res = await tx.execute(sql`
 					WITH RECURSIVE ParentCTE AS (
