@@ -407,6 +407,13 @@
       "when": 1790279315863,
       "tag": "20260924200000_add_missing_gist_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1790762400000,
+      "tag": "20260930120000_add_effect_lookup_indexes",
+      "breakpoints": true
     }
   ]
 }
