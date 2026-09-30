@@ -366,7 +366,7 @@ export async function disasterRecordsCreate(
 	// When updating HIPs, all three fields must be available in the partial
 	if (fields.hipTypeId || fields.hipClusterId || fields.hipHazardId) {
 		if (fields.hipHazardId) {
-			const hipRecord = await getHazardById(ctx, fields.hipHazardId);
+			const hipRecord = await getHazardById(ctx, fields.hipHazardId, tx);
 			if (!hipRecord && errors.fields) {
 				errors.fields.hipHazardId = [`Invalid value ${fields.hipHazardId}.`];
 			}
@@ -381,7 +381,7 @@ export async function disasterRecordsCreate(
 				errors.fields.hipTypeId = [`Invalid value ${fields.hipTypeId}.`];
 			}
 		} else if (fields.hipClusterId) {
-			const hipRecord = await getClusterById(ctx, fields.hipClusterId);
+			const hipRecord = await getClusterById(ctx, fields.hipClusterId, tx);
 			if (!hipRecord && errors.fields) {
 				errors.fields.hipClusterId = [`Invalid value ${fields.hipClusterId}.`];
 			}
@@ -389,7 +389,7 @@ export async function disasterRecordsCreate(
 				errors.fields.hipTypeId = [`Invalid value ${fields.hipTypeId}.`];
 			}
 		} else if (fields.hipTypeId) {
-			const hipRecord = await getTypeById(ctx, fields.hipTypeId);
+			const hipRecord = await getTypeById(ctx, fields.hipTypeId, tx);
 			if (!hipRecord && errors.fields) {
 				errors.fields.hipTypeId = [`Invalid value ${fields.hipTypeId}.`];
 			}
@@ -471,7 +471,7 @@ export async function disasterRecordsUpdate(
 	// When updating HIPs, all three fields must be available in the partial
 	if (fields.hipTypeId || fields.hipClusterId || fields.hipHazardId) {
 		if (fields.hipHazardId) {
-			const hipRecord = await getHazardById(ctx, fields.hipHazardId);
+			const hipRecord = await getHazardById(ctx, fields.hipHazardId, tx);
 			if (!hipRecord && errors.fields) {
 				errors.fields.hipHazardId = [`Invalid value ${fields.hipHazardId}.`];
 			}
@@ -486,7 +486,7 @@ export async function disasterRecordsUpdate(
 				errors.fields.hipTypeId = [`Invalid value ${fields.hipTypeId}.`];
 			}
 		} else if (fields.hipClusterId) {
-			const hipRecord = await getClusterById(ctx, fields.hipClusterId);
+			const hipRecord = await getClusterById(ctx, fields.hipClusterId, tx);
 			if (!hipRecord && errors.fields) {
 				errors.fields.hipClusterId = [`Invalid value ${fields.hipClusterId}.`];
 			}
@@ -494,7 +494,7 @@ export async function disasterRecordsUpdate(
 				errors.fields.hipTypeId = [`Invalid value ${fields.hipTypeId}.`];
 			}
 		} else if (fields.hipTypeId) {
-			const hipRecord = await getTypeById(ctx, fields.hipTypeId);
+			const hipRecord = await getTypeById(ctx, fields.hipTypeId, tx);
 			if (!hipRecord && errors.fields) {
 				errors.fields.hipTypeId = [`Invalid value ${fields.hipTypeId}.`];
 			}

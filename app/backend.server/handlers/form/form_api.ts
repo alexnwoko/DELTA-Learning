@@ -73,6 +73,7 @@ export async function jsonCreate<T>(
 					item.spatialFootprint = await spatialFootprintPostProcess(
 						item.spatialFootprint,
 						args,
+						tx,
 					);
 				}
 
@@ -82,6 +83,7 @@ export async function jsonCreate<T>(
 						ctx,
 						item,
 						args.countryAccountsId,
+						tx,
 					).then((errors) => {
 						if (errors) {
 							res.push({
@@ -183,6 +185,7 @@ export async function jsonUpsert<T extends ObjectWithImportId>(
 					item.spatialFootprint = await spatialFootprintPostProcess(
 						item.spatialFootprint,
 						args,
+						tx,
 					);
 				}
 
@@ -192,6 +195,7 @@ export async function jsonUpsert<T extends ObjectWithImportId>(
 						ctx,
 						item,
 						args.countryAccountsId,
+						tx,
 					).then((errors) => {
 						if (errors) {
 							res.push({
@@ -317,6 +321,7 @@ export async function jsonUpdate<T>(
 					item.spatialFootprint = await spatialFootprintPostProcess(
 						item.spatialFootprint,
 						args,
+						tx,
 					);
 				}
 
@@ -326,6 +331,7 @@ export async function jsonUpdate<T>(
 						ctx,
 						item,
 						args.countryAccountsId,
+						tx,
 					).then((errors) => {
 						if (errors) {
 							res.push({
@@ -531,16 +537,22 @@ interface propsSpatialFootprint {
 async function spatialFootprintPostProcess(
 	spatialFootprint: propsSpatialFootprint[],
 	args: { countryAccountsId: string },
+	tx: Tx,
 ): Promise<propsSpatialFootprint[]> {
 	if (!Array.isArray(spatialFootprint)) return spatialFootprint;
 
-	await Promise.all(
-		spatialFootprint.map(async (row) => {
+	// Every lookup runs on the caller's transaction (tx), never the global
+	// pool: a transaction waiting for a second pool connection deadlocks the
+	// pool under concurrent API writes. Rows run one at a time because they
+	// share the one connection.
+	for (const row of spatialFootprint) {
+		await (async () => {
 			// Only process rows with map_option 'Geographic level' and a division_id
 			if (row.map_option === "Geographic level" && row.division_id) {
 				const division = await divisionById(
 					row.division_id,
 					args.countryAccountsId,
+					tx,
 				);
 				if (
 					division &&
@@ -551,6 +563,7 @@ async function spatialFootprintPostProcess(
 					const divisionAllIds = await getAllIdOnly(
 						row.division_id,
 						args.countryAccountsId,
+						tx,
 					);
 					const divisionIds: string[] = Array.isArray(divisionAllIds?.rows)
 						? divisionAllIds.rows.map((c) => (c as { id: string }).id)
@@ -560,6 +573,7 @@ async function spatialFootprintPostProcess(
 					const parentDivision = await getParent(
 						row.division_id,
 						args.countryAccountsId,
+						tx,
 					);
 					type DivisionRow = { id: string; name: { en: string } };
 					const divisionBreadcrumb = Array.isArray(parentDivision?.rows)
@@ -595,8 +609,8 @@ async function spatialFootprintPostProcess(
 					delete row.division_id;
 				}
 			}
-		}),
-	);
+		})();
+	}
 
 	return spatialFootprint;
 }
@@ -613,6 +627,7 @@ async function validateDamageAssetSector(
 	ctx: BackendContext,
 	item: { sectorId?: string; assetId?: string },
 	countryAccountsId: string,
+	tx: Tx,
 ): Promise<any | null> {
 	if (!("sectorId" in item)) {
 		return { sectorId: ["Field 'sectorId' is required."] };
@@ -625,6 +640,7 @@ async function validateDamageAssetSector(
 		item.assetId!,
 		item.sectorId!,
 		countryAccountsId,
+		tx,
 	);
 	if (!isInSector) {
 		return { assetId: ["Asset does not belong to the selected sector."] };
