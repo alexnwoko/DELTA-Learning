@@ -547,7 +547,7 @@ def main(argv=None):
             json.dump(obj, f, ensure_ascii=False, indent=1, sort_keys=True)
             f.write("\n")
     with open(OUT / "ago_fixture_selection.csv", "w", encoding="utf-8", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=list(selection[0].keys()))
+        w = csv.DictWriter(f, fieldnames=list(selection[0].keys()), lineterminator="\n")
         w.writeheader()
         w.writerows(selection)
     digest = hashlib.sha1((OUT / "ago_fixture.jsonl").read_bytes()).hexdigest()[:10]
