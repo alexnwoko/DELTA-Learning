@@ -18,6 +18,25 @@ import {
 import { disasterEventTable } from "~/drizzle/schema/disasterEventTable";
 import { disasterRecordsDivisionTable } from "~/drizzle/schema/disasterRecordsDivisionTable";
 
+/**
+ * Replaces the audience approval basis on disaster_records with another
+ * basis, given the table alias. Only server code outside the routes passes
+ * one: the C23 reconciliation basis (reconciliationRecordBasis in
+ * models/reconciliationBasis.server.ts), for safeguard 4 and the C29 exit
+ * gate. It is a function, so no request parameter can supply it.
+ */
+export type RecordBasisOverride = (alias: string) => SQL;
+
+function recordBasis(
+	filters: HazardFilters,
+	alias: string,
+	override?: RecordBasisOverride,
+): SQL {
+	return override
+		? override(alias)
+		: approvalBasis(filters.audience, basisColumns(alias));
+}
+
 interface HazardFilters {
 	countryAccountsId: string;
 	hazardTypeId: string | null;
@@ -258,7 +277,10 @@ function humanEffectMeasuresSelect(): SQL {
  * WITH RECURSIVE. Every record counts, including those with no
  * human-effects rows, so "not reported" is measured rather than dropped.
  */
-function humanEffectsFilteredRecords(filters: HazardFilters): SQL {
+function humanEffectsFilteredRecords(
+	filters: HazardFilters,
+	basisOverride?: RecordBasisOverride,
+): SQL {
 	const {
 		countryAccountsId,
 		hazardTypeId,
@@ -271,7 +293,7 @@ function humanEffectsFilteredRecords(filters: HazardFilters): SQL {
 
 	// Build WHERE conditions for disaster_records
 	const whereConditions: SQL[] = [];
-	whereConditions.push(approvalBasis(filters.audience, basisColumns("dr")));
+	whereConditions.push(recordBasis(filters, "dr", basisOverride));
 	whereConditions.push(sql`dr."country_accounts_id" = ${countryAccountsId}`);
 	if (hazardTypeId)
 		whereConditions.push(sql`dr."hip_type_id" = ${hazardTypeId}`);
@@ -380,8 +402,9 @@ function humanEffectsFilteredRecords(filters: HazardFilters): SQL {
  */
 export async function getAffectedPeopleByHazardFilters(
 	filters: HazardFilters,
+	basisOverride?: RecordBasisOverride,
 ): Promise<AffectedPeopleResult> {
-	const filteredRecords = humanEffectsFilteredRecords(filters);
+	const filteredRecords = humanEffectsFilteredRecords(filters, basisOverride);
 
 	const rawQuery = sql`
           WITH RECURSIVE ${filteredRecords}
@@ -1460,6 +1483,7 @@ interface DeathsByDivision {
 
 export async function getTotalDeathsByDivision(
 	filters: HazardFilters,
+	basisOverride?: RecordBasisOverride,
 ): Promise<DeathsByDivision[]> {
 	const {
 		countryAccountsId,
@@ -1473,7 +1497,7 @@ export async function getTotalDeathsByDivision(
 
 	// Build WHERE conditions for disaster_records as SQL objects
 	const whereConditions: SQL[] = [];
-	whereConditions.push(approvalBasis(filters.audience, basisColumns("dr")));
+	whereConditions.push(recordBasis(filters, "dr", basisOverride));
 	whereConditions.push(sql`dr."country_accounts_id" = ${countryAccountsId}`);
 	if (hazardTypeId)
 		whereConditions.push(sql`dr."hip_type_id" = ${hazardTypeId}`);

@@ -6,9 +6,10 @@ import { notRetired } from "~/utils/approvalBasis";
 // reconciles a migration run while its records are still draft, so this basis
 // includes every approval status. It is separate from the approval basis on
 // purpose and has exactly two consumers: the loader read-back and the
-// safeguard 4 reconciliation. It is scoped to one tenant and one migration
-// run (legacy_data.migration.run_id, stamped by the loader on every record)
-// and excludes retired records like every other basis.
+// safeguard 4 reconciliation (with its C29 exit gate and fixture test). It
+// is scoped to one tenant and one migration run (legacy_data.migration.run_id,
+// stamped by the loader on every record) and excludes retired records like
+// every other basis.
 //
 // Server only, and never imported by a route module: no public route can
 // reach it (tests/unit/utils/approvalBasis.test.ts checks this).
@@ -43,6 +44,19 @@ export function reconciliationBasis(
 	return sql`(${p}"country_accounts_id" = ${scope.countryAccountsId}
 		AND (${p}"legacy_data" -> 'migration' ->> 'run_id') = ${scope.runId}
 		AND ${notRetired(sql`${p}"legacy_data"`)})`;
+}
+
+/**
+ * The reconciliation basis as a record-basis override for the analytics
+ * functions that accept one (getAffectedPeopleByHazardFilters,
+ * getTotalDeathsByDivision), so safeguard 4 and the C29 exit gate read the
+ * same figures the dashboards compute, with draft records counted.
+ */
+export function reconciliationRecordBasis(
+	scope: ReconciliationScope,
+): (alias: string) => SQL {
+	assertScope(scope);
+	return (alias: string) => reconciliationBasis(scope, alias);
 }
 
 export const RECONCILIATION_MEASURES = [
