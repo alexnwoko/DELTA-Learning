@@ -1,6 +1,6 @@
 import { fetchSectorImpactData } from "~/backend.server/models/analytics/ImpactonSectors";
 
-import { eq, and, sql, SQL, or } from "drizzle-orm";
+import { eq, and, sql, SQL } from "drizzle-orm";
 
 import { dr } from "~/db.server";
 import { sectorDisasterRecordsRelationTable } from "~/drizzle/schema/sectorDisasterRecordsRelationTable";
@@ -13,6 +13,7 @@ import { damagesTable } from "~/drizzle/schema/damagesTable";
 import { disruptionTable } from "~/drizzle/schema/disruptionTable";
 import { disasterEventTable } from "~/drizzle/schema/disasterEventTable";
 import { BackendContext } from "~/backend.server/context";
+import { approvalBasis, type ApprovalAudience } from "~/utils/approvalBasis";
 
 interface SectorImpactResponse {
 	success: boolean;
@@ -44,6 +45,7 @@ interface Filters {
 export const getImpactOnSector = async (
 	ctx: BackendContext,
 	countryAccountsId: string,
+	audience: ApprovalAudience,
 	sectorId: string,
 	filters?: Filters,
 	currency?: any,
@@ -74,6 +76,7 @@ export const getImpactOnSector = async (
 		const data = await fetchSectorImpactData(
 			ctx,
 			countryAccountsId,
+			audience,
 			sectorId,
 			filters,
 			currency,
@@ -122,6 +125,7 @@ export const getImpactOnSector = async (
  * // Get damages for a specific sector
  * await getSectorImpactTotal({
  *   countryAccountsId: "UUID",
+ *   audience: "public",
  *   impact: "damages",
  * });
  *
@@ -129,6 +133,7 @@ export const getImpactOnSector = async (
  * // Get losses for a specific disaster with extra conditions
  * await getSectorImpactTotal({
  *   countryAccountsId: "UUID",
+ *   audience: "public",
  *   impact: "losses",
  *   type: { disasterEventId: "UUID" },
  *   divisionId: "UUID"
@@ -145,6 +150,8 @@ export const getImpactOnSector = async (
 export async function getSectorImpactTotal(
 	args: {
 		countryAccountsId: string;
+		/** Approval basis audience (C23). */
+		audience: ApprovalAudience;
 		impact: "damages" | "losses" | "disruption";
 		type?:
 			| {
@@ -176,10 +183,7 @@ export async function getSectorImpactTotal(
 	// base where conditions
 	const baseWhere: SQL[] = [
 		eq(disasterRecordsTable.countryAccountsId, args.countryAccountsId),
-		or(
-			eq(disasterRecordsTable.approvalStatus, "published"),
-			eq(disasterRecordsTable.approvalStatus, "validated"),
-		)!,
+		approvalBasis(args.audience, disasterRecordsTable),
 	];
 
 	const distinctOnCols = [

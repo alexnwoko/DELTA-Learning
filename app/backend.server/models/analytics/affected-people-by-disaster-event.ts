@@ -1,8 +1,9 @@
-import { eq, and, sum, sql } from "drizzle-orm";
+import { eq, and, sum } from "drizzle-orm";
 import { Tx } from "~/db.server";
 import { disasterRecordsTable } from "~/drizzle/schema/disasterRecordsTable";
 import { humanCategoryPresenceTable } from "~/drizzle/schema/humanCategoryPresenceTable";
 import { disasterEventTable } from "~/drizzle/schema/disasterEventTable";
+import { approvalBasis, type ApprovalAudience } from "~/utils/approvalBasis";
 
 type Affected = {
 	total: number;
@@ -16,31 +17,37 @@ type Affected = {
 export async function getAffectedByDisasterEvent(
 	tx: Tx,
 	disasterEventId: string,
+	audience: ApprovalAudience,
 ): Promise<Affected> {
 	let res = {
 		deaths: await getTotalForDisasterEvent(
 			tx,
 			disasterEventId,
+			audience,
 			humanCategoryPresenceTable.deathsTotal,
 		),
 		injured: await getTotalForDisasterEvent(
 			tx,
 			disasterEventId,
+			audience,
 			humanCategoryPresenceTable.injuredTotal,
 		),
 		missing: await getTotalForDisasterEvent(
 			tx,
 			disasterEventId,
+			audience,
 			humanCategoryPresenceTable.missingTotal,
 		),
 		directlyAffected: await getTotalForDisasterEvent(
 			tx,
 			disasterEventId,
+			audience,
 			humanCategoryPresenceTable.affectedDirectTotal,
 		),
 		displaced: await getTotalForDisasterEvent(
 			tx,
 			disasterEventId,
+			audience,
 			humanCategoryPresenceTable.displacedTotal,
 		),
 	};
@@ -62,6 +69,7 @@ export async function getAffectedByDisasterEvent(
 async function getTotalForDisasterEvent(
 	tx: Tx,
 	disasterEventId: string,
+	audience: ApprovalAudience,
 	valCol: any,
 ): Promise<number> {
 	/*
@@ -85,8 +93,9 @@ async function getTotalForDisasterEvent(
 		.innerJoin(hcp, eq(dr.id, hcp.recordId))
 		.where(
 			and(
-				eq(de.id, disasterEventId), sql`${dr.approvalStatus} IN ('published', 'validated')`
-			)
+				eq(de.id, disasterEventId),
+				approvalBasis(audience, dr),
+			),
 		);
 
 	if (!res || !res.length) {

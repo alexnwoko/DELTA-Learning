@@ -9,6 +9,11 @@ import {
 	type PlausibilityMeasure,
 } from "~/utils/plausibility";
 import { dr } from "~/db.server";
+import {
+	approvalBasis,
+	basisColumns,
+	type ApprovalAudience,
+} from "~/utils/approvalBasis";
 import { disasterEventTable } from "~/drizzle/schema/disasterEventTable";
 import { disasterRecordsDivisionTable } from "~/drizzle/schema/disasterRecordsDivisionTable";
 
@@ -20,6 +25,8 @@ interface HazardFilters {
 	geographicLevelId: string | null;
 	fromDate: string | null;
 	toDate: string | null;
+	/** Approval basis (C23): public or signed-in, from the request. */
+	audience: ApprovalAudience;
 }
 
 /**
@@ -42,7 +49,7 @@ export async function getDisasterEventCount(
 
 	const conditions: any[] = [
 		eq(disasterEventTable.countryAccountsId, countryAccountsId),
-		sql`${disasterEventTable.approvalStatus} IN ('published', 'validated')`,
+		approvalBasis(filters.audience, disasterEventTable),
 	];
 
 	if (hazardTypeId) {
@@ -106,7 +113,7 @@ export async function getDisasterEventCountByYear(
 
 	const conditions: any[] = [
 		eq(disasterEventTable.countryAccountsId, countryAccountsId),
-		sql`${disasterEventTable.approvalStatus} IN ('published', 'validated')`,
+		approvalBasis(filters.audience, disasterEventTable),
 	];
 
 	if (hazardTypeId) {
@@ -263,7 +270,7 @@ function humanEffectsFilteredRecords(filters: HazardFilters): SQL {
 
 	// Build WHERE conditions for disaster_records
 	const whereConditions: SQL[] = [];
-	whereConditions.push(sql`dr."approvalStatus" IN ('published', 'validated')`);
+	whereConditions.push(approvalBasis(filters.audience, basisColumns("dr")));
 	whereConditions.push(sql`dr."country_accounts_id" = ${countryAccountsId}`);
 	if (hazardTypeId)
 		whereConditions.push(sql`dr."hip_type_id" = ${hazardTypeId}`);
@@ -692,7 +699,7 @@ export async function getFilteredDisasterRecords(filters: HazardFilters) {
 
 	// Build WHERE conditions
 	const whereConditions: SQL[] = [
-		sql`"approvalStatus" IN ('published', 'validated')`,
+		approvalBasis(filters.audience, basisColumns()),
 		sql`"country_accounts_id" = ${countryAccountsId}`,
 	];
 
@@ -1465,7 +1472,7 @@ export async function getTotalDeathsByDivision(
 
 	// Build WHERE conditions for disaster_records as SQL objects
 	const whereConditions: SQL[] = [];
-	whereConditions.push(sql`dr."approvalStatus" IN ('published', 'validated')`);
+	whereConditions.push(approvalBasis(filters.audience, basisColumns("dr")));
 	whereConditions.push(sql`dr."country_accounts_id" = ${countryAccountsId}`);
 	if (hazardTypeId)
 		whereConditions.push(sql`dr."hip_type_id" = ${hazardTypeId}`);
@@ -1653,7 +1660,7 @@ export async function getTotalAffectedPeopleByDivision(
 
 	// Build WHERE conditions for disaster_event as SQL objects
 	const whereConditions: SQL[] = [];
-	whereConditions.push(sql`de."approvalStatus" IN ('published', 'validated')`);
+	whereConditions.push(approvalBasis(filters.audience, basisColumns("de")));
 	whereConditions.push(sql`de."country_accounts_id" = ${countryAccountsId}`);
 	if (hazardTypeId)
 		whereConditions.push(sql`de."hip_type_id" = ${hazardTypeId}`);
@@ -1693,7 +1700,7 @@ export async function getTotalAffectedPeopleByDivision(
 				INNER JOIN disaster_records_division drd
 					ON drd.disaster_record_id = dr.id
 				WHERE dr.disaster_event_id = de.id
-					AND dr."approvalStatus" IN ('published', 'validated')
+					AND ${approvalBasis(filters.audience, basisColumns("dr"))}
 					AND drd.division_id IN (SELECT id FROM division_tree)
 			)
 		)`);
@@ -1753,7 +1760,7 @@ export async function getTotalAffectedPeopleByDivision(
 	  filtered_records AS (
 		SELECT dr."id" AS record_id, dr."disaster_event_id" AS event_id
 		FROM "disaster_records" dr
-		WHERE dr."approvalStatus" IN ('published', 'validated')
+		WHERE ${approvalBasis(filters.audience, basisColumns("dr"))}
 		  AND dr."disaster_event_id" IN (SELECT fe."id" FROM filtered_events fe)
 	  ),
 	  record_value AS (
@@ -1870,7 +1877,7 @@ export async function getDisasterEventCountByDivision(
 
 	// Build WHERE conditions for disaster_event as SQL objects
 	const whereConditions: SQL[] = [];
-	whereConditions.push(sql`de."approvalStatus" IN ('published', 'validated')`);
+	whereConditions.push(approvalBasis(filters.audience, basisColumns("de")));
 	whereConditions.push(sql`de."country_accounts_id" = ${countryAccountsId}`);
 	if (hazardTypeId)
 		whereConditions.push(sql`de."hip_type_id" = ${hazardTypeId}`);
@@ -2000,7 +2007,7 @@ export async function getDisasterSummary(
 
 	// ---- Step 1: Get all disaster events that match filters ----
 	const whereConditions: SQL[] = [];
-	whereConditions.push(sql`"approvalStatus" IN ('published', 'validated')`);
+	whereConditions.push(approvalBasis(filters.audience, basisColumns()));
 	whereConditions.push(sql`"country_accounts_id" = ${countryAccountsId}`);
 	if (hazardTypeId) whereConditions.push(sql`"hip_type_id" = ${hazardTypeId}`);
 	if (hazardClusterId)
@@ -2075,7 +2082,7 @@ export async function getDisasterSummary(
     SELECT id, disaster_event_id
     FROM disaster_records
     WHERE disaster_event_id = ANY(ARRAY[${sql.raw(eventIdsList)}]::uuid[])
-    AND "approvalStatus" IN ('published', 'validated')
+    AND ${approvalBasis(filters.audience, basisColumns())}
   `);
 	const disasterRecords = recordsRes.rows as Array<{
 		id: string;

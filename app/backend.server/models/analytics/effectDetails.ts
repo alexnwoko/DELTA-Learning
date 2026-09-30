@@ -1,4 +1,5 @@
 import { and, eq, sql, inArray, exists, SQL } from "drizzle-orm";
+import { approvalBasis, type ApprovalAudience } from "~/utils/approvalBasis";
 import { dr } from "~/db.server";
 import createLogger from "~/utils/logger.server";
 
@@ -98,6 +99,7 @@ interface FilterParams {
 export async function getEffectDetails(
 	ctx: BackendContext,
 	countryAccountsId: string,
+	audience: ApprovalAudience,
 	filters: FilterParams,
 ) {
 	let targetSectorIds: string[] = [];
@@ -143,7 +145,7 @@ export async function getEffectDetails(
 
 	// Base conditions for disaster records
 	let baseConditions: SQL[] = [
-		sql`${disasterRecordsTable.approvalStatus} ILIKE 'published'`,
+		approvalBasis(audience, disasterRecordsTable),
 		// Add tenant isolation filter
 		eq(disasterRecordsTable.countryAccountsId, countryAccountsId),
 	];

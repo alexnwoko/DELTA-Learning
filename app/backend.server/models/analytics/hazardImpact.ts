@@ -1,4 +1,5 @@
 import { and, desc, eq, exists, inArray, sql, SQL } from "drizzle-orm";
+import { approvalBasis, type ApprovalAudience } from "~/utils/approvalBasis";
 import { dr } from "~/db.server";
 import { sectorDisasterRecordsRelationTable } from "~/drizzle/schema/sectorDisasterRecordsRelationTable";
 import { disasterRecordsTable } from "~/drizzle/schema/disasterRecordsTable";
@@ -107,6 +108,7 @@ export interface HazardImpactResult {
 export async function fetchHazardImpactData(
 	ctx: BackendContext,
 	countryAccountsId: string,
+	audience: ApprovalAudience,
 	filters: HazardImpactFilters,
 ): Promise<HazardImpactResult> {
 	const {
@@ -133,7 +135,7 @@ export async function fetchHazardImpactData(
 
 	// Build base conditions array
 	let baseConditions: SQL[] = [
-		sql`${disasterRecordsTable.approvalStatus} IN ('published', 'validated')`,
+		approvalBasis(audience, disasterRecordsTable),
 		// Add tenant isolation filter
 		sql`${disasterRecordsTable.countryAccountsId} = ${countryAccountsId}`,
 	];

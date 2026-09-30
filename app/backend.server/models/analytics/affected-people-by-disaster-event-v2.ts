@@ -1,10 +1,11 @@
-import { eq, sql, and, isNull, sum, isNotNull, or } from "drizzle-orm";
+import { eq, sql, and, isNull, sum, isNotNull } from "drizzle-orm";
 import { Tx } from "~/db.server";
 import { disasterRecordsTable } from "~/drizzle/schema/disasterRecordsTable";
 import { humanCategoryPresenceTable } from "~/drizzle/schema/humanCategoryPresenceTable";
 import { humanDsgTable } from "~/drizzle/schema/humanDsgTable";
 import { disasterEventTable } from "~/drizzle/schema/disasterEventTable";
 import { affectedTablesAndCols } from "./affected-people-tables";
+import { approvalBasis, type ApprovalAudience } from "~/utils/approvalBasis";
 import {
 	getDescendantDivisionIds,
 	recordInDivisionCondition,
@@ -14,7 +15,8 @@ interface Conditions {
 	divisionId?: string;
 	/** The division and its descendants, resolved once in getAffected. */
 	divisionIds?: string[];
-	publishedOnly?: boolean;
+	/** Approval basis audience (C23). Replaces the publishedOnly flag. */
+	audience: ApprovalAudience;
 }
 
 /**
@@ -37,7 +39,7 @@ function divisionCondition(conditions?: Conditions) {
 export async function getAffected(
 	tx: Tx,
 	disasterEventId: string,
-	conditions?: Conditions,
+	conditions: Conditions,
 ) {
 	if (conditions?.divisionId && !conditions.divisionIds) {
 		conditions = {
@@ -84,7 +86,7 @@ const totalsTablesAndCols = affectedTablesAndCols;
 async function totalsForEachTable(
 	tx: Tx,
 	disasterEventId: string,
-	conditions?: Conditions,
+	conditions: Conditions,
 ): Promise<Total> {
 	let entries = await Promise.all(
 		totalsTablesAndCols.map(async (a) => {
@@ -114,7 +116,7 @@ async function totalsForOneTable(
 	disasterEventId: string,
 	resCol: any,
 	presenceCol: any,
-	conditions?: Conditions,
+	conditions: Conditions,
 ): Promise<number> {
 	/*
 	SELECT SUM(hcp.deaths_total)
@@ -123,7 +125,7 @@ async function totalsForOneTable(
 	JOIN human_category_presence hcp ON dr.id = hcp.record_id
 	WHERE de.id = '641495e5-1ece-4376-ab31-40b6861ac001'
 			AND hcp.deaths IS TRUE
-		AND dr."approvalStatus" = 'published'
+		AND <approval basis, C23>
 		AND EXISTS (
 			SELECT 1
 			FROM jsonb_array_elements(dr.spatial_footprint) AS elem
@@ -147,14 +149,8 @@ async function totalsForOneTable(
 			and(
 				eq(de.id, disasterEventId),
 				eq(presenceCol, true),
-				or(
-					eq(dr.approvalStatus, "published"),
-					eq(dr.approvalStatus, "validated"),
-				),
+				approvalBasis(conditions.audience, dr),
 				divisionCondition(conditions),
-				conditions?.publishedOnly
-					? eq(dr.approvalStatus, "published")
-					: undefined,
 			),
 		);
 
@@ -169,6 +165,7 @@ export async function totalsRecordsForTypeCol(
 	tx: Tx,
 	dataCode: humanEffectsDataCode,
 	disasterEventId: string,
+	audience: ApprovalAudience,
 ) {
 	let record = totalsTablesAndCols.find((d) => d.code == dataCode);
 	if (!record) throw new Error("invalid dataCode: " + dataCode);
@@ -177,6 +174,7 @@ export async function totalsRecordsForTypeCol(
 		disasterEventId,
 		record.presenceTotalCol,
 		record.presenceCol,
+		audience,
 	);
 }
 
@@ -185,6 +183,7 @@ async function totalsForOneTableRecords(
 	disasterEventId: string,
 	resCol: any,
 	presenceCol: any,
+	audience: ApprovalAudience,
 ) {
 	/*
 	SELECT dr.id, hcp.deaths_total
@@ -193,7 +192,7 @@ async function totalsForOneTableRecords(
 	JOIN human_category_presence hcp ON dr.id = hcp.record_id
 	WHERE de.id = '641495e5-1ece-4376-ab31-40b6861ac001'
 		AND hcp.deaths IS TRUE
-		AND dr."approvalStatus" = 'published'
+		AND <approval basis, C23>
 	*/
 
 	let de = disasterEventTable;
@@ -212,10 +211,7 @@ async function totalsForOneTableRecords(
 			and(
 				eq(de.id, disasterEventId),
 				eq(presenceCol, true),
-				or(
-					eq(dr.approvalStatus, "published"),
-					eq(dr.approvalStatus, "validated"),
-				),
+				approvalBasis(audience, dr),
 			),
 		);
 
@@ -262,7 +258,7 @@ type ByColAndTableTotalsOnly = {
 async function byColAndTableTotalsOnly(
 	tx: Tx,
 	disasterEventId: string,
-	conditions?: Conditions,
+	conditions: Conditions,
 ): Promise<ByColAndTableTotalsOnly> {
 	let entries = await Promise.all(
 		tables.map(async (t) => {
@@ -285,7 +281,7 @@ type ByColAndTableTotalsOnlyForFrontend = {
 async function byColAndTableTotalsOnlyForFrontend(
 	tx: Tx,
 	disasterEventId: string,
-	conditions?: Conditions,
+	conditions: Conditions,
 ): Promise<ByColAndTableTotalsOnlyForFrontend> {
 	let res: any = {};
 	let r = await byColAndTableTotalsOnly(tx, disasterEventId, conditions);
@@ -326,7 +322,7 @@ async function byTable(
 	tx: Tx,
 	disasterEventId: string,
 	dsgCol: any,
-	conditions?: Conditions,
+	conditions: Conditions,
 ): Promise<ByTable> {
 	let tables: any = {};
 	let total = new Map<string, number>();
@@ -357,7 +353,7 @@ async function countsForOneTable(
 	resCol: any,
 	groupBy: any,
 	presenceCol: any,
-	conditions?: Conditions,
+	conditions: Conditions,
 ): Promise<Map<string, number>> {
 	/*
 		SELECT hd.sex, SUM(d.deaths)
@@ -368,7 +364,7 @@ async function countsForOneTable(
 		JOIN human_category_presence hcp ON hd.record_id = hcp.record_id
 	WHERE de.id = 'f41bd013-23cc-41ba-91d2-4e325f785171'
 			AND hcp.deaths IS TRUE
-		AND dr."approvalStatus" = 'published'
+		AND <approval basis, C23>
 		AND hd.sex IS NOT NULL
 		AND hd.age IS NULL
 		AND hd.disability IS NULL
@@ -423,10 +419,7 @@ async function countsForOneTable(
 			and(
 				eq(de.id, disasterEventId),
 				eq(presenceCol, true),
-				or(
-					eq(dr.approvalStatus, "published"),
-					eq(dr.approvalStatus, "validated"),
-				),
+				approvalBasis(conditions.audience, dr),
 				groupBy == hd.sex ? isNotNull(hd.sex) : isNull(hd.sex),
 				groupBy == hd.age ? isNotNull(hd.age) : isNull(hd.age),
 				groupBy == hd.disability
@@ -448,9 +441,6 @@ async function countsForOneTable(
 					) = 0
 				)`,
 				divisionCondition(conditions),
-				conditions?.publishedOnly
-					? eq(dr.approvalStatus, "published")
-					: undefined,
 			),
 		)
 		.groupBy(groupBy);

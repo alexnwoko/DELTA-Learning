@@ -1,4 +1,5 @@
 import { disasterRecordsTable } from "~/drizzle/schema/disasterRecordsTable";
+import { approvalBasis } from "~/utils/approvalBasis";
 import { declarationStatusTable } from "~/drizzle/schema/declarationStatusTable";
 import { disasterEventDeclarationTable } from "~/drizzle/schema/disasterEventDeclarationTable";
 import { disasterEventAssessmentTable } from "~/drizzle/schema/disasterEventAssessmentTable";
@@ -101,8 +102,9 @@ export async function disasterEventsLoader(args: disasterEventLoaderArgs) {
 		countryAccountsId
 			? eq(disasterEventTable.countryAccountsId, countryAccountsId)
 			: undefined,
+		// C23: public requests see the public approval basis only.
 		filters.approvalStatus
-			? eq(disasterEventTable.approvalStatus, filters.approvalStatus)
+			? approvalBasis("public", disasterEventTable)
 			: undefined,
 		filters.disasterEventName
 			? or(

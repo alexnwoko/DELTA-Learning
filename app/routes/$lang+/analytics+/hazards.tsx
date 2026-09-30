@@ -48,6 +48,9 @@ import { ViewContext } from "~/frontend/context";
 
 import { BackendContext } from "~/backend.server/context";
 import { htmlTitle } from "~/utils/htmlmeta";
+import { approvalAudienceFromRequest } from "~/backend.server/approvalAudience.server";
+import { basisIncludesProvisional } from "~/utils/approvalBasis";
+import { ProvisionalFiguresNotice } from "~/frontend/analytics/ProvisionalFiguresNotice";
 
 // Define an interface for the structure of the JSON objects
 interface interfaceMap {
@@ -115,8 +118,10 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 		currency = settings.currencyCode;
 	}
 
+	const audience = await approvalAudienceFromRequest(request);
 	const filters = {
 		countryAccountsId,
+		audience,
 		hazardTypeId,
 		hazardClusterId,
 		specificHazardId,
@@ -310,6 +315,7 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 		geographicLevelId,
 		fromDate,
 		toDate,
+		provisional: basisIncludesProvisional(audience),
 	};
 };
 
@@ -489,6 +495,10 @@ export default function HazardAnalysis() {
 								overflow: "hidden",
 							}}
 						>
+							<ProvisionalFiguresNotice
+								ctx={ctx}
+								show={actionData?.provisional}
+							/>
 							{actionData && (
 								<HazardImpactMap
 									ctx={ctx}

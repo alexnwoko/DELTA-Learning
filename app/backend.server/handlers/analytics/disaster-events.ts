@@ -1,4 +1,5 @@
 import { fetchDisasterEvents } from "~/backend.server/models/analytics/disaster-events";
+import type { ApprovalAudience } from "~/utils/approvalBasis";
 
 /**
  * Handler to get disaster events with business logic.
@@ -8,11 +9,16 @@ import { fetchDisasterEvents } from "~/backend.server/models/analytics/disaster-
  */
 export const getDisasterEvents = async (
 	countryAccountsId: string,
+	audience: ApprovalAudience,
 	query?: string,
 ) => {
 	try {
 		// Fetch the full QueryResult object from the model with tenant isolation
-		const result = await fetchDisasterEvents(countryAccountsId, query);
+		const result = await fetchDisasterEvents(
+			countryAccountsId,
+			audience,
+			query,
+		);
 
 		// Return the full QueryResult object as is
 		return result;

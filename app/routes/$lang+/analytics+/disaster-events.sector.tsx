@@ -13,7 +13,13 @@ import {
 import CustomPieChart from "~/components/PieChart";
 
 import { unitName } from "~/frontend/unit_picker";
-import { getCountrySettingsFromSession } from "~/utils/session";
+import {
+	getCountryAccountsIdFromSession,
+	getCountrySettingsFromSession,
+} from "~/utils/session";
+import { disasterEventById } from "~/backend.server/models/event";
+import { approvalAudienceFromRequest } from "~/backend.server/approvalAudience.server";
+import { rowOnApprovalBasis } from "~/utils/approvalBasis";
 
 import { ViewContext } from "~/frontend/context";
 import { BackendContext } from "~/backend.server/context";
@@ -64,6 +70,22 @@ export const loader = authLoaderPublicOrWithPerm(
 			throw new Response("Missing required parameters", { status: 400 });
 		}
 
+		// C23: the event must belong to the session tenant and be on the
+		// approval basis of this request. The parent route checks the same,
+		// but this loader's data can be requested on its own.
+		const countryAccountsId = await getCountryAccountsIdFromSession(req);
+		const audience = await approvalAudienceFromRequest(req);
+		const event = await disasterEventById(ctx, disasterEventId).catch(
+			() => null,
+		);
+		if (
+			!event ||
+			event.countryAccountsId !== countryAccountsId ||
+			!rowOnApprovalBasis(audience, event)
+		) {
+			throw new Response("Not found", { status: 404 });
+		}
+
 		if (confCurrency.length === 0) {
 			throw new Response("Missing required currencies in configuration.", {
 				status: 400,
@@ -101,6 +123,7 @@ export const loader = authLoaderPublicOrWithPerm(
 				xId,
 				sectorChildrenIdsArray,
 				confCurrency,
+				audience,
 			);
 
 			// Populate Sector Pie Chart Data
@@ -145,17 +168,20 @@ export const loader = authLoaderPublicOrWithPerm(
 			ctx,
 			disasterEventId,
 			sectorAllChildrenIdsArray,
+			audience,
 		);
 		const dbDisasterEventLosses = await disasterEventSectorLossesDetails__ById(
 			ctx,
 			disasterEventId,
 			sectorAllChildrenIdsArray,
+			audience,
 		);
 		const dbDisasterEventDisruptions =
 			await disasterEventSectorDisruptionDetails__ById(
 				ctx,
 				disasterEventId,
 				sectorAllChildrenIdsArray,
+				audience,
 			);
 
 		// console.log( dbDisasterEventDisruptions );

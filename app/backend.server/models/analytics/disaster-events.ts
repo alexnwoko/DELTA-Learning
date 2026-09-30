@@ -11,15 +11,22 @@ import { disasterEventTable } from "~/drizzle/schema/disasterEventTable";
 
 import { eq, sql, and, isNull, or, inArray } from "drizzle-orm";
 import { BackendContext } from "~/backend.server/context";
+import {
+	approvalBasis,
+	basisColumns,
+	type ApprovalAudience,
+} from "~/utils/approvalBasis";
 
 /**
  * Fetch disaster events from the database based on the query parameter and tenant context.
  * @param countryAccountsId The tenant context for filtering by country account
+ * @param audience Approval basis audience (C23).
  * @param query Search query string (optional).
  * @returns an array of disaster events.
  */
 export const fetchDisasterEvents = async (
 	countryAccountsId: string,
+	audience: ApprovalAudience,
 	query?: string,
 ) => {
 	try {
@@ -47,8 +54,9 @@ export const fetchDisasterEvents = async (
           end_date,
           effects_total_usd
         FROM disaster_event
-        WHERE ${queryCondition}
+        WHERE (${queryCondition})
         AND country_accounts_id = ${countryAccountsId}
+        AND ${approvalBasis(audience, basisColumns())}
         ORDER BY start_date DESC
       `,
 		);
@@ -64,6 +72,7 @@ export async function disasterEventSectorsById(
 	ctx: BackendContext,
 	id: any,
 	incAncestorsDescendants: boolean = false,
+	audience: ApprovalAudience,
 ) {
 	if (typeof id !== "string") {
 		throw new Error("Invalid ID: must be a string");
@@ -103,14 +112,8 @@ export async function disasterEventSectorsById(
 		.where(
 			and(
 				eq(disasterEventTable.id, id),
-				or(
-					eq(disasterRecordsTable.approvalStatus, "published"),
-					eq(disasterRecordsTable.approvalStatus, "validated"),
-				),
-				or(
-					eq(disasterEventTable.approvalStatus, "published"),
-					eq(disasterEventTable.approvalStatus, "validated"),
-				),
+				approvalBasis(audience, disasterRecordsTable),
+				approvalBasis(audience, disasterEventTable),
 			),
 		)
 		.orderBy(sectorTable.id)
@@ -119,7 +122,10 @@ export async function disasterEventSectorsById(
 	return rows;
 }
 
-export async function disasterEvent_DisasterRecordsCount__ById(id: any) {
+export async function disasterEvent_DisasterRecordsCount__ById(
+	id: any,
+	audience: ApprovalAudience,
+) {
 	if (typeof id !== "string") {
 		throw new Error("Invalid ID: must be a string");
 	}
@@ -136,14 +142,8 @@ export async function disasterEvent_DisasterRecordsCount__ById(id: any) {
 		.where(
 			and(
 				eq(disasterEventTable.id, id),
-				or(
-					eq(disasterRecordsTable.approvalStatus, "published"),
-					eq(disasterRecordsTable.approvalStatus, "validated"),
-				),
-				or(
-					eq(disasterEventTable.approvalStatus, "published"),
-					eq(disasterEventTable.approvalStatus, "validated"),
-				),
+				approvalBasis(audience, disasterRecordsTable),
+				approvalBasis(audience, disasterEventTable),
 			),
 		)
 		.execute();
@@ -155,6 +155,7 @@ export async function disasterEventTotalLosses_RecordsAssets__ById(
 	disasterEventId: string,
 	disasterRecordId: string,
 	sectorId: string,
+	audience: ApprovalAudience,
 ) {
 	const queryLossesTable = dr
 		.selectDistinctOn([lossesTable.id], {
@@ -210,14 +211,8 @@ export async function disasterEventTotalLosses_RecordsAssets__ById(
 				),
 				eq(lossesTable.recordId, disasterRecordId),
 				isNull(sectorDisasterRecordsRelationTable.lossesCost),
-				or(
-					eq(disasterRecordsTable.approvalStatus, "published"),
-					eq(disasterRecordsTable.approvalStatus, "validated"),
-				),
-				or(
-					eq(disasterEventTable.approvalStatus, "published"),
-					eq(disasterEventTable.approvalStatus, "validated"),
-				),
+				approvalBasis(audience, disasterRecordsTable),
+				approvalBasis(audience, disasterEventTable),
 			),
 		);
 
@@ -228,6 +223,7 @@ export async function disasterEventTotalRecovery_RecordsAssets__ById(
 	disasterEventId: string,
 	disasterRecordId: string,
 	sectorId: string,
+	audience: ApprovalAudience,
 ) {
 	const queryDamageTable = dr
 		.selectDistinctOn([damagesTable.id], {
@@ -270,14 +266,8 @@ export async function disasterEventTotalRecovery_RecordsAssets__ById(
 				),
 				eq(damagesTable.recordId, disasterRecordId),
 				isNull(sectorDisasterRecordsRelationTable.damageRecoveryCost),
-				or(
-					eq(disasterRecordsTable.approvalStatus, "published"),
-					eq(disasterRecordsTable.approvalStatus, "validated"),
-				),
-				or(
-					eq(disasterEventTable.approvalStatus, "published"),
-					eq(disasterEventTable.approvalStatus, "validated"),
-				),
+				approvalBasis(audience, disasterRecordsTable),
+				approvalBasis(audience, disasterEventTable),
 			),
 		);
 
@@ -289,6 +279,7 @@ export async function disasterEventTotalDamages_RecordsAssets__ById(
 	disasterEventId: string,
 	disasterRecordId: string,
 	sectorId: string,
+	audience: ApprovalAudience,
 ) {
 	const queryDamageTable = dr
 		.selectDistinctOn([damagesTable.id], {
@@ -346,14 +337,8 @@ export async function disasterEventTotalDamages_RecordsAssets__ById(
 				),
 				eq(damagesTable.recordId, disasterRecordId),
 				isNull(sectorDisasterRecordsRelationTable.damageCost),
-				or(
-					eq(disasterRecordsTable.approvalStatus, "published"),
-					eq(disasterRecordsTable.approvalStatus, "validated"),
-				),
-				or(
-					eq(disasterEventTable.approvalStatus, "published"),
-					eq(disasterEventTable.approvalStatus, "validated"),
-				),
+				approvalBasis(audience, disasterRecordsTable),
+				approvalBasis(audience, disasterEventTable),
 			),
 		);
 
@@ -365,6 +350,7 @@ export async function disasterEventSectorTotal__ByDivisionId(
 	disasterEventId: string,
 	divisionId: string,
 	currency: string,
+	audience: ApprovalAudience,
 ) {
 	if (typeof disasterEventId !== "string") {
 		throw new Error("Invalid ID: must be a string");
@@ -415,14 +401,8 @@ export async function disasterEventSectorTotal__ByDivisionId(
 					WHERE drd.disaster_record_id = ${disasterRecordsTable.id}
 						AND drd.division_id = ${divisionId}::uuid
 				)`,
-				or(
-					eq(disasterRecordsTable.approvalStatus, "published"),
-					eq(disasterRecordsTable.approvalStatus, "validated"),
-				),
-				or(
-					eq(disasterEventTable.approvalStatus, "published"),
-					eq(disasterEventTable.approvalStatus, "validated"),
-				),
+				approvalBasis(audience, disasterRecordsTable),
+				approvalBasis(audience, disasterEventTable),
 				eq(disasterEventTable.id, disasterEventId),
 				or(
 					eq(sectorDisasterRecordsRelationTable.withDamage, true),
@@ -486,6 +466,7 @@ export async function disasterEventSectorTotal__ByDivisionId(
 					disasterEventId,
 					item.record_id,
 					item.sector_id,
+					audience,
 				);
 			recordsAssetRecovery.forEach((item2) => {
 				totalRecovery += Number(item2.totalRecovery);
@@ -503,6 +484,7 @@ export async function disasterEventSectorTotal__ByDivisionId(
 					disasterEventId,
 					item.record_id,
 					item.sector_id,
+					audience,
 				);
 			recordsAssetDamages.forEach((item2) => {
 				totalDamages += Number(item2.totalRepairReplacement);
@@ -520,6 +502,7 @@ export async function disasterEventSectorTotal__ByDivisionId(
 					disasterEventId,
 					item.record_id,
 					item.sector_id,
+					audience,
 				);
 			recordsAssetlosses.forEach((item2) => {
 				if (item2.publicCostTotalOverride) {
@@ -560,6 +543,7 @@ export async function disasterEventSectorTotal__ById(
 	disasterEventId: string,
 	isInSectorIds: string[] = [],
 	currency: string,
+	audience: ApprovalAudience,
 ) {
 	if (typeof disasterEventId !== "string") {
 		throw new Error("Invalid ID: must be a string");
@@ -600,14 +584,8 @@ export async function disasterEventSectorTotal__ById(
 		)
 		.where(
 			and(
-				or(
-					eq(disasterRecordsTable.approvalStatus, "published"),
-					eq(disasterRecordsTable.approvalStatus, "validated"),
-				),
-				or(
-					eq(disasterEventTable.approvalStatus, "published"),
-					eq(disasterEventTable.approvalStatus, "validated"),
-				),
+				approvalBasis(audience, disasterRecordsTable),
+				approvalBasis(audience, disasterEventTable),
 				eq(disasterEventTable.id, disasterEventId),
 				or(
 					eq(sectorDisasterRecordsRelationTable.withDamage, true),
@@ -674,6 +652,7 @@ export async function disasterEventSectorTotal__ById(
 					disasterEventId,
 					item.record_id,
 					item.sector_id,
+					audience,
 				);
 			recordsAssetRecovery.forEach((item2) => {
 				totalRecovery += Number(item2.totalRecovery);
@@ -691,6 +670,7 @@ export async function disasterEventSectorTotal__ById(
 					disasterEventId,
 					item.record_id,
 					item.sector_id,
+					audience,
 				);
 			recordsAssetDamages.forEach((item2) => {
 				totalDamages += Number(item2.totalRepairReplacement);
@@ -708,6 +688,7 @@ export async function disasterEventSectorTotal__ById(
 					disasterEventId,
 					item.record_id,
 					item.sector_id,
+					audience,
 				);
 			recordsAssetlosses.forEach((item2) => {
 				if (item2.publicCostTotalOverride) {
@@ -748,6 +729,7 @@ export async function disasterEventSectorDamageDetails__ById(
 	ctx: BackendContext,
 	disasterEventId: string,
 	isInSectorIds: string[] = [],
+	audience: ApprovalAudience,
 ) {
 	if (typeof disasterEventId !== "string") {
 		throw new Error("Invalid ID: must be a string");
@@ -810,14 +792,8 @@ export async function disasterEventSectorDamageDetails__ById(
 		)
 		.where(
 			and(
-				or(
-					eq(disasterRecordsTable.approvalStatus, "published"),
-					eq(disasterRecordsTable.approvalStatus, "validated"),
-				),
-				or(
-					eq(disasterEventTable.approvalStatus, "published"),
-					eq(disasterEventTable.approvalStatus, "validated"),
-				),
+				approvalBasis(audience, disasterRecordsTable),
+				approvalBasis(audience, disasterEventTable),
 				eq(disasterEventTable.id, disasterEventId),
 				isInSectorIds.length > 0
 					? inArray(damagesTable.sectorId, isInSectorIds)
@@ -835,6 +811,7 @@ export async function disasterEventSectorLossesDetails__ById(
 	ctx: BackendContext,
 	disasterEventId: string,
 	isInSectorIds: string[] = [],
+	audience: ApprovalAudience,
 ) {
 	if (typeof disasterEventId !== "string") {
 		throw new Error("Invalid ID: must be a string");
@@ -900,14 +877,8 @@ export async function disasterEventSectorLossesDetails__ById(
 		)
 		.where(
 			and(
-				or(
-					eq(disasterRecordsTable.approvalStatus, "published"),
-					eq(disasterRecordsTable.approvalStatus, "validated"),
-				),
-				or(
-					eq(disasterEventTable.approvalStatus, "published"),
-					eq(disasterEventTable.approvalStatus, "validated"),
-				),
+				approvalBasis(audience, disasterRecordsTable),
+				approvalBasis(audience, disasterEventTable),
 				eq(disasterEventTable.id, disasterEventId),
 				isInSectorIds.length > 0
 					? inArray(lossesTable.sectorId, isInSectorIds)
@@ -925,6 +896,7 @@ export async function disasterEventSectorDisruptionDetails__ById(
 	ctx: BackendContext,
 	disasterEventId: string,
 	isInSectorIds: string[] = [],
+	audience: ApprovalAudience,
 ) {
 	if (typeof disasterEventId !== "string") {
 		throw new Error("Invalid ID: must be a string");
@@ -985,14 +957,8 @@ export async function disasterEventSectorDisruptionDetails__ById(
 		)
 		.where(
 			and(
-				or(
-					eq(disasterRecordsTable.approvalStatus, "published"),
-					eq(disasterRecordsTable.approvalStatus, "validated"),
-				),
-				or(
-					eq(disasterEventTable.approvalStatus, "published"),
-					eq(disasterEventTable.approvalStatus, "validated"),
-				),
+				approvalBasis(audience, disasterRecordsTable),
+				approvalBasis(audience, disasterEventTable),
 				eq(disasterEventTable.id, disasterEventId),
 				isInSectorIds.length > 0
 					? inArray(disruptionTable.sectorId, isInSectorIds)

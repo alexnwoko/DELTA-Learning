@@ -4,6 +4,7 @@ import {
 } from "~/backend.server/models/disaster_record";
 
 import { formatDate } from "~/utils/date";
+import { ProvisionalBadge } from "~/frontend/analytics/ProvisionalFiguresNotice";
 
 import {
 	UserFormProps,
@@ -693,6 +694,8 @@ type DisasterRecordsViewItem = DisasterRecordsViewModel & {
 	hipHazard?: HipInfo | null;
 	hipCluster?: HipInfo | null;
 	hipType?: HipInfo | null;
+	/** C23: migrated record not yet published. */
+	provisional?: boolean;
 };
 
 interface DisasterRecordsViewProps {
@@ -717,6 +720,10 @@ export function DisasterRecordsView(props: DisasterRecordsViewProps) {
 				msg: "Disaster records",
 			})}
 		>
+			<ProvisionalBadge
+				ctx={ctx}
+				show={!props.isPublic && item?.provisional}
+			/>
 			<FieldsView
 				def={fieldsDefView(ctx)}
 				fields={item}

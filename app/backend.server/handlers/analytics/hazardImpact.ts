@@ -3,11 +3,13 @@ import type {
 	HazardImpactResponse,
 } from "~/types/hazardImpact";
 import { fetchHazardImpactData } from "~/backend.server/models/analytics/hazardImpact";
+import type { ApprovalAudience } from "~/utils/approvalBasis";
 import { BackendContext } from "~/backend.server/context";
 
 export const getHazardImpact = async (
 	ctx: BackendContext,
 	countryAccountsId: string,
+	audience: ApprovalAudience,
 	filters: HazardImpactFilters,
 ): Promise<HazardImpactResponse> => {
 	try {
@@ -34,7 +36,12 @@ export const getHazardImpact = async (
 		}
 
 		// Pass tenant context to model for tenant isolation
-		const data = await fetchHazardImpactData(ctx, countryAccountsId, filters);
+		const data = await fetchHazardImpactData(
+			ctx,
+			countryAccountsId,
+			audience,
+			filters,
+		);
 		return {
 			success: true,
 			data,
