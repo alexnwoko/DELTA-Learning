@@ -1,0 +1,97 @@
+{
+ "generated_by": "scripts/c29/build_migrated_fixture.py",
+ "ledger_functions": "delta_loader.he_measure_state, delta_loader.compute_plausibility_flags (Backend Migration; imported read-only)",
+ "manifest_measure_ledger": {
+  "affected_direct": {
+   "not_reported": 279,
+   "reported": 254,
+   "zero_confirmed": 1
+  },
+  "affected_indirect": {
+   "not_reported": 201,
+   "reported": 311,
+   "zero_confirmed": 22
+  },
+  "deaths": {
+   "not_reported": 291,
+   "reported": 235,
+   "zero_confirmed": 8
+  },
+  "displaced": {
+   "not_reported": 404,
+   "reported": 127,
+   "zero_confirmed": 3
+  },
+  "injured": {
+   "not_reported": 318,
+   "reported": 215,
+   "zero_confirmed": 1
+  },
+  "missing": {
+   "not_reported": 509,
+   "reported": 18,
+   "zero_confirmed": 7
+  }
+ },
+ "national": {
+  "affected_direct": {
+   "flagged": 46,
+   "not_reported": 279,
+   "records_total": 534,
+   "reported": 254,
+   "sum": 7641777,
+   "value_state": "reported",
+   "zero_confirmed": 1
+  },
+  "affected_indirect": {
+   "flagged": 45,
+   "not_reported": 201,
+   "records_total": 534,
+   "reported": 311,
+   "sum": 1285449,
+   "value_state": "reported",
+   "zero_confirmed": 22
+  },
+  "deaths": {
+   "flagged": 1,
+   "not_reported": 291,
+   "records_total": 534,
+   "reported": 235,
+   "sum": 4887,
+   "value_state": "reported",
+   "zero_confirmed": 8
+  },
+  "displaced": {
+   "flagged": 4,
+   "not_reported": 404,
+   "records_total": 534,
+   "reported": 127,
+   "sum": 43769,
+   "value_state": "reported",
+   "zero_confirmed": 3
+  },
+  "injured": {
+   "flagged": 2,
+   "not_reported": 318,
+   "records_total": 534,
+   "reported": 215,
+   "sum": 19172,
+   "value_state": "reported",
+   "zero_confirmed": 1
+  },
+  "missing": {
+   "flagged": 1,
+   "not_reported": 509,
+   "records_total": 534,
+   "reported": 18,
+   "sum": 354155,
+   "value_state": "reported",
+   "zero_confirmed": 7
+  }
+ },
+ "records": 534,
+ "records_flagged": 53,
+ "run_id": "load-ago-20260925T070921-6f587270",
+ "source": "50_Data_Migration/_pilot_output/by_country/AGO/delta_ready.jsonl",
+ "tenant": "31038250-8612-489a-a7a2-47921321e9ef"
+}

@@ -1,0 +1,34 @@
+fixture_id,stratum,rule,source_file,source_id,admin1,admin2,geo_grade,hip_code_source,start_date,c30_flags,synthetic
+C29FIX:ago:001,lobito_municipality,every Benguela / Lobito record (missing: 1 confirmed zero of 9),AGO delta_ready.jsonl,DIX:ago:62,Benguela,Lobito,A,MH0600,2002-02-00,,no
+C29FIX:ago:002,lobito_municipality,every Benguela / Lobito record (missing: 1 confirmed zero of 9),AGO delta_ready.jsonl,DIX:ago:66,Benguela,Lobito,A,GH0300,2016-04-13,IDENTICAL_ACROSS_FIELDS,no
+C29FIX:ago:003,lobito_municipality,every Benguela / Lobito record (missing: 1 confirmed zero of 9),AGO delta_ready.jsonl,DIX:ago:68,Benguela,Lobito,A,MH0600,2016-03-21,IDENTICAL_ACROSS_FIELDS,no
+C29FIX:ago:004,lobito_municipality,every Benguela / Lobito record (missing: 1 confirmed zero of 9),AGO delta_ready.jsonl,DIX:ago:69,Benguela,Lobito,A,GH0405,2016-07-12,,no
+C29FIX:ago:005,lobito_municipality,every Benguela / Lobito record (missing: 1 confirmed zero of 9),AGO delta_ready.jsonl,DIX:ago:70,Benguela,Lobito,A,MH0102,2016-00-00,,no
+C29FIX:ago:006,lobito_municipality,every Benguela / Lobito record (missing: 1 confirmed zero of 9),AGO delta_ready.jsonl,DIX:ago:191,Benguela,Lobito,A,MH0600,2011-00-00,IDENTICAL_ACROSS_FIELDS,no
+C29FIX:ago:007,lobito_municipality,every Benguela / Lobito record (missing: 1 confirmed zero of 9),AGO delta_ready.jsonl,DIX:ago:247,Benguela,Lobito,B,MH0600,2016-00-00,,no
+C29FIX:ago:008,lobito_municipality,every Benguela / Lobito record (missing: 1 confirmed zero of 9),AGO delta_ready.jsonl,DIX:ago:285,Benguela,Lobito,B,MH0600,2015-00-00,IDENTICAL_ACROSS_FIELDS,no
+C29FIX:ago:009,lobito_municipality,every Benguela / Lobito record (missing: 1 confirmed zero of 9),AGO delta_ready.jsonl,DIX:ago:1066,Benguela,Lobito,B,TL0405,2024-04-08,,no
+C29FIX:ago:010,not_reported_all,first record with all six measures not reported,AGO delta_ready.jsonl,DIX:ago:02,Bengo,Dande (Caxito),A,MH0600,2016-03-08,,no
+C29FIX:ago:011,zero_confirmed_deaths,"first record with deaths zero_confirmed (flag set, explicit 0)",AGO delta_ready.jsonl,DIX:ago:48,Cunene,,A,MH0401,1917-00-00,,no
+C29FIX:ago:012,zero_confirmed_injured,"first record with injured zero_confirmed (flag set, explicit 0)",AGO delta_ready.jsonl,DIX:ago:842,Cuando Cubango,Mavinga,B,MH0401,2018-10-05,HAZARD_EFFECT_MISMATCH,no
+C29FIX:ago:013,zero_confirmed_displaced,"first record with displaced zero_confirmed (flag set, explicit 0)",AGO delta_ready.jsonl,DIX:ago:129,Cuanza Norte,Cambambe,A,,2010-12-15,,no
+C29FIX:ago:014,zero_confirmed_affected_direct,"first record with affected_direct zero_confirmed (flag set, explicit 0)",AGO delta_ready.jsonl,DIX:ago:660,Cuanza Norte,Cambambe,A,MH0600,2005-01-01,,no
+C29FIX:ago:015,affected_indirect_only,"first record: affected_indirect reported, affected_direct not reported",AGO delta_ready.jsonl,DIX:ago:05,Cuanza Sul,Sumbe (ex. Ngunza),A,MH0600,2016-03-04,,no
+C29FIX:ago:016,affected_direct_only,"first record: affected_direct reported, affected_indirect not reported",AGO delta_ready.jsonl,DIX:ago:30,Lunda Norte,Chitato,B,MH0600,2016-03-03,,no
+C29FIX:ago:017,geo_grade_A,first record with geolocation grade A,AGO delta_ready.jsonl,DIX:ago:01,Bié,Cuito,A,MH0600,2016-01-26,,no
+C29FIX:ago:018,geo_grade_B,first record with geolocation grade B,AGO delta_ready.jsonl,DIX:ago:07,Cuanza Sul,Sumbe (ex. Ngunza),B,MH0600,2016-08-03,,no
+C29FIX:ago:019,geo_grade_C,first record with geolocation grade C,AGO delta_ready.jsonl,DIX:ago:862,Cabinda,Cabinda,C,BI0204,2007-01-31,,no
+C29FIX:ago:020,geo_grade_D,first record with geolocation grade D,AGO delta_ready.jsonl,DIX:ago:229,Malanje,,D,MH0103,2016-11-14,,no
+C29FIX:ago:021,geo_grade_U,first record with geolocation grade U,AGO delta_ready.jsonl,DIX:ago:906,,,U,MH0705,2020-01-28,,no
+C29FIX:ago:022,date_year,first record with start date year only (YYYY-00-00),AGO delta_ready.jsonl,DIX:ago:50,Cunene,Namacunde,A,MH0305,2014-00-00,,no
+C29FIX:ago:023,date_month,first record with start date year-month (YYYY-MM-00),AGO delta_ready.jsonl,DIX:ago:72,Cuanza Norte,Cazengo,A,MH0600,2007-04-00,,no
+C29FIX:ago:024,date_review,"first record with start date invalid calendar date, loads as NULL",AGO delta_ready.jsonl,DIX:ago:95,Huíla,Lubango,A,MH0600,2015-02-29,,no
+C29FIX:ago:025,hazard_unmatched,first UNMATCHED_HAZARD record (loads unclassified),AGO delta_ready.jsonl,DIX:ago:92,Uíge,Uíge,A,,2005-11-02,,no
+C29FIX:ago:026,hazard_earthquake_current,first Earthquake record (GH0201 in the current output),AGO delta_ready.jsonl,DIX:ago:56,Huíla,Lubango,A,GH0201,1979-00-00,IDENTICAL_ACROSS_FIELDS,no
+C29FIX:ago:027,hazard_gh0101_to_gh0201,"first Earthquake card in the pre-hip-code-fix file (GH0101), corrected to GH0201 at load",AGO delta_ready_pre_hipcode_fix_*.jsonl,DIX:ago:57,Huíla,Chicomba,A,GH0101,2013-04-22,,no
+C29FIX:ago:028,c30_SENTINEL_MAGNITUDE,first record carrying C30 flag SENTINEL_MAGNITUDE,AGO delta_ready.jsonl,DIX:ago:47,Benguela,Benguela,A,MH0600,2015-03-24,IDENTICAL_ACROSS_FIELDS;SENTINEL_MAGNITUDE,no
+C29FIX:ecu:029,volcanic_lava_ecu,first ECU record by id with GH0201 (lava); corrected at load by apply_geo_code_fix,ECU delta_ready.jsonl,DIX:ecu:1988-90,GALAPAGOS,,D,GH0201,1988-11-16,,no
+C29FIX:ecu:030,volcanic_lahar_ecu,first ECU record by id with GH0204 (lahar); corrected at load by apply_geo_code_fix,ECU delta_ready.jsonl,DIX:ecu:TU-2001,TUNGURAHUA,BAÑOS DE AGUA SANTA,C,GH0204,2008-04-09,,no
+C29FIX:ecu:031,c04_ticked_blank_ecu,first ECU record by id with a ticked flag and a blank source value (C04: not_reported),ECU delta_ready.jsonl,DIX:ecu:1970-1,GUAYAS,GUAYAQUIL,C,TL0305,1970-01-07,,no
+C29FIX:syn:032,native_no_synthetic,SYNTHETIC: native DELTA 'No' for deaths (OP-33 option a),synthetic,SYNTHETIC:native-no,Luanda,Viana,A,MH0600,2016-03-27,,yes
+C29FIX:syn:033,cluster_only_synthetic,SYNTHETIC: volcanic cluster-only hazard (C13 outcome),synthetic,SYNTHETIC:cluster-only-volcanic,Luanda,Viana,A,,2016-03-27,,yes

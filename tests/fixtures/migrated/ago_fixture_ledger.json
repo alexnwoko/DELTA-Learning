@@ -1,0 +1,298 @@
+{
+ "benguela_lobito": {
+  "level2_import_id": "0905",
+  "measures": {
+   "affected_direct": {
+    "flagged": 3,
+    "not_reported": 2,
+    "records_total": 9,
+    "reported": 7,
+    "sum": 10569,
+    "value_state": "reported",
+    "zero_confirmed": 0
+   },
+   "affected_indirect": {
+    "flagged": 3,
+    "not_reported": 2,
+    "records_total": 9,
+    "reported": 7,
+    "sum": 13569,
+    "value_state": "reported",
+    "zero_confirmed": 0
+   },
+   "deaths": {
+    "flagged": 0,
+    "not_reported": 1,
+    "records_total": 9,
+    "reported": 8,
+    "sum": 394,
+    "value_state": "reported",
+    "zero_confirmed": 0
+   },
+   "displaced": {
+    "flagged": 1,
+    "not_reported": 8,
+    "records_total": 9,
+    "reported": 1,
+    "sum": 2168,
+    "value_state": "reported",
+    "zero_confirmed": 0
+   },
+   "injured": {
+    "flagged": 0,
+    "not_reported": 2,
+    "records_total": 9,
+    "reported": 7,
+    "sum": 781,
+    "value_state": "reported",
+    "zero_confirmed": 0
+   },
+   "missing": {
+    "flagged": 0,
+    "not_reported": 8,
+    "records_total": 9,
+    "reported": 0,
+    "sum": null,
+    "value_state": "insufficient_reporting",
+    "zero_confirmed": 1
+   }
+  }
+ },
+ "benguela_province": {
+  "level1_import_id": "09",
+  "measures": {
+   "affected_direct": {
+    "flagged": 4,
+    "not_reported": 2,
+    "records_total": 10,
+    "reported": 8,
+    "sum": 17175,
+    "value_state": "reported",
+    "zero_confirmed": 0
+   },
+   "affected_indirect": {
+    "flagged": 4,
+    "not_reported": 2,
+    "records_total": 10,
+    "reported": 8,
+    "sum": 20175,
+    "value_state": "reported",
+    "zero_confirmed": 0
+   },
+   "deaths": {
+    "flagged": 0,
+    "not_reported": 1,
+    "records_total": 10,
+    "reported": 9,
+    "sum": 407,
+    "value_state": "reported",
+    "zero_confirmed": 0
+   },
+   "displaced": {
+    "flagged": 1,
+    "not_reported": 8,
+    "records_total": 10,
+    "reported": 2,
+    "sum": 2608,
+    "value_state": "reported",
+    "zero_confirmed": 0
+   },
+   "injured": {
+    "flagged": 0,
+    "not_reported": 3,
+    "records_total": 10,
+    "reported": 7,
+    "sum": 781,
+    "value_state": "reported",
+    "zero_confirmed": 0
+   },
+   "missing": {
+    "flagged": 0,
+    "not_reported": 8,
+    "records_total": 10,
+    "reported": 1,
+    "sum": 2,
+    "value_state": "reported",
+    "zero_confirmed": 1
+   }
+  }
+ },
+ "coverage_rule": {
+  "min_records": 1,
+  "min_share": 0.25
+ },
+ "deaths_by_level1": {
+  "01": {
+   "flagged": 0,
+   "records_total": 1,
+   "reported": 1,
+   "sum": 26,
+   "value_state": "reported",
+   "zero_confirmed": 0
+  },
+  "03": {
+   "flagged": 0,
+   "records_total": 1,
+   "reported": 1,
+   "sum": 227,
+   "value_state": "reported",
+   "zero_confirmed": 0
+  },
+  "04": {
+   "flagged": 0,
+   "records_total": 2,
+   "reported": 0,
+   "sum": null,
+   "value_state": "zero_confirmed",
+   "zero_confirmed": 1
+  },
+  "05": {
+   "flagged": 0,
+   "records_total": 3,
+   "reported": 3,
+   "sum": 79,
+   "value_state": "reported",
+   "zero_confirmed": 0
+  },
+  "06": {
+   "flagged": 0,
+   "records_total": 2,
+   "reported": 2,
+   "sum": 8,
+   "value_state": "reported",
+   "zero_confirmed": 0
+  },
+  "07": {
+   "flagged": 0,
+   "records_total": 1,
+   "reported": 0,
+   "sum": null,
+   "value_state": "not_reported",
+   "zero_confirmed": 0
+  },
+  "08": {
+   "flagged": 0,
+   "records_total": 1,
+   "reported": 0,
+   "sum": null,
+   "value_state": "not_reported",
+   "zero_confirmed": 0
+  },
+  "09": {
+   "flagged": 0,
+   "records_total": 10,
+   "reported": 9,
+   "sum": 407,
+   "value_state": "reported",
+   "zero_confirmed": 0
+  },
+  "11": {
+   "flagged": 0,
+   "records_total": 1,
+   "reported": 1,
+   "sum": 1,
+   "value_state": "reported",
+   "zero_confirmed": 0
+  },
+  "13": {
+   "flagged": 0,
+   "records_total": 1,
+   "reported": 0,
+   "sum": null,
+   "value_state": "zero_confirmed",
+   "zero_confirmed": 1
+  },
+  "15": {
+   "flagged": 0,
+   "records_total": 3,
+   "reported": 1,
+   "sum": 34,
+   "value_state": "reported",
+   "zero_confirmed": 0
+  },
+  "16": {
+   "flagged": 0,
+   "records_total": 2,
+   "reported": 0,
+   "sum": null,
+   "value_state": "zero_confirmed",
+   "zero_confirmed": 2
+  },
+  "18": {
+   "flagged": 0,
+   "records_total": 1,
+   "reported": 0,
+   "sum": null,
+   "value_state": "not_reported",
+   "zero_confirmed": 0
+  }
+ },
+ "flag_codes": [
+  "HAZARD_EFFECT_MISMATCH",
+  "IDENTICAL_ACROSS_FIELDS",
+  "SENTINEL_MAGNITUDE"
+ ],
+ "generated_by": "scripts/c29/build_migrated_fixture.py",
+ "ledger_functions": "delta_loader.he_measure_state, delta_loader.compute_plausibility_flags (Backend Migration; imported read-only)",
+ "national": {
+  "affected_direct": {
+   "flagged": 5,
+   "not_reported": 19,
+   "records_total": 33,
+   "reported": 13,
+   "sum": 22723,
+   "value_state": "reported",
+   "zero_confirmed": 1
+  },
+  "affected_indirect": {
+   "flagged": 5,
+   "not_reported": 13,
+   "records_total": 33,
+   "reported": 19,
+   "sum": 27610,
+   "value_state": "reported",
+   "zero_confirmed": 1
+  },
+  "deaths": {
+   "flagged": 0,
+   "not_reported": 11,
+   "records_total": 33,
+   "reported": 18,
+   "sum": 782,
+   "value_state": "reported",
+   "zero_confirmed": 4
+  },
+  "displaced": {
+   "flagged": 1,
+   "not_reported": 25,
+   "records_total": 33,
+   "reported": 7,
+   "sum": 3779,
+   "value_state": "reported",
+   "zero_confirmed": 1
+  },
+  "injured": {
+   "flagged": 0,
+   "not_reported": 18,
+   "records_total": 33,
+   "reported": 14,
+   "sum": 814,
+   "value_state": "reported",
+   "zero_confirmed": 1
+  },
+  "missing": {
+   "flagged": 0,
+   "not_reported": 31,
+   "records_total": 33,
+   "reported": 1,
+   "sum": 2,
+   "value_state": "reported",
+   "zero_confirmed": 1
+  }
+ },
+ "native_rule": "a native explicit No counts as zero_confirmed (grading standard OP-33 option a, the analytics rule); the loader never writes one",
+ "records": 33,
+ "records_flagged": 7,
+ "records_with_division": 29,
+ "run_id": "c29-fixture-v1"
+}
