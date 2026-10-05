@@ -414,6 +414,13 @@
       "when": 1790596800000,
       "tag": "20260928120000_geo_read_model",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1791201600000,
+      "tag": "20261005120000_pub_federation",
+      "breakpoints": true
     }
   ]
 }
