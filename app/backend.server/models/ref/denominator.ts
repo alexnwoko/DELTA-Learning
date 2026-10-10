@@ -4,6 +4,7 @@ import {
 	REF_GRADES,
 	REF_SOURCE_STATUSES,
 	type RefGrade,
+	type RefKeyScheme,
 	type RefMethod,
 	type RefRedistributionRule,
 	type RefSourceStatus,
@@ -35,6 +36,7 @@ export interface ReferenceProvenance {
 	countryAccountsId: string;
 	/** null for the national value. */
 	divisionId: string | null;
+	keyScheme: RefKeyScheme;
 	boundaryVintage: string;
 	periodStart: string;
 	periodEnd: string;
@@ -42,6 +44,7 @@ export interface ReferenceProvenance {
 	valueState: RefValueState;
 	lowerBound: number | null;
 	upperBound: number | null;
+	intervalType: string | null;
 	method: RefMethod;
 	grade: RefGrade;
 	sourceStatus: RefSourceStatus;
@@ -92,6 +95,7 @@ export interface PopulationCandidate {
 	indicatorCode: string;
 	countryAccountsId: string;
 	divisionId: string | null;
+	keyScheme: RefKeyScheme;
 	boundaryVintage: string;
 	periodStart: string;
 	periodEnd: string;
@@ -99,6 +103,7 @@ export interface PopulationCandidate {
 	valueState: RefValueState;
 	lowerBound: number | null;
 	upperBound: number | null;
+	intervalType: string | null;
 	method: RefMethod;
 	grade: RefGrade;
 	sourceStatus: RefSourceStatus;
@@ -136,8 +141,10 @@ function rank<T extends string>(list: readonly T[], v: T): number {
 
 /**
  * Precedence among usable values (R1, R2): source status (official national,
- * international official, modelled), then grade (REF-A first), then a
- * release not deprecated, then the latest release date, then the latest
+ * international official, modelled), then grade (REF-A first), then a value
+ * raked to an official parent total (method raked_to_official, the expected
+ * method for WorldPop where an official total exists) before other methods,
+ * then a release not deprecated, then the latest release date, then the latest
  * loaded release, then the latest period start.
  */
 export function comparePopulationCandidates(
@@ -150,6 +157,9 @@ export function comparePopulationCandidates(
 	if (byStatus !== 0) return byStatus;
 	const byGrade = rank(REF_GRADES, a.grade) - rank(REF_GRADES, b.grade);
 	if (byGrade !== 0) return byGrade;
+	const aRaked = a.method === "raked_to_official" ? 0 : 1;
+	const bRaked = b.method === "raked_to_official" ? 0 : 1;
+	if (aRaked !== bRaked) return aRaked - bRaked;
 	const aDep = a.releaseDeprecatedBy ? 1 : 0;
 	const bDep = b.releaseDeprecatedBy ? 1 : 0;
 	if (aDep !== bDep) return aDep - bDep;
@@ -171,6 +181,7 @@ function toProvenance(c: PopulationCandidate): ReferenceProvenance {
 		indicatorCode: c.indicatorCode,
 		countryAccountsId: c.countryAccountsId,
 		divisionId: c.divisionId,
+		keyScheme: c.keyScheme,
 		boundaryVintage: c.boundaryVintage,
 		periodStart: c.periodStart,
 		periodEnd: c.periodEnd,
@@ -178,6 +189,7 @@ function toProvenance(c: PopulationCandidate): ReferenceProvenance {
 		valueState: c.valueState,
 		lowerBound: c.lowerBound,
 		upperBound: c.upperBound,
+		intervalType: c.intervalType,
 		method: c.method,
 		grade: c.grade,
 		sourceStatus: c.sourceStatus,
@@ -286,6 +298,7 @@ export async function readPopulationCandidates(
 			v.indicator_code AS "indicatorCode",
 			v.country_accounts_id AS "countryAccountsId",
 			v.division_id AS "divisionId",
+			v.key_scheme AS "keyScheme",
 			v.boundary_vintage AS "boundaryVintage",
 			to_char(v.period_start, 'YYYY-MM-DD') AS "periodStart",
 			to_char(v.period_end, 'YYYY-MM-DD') AS "periodEnd",
@@ -293,6 +306,7 @@ export async function readPopulationCandidates(
 			v.value_state AS "valueState",
 			v.lower_bound AS "lowerBound",
 			v.upper_bound AS "upperBound",
+			v.interval_type AS "intervalType",
 			v.method AS "method",
 			v.grade AS "grade",
 			v.source_status AS "sourceStatus",

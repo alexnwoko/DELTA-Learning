@@ -14,6 +14,7 @@ function cand(over: Partial<PopulationCandidate> = {}): PopulationCandidate {
 		indicatorCode: "POP_TOTAL",
 		countryAccountsId: TENANT,
 		divisionId: null,
+		keyScheme: "iso3",
 		boundaryVintage: "national",
 		periodStart: "2024-01-01",
 		periodEnd: "2024-12-31",
@@ -21,6 +22,7 @@ function cand(over: Partial<PopulationCandidate> = {}): PopulationCandidate {
 		valueState: "reported",
 		lowerBound: null,
 		upperBound: null,
+		intervalType: null,
 		method: "as_published",
 		grade: "REF-B",
 		sourceStatus: "international_official",
@@ -66,6 +68,25 @@ describe("choosePopulationDenominator precedence", () => {
 		const d = cand({ value: 4, sourceStatus: "modelled", grade: "REF-D" });
 		const res = choosePopulationDenominator([d, c], TENANT, national);
 		expect(res.ok && res.provenance.grade).toBe("REF-C");
+	});
+
+	it("within a grade, prefers a value raked to the official total", () => {
+		const zonal = cand({
+			value: 5,
+			sourceStatus: "modelled",
+			grade: "REF-C",
+			method: "zonal_sum",
+			releaseDate: "2025-01-01",
+		});
+		const raked = cand({
+			value: 6,
+			sourceStatus: "modelled",
+			grade: "REF-C",
+			method: "raked_to_official",
+			releaseDate: "2024-01-01",
+		});
+		const res = choosePopulationDenominator([zonal, raked], TENANT, national);
+		expect(res.ok && res.provenance.method).toBe("raked_to_official");
 	});
 
 	it("within status and grade, prefers the latest release", () => {

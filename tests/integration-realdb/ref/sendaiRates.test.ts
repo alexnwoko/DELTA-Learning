@@ -4,7 +4,7 @@ import { randomUUID } from "crypto";
 import { dr } from "~/db.server";
 import {
 	A1_METHOD,
-	B1_METHOD,
+	AFFECTED_DIRECT_METHOD,
 	sendaiRatesForYear,
 } from "~/backend.server/models/ref/rates";
 import {
@@ -17,7 +17,8 @@ import {
 	type RefTenant,
 } from "./refFixtures";
 
-// E1: national A-1 and B-1 on a fixture. Published records only (official
+// E1: national A-1 and the DELTA affected-direct analytical rate (not
+// Sendai B-1) on a fixture. Published records only (official
 // basis), attributed to their start year; a missing population is refused;
 // not-reported deaths stay null.
 
@@ -116,23 +117,25 @@ describe("sendaiRatesForYear", () => {
 		expect(components.missing.value).toBe(10);
 		expect(res.a1.denominator.provenance.source.name).toBe(`WPP ${tag}`);
 		expect(res.a1.denominator.year).toBe(2024);
-		expect(res.recordsUndated).toBe(1);
+		// The undated record is never in a year; it is reported apart.
+		expect(res.undated.records).toBe(1);
+		expect(res.undated.measures.deaths.value).toBe(9);
 	});
 
-	it("computes B-1 from DELTA directly affected only", async () => {
+	it("computes the affected-direct analytical rate (not B-1)", async () => {
 		const res = await sendaiRatesForYear(t.countryAccountsId, 2024);
-		expect(res.b1.ok).toBe(true);
-		if (!res.b1.ok) return;
-		expect(res.b1.method).toBe(B1_METHOD);
+		expect(res.affected_direct_per_100k.ok).toBe(true);
+		if (!res.affected_direct_per_100k.ok) return;
+		expect(res.affected_direct_per_100k.method).toBe(AFFECTED_DIRECT_METHOD);
 		// 500 / 2,000,000 x 100,000 = 25
-		expect(res.b1.value).toBeCloseTo(25, 10);
+		expect(res.affected_direct_per_100k.value).toBeCloseTo(25, 10);
 	});
 
-	it("refuses A-1 and B-1 when the population for the year is missing", async () => {
+	it("refuses A-1 and the affected-direct rate when the population for the year is missing", async () => {
 		const res = await sendaiRatesForYear(t.countryAccountsId, 2023);
 		expect(res.denominator.ok).toBe(false);
 		expect(res.a1.ok).toBe(false);
-		expect(res.b1.ok).toBe(false);
+		expect(res.affected_direct_per_100k.ok).toBe(false);
 		if (!res.a1.ok) {
 			expect(res.a1.refusal.code).toBe("POPULATION_MISSING_FOR_YEAR");
 		}
@@ -148,6 +151,8 @@ describe("sendaiRatesForYear", () => {
 		const components = res.a1.numerator.provenance.components as any;
 		expect(components.deaths.value).toBeNull();
 		expect(components.deaths.recordsNotReported).toBe(1);
-		expect(res.b1.ok && res.b1.value).toBeNull();
+		expect(
+			res.affected_direct_per_100k.ok && res.affected_direct_per_100k.value,
+		).toBeNull();
 	});
 });
