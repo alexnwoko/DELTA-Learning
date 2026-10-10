@@ -414,6 +414,13 @@
       "when": 1790762400000,
       "tag": "20260930120000_add_effect_lookup_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1791622800000,
+      "tag": "20261010090000_ref_reference_store",
+      "breakpoints": true
     }
   ]
 }
