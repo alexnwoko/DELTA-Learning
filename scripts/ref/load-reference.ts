@@ -1,9 +1,11 @@
 // E1 (Enrichment Data Integration, section 7.1): loads reference values
 // (population first) from a CSV into the ref schema.
 //
-// The CSV columns follow delta_reference_value.schema.json plus iso3.
-// division_key is the division's national_id or import_id within the tenant;
-// the country's iso3 or "national" means the national value.
+// The CSV columns follow delta_reference_value.schema.json (v0.2) plus iso3.
+// key_scheme says how division_key is read: iso3 is the national value (the
+// key is the country's iso3); national_id, pcode and iso3166_2 match the
+// tenant division's national_id, then import_id. An unknown boundary vintage
+// is refused, not graded.
 //
 // Usage (inside a container with node_modules, DATABASE_URL set):
 //   npx tsx scripts/ref/load-reference.ts <file.csv> [--dry-run] [--tenant <country_accounts_id>]

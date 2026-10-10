@@ -8,6 +8,7 @@ const wpp: Record<string, string> = {
 	quantity_type: "extensive",
 	unit: "persons",
 	division_key: "MOZ",
+	key_scheme: "iso3",
 	boundary_vintage: "national",
 	period_start: "2024-01-01",
 	period_end: "2024-12-31",
@@ -28,6 +29,7 @@ const wpp: Record<string, string> = {
 const worldpopNotReported: Record<string, string> = {
 	...wpp,
 	division_key: "AO-LUA",
+	key_scheme: "iso3166_2",
 	boundary_vintage: "AGO-2026-national",
 	value: "",
 	value_state: "not_reported",
@@ -95,7 +97,9 @@ describe("validateReferenceValueCells", () => {
 	it("rejects a summed index", () => {
 		expect(
 			errorsOf({ ...wpp, quantity_type: "index", method: "zonal_sum" }),
-		).toEqual(["method: indices are never summed (zonal_sum not allowed)"]);
+		).toEqual([
+			"method: indices are never summed or interpolated (as_published or admin_join only)",
+		]);
 	});
 
 	it("rejects unknown enums, bad dates and missing required fields", () => {
@@ -114,5 +118,105 @@ describe("validateReferenceValueCells", () => {
 		const errs = errorsOf({ ...wpp, period_end: "2023-12-31", value: "abc" });
 		expect(errs).toContain("period_end: must not be before period_start");
 		expect(errs).toContain("value: must be a number or empty");
+	});
+
+	it("v0.2: rejects an index aggregated by weighted mean", () => {
+		expect(
+			errorsOf({
+				...wpp,
+				quantity_type: "index",
+				method: "weighted_mean_population",
+			}),
+		).toHaveLength(1);
+		expect(
+			errorsOf({ ...wpp, quantity_type: "index", method: "admin_join" }),
+		).toEqual([]);
+	});
+
+	it("v0.2: accepts the new methods and rejects the old weighted_mean", () => {
+		for (const method of [
+			"weighted_mean_population",
+			"weighted_mean_area",
+			"areal_interpolation",
+			"raked_to_official",
+		]) {
+			expect(errorsOf({ ...wpp, method })).toEqual([]);
+		}
+		expect(errorsOf({ ...wpp, method: "weighted_mean" })[0]).toContain(
+			"method: 'weighted_mean'",
+		);
+	});
+
+	it("v0.2: requires key_scheme and rejects an unknown one", () => {
+		expect(errorsOf({ ...wpp, key_scheme: "" })).toEqual([
+			"key_scheme: required",
+		]);
+		expect(errorsOf({ ...wpp, key_scheme: "gaul" })[0]).toContain(
+			"key_scheme: 'gaul'",
+		);
+	});
+
+	it("v0.2: refuses an unknown boundary vintage instead of grading it", () => {
+		expect(errorsOf({ ...wpp, boundary_vintage: "unknown" })).toEqual([
+			"boundary_vintage: unknown vintage; the value is refused, not graded",
+		]);
+	});
+
+	it("v0.2: requires lower_bound <= value <= upper_bound", () => {
+		expect(
+			errorsOf({ ...wpp, lower_bound: "900000", upper_bound: "1100000" }),
+		).toEqual([]);
+		expect(errorsOf({ ...wpp, lower_bound: "1000001" })).toEqual([
+			"lower_bound: must not exceed value",
+		]);
+		expect(errorsOf({ ...wpp, upper_bound: "999999" })).toEqual([
+			"upper_bound: must not be below value",
+		]);
+	});
+
+	it("v0.2: money values need currency and price basis", () => {
+		const gdp = {
+			...wpp,
+			indicator_code: "GDP_CURRENT_USD",
+			family: "economic",
+			unit: "USD",
+		};
+		expect(errorsOf(gdp)).toEqual([
+			"currency: required for a money value",
+			"price_basis: required for a money value",
+		]);
+		expect(
+			errorsOf({ ...gdp, currency: "USD", price_basis: "current" }),
+		).toEqual([]);
+		expect(
+			errorsOf({ ...gdp, currency: "usd", price_basis: "nominal" }).length,
+		).toBe(2);
+	});
+
+	it("v0.2: climate driver values need the index version", () => {
+		const oni = {
+			...wpp,
+			indicator_code: "ENSO_ONI",
+			family: "climate_driver",
+			quantity_type: "index",
+			unit: "degC",
+		};
+		expect(errorsOf(oni)).toEqual([
+			"index_version: required for a climate driver value",
+		]);
+		expect(errorsOf({ ...oni, index_version: "ONI v5" })).toEqual([]);
+	});
+
+	it("v0.2: base_year and unit_mult are integers; key validity is ordered", () => {
+		expect(errorsOf({ ...wpp, base_year: "2015.5" })).toEqual([
+			"base_year: must be an integer or empty",
+		]);
+		expect(
+			errorsOf({
+				...wpp,
+				key_valid_from: "2020-01-01",
+				key_valid_to: "2019-01-01",
+			}),
+		).toEqual(["key_valid_to: must not be before key_valid_from"]);
 	});
 });
