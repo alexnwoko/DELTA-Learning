@@ -172,6 +172,101 @@ describe("ref.value CHECK constraints", () => {
 		expect(msg).toContain("ref_source_redistribution_rule_check");
 	});
 
+	it("v0.2: rejects an index value aggregated by anything but as_published or admin_join", async () => {
+		const code = `TST_IDX_${tag.toUpperCase()}`;
+		await dr.execute(sql`
+			INSERT INTO ref.indicator (code, family, quantity_type, unit)
+			VALUES (${code}, 'vulnerability', 'index', 'index points')
+		`);
+		try {
+			const base = {
+				countryAccountsId: tenant.countryAccountsId,
+				releaseId: wpp.releaseId,
+				sourceStatus: "international_official",
+				indicatorCode: code,
+				quantityType: "index",
+				value: 10,
+			};
+			for (const method of [
+				"zonal_sum",
+				"weighted_mean_population",
+				"weighted_mean_area",
+				"areal_interpolation",
+				"raked_to_official",
+			]) {
+				expect(await pgError(insertValue({ ...base, method }))).toContain(
+					"ref_value_index_method_check",
+				);
+			}
+			await insertValue({ ...base, method: "admin_join" });
+		} finally {
+			await dr.execute(
+				sql`DELETE FROM ref.value WHERE indicator_code = ${code}`,
+			);
+			await dr.execute(sql`DELETE FROM ref.indicator WHERE code = ${code}`);
+		}
+	});
+
+	it("v0.2: rejects a quantity type that disagrees with the indicator", async () => {
+		const msg = await pgError(
+			insertValue({
+				countryAccountsId: tenant.countryAccountsId,
+				releaseId: wpp.releaseId,
+				sourceStatus: "international_official",
+				quantityType: "intensive",
+				value: 10,
+			}),
+		);
+		expect(msg).toContain("ref_value_indicator_fk");
+	});
+
+	it("v0.2: rejects a value outside its bounds", async () => {
+		const base = {
+			countryAccountsId: tenant.countryAccountsId,
+			releaseId: wpp.releaseId,
+			sourceStatus: "international_official",
+			value: 10,
+			periodStart: "2019-01-01",
+			periodEnd: "2019-12-31",
+		};
+		expect(await pgError(insertValue({ ...base, lowerBound: 11 }))).toContain(
+			"ref_value_lower_bound_check",
+		);
+		expect(await pgError(insertValue({ ...base, upperBound: 9 }))).toContain(
+			"ref_value_upper_bound_check",
+		);
+	});
+
+	it("v0.2: rejects a key scheme that disagrees with the division", async () => {
+		const msg = await pgError(
+			insertValue({
+				countryAccountsId: tenant.countryAccountsId,
+				releaseId: wpp.releaseId,
+				sourceStatus: "international_official",
+				value: 10,
+				keyScheme: "pcode",
+				periodStart: "2018-01-01",
+				periodEnd: "2018-12-31",
+			}),
+		);
+		expect(msg).toContain("ref_value_key_scheme_division_check");
+	});
+
+	it("v0.2: rejects an unknown boundary vintage", async () => {
+		const msg = await pgError(
+			insertValue({
+				countryAccountsId: tenant.countryAccountsId,
+				releaseId: wpp.releaseId,
+				sourceStatus: "international_official",
+				value: 10,
+				boundaryVintage: "Unknown",
+				periodStart: "2017-01-01",
+				periodEnd: "2017-12-31",
+			}),
+		);
+		expect(msg).toContain("ref_value_boundary_vintage_check");
+	});
+
 	it("accepts a valid row and rejects a second national row on the same key", async () => {
 		const row = {
 			countryAccountsId: tenant.countryAccountsId,
