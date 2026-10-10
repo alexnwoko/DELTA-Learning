@@ -20,6 +20,9 @@ export const SCHEMA_COLUMNS = [
 	"quantity_type",
 	"unit",
 	"division_key",
+	"key_scheme",
+	"key_valid_from",
+	"key_valid_to",
 	"boundary_vintage",
 	"period_start",
 	"period_end",
@@ -27,6 +30,13 @@ export const SCHEMA_COLUMNS = [
 	"value_state",
 	"lower_bound",
 	"upper_bound",
+	"interval_type",
+	"currency",
+	"price_basis",
+	"base_year",
+	"unit_mult",
+	"index_version",
+	"phase_category",
 	"method",
 	"grade",
 	"source",
@@ -38,9 +48,6 @@ export const SCHEMA_COLUMNS = [
 ] as const;
 
 export const CSV_COLUMNS = [...SCHEMA_COLUMNS, "iso3"] as const;
-
-/** division_key values that mean "the national value" (division_id NULL). */
-export const NATIONAL_KEYS = ["national"];
 
 export interface RejectedRow {
 	/** 1-based data row (the header is row 0). */
@@ -158,17 +165,34 @@ async function resolveTenant(
 	};
 }
 
+/**
+ * Resolves division_key by key_scheme within the tenant:
+ * - iso3: the national value (division_id NULL); the key must be the
+ *   tenant country's iso3;
+ * - national_id, pcode, iso3166_2: the tenant's division whose national_id,
+ *   then import_id, equals the key (DELTA stores p-codes and ISO 3166-2
+ *   codes in those columns);
+ * - global: refused, a tenant value always has a national or division key.
+ */
 async function resolveDivision(
 	tx: Tx,
 	countryAccountsId: string,
-	divisionKey: string,
+	v: ReferenceValueInput,
 	iso3: string,
 ): Promise<{ id: string | null } | { error: string }> {
-	if (
-		divisionKey.toUpperCase() === iso3 ||
-		NATIONAL_KEYS.includes(divisionKey.toLowerCase())
-	) {
+	const divisionKey = v.division_key;
+	if (v.key_scheme === "iso3") {
+		if (divisionKey.toUpperCase() !== iso3) {
+			return {
+				error: `division_key ${divisionKey}: key_scheme iso3 needs the country's iso3 (${iso3})`,
+			};
+		}
 		return { id: null };
+	}
+	if (v.key_scheme === "global") {
+		return {
+			error: "key_scheme global: not allowed for a tenant value in ref.value",
+		};
 	}
 	for (const col of ["national_id", "import_id"] as const) {
 		const res = await tx.execute(sql`
@@ -289,18 +313,34 @@ async function upsertValue(
 	const v = r.value;
 	const res = await tx.execute(sql`
 		INSERT INTO ref.value AS t (
-			country_accounts_id, division_id, boundary_vintage, indicator_code,
-			release_id, source_status, period_start, period_end, value, value_state,
-			lower_bound, upper_bound, method, grade
+			country_accounts_id, division_id, key_scheme, key_valid_from, key_valid_to,
+			boundary_vintage, indicator_code, quantity_type, release_id, source_status,
+			period_start, period_end, value, value_state, lower_bound, upper_bound,
+			interval_type, currency, price_basis, base_year, unit_mult, index_version,
+			phase_category, method, grade
 		) VALUES (
-			${r.countryAccountsId}, ${r.divisionId}::uuid, ${v.boundary_vintage}, ${v.indicator_code},
+			${r.countryAccountsId}, ${r.divisionId}::uuid, ${v.key_scheme},
+			${v.key_valid_from}::date, ${v.key_valid_to}::date,
+			${v.boundary_vintage}, ${v.indicator_code}, ${v.quantity_type},
 			${releaseId}, ${v.source_status}, ${v.period_start}::date, ${v.period_end}::date,
 			${v.value}::double precision, ${v.value_state},
 			${v.lower_bound}::double precision, ${v.upper_bound}::double precision,
-			${v.method}, ${v.grade}
+			${v.interval_type}, ${v.currency}, ${v.price_basis},
+			${v.base_year}::integer, ${v.unit_mult}::integer, ${v.index_version},
+			${v.phase_category}, ${v.method}, ${v.grade}
 		)
 		ON CONFLICT (country_accounts_id, COALESCE(division_id, '00000000-0000-0000-0000-000000000000'::uuid), indicator_code, release_id, period_start)
 		DO UPDATE SET
+			key_scheme = EXCLUDED.key_scheme,
+			key_valid_from = EXCLUDED.key_valid_from,
+			key_valid_to = EXCLUDED.key_valid_to,
+			interval_type = EXCLUDED.interval_type,
+			currency = EXCLUDED.currency,
+			price_basis = EXCLUDED.price_basis,
+			base_year = EXCLUDED.base_year,
+			unit_mult = EXCLUDED.unit_mult,
+			index_version = EXCLUDED.index_version,
+			phase_category = EXCLUDED.phase_category,
 			boundary_vintage = EXCLUDED.boundary_vintage,
 			source_status = EXCLUDED.source_status,
 			period_end = EXCLUDED.period_end,
@@ -310,12 +350,17 @@ async function upsertValue(
 			upper_bound = EXCLUDED.upper_bound,
 			method = EXCLUDED.method,
 			grade = EXCLUDED.grade
-		WHERE (t.boundary_vintage, t.source_status, t.period_end, t.value, t.value_state,
-				t.lower_bound, t.upper_bound, t.method, t.grade)
+		WHERE (t.key_scheme, t.key_valid_from, t.key_valid_to, t.boundary_vintage,
+				t.source_status, t.period_end, t.value, t.value_state, t.lower_bound,
+				t.upper_bound, t.interval_type, t.currency, t.price_basis, t.base_year,
+				t.unit_mult, t.index_version, t.phase_category, t.method, t.grade)
 			IS DISTINCT FROM
-			(EXCLUDED.boundary_vintage, EXCLUDED.source_status, EXCLUDED.period_end, EXCLUDED.value,
-				EXCLUDED.value_state, EXCLUDED.lower_bound, EXCLUDED.upper_bound, EXCLUDED.method,
-				EXCLUDED.grade)
+			(EXCLUDED.key_scheme, EXCLUDED.key_valid_from, EXCLUDED.key_valid_to,
+				EXCLUDED.boundary_vintage, EXCLUDED.source_status, EXCLUDED.period_end,
+				EXCLUDED.value, EXCLUDED.value_state, EXCLUDED.lower_bound, EXCLUDED.upper_bound,
+				EXCLUDED.interval_type, EXCLUDED.currency, EXCLUDED.price_basis,
+				EXCLUDED.base_year, EXCLUDED.unit_mult, EXCLUDED.index_version,
+				EXCLUDED.phase_category, EXCLUDED.method, EXCLUDED.grade)
 		RETURNING (xmax = 0) AS inserted
 	`);
 	if (res.rows.length === 0) return "unchanged";
@@ -387,12 +432,7 @@ export async function loadReferenceRows(
 					reject(i, row, [indicatorError]);
 					continue;
 				}
-				const division = await resolveDivision(
-					tx,
-					tenant.id,
-					v.division_key,
-					iso3,
-				);
+				const division = await resolveDivision(tx, tenant.id, v, iso3);
 				if ("error" in division) {
 					reject(i, row, [division.error]);
 					continue;

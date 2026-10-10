@@ -41,6 +41,7 @@ function row(over: Record<string, string>): Record<string, string> {
 		quantity_type: "extensive",
 		unit: "persons",
 		division_key: t.iso3,
+		key_scheme: "iso3",
 		boundary_vintage: "national",
 		period_start: "2024-01-01",
 		period_end: "2024-12-31",
@@ -88,6 +89,7 @@ describe("reference CSV loader", () => {
 			row({}),
 			row({
 				division_key: `N-${tag}`,
+				key_scheme: "national_id",
 				boundary_vintage: "V1",
 				method: "zonal_sum",
 				grade: "REF-C",
@@ -99,6 +101,7 @@ describe("reference CSV loader", () => {
 			}),
 			row({
 				division_key: `I-${tag}`,
+				key_scheme: "pcode",
 				boundary_vintage: "V1",
 				method: "zonal_sum",
 				grade: "REF-C",
@@ -124,7 +127,11 @@ describe("reference CSV loader", () => {
 				grade: "REF-A",
 			}),
 			// Unresolvable division.
-			row({ division_key: `NOPE-${tag}`, boundary_vintage: "V1" }),
+			row({
+				division_key: `NOPE-${tag}`,
+				key_scheme: "national_id",
+				boundary_vintage: "V1",
+			}),
 		]);
 	});
 
@@ -220,6 +227,34 @@ describe("reference CSV loader", () => {
 		);
 		expect(report.rowsRejected).toBe(1);
 		expect(report.rejected[0].errors[0]).toContain("licence");
+	});
+
+	it("v0.2: refuses an unknown boundary vintage, a global key and a wrong iso3 key", async () => {
+		const report = await loadReferenceCsv(
+			csv([
+				row({
+					period_start: "2020-01-01",
+					period_end: "2020-12-31",
+					boundary_vintage: "unknown",
+				}),
+				row({
+					period_start: "2020-01-01",
+					period_end: "2020-12-31",
+					key_scheme: "global",
+				}),
+				row({
+					period_start: "2020-01-01",
+					period_end: "2020-12-31",
+					division_key: "ZZZ",
+				}),
+			]),
+		);
+		expect(report.rowsValid).toBe(0);
+		expect(report.rejected.map((r) => r.errors[0])).toEqual([
+			"boundary_vintage: unknown vintage; the value is refused, not graded",
+			"key_scheme global: not allowed for a tenant value in ref.value",
+			`division_key ZZZ: key_scheme iso3 needs the country's iso3 (${t.iso3})`,
+		]);
 	});
 
 	it("rejects a row whose iso3 does not match the --tenant country", async () => {
