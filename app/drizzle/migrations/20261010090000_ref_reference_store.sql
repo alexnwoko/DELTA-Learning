@@ -5,11 +5,17 @@
 --   R6 every value carries source, release, period, method, boundary vintage,
 --      licence and source status;
 --   R7 null is not zero: a value exists only when reported or zero_confirmed;
---   grade scale REF-A..REF-D (REF-A official national only; modelled values
---   REF-C or REF-D only).
--- source_status is carried down source -> release -> value by composite
--- foreign keys, so the grade checks on ref.value cannot disagree with the
--- source they cite.
+--   grade scale REF-A..REF-D (REF-A official national statistic; REF-B
+--   international official estimate; REF-C modelled grid aggregated to
+--   official boundaries; REF-D modelled on a coarse grid or interpolated).
+--   Modelled values take REF-C or REF-D only. A value whose boundary vintage
+--   is unknown is refused, not graded.
+-- Contract: delta_reference_value.schema.json v0.2 (expert review
+-- amendments DRR-08, GEO-06, GEO-08, CLM-08).
+-- source_status is carried down source -> release -> value, and
+-- quantity_type from indicator -> value, by composite foreign keys, so the
+-- grade and method checks on ref.value cannot disagree with the source or
+-- indicator they cite.
 CREATE SCHEMA IF NOT EXISTS "ref";
 --> statement-breakpoint
 CREATE TABLE "ref"."source" (
@@ -60,7 +66,8 @@ CREATE TABLE "ref"."indicator" (
 	"rdls_exposure_category" text,
 	"created_at" timestamptz DEFAULT now() NOT NULL,
 	CONSTRAINT "ref_indicator_code_check" CHECK ("code" ~ '^[A-Z][A-Z0-9_]{2,40}$'),
-	CONSTRAINT "ref_indicator_family_check" CHECK ("family" IN ('population', 'exposure', 'vulnerability', 'climate_driver')),
+	CONSTRAINT "ref_indicator_code_quantity_type_unique" UNIQUE ("code", "quantity_type"),
+	CONSTRAINT "ref_indicator_family_check" CHECK ("family" IN ('population', 'exposure', 'vulnerability', 'economic', 'valuation_baseline', 'climate_driver')),
 	CONSTRAINT "ref_indicator_quantity_type_check" CHECK ("quantity_type" IN ('extensive', 'intensive', 'index')),
 	CONSTRAINT "ref_indicator_unit_check" CHECK (length(btrim("unit")) > 0)
 );
@@ -69,8 +76,12 @@ CREATE TABLE "ref"."value" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"country_accounts_id" uuid NOT NULL,
 	"division_id" uuid,
+	"key_scheme" text NOT NULL,
+	"key_valid_from" date,
+	"key_valid_to" date,
 	"boundary_vintage" text NOT NULL,
 	"indicator_code" text NOT NULL,
+	"quantity_type" text NOT NULL,
 	"release_id" uuid NOT NULL,
 	"source_status" text NOT NULL,
 	"period_start" date NOT NULL,
@@ -79,20 +90,37 @@ CREATE TABLE "ref"."value" (
 	"value_state" text NOT NULL,
 	"lower_bound" double precision,
 	"upper_bound" double precision,
+	"interval_type" text,
+	"currency" text,
+	"price_basis" text,
+	"base_year" integer,
+	"unit_mult" integer,
+	"index_version" text,
+	"phase_category" text,
 	"method" text NOT NULL,
 	"grade" text NOT NULL,
 	"created_at" timestamptz DEFAULT now() NOT NULL,
 	CONSTRAINT "ref_value_country_accounts_fk" FOREIGN KEY ("country_accounts_id") REFERENCES "public"."country_accounts" ("id") ON DELETE CASCADE,
 	CONSTRAINT "ref_value_division_fk" FOREIGN KEY ("division_id") REFERENCES "public"."division" ("id") ON DELETE RESTRICT,
-	CONSTRAINT "ref_value_indicator_fk" FOREIGN KEY ("indicator_code") REFERENCES "ref"."indicator" ("code") ON UPDATE CASCADE ON DELETE RESTRICT,
+	CONSTRAINT "ref_value_indicator_fk" FOREIGN KEY ("indicator_code", "quantity_type") REFERENCES "ref"."indicator" ("code", "quantity_type") ON UPDATE CASCADE ON DELETE RESTRICT,
 	CONSTRAINT "ref_value_release_fk" FOREIGN KEY ("release_id", "source_status") REFERENCES "ref"."release" ("id", "source_status") ON UPDATE CASCADE ON DELETE RESTRICT,
-	CONSTRAINT "ref_value_boundary_vintage_check" CHECK (length(btrim("boundary_vintage")) > 0),
+	CONSTRAINT "ref_value_boundary_vintage_check" CHECK (length(btrim("boundary_vintage")) > 0 AND lower(btrim("boundary_vintage")) NOT IN ('unknown', 'n/a', 'na', 'none', '?')),
+	CONSTRAINT "ref_value_key_scheme_check" CHECK ("key_scheme" IN ('national_id', 'pcode', 'iso3166_2', 'iso3', 'global')),
+	CONSTRAINT "ref_value_key_scheme_division_check" CHECK (("key_scheme" IN ('iso3', 'global')) = ("division_id" IS NULL)),
+	CONSTRAINT "ref_value_key_validity_check" CHECK ("key_valid_from" IS NULL OR "key_valid_to" IS NULL OR "key_valid_to" >= "key_valid_from"),
 	CONSTRAINT "ref_value_period_check" CHECK ("period_end" >= "period_start"),
 	CONSTRAINT "ref_value_value_state_check" CHECK ("value_state" IN ('reported', 'zero_confirmed', 'not_reported', 'not_applicable', 'suppressed')),
 	CONSTRAINT "ref_value_null_is_not_zero_check" CHECK (("value_state" IN ('reported', 'zero_confirmed')) = ("value" IS NOT NULL)),
 	CONSTRAINT "ref_value_zero_confirmed_check" CHECK ("value_state" <> 'zero_confirmed' OR "value" = 0),
 	CONSTRAINT "ref_value_bounds_check" CHECK ("lower_bound" IS NULL OR "upper_bound" IS NULL OR "lower_bound" <= "upper_bound"),
-	CONSTRAINT "ref_value_method_check" CHECK ("method" IN ('as_published', 'zonal_sum', 'weighted_mean', 'admin_join')),
+	CONSTRAINT "ref_value_lower_bound_check" CHECK ("lower_bound" IS NULL OR "value" IS NULL OR "lower_bound" <= "value"),
+	CONSTRAINT "ref_value_upper_bound_check" CHECK ("upper_bound" IS NULL OR "value" IS NULL OR "value" <= "upper_bound"),
+	CONSTRAINT "ref_value_interval_type_check" CHECK ("interval_type" IS NULL OR "interval_type" IN ('ci90', 'ci95', 'min_max', 'model_range')),
+	CONSTRAINT "ref_value_currency_check" CHECK ("currency" IS NULL OR "currency" ~ '^[A-Z]{3}$'),
+	CONSTRAINT "ref_value_price_basis_check" CHECK ("price_basis" IS NULL OR "price_basis" IN ('current', 'constant')),
+	CONSTRAINT "ref_value_quantity_type_check" CHECK ("quantity_type" IN ('extensive', 'intensive', 'index')),
+	CONSTRAINT "ref_value_method_check" CHECK ("method" IN ('as_published', 'zonal_sum', 'weighted_mean_population', 'weighted_mean_area', 'areal_interpolation', 'raked_to_official', 'admin_join')),
+	CONSTRAINT "ref_value_index_method_check" CHECK ("quantity_type" <> 'index' OR "method" IN ('as_published', 'admin_join')),
 	CONSTRAINT "ref_value_grade_check" CHECK ("grade" IN ('REF-A', 'REF-B', 'REF-C', 'REF-D')),
 	CONSTRAINT "ref_value_source_status_check" CHECK ("source_status" IN ('official_national', 'international_official', 'modelled')),
 	CONSTRAINT "ref_value_grade_a_official_check" CHECK ("grade" <> 'REF-A' OR "source_status" = 'official_national'),
@@ -138,5 +166,6 @@ CREATE INDEX "ref_driver_index_release_id_idx" ON "ref"."driver_index" ("release
 INSERT INTO "ref"."indicator" ("code", "name", "family", "quantity_type", "unit") VALUES
 	('POP_TOTAL', 'Total population', 'population', 'extensive', 'persons'),
 	('POP_FEMALE', 'Female population', 'population', 'extensive', 'persons'),
-	('POP_MALE', 'Male population', 'population', 'extensive', 'persons')
+	('POP_MALE', 'Male population', 'population', 'extensive', 'persons'),
+	('HH_AVG_OCCUPANTS', 'Average number of occupants per household', 'population', 'intensive', 'persons per household')
 ON CONFLICT ("code") DO NOTHING;

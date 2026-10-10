@@ -65,6 +65,15 @@ const EXPECTED_CHECKS = [
 	"ref_value_grade_a_official_check",
 	"ref_value_modelled_grade_check",
 	"ref_value_method_check",
+	"ref_value_index_method_check",
+	"ref_value_lower_bound_check",
+	"ref_value_upper_bound_check",
+	"ref_value_key_scheme_check",
+	"ref_value_key_scheme_division_check",
+	"ref_value_boundary_vintage_check",
+	"ref_value_interval_type_check",
+	"ref_value_currency_check",
+	"ref_value_price_basis_check",
 	"ref_source_redistribution_rule_check",
 	"ref_source_status_check",
 ];
@@ -150,6 +159,19 @@ describe("ref schema DDL", () => {
 				family: "population",
 				quantity_type: "extensive",
 				unit: "persons",
+			},
+		]);
+	});
+
+	it("seeds HH_AVG_OCCUPANTS as intensive persons per household", async () => {
+		const res = await dr.execute(sql`
+			SELECT family, quantity_type, unit FROM ref.indicator WHERE code = 'HH_AVG_OCCUPANTS'
+		`);
+		expect(res.rows).toEqual([
+			{
+				family: "population",
+				quantity_type: "intensive",
+				unit: "persons per household",
 			},
 		]);
 	});
