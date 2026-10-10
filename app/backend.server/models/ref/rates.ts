@@ -183,34 +183,78 @@ export function sumMeasures(parts: MeasureValue[]): {
 const SENDAI_MEASURES = ["deaths", "missing", "affected_direct"] as const;
 type SendaiMeasure = (typeof SENDAI_MEASURES)[number];
 
-export const A1_METHOD = "a1_deaths_missing_per_100k";
 /**
- * B-1 here is DELTA's directly affected people only. The full Sendai B-1 is
- * the composite B-2 + B-3 + B-4 + B-5 (injured or ill, damaged dwellings,
- * destroyed dwellings, livelihoods disrupted); that alignment belongs to the
- * SFM lane (launch item S1). No other component is added here.
+ * Sendai A-1: (deaths + missing) / population x 100,000. A-1 is a national
+ * indicator; it is only computed for the national denominator here. A
+ * sub-national per-100,000 rate may be built with ratePer100k, but it must
+ * be named a "national analytical rate", never A-1.
  */
-export const B1_METHOD = "b1_delta_affected_direct";
+export const A1_METHOD = "a1_deaths_missing_per_100k";
+
+/**
+ * DELTA national analytical rate: directly affected people per 100,000.
+ * This is NOT Sendai B-1. Sendai B-1 (Technical Guidance 2017, Target B) is
+ * (B-2 injured or ill + B-3 damaged dwellings x average occupants per
+ * household + B-4 destroyed dwellings x average occupants + B-5 livelihoods
+ * disrupted) / population x 100,000, and excludes evacuated, displaced and
+ * relocated people.
+ *
+ * TODO(SFM lane, launch item S1): Sendai B-1 needs indicator
+ * HH_AVG_OCCUPANTS (seeded in ref.indicator, no data yet) plus the dwelling
+ * and livelihood measures. No B-1 is computed in E1.
+ */
+export const AFFECTED_DIRECT_METHOD = "delta_affected_direct_rate";
 
 export interface SendaiNumerators {
+	/** Records whose year is the requested year. */
 	measures: Record<SendaiMeasure, MeasureValue>;
-	/** Published records whose start date has no year; not in any year. */
-	recordsUndated: number;
+	/**
+	 * Records on the basis whose start date has no year. They are never
+	 * counted in any year; their totals are shown here instead.
+	 */
+	undated: {
+		records: number;
+		measures: Record<SendaiMeasure, MeasureValue>;
+	};
+}
+
+function measuresFromRow(
+	row: Record<string, unknown>,
+): Record<SendaiMeasure, MeasureValue> {
+	return Object.fromEntries(
+		SENDAI_MEASURES.map((m) => [
+			m,
+			measureValue(
+				{
+					sum: (row[`${m}_sum`] ?? null) as number | string | null,
+					reported: (row[`${m}_reported`] ?? 0) as number | string,
+					zeroConfirmed: (row[`${m}_zero`] ?? 0) as number | string,
+					total: (row.records_total ?? 0) as number | string,
+				},
+				PROVISIONAL_ZERO_COVERAGE,
+			),
+		]),
+	) as Record<SendaiMeasure, MeasureValue>;
 }
 
 /**
- * National human-effects totals for one tenant and event start year (R3),
- * on the official approval basis (published, not retired). Totals come from
+ * National human-effects totals for one tenant and year, on the official
+ * approval basis (published, not retired). Totals come from
  * human_category_presence, one row per record, so the disaggregation cube
  * is never summed. A record counts as reported when its total is above 0;
  * as a confirmed zero when its total is 0 with a Yes flag, or an explicit No
  * with no value; otherwise as not reported (the same rule as the analytics
  * headline figures).
  *
+ * Year rule: Sendai counts effects "in the year when the death occurred".
+ * DELTA records carry no per-effect date, so the record's start date year is
+ * the proxy for the year of the effect (also R3). A record whose start date
+ * has no year is never assigned to a year; it is counted in the undated
+ * block.
+ *
  * Why not getAffectedPeopleByHazardFilters: its date filter keeps records
  * whose period overlaps the range and also keeps undated records, so a
- * multi-year or undated record would count in every year. R3 attributes a
- * record to its start year only.
+ * multi-year or undated record would count in every year.
  */
 export async function sendaiNumeratorsForYear(
 	countryAccountsId: string,
@@ -239,34 +283,29 @@ export async function sendaiNumeratorsForYear(
 			WHERE dr."country_accounts_id" = ${countryAccountsId}
 				AND ${approvalBasis(audience, basisColumns("dr"))}
 		),
-		in_year AS (
-			SELECT "id" FROM in_basis WHERE start_year = ${year}
+		scoped AS (
+			SELECT "id",
+				CASE WHEN start_year IS NULL THEN 'undated' ELSE 'year' END AS scope
+			FROM in_basis
+			WHERE start_year IS NULL OR start_year = ${year}
 		)
 		SELECT
+			fr.scope,
 			${sql.join(measureCols, sql`, `)},
-			COUNT(*) AS records_total,
-			(SELECT COUNT(*) FROM in_basis WHERE start_year IS NULL) AS records_undated
-		FROM in_year fr
+			COUNT(*) AS records_total
+		FROM scoped fr
 		LEFT JOIN "human_category_presence" hcp ON hcp."record_id" = fr."id"
+		GROUP BY fr.scope
 	`);
-	const row = (res.rows[0] ?? {}) as Record<string, unknown>;
-	const measures = Object.fromEntries(
-		SENDAI_MEASURES.map((m) => [
-			m,
-			measureValue(
-				{
-					sum: row[`${m}_sum`] as number | string | null,
-					reported: row[`${m}_reported`] as number | string,
-					zeroConfirmed: row[`${m}_zero`] as number | string,
-					total: row.records_total as number | string,
-				},
-				PROVISIONAL_ZERO_COVERAGE,
-			),
-		]),
-	) as Record<SendaiMeasure, MeasureValue>;
+	const rows = res.rows as Record<string, unknown>[];
+	const yearRow = rows.find((r) => r.scope === "year") ?? {};
+	const undatedRow = rows.find((r) => r.scope === "undated") ?? {};
 	return {
-		measures,
-		recordsUndated: Number(row.records_undated ?? 0),
+		measures: measuresFromRow(yearRow),
+		undated: {
+			records: Number(undatedRow.records_total ?? 0),
+			measures: measuresFromRow(undatedRow),
+		},
 	};
 }
 
@@ -275,17 +314,21 @@ export interface SendaiRates {
 	year: number;
 	audience: ApprovalAudience;
 	denominator: DenominatorResult;
-	/** Deaths and missing per 100,000 (Sendai A-1). */
+	/** Deaths and missing per 100,000 (Sendai A-1, national only). */
 	a1: RateResult;
-	/** DELTA directly affected per 100,000 (B-1 numerator, see B1_METHOD). */
-	b1: RateResult;
-	recordsUndated: number;
+	/**
+	 * DELTA national analytical rate: directly affected per 100,000
+	 * (AFFECTED_DIRECT_METHOD). Not Sendai B-1.
+	 */
+	affected_direct_per_100k: RateResult;
+	/** Records with no year: never in a rate, shown as totals only. */
+	undated: SendaiNumerators["undated"];
 }
 
 /**
- * National Sendai rates for one tenant and event start year, on the
- * official approval basis. A-1 = (deaths + missing) / population x 100,000.
- * B-1 = DELTA directly affected / population x 100,000.
+ * National rates for one tenant and year, on the official approval basis:
+ * Sendai A-1 = (deaths + missing) / population x 100,000, and the DELTA
+ * national analytical rate of directly affected people per 100,000.
  */
 export async function sendaiRatesForYear(
 	countryAccountsId: string,
@@ -300,7 +343,8 @@ export async function sendaiRatesForYear(
 	const basis = {
 		audience,
 		countryAccountsId,
-		eventStartYear: year,
+		year,
+		yearRule: "record start date year, proxy for the year of the effect",
 		source: "human_category_presence",
 	};
 
@@ -313,14 +357,14 @@ export async function sendaiRatesForYear(
 		denominator,
 		A1_METHOD,
 	);
-	const b1 = ratePer100k(
+	const affectedDirect = ratePer100k(
 		{
 			value: affected_direct.value,
 			valueState: affected_direct.valueState,
 			provenance: { ...basis, components: { affected_direct } },
 		},
 		denominator,
-		B1_METHOD,
+		AFFECTED_DIRECT_METHOD,
 	);
 
 	return {
@@ -329,7 +373,7 @@ export async function sendaiRatesForYear(
 		audience,
 		denominator,
 		a1,
-		b1,
-		recordsUndated: numerators.recordsUndated,
+		affected_direct_per_100k: affectedDirect,
+		undated: numerators.undated,
 	};
 }
