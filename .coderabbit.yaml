@@ -1,18 +1,8 @@
 # CodeRabbit configuration
 # https://docs.coderabbit.ai/getting-started/configure-coderabbit
+# Schema: https://coderabbit.ai/integrations/schema.v2.json
 
 reviews:
-  # Branches that trigger an automatic review when a PR targets them
-  base_branches:
-    - main
-    - dev
-    - "feature/**"
-    - "bug/**"
-    - "refactor/**"
-    - "hotfix/**"
-    - "docs/**"
-    - "chore/**"
-
   # Review profile: chill = concise, assertive = thorough
   profile: chill
 
@@ -25,8 +15,38 @@ reviews:
   auto_review:
     enabled: true
     drafts: false
+    # Base branches other than the default branch. Regex patterns, not globs.
     base_branches:
-      - main
-      - dev
+      - "^main$"
+      - "^dev$"
+      - "^feature/.*"
+      - "^bug/.*"
+      - "^refactor/.*"
+      - "^hotfix/.*"
+      - "^docs/.*"
+      - "^chore/.*"
+      - "^v2/.*"
+
+  # DELTA rules that a generic reviewer would not know.
+  # Full text: .claude/skills/delta-data-honesty and delta-house-style.
+  path_instructions:
+    - path: "app/**/*.{ts,tsx}"
+      instructions: |
+        Flag any query that is not scoped by countryAccountsId (tenant isolation).
+        Flag loaders or actions not wrapped in an authLoader*/authAction* helper; prefer
+        authLoaderWithPerm, never authLoaderApiDocs as a template.
+        Flag COALESCE(..., 0) or "?? 0" that turns a not-reported value into a confirmed zero.
+        Null is not zero. Method and grade must travel with every derived figure.
+        Flag copies of the known bugs listed in .github/copilot-instructions.md.
+    - path: "app/drizzle/**"
+      instructions: |
+        Schema changes are Drizzle migrations only (yarn dbsync; never drizzle-kit push).
+        GiST and temporal indexes must be hand-written SQL with a DDL assertion test.
+        Hand-authored multi-statement migrations need --> statement-breakpoint.
+    - path: ".github/workflows/**"
+      instructions: |
+        Pin every third-party action by full commit SHA with a version comment.
+        Never interpolate untrusted event fields (issue or PR title and body, head_ref)
+        directly in run: steps; pass them through env.
 
 language: en-US
