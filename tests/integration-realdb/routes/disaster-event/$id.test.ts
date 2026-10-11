@@ -77,13 +77,14 @@ describe("$id.tsx loader", () => {
 		).rejects.toMatchObject({ status: 401 });
 	});
 
-	it("should return 401 for disaster event from different tenant", async () => {
+	// Pack C26: another tenant's item reads as not found, so its existence does not leak.
+	it("should return 404 for disaster event from different tenant", async () => {
 		const otherTenantId = await createOtherTenant();
 		const otherData = await createTestDisasterEventWithOptions(otherTenantId);
 
 		await expect(
 			callLoader({ id: otherData.disasterEventId }),
-		).rejects.toMatchObject({ status: 401 });
+		).rejects.toMatchObject({ status: 404 });
 
 		await cleanupOtherTenant();
 	});

@@ -52,11 +52,17 @@ import { getUserRoleFromSession } from "~/utils/session";
 import { UserCountryAccountRepository } from "~/db/queries/userCountryAccountsRepository";
 import { requestContextMiddleware } from "~/middleware/requestContext.server";
 import { i18nextMiddleware } from "~/middleware/i18next.server";
+import { securityHeadersMiddleware } from "~/middleware/securityHeaders.server";
 
 // Runs before any loader/action in the matched route tree, for every request
 // See openspec/changes/archive/2026-07-02-ca-request-context-middleware/design.md Decision 3.
 // i18nextMiddleware appended after requestContextMiddleware for future step-2 (user.preferredLocale) use; no current dependency.
-export const middleware = [requestContextMiddleware, i18nextMiddleware];
+// securityHeadersMiddleware runs first so its headers and rate limit cover every response.
+export const middleware = [
+	securityHeadersMiddleware,
+	requestContextMiddleware,
+	i18nextMiddleware,
+];
 
 export const links: LinksFunction = () => [
 	{ rel: "stylesheet", href: "/assets/css/style-dts.css?asof=20250630" },
