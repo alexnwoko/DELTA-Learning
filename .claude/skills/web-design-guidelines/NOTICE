@@ -1,0 +1,4 @@
+Vendored from https://github.com/vercel-labs/agent-skills (skills/web-design-guidelines) @ ba46938889d4e58635362fb8f618e1178ac3ec46
+and https://github.com/vercel-labs/web-interface-guidelines (command.md) @ 4ecfb9fb8d1d3b7009674869b3aaee2f904042e1.
+Licence: MIT per the upstream READMEs (no LICENSE file upstream). Copyright Vercel.
+Modified: SKILL.md reads the local pinned command.md instead of fetching main; DELTA targets app/**/*.tsx.
