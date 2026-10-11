@@ -1,0 +1,7 @@
+# Historical gitleaks findings triaged on 2026-10-11 (DV2 99_Ops/AI_Toolkit_Evaluation).
+# Neither is a live credential. Remove a line only if the finding is re-assessed.
+#
+# Self-signed localhost development key (CN = localhost). Never use it outside local development.
+8eb9b759143914cde9d9bc08093d8fd0146e7cf9:scripts/nginx/certs/tls.key:private-key:1
+# Expired Azure B2C ID token (exp 2024-10-30) left in a comment; the file has since moved to app/utils.
+1188576dff4f674b074882acfc9ab5735b25f44b:app/util/ssoauzeb2c.ts:jwt:29
