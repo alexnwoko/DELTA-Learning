@@ -421,6 +421,8 @@ export function HazardousEventForm(props: HazardousEventFormProps) {
 
 	useEffect(() => {
 		const handleMessage = (event: any) => {
+			// Accept picker messages only from our own origin
+			if (event.origin !== window.location.origin) return;
 			if (event.data?.selected) {
 				setSelected(event.data.selected);
 			}

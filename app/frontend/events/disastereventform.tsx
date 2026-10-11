@@ -612,6 +612,8 @@ export function DisasterEventForm(props: DisasterEventFormProps) {
 
 	useEffect(() => {
 		const handleMessage = (event: any) => {
+			// Accept picker messages only from our own origin
+			if (event.origin !== window.location.origin) return;
 			if (event.data?.type === "select_hazard") {
 				if (event.data?.selected) {
 					setSelectedHazardousEvent(event.data.selected);

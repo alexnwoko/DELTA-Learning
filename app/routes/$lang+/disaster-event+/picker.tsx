@@ -33,7 +33,7 @@ export default function Data() {
 					if (window.opener) {
 						window.opener.postMessage(
 							{ selected: item, type: "select_disaster" },
-							"*",
+							window.location.origin,
 						);
 						window.close();
 					} else {
