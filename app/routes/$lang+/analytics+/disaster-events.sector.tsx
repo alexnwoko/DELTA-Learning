@@ -37,14 +37,21 @@ export const loader = authLoaderPublicOrWithPerm(
 		const req = loaderArgs.request;
 		// Parse the request URL
 		const parsedUrl = new URL(req.url);
-		const sectorPieChartData: Record<
-			string,
-			{
-				damages: interfacePieChart;
-				losses: interfacePieChart;
-				recovery: interfacePieChart;
-			}
-		> = {};
+		// One slice per sector with a reported figure. A sector whose figure
+		// is not reported has no slice, never a 0 slice (TR-076).
+		const damagesPie: Record<string, interfacePieChart> = {};
+		const lossesPie: Record<string, interfacePieChart> = {};
+		const recoveryPie: Record<string, interfacePieChart> = {};
+		const addSlice = (
+			target: Record<string, interfacePieChart>,
+			id: string,
+			name: string,
+			value: number | null,
+		) => {
+			if (value === null || !(value > 0)) return;
+			if (target[id]) target[id].value += value;
+			else target[id] = { name, value };
+		};
 
 		// Extract query string parameters
 		const queryParams = parsedUrl.searchParams;
@@ -119,7 +126,8 @@ export const loader = authLoaderPublicOrWithPerm(
 				...sectorChildrenIdsArray,
 			];
 
-			let effects = await disasterEventSectorTotal__ById(
+			const effects = await disasterEventSectorTotal__ById(
+				countryAccountsId,
 				xId,
 				sectorChildrenIdsArray,
 				confCurrency,
@@ -127,40 +135,13 @@ export const loader = authLoaderPublicOrWithPerm(
 			);
 
 			// Populate Sector Pie Chart Data
-			if (
-				!sectorPieChartData[item.id] &&
-				effects &&
-				((effects.damages && effects.damages.total > 0) ||
-					effects.losses.total > 0 ||
-					effects.recovery.total > 0)
-			) {
-				sectorPieChartData[item.id] = {
-					damages: { name: item.name, value: effects.damages.total },
-					losses: { name: item.name, value: effects.losses.total },
-					recovery: { name: item.name, value: effects.recovery.total },
-				};
-			} else if (
-				sectorPieChartData[item.id] &&
-				effects &&
-				((effects.damages && effects.damages.total > 0) ||
-					effects.losses.total > 0 ||
-					effects.recovery.total > 0)
-			) {
-				sectorPieChartData[item.id].damages.value += effects.damages.total;
-				sectorPieChartData[item.id].losses.value += effects.losses.total;
-				sectorPieChartData[item.id].recovery.value += effects.recovery.total;
-			}
+			addSlice(damagesPie, item.id, item.name, effects.damages.value);
+			addSlice(lossesPie, item.id, item.name, effects.losses.value);
+			addSlice(recoveryPie, item.id, item.name, effects.recovery.value);
 		}
-		// Extract values only for damage, losses, and recovery
-		sectorDamagePieChartData = Object.values(sectorPieChartData).map(
-			(entry) => entry.damages,
-		);
-		sectorLossesPieChartData = Object.values(sectorPieChartData).map(
-			(entry) => entry.losses,
-		);
-		sectorRecoveryPieChartData = Object.values(sectorPieChartData).map(
-			(entry) => entry.recovery,
-		);
+		sectorDamagePieChartData = Object.values(damagesPie);
+		sectorLossesPieChartData = Object.values(lossesPie);
+		sectorRecoveryPieChartData = Object.values(recoveryPie);
 
 		// console.log( 'sectorChildrenIdsArray', sectorAllChildrenIdsArray );
 
@@ -190,7 +171,6 @@ export const loader = authLoaderPublicOrWithPerm(
 
 		return {
 			sectorData: sectorData,
-			sectorPieChartData: sectorPieChartData,
 			sectorDamagePieChartData: sectorDamagePieChartData,
 			sectorLossesPieChartData: sectorLossesPieChartData,
 			sectorRecoveryPieChartData: sectorRecoveryPieChartData,

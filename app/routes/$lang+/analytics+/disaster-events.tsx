@@ -13,7 +13,9 @@ import {
 	disasterEventSectorsById,
 	disasterEvent_DisasterRecordsCount__ById,
 	disasterEventSectorTotal__ById,
+	type SectorEffects,
 } from "~/backend.server/models/analytics/disaster-events";
+import type { ValueState } from "~/utils/valueState";
 
 import {
 	disasterEventById,
@@ -54,7 +56,9 @@ import { htmlTitle } from "~/utils/htmlmeta";
 
 // Define an interface for the structure of the JSON objects
 interface interfaceMap {
-	total: number;
+	/** null when not reported (TR-076); valueState drives the map state. */
+	total: number | null;
+	valueState: ValueState;
 	name: string;
 	description: string;
 	colorPercentage: number;
@@ -68,8 +72,15 @@ interface interfacePieChart {
 
 interface interfaceBarChart {
 	name: string;
-	damage: number;
-	losses: number;
+	/** null when not reported: no bar, never a 0 bar (TR-076). */
+	damage: number | null;
+	losses: number | null;
+}
+
+/** Adds a reported figure to a running chart value; null stays null. */
+function addReported(a: number | null, b: number | null): number | null {
+	if (b === null) return a;
+	return (a ?? 0) + b;
 }
 
 interface interfaceSector {
@@ -112,12 +123,13 @@ export const loader = authLoaderPublicOrWithPerm(
 			{ id: string; name: string; subSector?: interfaceSector[] }
 		> = {};
 
+		type PieEntry = { name: string; value: number | null };
 		const sectorPieChartData: Record<
-			number,
+			string,
 			{
-				damages: interfacePieChart;
-				losses: interfacePieChart;
-				recovery: interfacePieChart;
+				damages: PieEntry;
+				losses: PieEntry;
+				recovery: PieEntry;
 			}
 		> = {};
 		let sectorBarChartData: Record<number, interfaceBarChart> = {};
@@ -179,11 +191,13 @@ export const loader = authLoaderPublicOrWithPerm(
 							x.myChildren = ancestorIds;
 							x.effects = {};
 							x.effects = await disasterEventSectorTotal__ById(
+								countryAccountsId,
 								qsDisEventId,
 								ancestorIds,
 								currency,
 								audience,
 							);
+							const effects: SectorEffects = x.effects;
 
 							// Populate sectorData - will be used for the sector filter
 							if (!sectortData[x.id]) {
@@ -197,38 +211,40 @@ export const loader = authLoaderPublicOrWithPerm(
 								};
 							}
 
-							// Populate Sector Pie Chart Data
+							// Populate Sector Pie Chart Data. A not-reported figure
+							// adds no slice value and is never 0 (TR-076).
 							if (!sectorPieChartData[x.id]) {
 								sectorPieChartData[x.id] = {
-									damages: {
-										name: x.sectorname,
-										value: x.effects.damages.total,
-									},
-									losses: { name: x.sectorname, value: x.effects.losses.total },
-									recovery: {
-										name: x.sectorname,
-										value: x.effects.recovery.total,
-									},
+									damages: { name: x.sectorname, value: null },
+									losses: { name: x.sectorname, value: null },
+									recovery: { name: x.sectorname, value: null },
 								};
-							} else {
-								sectorPieChartData[x.id].damages.value +=
-									x.effects.damages.total;
-								sectorPieChartData[x.id].losses.value += x.effects.losses.total;
-								sectorPieChartData[x.id].recovery.value +=
-									x.effects.recovery.total;
 							}
+							const pie = sectorPieChartData[x.id];
+							pie.damages.value = addReported(
+								pie.damages.value,
+								effects.damages.value,
+							);
+							pie.losses.value = addReported(
+								pie.losses.value,
+								effects.losses.value,
+							);
+							pie.recovery.value = addReported(
+								pie.recovery.value,
+								effects.recovery.value,
+							);
 
 							// Populate Sector Bar Chart Data
 							if (!sectorBarChartData[x.id]) {
 								sectorBarChartData[x.id] = {
 									name: x.sectorname,
-									damage: x.effects.damages.total,
-									losses: x.effects.losses.total,
+									damage: null,
+									losses: null,
 								};
-							} else {
-								sectorBarChartData[x.id].damage += x.effects.damages.total;
-								sectorBarChartData[x.id].losses += x.effects.losses.total;
 							}
+							const bar = sectorBarChartData[x.id];
+							bar.damage = addReported(bar.damage, effects.damages.value);
+							bar.losses = addReported(bar.losses, effects.losses.value);
 						}
 					}
 
@@ -239,16 +255,22 @@ export const loader = authLoaderPublicOrWithPerm(
 						return nameA.localeCompare(nameB);
 					});
 
-					// Extract values only for damage, losses, and recovery
-					sectorDamagePieChartData = Object.values(sectorPieChartData).map(
-						(entry) => entry.damages,
-					);
-					sectorLossesPieChartData = Object.values(sectorPieChartData).map(
-						(entry) => entry.losses,
-					);
-					sectorRecoveryPieChartData = Object.values(sectorPieChartData).map(
-						(entry) => entry.recovery,
-					);
+					// Extract values only for damage, losses, and recovery: one
+					// slice per sector with a reported figure.
+					const slices = (
+						pick: (e: (typeof sectorPieChartData)[string]) => {
+							name: string;
+							value: number | null;
+						},
+					): interfacePieChart[] =>
+						Object.values(sectorPieChartData)
+							.map(pick)
+							.filter(
+								(s): s is interfacePieChart => s.value !== null && s.value > 0,
+							);
+					sectorDamagePieChartData = slices((e) => e.damages);
+					sectorLossesPieChartData = slices((e) => e.losses);
+					sectorRecoveryPieChartData = slices((e) => e.recovery);
 
 					// Remove the associate ID of the array to align to the format required by the chart.
 					sectorBarChartData = Object.values(sectorBarChartData);
@@ -276,17 +298,18 @@ export const loader = authLoaderPublicOrWithPerm(
 						},
 					});
 
+					// null when no record reported a cost, never 0 (TR-076).
 					totalSectorEffects = {
 						damages: {
-							total: damagesTotal?.damagesTotal || 0,
+							total: damagesTotal?.damagesTotal ?? null,
 							currency: currency,
 						},
 						losses: {
-							total: lossesTotal?.lossesTotal || 0,
+							total: lossesTotal?.lossesTotal ?? null,
 							currency: currency,
 						},
 						recovery: {
-							total: damagesTotal?.recoveryTotal || 0,
+							total: damagesTotal?.recoveryTotal ?? null,
 							currency: currency,
 						},
 					};
@@ -325,10 +348,20 @@ export const loader = authLoaderPublicOrWithPerm(
 							{ divisionId: item.id, audience },
 						);
 
+						// A division's figure: "Not reported" when null, never 0
+						// (TR-076).
+						const notReported = ctx.t({
+							code: "analysis.not_reported",
+							msg: "Not reported",
+						});
+						const people = humanEffectsPerDivision.noDisaggregations;
+						const lossesMap = lossesMapTotal?.losses;
+						const damagesMap = damagesMapTotal?.damages;
+
 						// Populate the geoData for the map for the human effects
 						humanEffectsGeoData.push({
-							total:
-								humanEffectsPerDivision.noDisaggregations.totalPeopleAffected,
+							total: people.totalPeopleAffected,
+							valueState: people.peopleAffected.valueState,
 							name: String(item.name["en"]),
 							description:
 								ctx.t({
@@ -336,17 +369,20 @@ export const loader = authLoaderPublicOrWithPerm(
 									msg: "Total people affected",
 								}) +
 								": " +
-								humanEffectsPerDivision.noDisaggregations.totalPeopleAffected.toLocaleString(
-									navigator.language,
-									{ minimumFractionDigits: 0 },
-								),
+								(people.totalPeopleAffected === null
+									? notReported
+									: people.totalPeopleAffected.toLocaleString(
+											navigator.language,
+											{ minimumFractionDigits: 0 },
+										)),
 							colorPercentage: 1,
 							geojson: item.geojson,
 						});
 
 						// Populate the geoData for the map for losses
 						lossesGeoData.push({
-							total: lossesMapTotal?.lossesTotal || 0,
+							total: lossesMap?.value ?? null,
+							valueState: lossesMap?.valueState ?? "not_reported",
 							name: String(item.name["en"]),
 							description:
 								ctx.t({
@@ -354,19 +390,21 @@ export const loader = authLoaderPublicOrWithPerm(
 									msg: "Total losses",
 								}) +
 								": " +
-								currency +
-								" " +
-								lossesMapTotal?.lossesTotal?.toLocaleString(
-									navigator.language,
-									{ minimumFractionDigits: 0 },
-								),
+								(lossesMap?.value == null
+									? notReported
+									: currency +
+										" " +
+										lossesMap.value.toLocaleString(navigator.language, {
+											minimumFractionDigits: 0,
+										})),
 							colorPercentage: 1,
 							geojson: item.geojson,
 						});
 
 						// Populate the geoData for the map for damages
 						datamageGeoData.push({
-							total: damagesMapTotal?.damagesTotal || 0,
+							total: damagesMap?.value ?? null,
+							valueState: damagesMap?.valueState ?? "not_reported",
 							name: String(item.name["en"]),
 							description:
 								ctx.t({
@@ -374,12 +412,13 @@ export const loader = authLoaderPublicOrWithPerm(
 									msg: "Total damage",
 								}) +
 								": " +
-								currency +
-								" " +
-								damagesMapTotal?.damagesTotal?.toLocaleString(
-									navigator.language,
-									{ minimumFractionDigits: 0 },
-								),
+								(damagesMap?.value == null
+									? notReported
+									: currency +
+										" " +
+										damagesMap.value.toLocaleString(navigator.language, {
+											minimumFractionDigits: 0,
+										})),
 							colorPercentage: 1,
 							geojson: item.geojson,
 						});
@@ -480,6 +519,21 @@ function DisasterEventsAnalysisContent() {
 				senior: number | undefined;
 		  }
 		| undefined = undefined;
+
+	// A null figure is not reported: it reads "Not reported", never 0
+	// (TR-076, E17).
+	const notReported = ctx.t({
+		code: "analysis.not_reported",
+		msg: "Not reported",
+	});
+	const figure = (v: number | null | undefined) =>
+		v === null || v === undefined
+			? notReported
+			: v.toLocaleString(navigator.language, { minimumFractionDigits: 0 });
+	const money = (v: number | null | undefined, currency: string) =>
+		v === null || v === undefined
+			? notReported
+			: getCurrencySymbol(currency) + figure(v);
 
 	let [activeData, setActiveData] = useState(ld.datamageGeoData); //  Default MapChart geoData
 
@@ -774,7 +828,7 @@ function DisasterEventsAnalysisContent() {
 								)}
 
 								<div className="mg-grid mg-grid__col-3">
-									{Number(ld.total.damages.total) > 0 && (
+									{ld.total && (
 										<div className="dts-data-box">
 											<h3 className="dts-body-label">
 												<span id="elementId03">
@@ -789,17 +843,16 @@ function DisasterEventsAnalysisContent() {
 											</h3>
 											<div className="dts-indicator dts-indicator--target-box-b">
 												<span>
-													{getCurrencySymbol(ld.total.damages.currency)}
-													{ld.total.damages.total.toLocaleString(
-														navigator.language,
-														{ minimumFractionDigits: 0 },
+													{money(
+														ld.total.damages.total,
+														ld.total.damages.currency,
 													)}
 												</span>
 											</div>
 										</div>
 									)}
 
-									{Number(ld.total.losses.total) > 0 && (
+									{ld.total && (
 										<div className="dts-data-box">
 											<h3 className="dts-body-label">
 												<span id="elementId04">
@@ -814,17 +867,16 @@ function DisasterEventsAnalysisContent() {
 											</h3>
 											<div className="dts-indicator dts-indicator--target-box-c">
 												<span>
-													{getCurrencySymbol(ld.total.losses.currency)}
-													{ld.total.losses.total.toLocaleString(
-														navigator.language,
-														{ minimumFractionDigits: 0 },
+													{money(
+														ld.total.losses.total,
+														ld.total.losses.currency,
 													)}
 												</span>
 											</div>
 										</div>
 									)}
 
-									{Number(ld.total.recovery.total) > 0 && (
+									{ld.total && (
 										<>
 											<div className="dts-data-box">
 												<h3 className="dts-body-label">
@@ -840,10 +892,9 @@ function DisasterEventsAnalysisContent() {
 												</h3>
 												<div className="dts-indicator dts-indicator--target-box-d">
 													<span>
-														{getCurrencySymbol(ld.total.recovery.currency)}
-														{ld.total.recovery.total.toLocaleString(
-															navigator.language,
-															{ minimumFractionDigits: 0 },
+														{money(
+															ld.total.recovery.total,
+															ld.total.recovery.currency,
 														)}
 													</span>
 												</div>
@@ -854,11 +905,12 @@ function DisasterEventsAnalysisContent() {
 							</div>
 						</section>
 
-						{(Number(
-							ld.totalAffectedPeople2.noDisaggregations.totalPeopleAffected,
-						) > 0 ||
-							Number(ld.totalAffectedPeople2.noDisaggregations.tables.deaths) >
-								0) && (
+						{/* Shown when any figure is reported or confirmed zero; a
+						    not-reported figure reads "Not reported" (TR-076). */}
+						{(ld.totalAffectedPeople2.noDisaggregations.totalPeopleAffected !==
+							null ||
+							ld.totalAffectedPeople2.noDisaggregations.tables.deaths !==
+								null) && (
 							<>
 								<section className="dts-page-section">
 									<div className="mg-container">
@@ -896,11 +948,9 @@ function DisasterEventsAnalysisContent() {
 												</h3>
 												<div className="dts-indicator dts-indicator--target-box-f">
 													<span>
-														{ld.totalAffectedPeople2.noDisaggregations.totalPeopleAffected.toLocaleString(
-															navigator.language,
-															{
-																minimumFractionDigits: 0,
-															},
+														{figure(
+															ld.totalAffectedPeople2.noDisaggregations
+																.totalPeopleAffected,
 														)}
 													</span>
 												</div>
@@ -935,9 +985,9 @@ function DisasterEventsAnalysisContent() {
 												</h3>
 												<div className="dts-indicator dts-indicator--target-box-g">
 													<span>
-														{ld.totalAffectedPeople2.noDisaggregations.tables.deaths.toLocaleString(
-															navigator.language,
-															{ minimumFractionDigits: 0 },
+														{figure(
+															ld.totalAffectedPeople2.noDisaggregations.tables
+																.deaths,
 														)}
 													</span>
 												</div>
@@ -968,9 +1018,9 @@ function DisasterEventsAnalysisContent() {
 												</h3>
 												<div className="dts-indicator dts-indicator--target-box-g">
 													<span>
-														{ld.totalAffectedPeople2.noDisaggregations.tables.injured.toLocaleString(
-															navigator.language,
-															{ minimumFractionDigits: 0 },
+														{figure(
+															ld.totalAffectedPeople2.noDisaggregations.tables
+																.injured,
 														)}
 													</span>
 												</div>
@@ -1001,9 +1051,9 @@ function DisasterEventsAnalysisContent() {
 												</h3>
 												<div className="dts-indicator dts-indicator--target-box-g">
 													<span>
-														{ld.totalAffectedPeople2.noDisaggregations.tables.missing.toLocaleString(
-															navigator.language,
-															{ minimumFractionDigits: 0 },
+														{figure(
+															ld.totalAffectedPeople2.noDisaggregations.tables
+																.missing,
 														)}
 													</span>
 												</div>
@@ -1041,9 +1091,9 @@ function DisasterEventsAnalysisContent() {
 												</h3>
 												<div className="dts-indicator dts-indicator--target-box-g">
 													<span>
-														{ld.totalAffectedPeople2.noDisaggregations.tables.directlyAffected.toLocaleString(
-															navigator.language,
-															{ minimumFractionDigits: 0 },
+														{figure(
+															ld.totalAffectedPeople2.noDisaggregations.tables
+																.directlyAffected,
 														)}
 													</span>
 												</div>
@@ -1074,9 +1124,9 @@ function DisasterEventsAnalysisContent() {
 												</h3>
 												<div className="dts-indicator dts-indicator--target-box-g">
 													<span>
-														{ld.totalAffectedPeople2.noDisaggregations.tables.displaced.toLocaleString(
-															navigator.language,
-															{ minimumFractionDigits: 0 },
+														{figure(
+															ld.totalAffectedPeople2.noDisaggregations.tables
+																.displaced,
 														)}
 													</span>
 												</div>
