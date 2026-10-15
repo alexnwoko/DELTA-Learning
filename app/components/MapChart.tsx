@@ -670,8 +670,8 @@ function stateLabel(
 			return ctx.t({ code: "common.no_data", msg: "No data" });
 		case "insufficient_reporting":
 			return ctx.t({
-				code: "analysis.too_few_confirm_zero",
-				msg: "Too few records confirm zero",
+				code: "analysis.insufficient_reporting",
+				msg: "Insufficient reporting",
 			});
 		case "not_applicable":
 			return ctx.t({
@@ -695,6 +695,23 @@ function popupHtml(
 	}
 	if (area.state !== "shaded" && !region.valueState) {
 		lines.push(escapeHtml(stateLabel(ctx, area.state)));
+	}
+	// PD-04:619: the legend names the state; the tooltip gives the reason.
+	if (area.state === "insufficient_reporting") {
+		lines.push(
+			escapeHtml(
+				area.reason === "coverage_below_v5" ||
+					area.reason === "too_few_confirm_zero"
+					? ctx.t({
+							code: "analysis.too_few_confirm_zero",
+							msg: "Too few records confirm zero",
+						})
+					: ctx.t({
+							code: "analysis.rests_on_too_little_reporting",
+							msg: "Rests on too little reporting",
+						}),
+			),
+		);
 	}
 	const t = area.tooltip;
 	if (region.recordsTotal !== undefined && t.reportedBy.of > 0) {
