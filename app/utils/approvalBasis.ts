@@ -44,6 +44,25 @@ export const OFFICIAL_BASIS_STATUSES: readonly approvalStatusIds[] = [
 ];
 
 /**
+ * Signed-in record and event lists for the data-viewer role show validated
+ * and published records (existing workflow rule, kept unchanged). Held here
+ * so no handler hard-codes a status (TR-192). Whether a data viewer should
+ * see validated records under AB-01 is open with Alex.
+ */
+export const DATA_VIEWER_LIST_STATUSES: readonly approvalStatusIds[] = [
+	"validated",
+	"published",
+];
+
+/** The data-viewer list filter on an approval status column. */
+export function dataViewerListBasis(approvalStatus: unknown): SQL {
+	return sql`${approvalStatus} IN (${sql.join(
+		DATA_VIEWER_LIST_STATUSES.map((s) => sql`${s}`),
+		sql`, `,
+	)})`;
+}
+
+/**
  * The reviewer provisional basis (AB-01): every record still in the
  * workflow plus published ones. Records sent back for revision are left out,
  * because a reviewer has already found them wrong.

@@ -1,5 +1,5 @@
 import { entityValidationAssignmentTable } from "~/drizzle/schema/entityValidationAssignmentTable";
-import { approvalBasis } from "~/utils/approvalBasis";
+import { approvalBasis, dataViewerListBasis } from "~/utils/approvalBasis";
 import { hazardousEventTable } from "~/drizzle/schema/hazardousEventTable";
 
 import { authLoaderIsPublic } from "~/utils/auth";
@@ -220,12 +220,12 @@ export async function hazardousEventsLoader(args: LoaderFunctionArgs) {
 			: undefined,
 	);
 
-	// in case of data viewer role, force the filter on approvalStatus to validated and published
-	if (userRole === 'data-viewer') {
-		condition = and(condition, or(
-			eq(hazardousEventTable.approvalStatus, "validated"),
-			eq(hazardousEventTable.approvalStatus, "published")
-		));
+	// in case of data viewer role, force the filter on approvalStatus to validated and published (TR-192: list held in approvalBasis)
+	if (userRole === "data-viewer") {
+		condition = and(
+			condition,
+			dataViewerListBasis(hazardousEventTable.approvalStatus),
+		);
 	}
 
 	const count = await dr.$count(hazardousEventTable, condition);

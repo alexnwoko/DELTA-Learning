@@ -1,5 +1,9 @@
 import { sectorDisasterRecordsRelationTable } from "~/drizzle/schema/sectorDisasterRecordsRelationTable";
-import { approvalBasis, provisionalSql } from "~/utils/approvalBasis";
+import {
+	approvalBasis,
+	provisionalSql,
+	dataViewerListBasis,
+} from "~/utils/approvalBasis";
 import { disasterRecordsTable } from "~/drizzle/schema/disasterRecordsTable";
 import { disasterEventTable } from "~/drizzle/schema/disasterEventTable";
 
@@ -204,12 +208,12 @@ export async function disasterRecordLoader(args: disasterRecordLoaderArgs) {
 				: undefined,
 	);
 
-	// in case of data viewer role, force the filter on approvalStatus to validated and published
-	if (userRole === 'data-viewer') {
-		baseCondition = and(baseCondition, or(
-			eq(disasterRecordsTable.approvalStatus, "validated"),
-			eq(disasterRecordsTable.approvalStatus, "published")
-		));
+	// in case of data viewer role, force the filter on approvalStatus to validated and published (TR-192: list held in approvalBasis)
+	if (userRole === "data-viewer") {
+		baseCondition = and(
+			baseCondition,
+			dataViewerListBasis(disasterRecordsTable.approvalStatus),
+		);
 	}
 
 	// count and select must now join the disasterEventTable
