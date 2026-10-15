@@ -8116,5 +8116,30 @@
     "id": "your_account_has_been_set_up_successfully.",
     "translation": "Your account has been set up successfully. You can sign in now",
     "description": "File: app/routes/$lang+/user+/accept-invite.tsx:171"
+  },
+  {
+    "id": "geoportal.empty",
+    "translation": "No records on this approval basis. Migrated records stay drafts until they are published.",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:241"
+  },
+  {
+    "id": "geoportal.provisional",
+    "translation": "Provisional: these figures include records that are not yet published.",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:232"
+  },
+  {
+    "id": "geoportal.title",
+    "translation": "Geoportal",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:196"
+  },
+  {
+    "id": "geoportal.unattributed",
+    "translation": "Not placed on the map",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:273"
+  },
+  {
+    "id": "geoportal.unattributed.note",
+    "translation": "shown here, never redistributed:",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:280"
   }
 ]
