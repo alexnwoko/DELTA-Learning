@@ -1,4 +1,5 @@
 import { BackendContext } from "~/backend.server/context";
+import type { ApprovalAudience } from "~/utils/approvalBasis";
 import { getEffectDetails } from "~/backend.server/models/analytics/effectDetails";
 
 /**
@@ -29,6 +30,7 @@ export class EffectDetailsError extends Error {
 export async function getEffectDetailsHandler(
 	ctx: BackendContext,
 	countryAccountsId: string,
+	audience: ApprovalAudience,
 	params: {
 		sectorId: string | null;
 		subSectorId: string | null;
@@ -62,7 +64,12 @@ export async function getEffectDetailsHandler(
 			}
 		}
 
-		const data = await getEffectDetails(ctx, countryAccountsId, params);
+		const data = await getEffectDetails(
+			ctx,
+			countryAccountsId,
+			audience,
+			params,
+		);
 
 		return {
 			success: true,

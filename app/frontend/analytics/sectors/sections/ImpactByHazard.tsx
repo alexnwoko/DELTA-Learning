@@ -54,20 +54,20 @@ interface HazardImpactResponse {
 		eventsCount: Array<{
 			hazardId: string;
 			hazardName: string;
-			value: string;
-			percentage: number;
+			value: string | null;
+			percentage: number | null;
 		}>;
 		damages: Array<{
 			hazardId: string;
 			hazardName: string;
-			value: string;
-			percentage: number;
+			value: string | null;
+			percentage: number | null;
 		}>;
 		losses: Array<{
 			hazardId: string;
 			hazardName: string;
-			value: string;
-			percentage: number;
+			value: string | null;
+			percentage: number | null;
 		}>;
 	};
 }
@@ -511,8 +511,15 @@ function ImpactByHazardComponent({
 		});
 	};
 
-	const formatChartData = (rawData: any[] | null) => {
-		if (!Array.isArray(rawData) || rawData.length === 0) {
+	const formatChartData = (allRows: any[] | null) => {
+		// A row whose figure is not reported is left out: it is never a 0
+		// slice (TR-076).
+		const rawData = Array.isArray(allRows)
+			? allRows.filter(
+					(item) => item.value !== null && item.value !== undefined,
+				)
+			: [];
+		if (rawData.length === 0) {
 			return { data: [], dataAvailability: "no_data" };
 		}
 
@@ -659,10 +666,11 @@ function ImpactByHazardComponent({
 										msg: "Damages by hazard type",
 									})}
 								</h3>
+								{/* Money has no confirmed zero (PD-04:596). */}
 								<p className="text-gray-500 text-center mt-4">
 									{ctx.t({
-										code: "analysis.zero_impact_confirmed",
-										msg: "Zero Impact (Confirmed)",
+										code: "analysis.reported_as_zero",
+										msg: "Reported as 0",
 									})}
 								</p>
 							</>
@@ -674,7 +682,12 @@ function ImpactByHazardComponent({
 										msg: "Damages by hazard type",
 									})}
 								</h3>
-								<EmptyChartPlaceholder ctx={ctx} height={300} />
+								<p className="text-gray-500 text-center mt-4">
+									{ctx.t({
+										code: "analysis.not_reported",
+										msg: "Not reported",
+									})}
+								</p>
 							</>
 						)}
 					</div>
@@ -701,8 +714,8 @@ function ImpactByHazardComponent({
 								</h3>
 								<p className="text-gray-500 text-center mt-4">
 									{ctx.t({
-										code: "analysis.zero_impact_confirmed",
-										msg: "Zero Impact (Confirmed)",
+										code: "analysis.reported_as_zero",
+										msg: "Reported as 0",
 									})}
 								</p>
 							</>
@@ -714,7 +727,12 @@ function ImpactByHazardComponent({
 										msg: "Losses by hazard type",
 									})}
 								</h3>
-								<EmptyChartPlaceholder ctx={ctx} height={300} />
+								<p className="text-gray-500 text-center mt-4">
+									{ctx.t({
+										code: "analysis.not_reported",
+										msg: "Not reported",
+									})}
+								</p>
 							</>
 						)}
 					</div>

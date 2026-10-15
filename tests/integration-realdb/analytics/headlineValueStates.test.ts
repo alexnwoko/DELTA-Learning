@@ -25,6 +25,7 @@ const rec = {
 
 const filters = () => ({
 	countryAccountsId: ids.countryAccountId,
+	audience: "public",
 	hazardTypeId: null,
 	hazardClusterId: null,
 	specificHazardId: null,

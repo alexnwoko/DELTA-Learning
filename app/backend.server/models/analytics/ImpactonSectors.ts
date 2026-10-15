@@ -19,6 +19,8 @@ import {
 } from "~/backend.server/utils/dateFilters";
 import createLogger from "~/utils/logger.server";
 import { BackendContext } from "~/backend.server/context";
+import { approvalBasis, type ApprovalAudience } from "~/utils/approvalBasis";
+import { monetaryValue, type MonetaryValue } from "~/utils/valueState";
 
 // Create logger for this backend module
 const logger = createLogger("backend.server/models/analytics/ImpactOnSectors");
@@ -83,8 +85,13 @@ interface Filters {
 
 interface SectorImpactData {
 	eventCount: number;
+	/** damage.value as a string; null when no record reported a cost. */
 	totalDamage: string | null;
+	/** loss.value as a string; null when no record reported a cost. */
 	totalLoss: string | null;
+	/** Value state and record counts (TR-076). */
+	damage: MonetaryValue;
+	loss: MonetaryValue;
 	eventsOverTime: { [year: string]: string };
 	damageOverTime: { [year: string]: string };
 	lossOverTime: { [year: string]: string };
@@ -99,10 +106,46 @@ interface SectorImpactData {
 	};
 }
 
+/** Cost over a record set, with the records that reported it. */
+interface CostAggregate {
+	/** Sum over records that reported a cost; null when none did. */
+	total: number | null;
+	recordsReported: number;
+	/** Reported costs by year; a year appears only when a cost was reported. */
+	byYear: Map<number, number>;
+}
+
+/** A cost input: null when absent, never 0 (TR-076). */
+function costOrNull(v: unknown): number | null {
+	if (v === null || v === undefined || v === "") return null;
+	const n = Number(v);
+	return Number.isFinite(n) ? n : null;
+}
+
+/** a x b, or null when either factor is absent. */
+function productOrNull(a: unknown, b: unknown): number | null {
+	const x = costOrNull(a);
+	const y = costOrNull(b);
+	return x === null || y === null ? null : x * y;
+}
+
+/** Sum of the present parts, or null when every part is absent. */
+function sumOrNull(...parts: (number | null)[]): number | null {
+	const present = parts.filter((p): p is number => p !== null);
+	return present.length ? present.reduce((a, b) => a + b, 0) : null;
+}
+
+/** dataAvailability from a monetary figure: a reported 0 is "zero". */
+function availability(v: MonetaryValue): "available" | "zero" | "no_data" {
+	if (v.valueState !== "reported") return "no_data";
+	return (v.value ?? 0) > 0 ? "available" : "zero";
+}
+
 // Function to get all disaster records for a sector with tenant isolation
 const getDisasterRecordsForSector = async (
 	ctx: BackendContext,
 	countryAccountsId: string,
+	audience: ApprovalAudience,
 	sectorId: string,
 	filters?: Filters,
 ): Promise<string[]> => {
@@ -113,7 +156,7 @@ const getDisasterRecordsForSector = async (
 
 		// Initialize conditions array with tenant isolation
 		let conditions: SQL[] = [
-			sql`${disasterRecordsTable.approvalStatus} IN ('published', 'validated')`,
+			approvalBasis(audience, disasterRecordsTable),
 			sql`${disasterRecordsTable.countryAccountsId} = ${countryAccountsId}`,
 		];
 
@@ -411,11 +454,7 @@ const aggregateDamagesData = async (
 	ctx: BackendContext,
 	recordIds: string[],
 	sectorId: string | undefined,
-): Promise<{
-	total: number;
-	byYear: Map<number, number>;
-	faoAgriDamage?: any;
-}> => {
+): Promise<CostAggregate & { faoAgriDamage?: any }> => {
 	logger.debug("Starting damage data aggregation", {
 		recordCount: recordIds.length,
 		sectorId,
@@ -472,12 +511,14 @@ const aggregateDamagesData = async (
 		detailedDamageCount: detailedDamages.length,
 	});
 
-	let total = 0;
+	let total: number | null = null;
+	let recordsReported = 0;
 	const byYear = new Map<number, number>();
 
-	// Process each record
+	// Process each record. A record counts only when it reported a cost,
+	// which may be 0; a record with no cost adds nothing (TR-076).
 	for (const recordId of recordIds) {
-		let recordDamageAmount = 0;
+		let recordDamageAmount: number | null = null;
 
 		// Check sector overrides for all matching subsectors
 		const matchingOverrides = sectorOverrides.filter(
@@ -486,9 +527,11 @@ const aggregateDamagesData = async (
 
 		// Sum up all sector override damages
 		for (const override of matchingOverrides) {
-			if (override?.withDamage && override?.damageCost !== null) {
-				const overrideDamage = Number(override.damageCost) || 0;
-				recordDamageAmount += overrideDamage;
+			const overrideDamage = override?.withDamage
+				? costOrNull(override.damageCost)
+				: null;
+			if (overrideDamage !== null) {
+				recordDamageAmount = (recordDamageAmount ?? 0) + overrideDamage;
 
 				logger.debug("Using sector override for damage", {
 					recordId,
@@ -498,28 +541,30 @@ const aggregateDamagesData = async (
 			}
 		}
 
-		// If no overrides with damage found, check detailed damages for all matching subsectors
-		if (recordDamageAmount === 0) {
+		// If no override reported a damage cost, check detailed damages for all matching subsectors
+		if (recordDamageAmount === null) {
 			const matchingDamages = detailedDamages.filter(
 				(d) => d.recordId === recordId && sectorIds.includes(d.sectorId),
 			);
 
 			// Sum up all detailed damages
 			for (const damage of matchingDamages) {
-				let damageAmount = 0;
-
-				if (damage.totalRepairReplacementOverride) {
-					damageAmount = Number(damage.totalRepairReplacement) || 0;
-				} else {
-					// Only include PD repair and TD replacement costs
-					damageAmount =
-						(Number(damage.pdDamageAmount) || 0) *
-							(Number(damage.pdRepairCostUnit) || 0) +
-						(Number(damage.tdDamageAmount) || 0) *
-							(Number(damage.tdReplacementCostUnit) || 0);
+				// Only include PD repair and TD replacement costs; null when the
+				// row carries no cost.
+				const damageAmount = damage.totalRepairReplacementOverride
+					? costOrNull(damage.totalRepairReplacement)
+					: sumOrNull(
+							productOrNull(damage.pdDamageAmount, damage.pdRepairCostUnit),
+							productOrNull(
+								damage.tdDamageAmount,
+								damage.tdReplacementCostUnit,
+							),
+						);
+				if (damageAmount === null) {
+					continue;
 				}
 
-				recordDamageAmount += damageAmount;
+				recordDamageAmount = (recordDamageAmount ?? 0) + damageAmount;
 
 				logger.debug("Calculated damage from detailed records", {
 					recordId,
@@ -530,8 +575,9 @@ const aggregateDamagesData = async (
 			}
 		}
 
-		if (recordDamageAmount > 0) {
-			total += recordDamageAmount;
+		if (recordDamageAmount !== null) {
+			total = (total ?? 0) + recordDamageAmount;
+			recordsReported++;
 
 			// Get year and update yearly breakdown
 			const record = await dr
@@ -549,7 +595,7 @@ const aggregateDamagesData = async (
 		}
 	}
 
-	return { total, byYear };
+	return { total, recordsReported, byYear };
 };
 
 // Update aggregateLossesData function
@@ -557,11 +603,7 @@ const aggregateLossesData = async (
 	ctx: BackendContext,
 	recordIds: string[],
 	sectorId: string | undefined,
-): Promise<{
-	total: number;
-	byYear: Map<number, number>;
-	faoAgriLoss?: any;
-}> => {
+): Promise<CostAggregate & { faoAgriLoss?: any }> => {
 	logger.debug("Starting loss data aggregation", {
 		recordCount: recordIds.length,
 		sectorId,
@@ -623,12 +665,13 @@ const aggregateLossesData = async (
 		detailedLossCount: detailedLosses.length,
 	});
 
-	let total = 0;
+	let total: number | null = null;
+	let recordsReported = 0;
 	const byYear = new Map<number, number>();
 
-	// Process each record
+	// Process each record; as for damages, only reported costs count.
 	for (const recordId of recordIds) {
-		let recordLossAmount = 0;
+		let recordLossAmount: number | null = null;
 
 		// Check sector overrides for all matching subsectors
 		const matchingOverrides = sectorOverrides.filter(
@@ -638,9 +681,11 @@ const aggregateLossesData = async (
 
 		// Sum up all sector override losses
 		for (const override of matchingOverrides) {
-			if (override?.withLosses && override?.lossesCost !== null) {
-				const overrideLoss = Number(override.lossesCost) || 0;
-				recordLossAmount += overrideLoss;
+			const overrideLoss = override?.withLosses
+				? costOrNull(override.lossesCost)
+				: null;
+			if (overrideLoss !== null) {
+				recordLossAmount = (recordLossAmount ?? 0) + overrideLoss;
 
 				logger.debug("Using sector override for loss", {
 					recordId,
@@ -650,34 +695,29 @@ const aggregateLossesData = async (
 			}
 		}
 
-		// If no overrides with losses found, check detailed losses for all matching subsectors
-		if (recordLossAmount === 0) {
+		// If no override reported a loss cost, check detailed losses for all matching subsectors
+		if (recordLossAmount === null) {
 			const matchingLosses = detailedLosses.filter(
 				(l) => l.recordId === recordId && numericSectorIds.includes(l.sectorId),
 			);
 
 			// Sum up all detailed losses
 			for (const loss of matchingLosses) {
-				let lossAmount = 0;
-
-				// Calculate from public and private costs
-				if (loss.publicCostTotalOverride) {
-					lossAmount += Number(loss.publicCostTotal) || 0;
-				} else {
-					lossAmount +=
-						(Number(loss.publicUnits) || 0) *
-						(Number(loss.publicCostUnit) || 0);
+				// Calculate from public and private costs; null when the row
+				// carries neither.
+				const lossAmount = sumOrNull(
+					loss.publicCostTotalOverride
+						? costOrNull(loss.publicCostTotal)
+						: productOrNull(loss.publicUnits, loss.publicCostUnit),
+					loss.privateCostTotalOverride
+						? costOrNull(loss.privateCostTotal)
+						: productOrNull(loss.privateUnits, loss.privateCostUnit),
+				);
+				if (lossAmount === null) {
+					continue;
 				}
 
-				if (loss.privateCostTotalOverride) {
-					lossAmount += Number(loss.privateCostTotal) || 0;
-				} else {
-					lossAmount +=
-						(Number(loss.privateUnits) || 0) *
-						(Number(loss.privateCostUnit) || 0);
-				}
-
-				recordLossAmount += lossAmount;
+				recordLossAmount = (recordLossAmount ?? 0) + lossAmount;
 
 				logger.debug("Calculated loss from detailed records", {
 					recordId,
@@ -689,8 +729,9 @@ const aggregateLossesData = async (
 			}
 		}
 
-		if (recordLossAmount > 0) {
-			total += recordLossAmount;
+		if (recordLossAmount !== null) {
+			total = (total ?? 0) + recordLossAmount;
+			recordsReported++;
 
 			// Get year and update yearly breakdown
 			const record = await dr
@@ -708,7 +749,7 @@ const aggregateLossesData = async (
 		}
 	}
 
-	return { total, byYear };
+	return { total, recordsReported, byYear };
 };
 
 // Function to get event counts by year
@@ -773,6 +814,7 @@ const getEventCountsByYear = async (
 export async function fetchSectorImpactData(
 	ctx: BackendContext,
 	countryAccountsId: string,
+	audience: ApprovalAudience,
 	sectorId: string,
 	filters?: Filters,
 	currency?: string,
@@ -781,16 +823,20 @@ export async function fetchSectorImpactData(
 		const recordIds = await getDisasterRecordsForSector(
 			ctx,
 			countryAccountsId,
+			audience,
 			sectorId,
 			filters,
 		);
 
-		// If no records found, return null values
+		// If no records found, return null values (not_reported, TR-076)
 		if (recordIds.length === 0) {
+			const none = monetaryValue({ sum: null, reported: 0, total: 0 });
 			return {
 				eventCount: 0,
 				totalDamage: null,
 				totalLoss: null,
+				damage: none,
+				loss: none,
 				eventsOverTime: {},
 				damageOverTime: {},
 				lossOverTime: {},
@@ -827,52 +873,50 @@ export async function fetchSectorImpactData(
 					}
 				: undefined;
 
+		// Money has no tri-state source: a summed 0 is a reported 0, never
+		// zero_confirmed; no reported cost is null, never 0 (PD-04:596).
+		const damage = monetaryValue({
+			sum: damagesResult.total,
+			reported: damagesResult.recordsReported,
+			total: recordIds.length,
+		});
+		const loss = monetaryValue({
+			sum: lossesResult.total,
+			reported: lossesResult.recordsReported,
+			total: recordIds.length,
+		});
+
 		return {
 			eventCount: recordIds.length,
-			totalDamage:
-				recordIds.length === 0 ? null : damagesResult.total.toString(),
-			totalLoss: recordIds.length === 0 ? null : lossesResult.total.toString(),
+			totalDamage: damage.value === null ? null : damage.value.toString(),
+			totalLoss: loss.value === null ? null : loss.value.toString(),
+			damage,
+			loss,
 			eventsOverTime: Object.fromEntries(
 				[...eventCounts].map(([year, count]) => [
 					year.toString(),
 					count.toString(),
 				]),
 			),
+			// Only years with a reported cost: a year with events but no
+			// reported cost is a gap, not 0 (TR-076).
 			damageOverTime: Object.fromEntries(
-				[
-					...new Set([...eventCounts.keys(), ...damagesResult.byYear.keys()]),
-				].map((year) => [
+				[...damagesResult.byYear].map(([year, v]) => [
 					year.toString(),
-					(damagesResult.byYear.get(year) || 0).toString(),
+					v.toString(),
 				]),
 			),
 			lossOverTime: Object.fromEntries(
-				[
-					...new Set([...eventCounts.keys(), ...lossesResult.byYear.keys()]),
-				].map((year) => [
+				[...lossesResult.byYear].map(([year, v]) => [
 					year.toString(),
-					(lossesResult.byYear.get(year) || 0).toString(),
+					v.toString(),
 				]),
 			),
 			metadata,
 			faoAgriculturalImpact,
 			dataAvailability: {
-				damage:
-					recordIds.length === 0
-						? "no_data"
-						: damagesResult.total > 0
-							? "available"
-							: damagesResult.total === 0
-								? "zero"
-								: "no_data",
-				loss:
-					recordIds.length === 0
-						? "no_data"
-						: lossesResult.total > 0
-							? "available"
-							: lossesResult.total === 0
-								? "zero"
-								: "no_data",
+				damage: availability(damage),
+				loss: availability(loss),
 			},
 		};
 	} catch (error) {

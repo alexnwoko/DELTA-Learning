@@ -1,5 +1,5 @@
 import { ActionFunctionArgs, MetaFunction } from "react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useActionData, useLoaderData } from "react-router";
 import { authLoaderPublicOrWithPerm } from "~/utils/auth";
 import { fetchHazardTypes } from "~/backend.server/models/analytics/hazard-types";
@@ -42,12 +42,16 @@ import {
 	getCountrySettingsFromSession,
 } from "~/utils/session";
 import type { ValueState } from "~/utils/valueState";
+import type { MapScopeQuery } from "~/utils/mapState";
 import { formatNumberWithoutDecimals } from "~/utils/currency";
 
 import { ViewContext } from "~/frontend/context";
 
 import { BackendContext } from "~/backend.server/context";
 import { htmlTitle } from "~/utils/htmlmeta";
+import { approvalAudienceFromRequest } from "~/backend.server/approvalAudience.server";
+import { basisIncludesProvisional } from "~/utils/approvalBasis";
+import { ProvisionalFiguresNotice } from "~/frontend/analytics/ProvisionalFiguresNotice";
 
 // Define an interface for the structure of the JSON objects
 interface interfaceMap {
@@ -58,6 +62,12 @@ interface interfaceMap {
 	geojson: any;
 	/** Map state; a division with no record in scope is not_reported. */
 	valueState?: ValueState;
+	/** Envelope counts for the map-state resolver (~/utils/mapState). */
+	recordsReported?: number;
+	recordsZeroConfirmed?: number;
+	recordsTotal?: number;
+	recordsFlagged?: number;
+	sharedRecords?: number;
 }
 
 /**
@@ -115,8 +125,10 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 		currency = settings.currencyCode;
 	}
 
+	const audience = await approvalAudienceFromRequest(request);
 	const filters = {
 		countryAccountsId,
+		audience,
 		hazardTypeId,
 		hazardClusterId,
 		specificHazardId,
@@ -125,6 +137,8 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 		toDate,
 	};
 
+	
+	
 	const geographicLevel1 = await getDivisionByLevel(1, countryAccountsId);
 
 	const disasterCount = await getDisasterEventCount(filters);
@@ -204,6 +218,7 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 			measure: {
 				value: number | null;
 				valueState: ValueState;
+				recordsReported: number;
 				recordsZeroConfirmed: number;
 				recordsTotal: number;
 				recordsFlagged: number;
@@ -229,17 +244,20 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 				row && row.sharedRecords > 0
 					? ` (${row.sharedRecords} record(s) also counted in another division)`
 					: "";
-			const flagged =
-				row && row.measure.recordsFlagged > 0
-					? `; ${row.measure.recordsFlagged} record(s) flagged for review`
-					: "";
+			// The flagged-record caveat, "reported by n of N" and the class
+			// come from the map-state resolver in MapChart.
 			return {
 				total: value ?? 0,
 				name: division.name["en"] || "Unknown",
-				description: `${label}: ${shown}${shared}${flagged}`,
+				description: `${label}: ${shown}${shared}`,
 				colorPercentage: (value ?? 0) / maxValue,
 				geojson: division.geojson || {},
 				valueState,
+				recordsReported: row?.measure.recordsReported ?? 0,
+				recordsZeroConfirmed: row?.measure.recordsZeroConfirmed ?? 0,
+				recordsTotal: row?.measure.recordsTotal ?? 0,
+				recordsFlagged: row?.measure.recordsFlagged ?? 0,
+				sharedRecords: row?.sharedRecords ?? 0,
 			};
 		});
 	};
@@ -310,6 +328,10 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 		geographicLevelId,
 		fromDate,
 		toDate,
+		provisional: basisIncludesProvisional(audience),
+		// The query behind the figures, for the map scope label (E2 rule 1).
+		audience,
+		tenantName: (settings?.countryName as string | undefined) ?? null,
 	};
 };
 
@@ -395,6 +417,35 @@ export default function HazardAnalysis() {
 					? hazardTypes.find((t) => t.id === appliedFilters.hazardTypeId)
 							?.name || unknownType
 					: null;
+
+	// Scope label from the query the server applied (actionData), never from
+	// the filter form state (E2 rule 1).
+	const scopeHazardName = actionData
+		? actionData.specificHazardId
+			? specificHazards.find((h) => h.id === actionData.specificHazardId)
+					?.name || unknownHazard
+			: actionData.hazardClusterId
+				? hazardClusters.find((c) => c.id === actionData.hazardClusterId)
+						?.name || unknownCluster
+				: actionData.hazardTypeId
+					? hazardTypes.find((t) => t.id === actionData.hazardTypeId)?.name ||
+						unknownType
+					: null
+		: null;
+	const mapScope = useMemo<MapScopeQuery | undefined>(
+		() =>
+			actionData
+				? {
+						tenant: actionData.tenantName,
+						fromDate: actionData.fromDate,
+						toDate: actionData.toDate,
+						hazard: scopeHazardName,
+						audience: actionData.audience,
+						provisional: actionData.provisional,
+					}
+				: undefined,
+		[actionData, scopeHazardName],
+	);
 
 	const geographicName =
 		appliedFilters.geographicLevelId && allDivisions.length > 0
@@ -489,6 +540,10 @@ export default function HazardAnalysis() {
 								overflow: "hidden",
 							}}
 						>
+							<ProvisionalFiguresNotice
+								ctx={ctx}
+								show={actionData?.provisional}
+							/>
 							{actionData && (
 								<HazardImpactMap
 									ctx={ctx}
@@ -500,6 +555,7 @@ export default function HazardAnalysis() {
 									disasterEventGeoData={actionData.disasterEventGeoData}
 									affectedPeopleGeoData={actionData.affectedPeopleGeoData}
 									deathsGeoData={actionData.deathsGeoData}
+									scope={mapScope}
 								/>
 							)}
 

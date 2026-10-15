@@ -25,6 +25,7 @@ const recUndated = randomUUID();
 
 const filters = () => ({
 	countryAccountsId: ids.countryAccountId,
+	audience: "public",
 	hazardTypeId: null,
 	hazardClusterId: null,
 	specificHazardId: null,

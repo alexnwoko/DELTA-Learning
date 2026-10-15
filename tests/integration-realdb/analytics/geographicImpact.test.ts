@@ -125,7 +125,11 @@ describe("getGeographicImpact", () => {
 	});
 
 	it("counts linked and geometry-matched published records", async () => {
-		const result = await getGeographicImpact(ids.countryAccountId, {});
+		const result = await getGeographicImpact(
+			ids.countryAccountId,
+			"public",
+			{},
+		);
 		expect(result.success).toBe(true);
 		expect(result.values[div.parent]).toMatchObject({
 			totalDamage: 150,
@@ -135,19 +139,19 @@ describe("getGeographicImpact", () => {
 	});
 
 	it("applies the hazard type filter instead of emptying the map", async () => {
-		const a = await getGeographicImpact(ids.countryAccountId, {
+		const a = await getGeographicImpact(ids.countryAccountId, "public", {
 			hazardTypeId: hazardA,
 		});
 		expect(a.values[div.parent].totalDamage).toBe(100);
 
-		const b = await getGeographicImpact(ids.countryAccountId, {
+		const b = await getGeographicImpact(ids.countryAccountId, "public", {
 			hazardTypeId: hazardB,
 		});
 		expect(b.values[div.parent].totalDamage).toBe(50);
 	});
 
 	it("applies the date range filter", async () => {
-		const outside = await getGeographicImpact(ids.countryAccountId, {
+		const outside = await getGeographicImpact(ids.countryAccountId, "public", {
 			fromDate: "2021-01-01",
 		});
 		expect(outside.values[div.parent].dataAvailability).toBe("no_data");

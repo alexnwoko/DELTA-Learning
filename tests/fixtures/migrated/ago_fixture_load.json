@@ -1,0 +1,6065 @@
+{
+ "divisions": [
+  {
+   "importId": "09",
+   "level": 1,
+   "name": "Benguela",
+   "parentImportId": null
+  },
+  {
+   "importId": "0905",
+   "level": 2,
+   "name": "Lobito",
+   "parentImportId": "09"
+  },
+  {
+   "importId": "090501",
+   "level": 3,
+   "name": "Lobito",
+   "parentImportId": "0905"
+  },
+  {
+   "importId": "18",
+   "level": 1,
+   "name": "Bengo",
+   "parentImportId": null
+  },
+  {
+   "importId": "1801",
+   "level": 2,
+   "name": "Dande (Caxito)",
+   "parentImportId": "18"
+  },
+  {
+   "importId": "180102",
+   "level": 3,
+   "name": "Barra do Dande",
+   "parentImportId": "1801"
+  },
+  {
+   "importId": "16",
+   "level": 1,
+   "name": "Cunene",
+   "parentImportId": null
+  },
+  {
+   "importId": "13",
+   "level": 1,
+   "name": "Cuando Cubango",
+   "parentImportId": null
+  },
+  {
+   "importId": "1309",
+   "level": 2,
+   "name": "Mavinga",
+   "parentImportId": "13"
+  },
+  {
+   "importId": "130904",
+   "level": 3,
+   "name": "Luengue",
+   "parentImportId": "1309"
+  },
+  {
+   "importId": "05",
+   "level": 1,
+   "name": "Cuanza Norte",
+   "parentImportId": null
+  },
+  {
+   "importId": "0507",
+   "level": 2,
+   "name": "Cambambe",
+   "parentImportId": "05"
+  },
+  {
+   "importId": "050703",
+   "level": 3,
+   "name": "S. Pedro da Quilemba",
+   "parentImportId": "0507"
+  },
+  {
+   "importId": "050701",
+   "level": 3,
+   "name": "Dondo",
+   "parentImportId": "0507"
+  },
+  {
+   "importId": "06",
+   "level": 1,
+   "name": "Cuanza Sul",
+   "parentImportId": null
+  },
+  {
+   "importId": "0601",
+   "level": 2,
+   "name": "Sumbe (ex. Ngunza)",
+   "parentImportId": "06"
+  },
+  {
+   "importId": "060101",
+   "level": 3,
+   "name": "Sumbe Sede",
+   "parentImportId": "0601"
+  },
+  {
+   "importId": "08",
+   "level": 1,
+   "name": "Lunda Norte",
+   "parentImportId": null
+  },
+  {
+   "importId": "0805",
+   "level": 2,
+   "name": "Chitato",
+   "parentImportId": "08"
+  },
+  {
+   "importId": "080501",
+   "level": 3,
+   "name": "Chitato",
+   "parentImportId": "0805"
+  },
+  {
+   "importId": "11",
+   "level": 1,
+   "name": "Bié",
+   "parentImportId": null
+  },
+  {
+   "importId": "1101",
+   "level": 2,
+   "name": "Cuito",
+   "parentImportId": "11"
+  },
+  {
+   "importId": "110101",
+   "level": 3,
+   "name": "Cuito",
+   "parentImportId": "1101"
+  },
+  {
+   "importId": "01",
+   "level": 1,
+   "name": "Cabinda",
+   "parentImportId": null
+  },
+  {
+   "importId": "0101",
+   "level": 2,
+   "name": "Cabinda",
+   "parentImportId": "01"
+  },
+  {
+   "importId": "07",
+   "level": 1,
+   "name": "Malanje",
+   "parentImportId": null
+  },
+  {
+   "importId": "1609",
+   "level": 2,
+   "name": "Namacunde",
+   "parentImportId": "16"
+  },
+  {
+   "importId": "160901",
+   "level": 3,
+   "name": "Namacunde",
+   "parentImportId": "1609"
+  },
+  {
+   "importId": "0501",
+   "level": 2,
+   "name": "Cazengo",
+   "parentImportId": "05"
+  },
+  {
+   "importId": "050101",
+   "level": 3,
+   "name": "Ndalatando",
+   "parentImportId": "0501"
+  },
+  {
+   "importId": "15",
+   "level": 1,
+   "name": "Huíla",
+   "parentImportId": null
+  },
+  {
+   "importId": "1501",
+   "level": 2,
+   "name": "Lubango",
+   "parentImportId": "15"
+  },
+  {
+   "importId": "150101",
+   "level": 3,
+   "name": "Lubango",
+   "parentImportId": "1501"
+  },
+  {
+   "importId": "03",
+   "level": 1,
+   "name": "Uíge",
+   "parentImportId": null
+  },
+  {
+   "importId": "0301",
+   "level": 2,
+   "name": "Uíge",
+   "parentImportId": "03"
+  },
+  {
+   "importId": "030101",
+   "level": 3,
+   "name": "Uíge",
+   "parentImportId": "0301"
+  },
+  {
+   "importId": "1519",
+   "level": 2,
+   "name": "Chicomba",
+   "parentImportId": "15"
+  },
+  {
+   "importId": "151901",
+   "level": 3,
+   "name": "Chicomba",
+   "parentImportId": "1519"
+  },
+  {
+   "importId": "0901",
+   "level": 2,
+   "name": "Benguela",
+   "parentImportId": "09"
+  },
+  {
+   "importId": "090101",
+   "level": 3,
+   "name": "Benguela",
+   "parentImportId": "0901"
+  },
+  {
+   "importId": "04",
+   "level": 1,
+   "name": "Luanda",
+   "parentImportId": null
+  },
+  {
+   "importId": "0417",
+   "level": 2,
+   "name": "Viana",
+   "parentImportId": "04"
+  },
+  {
+   "importId": "041702",
+   "level": 3,
+   "name": "Zango",
+   "parentImportId": "0417"
+  }
+ ],
+ "records": [
+  {
+   "apiImportId": "C29FIX:ago:001",
+   "divisionImportId": "090501",
+   "hipClusterOfCode": null,
+   "hipCode": "MH0600",
+   "humanEffects": [],
+   "payload": {
+    "apiImportId": "C29FIX:ago:001",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "0",
+     "afectados": "0",
+     "agropecuario": "0",
+     "alcantarillado": "0",
+     "approved": "3",
+     "cabezas": "0",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "0",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "[removed, C07 scrub]",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "0",
+     "educacion": "0",
+     "energia": "0",
+     "evacuados": "0",
+     "evento": "CHEIAS",
+     "fechadia": "0",
+     "fechafec": "2017-02-15",
+     "fechames": "2",
+     "fechano": "2002",
+     "fechapor": "[removed, C07 scrub]",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "0",
+     "hay_damnificados": "0",
+     "hay_deasparece": "0",
+     "hay_evacuados": "0",
+     "hay_heridos": "0",
+     "hay_muertos": "0",
+     "hay_otros": "0",
+     "hay_reubicados": "0",
+     "hay_vivafec": "0",
+     "hay_vivdest": "0",
+     "heridos": "0",
+     "industrias": "0",
+     "kmvias": "0",
+     "latitude": "-12.49",
+     "level0": "09",
+     "level1": "0905",
+     "level2": "090501",
+     "longitude": "13.5",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "0",
+       "hay_vivdest": "0"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2002-02-00",
+      "plausibility_flags": [],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "month"
+     },
+     "muertos": "0",
+     "name0": "Benguela",
+     "name1": "Lobito",
+     "name2": "Lobito",
+     "nescuelas": "0",
+     "nhectareas": "0",
+     "nhospitales": "0",
+     "otros": "",
+     "reubicados": "0",
+     "salud": "0",
+     "serial": "001",
+     "socorro": "0",
+     "transporte": "0",
+     "uu_id": "b1fcdd13-f066-5af8-9e5d-16f1b180474d",
+     "valorloc": "0",
+     "valorus": "0",
+     "vivafec": "0",
+     "vivdest": "0"
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "ff0a3b24-8d80-55ab-a525-16735990d391",
+      "map_option": "Geographic level",
+      "title": "[removed, C07 scrub]"
+     }
+    ],
+    "startDate": "2002-02"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ago:002",
+   "divisionImportId": "090501",
+   "hipClusterOfCode": null,
+   "hipCode": "GH0300",
+   "humanEffects": [
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "deaths"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         74
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Deaths"
+     },
+     "hasData": true,
+     "presence": {
+      "deaths": true
+     },
+     "table": "Deaths"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "direct",
+       "indirect"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         2500,
+         2500
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Affected"
+     },
+     "hasData": true,
+     "presence": {
+      "direct": true,
+      "indirect": true
+     },
+     "table": "Affected"
+    }
+   ],
+   "payload": {
+    "apiImportId": "C29FIX:ago:002",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "1",
+     "afectados": "2500",
+     "agropecuario": "0",
+     "alcantarillado": "1",
+     "approved": "0",
+     "cabezas": "0",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "2500",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "[removed, C07 scrub]",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "0",
+     "educacion": "1",
+     "energia": "0",
+     "evacuados": "0",
+     "evento": "DESLIZAMENTO DE TERRA",
+     "fechadia": "13",
+     "fechafec": "2017-02-15",
+     "fechames": "4",
+     "fechano": "2016",
+     "fechapor": "[removed, C07 scrub]",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "-1",
+     "hay_damnificados": "-1",
+     "hay_deasparece": "0",
+     "hay_evacuados": "0",
+     "hay_heridos": "0",
+     "hay_muertos": "-1",
+     "hay_otros": "0",
+     "hay_reubicados": "0",
+     "hay_vivafec": "-1",
+     "hay_vivdest": "-1",
+     "heridos": "0",
+     "industrias": "0",
+     "kmvias": "0",
+     "latitude": "-12.37",
+     "level0": "09",
+     "level1": "0905",
+     "level2": "090501",
+     "longitude": "13.56",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "-1",
+       "hay_vivdest": "-1"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2016-04-13",
+      "plausibility_flags": [
+       {
+        "code": "IDENTICAL_ACROSS_FIELDS",
+        "fields": [
+         "afectados",
+         "damnificados"
+        ],
+        "note": "2500 in each",
+        "rule_version": "c30-v1"
+       }
+      ],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "day"
+     },
+     "muertos": "74",
+     "name0": "Benguela",
+     "name1": "Lobito",
+     "name2": "Lobito",
+     "nescuelas": "0",
+     "nhectareas": "0",
+     "nhospitales": "0",
+     "otros": "[removed, C07 scrub]",
+     "reubicados": "0",
+     "salud": "1",
+     "serial": "002",
+     "socorro": "1",
+     "transporte": "1",
+     "uu_id": "8f54b02e-a8ae-5abf-95bd-09955268f1cc",
+     "valorloc": "0",
+     "valorus": "0",
+     "vivafec": "417",
+     "vivdest": "575"
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "bb501317-396d-5201-b1ac-a4e2b62b4cc4",
+      "map_option": "Geographic level",
+      "title": "[removed, C07 scrub]"
+     }
+    ],
+    "startDate": "2016-04-13"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ago:003",
+   "divisionImportId": "090501",
+   "hipClusterOfCode": null,
+   "hipCode": "MH0600",
+   "humanEffects": [
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "deaths"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         8
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Deaths"
+     },
+     "hasData": true,
+     "presence": {
+      "deaths": true
+     },
+     "table": "Deaths"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "injured"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         16
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Injured"
+     },
+     "hasData": true,
+     "presence": {
+      "injured": true
+     },
+     "table": "Injured"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "direct",
+       "indirect"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         325,
+         325
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Affected"
+     },
+     "hasData": true,
+     "presence": {
+      "direct": true,
+      "indirect": true
+     },
+     "table": "Affected"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "assisted",
+       "timing",
+       "duration",
+       "asOf",
+       "displaced"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         2168
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Displaced"
+     },
+     "hasData": true,
+     "presence": {
+      "displaced": true
+     },
+     "table": "Displaced"
+    }
+   ],
+   "payload": {
+    "apiImportId": "C29FIX:ago:003",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "1",
+     "afectados": "325",
+     "agropecuario": "0",
+     "alcantarillado": "1",
+     "approved": "0",
+     "cabezas": "0",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "325",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "0",
+     "educacion": "1",
+     "energia": "0",
+     "evacuados": "1084",
+     "evento": "INUNDAÇÃO",
+     "fechadia": "21",
+     "fechafec": "2017-02-15",
+     "fechames": "3",
+     "fechano": "2016",
+     "fechapor": "[removed, C07 scrub]",
+     "fuentes": "",
+     "glide": "",
+     "hay_afectados": "-1",
+     "hay_damnificados": "-1",
+     "hay_deasparece": "0",
+     "hay_evacuados": "-1",
+     "hay_heridos": "-1",
+     "hay_muertos": "-1",
+     "hay_otros": "0",
+     "hay_reubicados": "-1",
+     "hay_vivafec": "-1",
+     "hay_vivdest": "-1",
+     "heridos": "16",
+     "industrias": "0",
+     "kmvias": "0",
+     "latitude": "-12.39",
+     "level0": "09",
+     "level1": "0905",
+     "level2": "090501",
+     "longitude": "13.73",
+     "lugar": "",
+     "magnitud2": "[removed, C07 scrub]",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "economic_carry": {
+       "currency_code": "AOA",
+       "loaded_into_delta_totals": false,
+       "price_year": "2016",
+       "unit_multiplier": null,
+       "values": {
+        "losses_subtotal_local_currency": {
+         "note": "value in local currency",
+         "source_field": "valorloc",
+         "value": 150400000.0
+        }
+       }
+      },
+      "house_presence": {
+       "hay_vivafec": "-1",
+       "hay_vivdest": "-1"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2016-03-21",
+      "plausibility_flags": [
+       {
+        "code": "IDENTICAL_ACROSS_FIELDS",
+        "fields": [
+         "evacuados",
+         "reubicados"
+        ],
+        "note": "1084 in each",
+        "rule_version": "c30-v1"
+       }
+      ],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "day"
+     },
+     "muertos": "8",
+     "name0": "Benguela",
+     "name1": "Lobito",
+     "name2": "Lobito",
+     "nescuelas": "0",
+     "nhectareas": "0",
+     "nhospitales": "0",
+     "otros": "[removed, C07 scrub]",
+     "reubicados": "1084",
+     "salud": "1",
+     "serial": "003",
+     "socorro": "1",
+     "transporte": "1",
+     "uu_id": "9ebf4013-fe34-5f30-aa6a-f5db273d3bbc",
+     "valorloc": "150400000",
+     "valorus": "0",
+     "vivafec": "54",
+     "vivdest": "108"
+    },
+    "locationDesc": "",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "DesInventar (migrated)",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "0e5ca1b1-4669-5d2e-b7af-bd73e8c00f73",
+      "map_option": "Geographic level",
+      "title": "Benguela"
+     }
+    ],
+    "startDate": "2016-03-21"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ago:004",
+   "divisionImportId": "090501",
+   "hipClusterOfCode": null,
+   "hipCode": "GH0405",
+   "humanEffects": [
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "deaths"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         100
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Deaths"
+     },
+     "hasData": true,
+     "presence": {
+      "deaths": true
+     },
+     "table": "Deaths"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "injured"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         300
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Injured"
+     },
+     "hasData": true,
+     "presence": {
+      "injured": true
+     },
+     "table": "Injured"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "direct",
+       "indirect"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         1800,
+         6000
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Affected"
+     },
+     "hasData": true,
+     "presence": {
+      "direct": true,
+      "indirect": true
+     },
+     "table": "Affected"
+    }
+   ],
+   "payload": {
+    "apiImportId": "C29FIX:ago:004",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "0",
+     "afectados": "6000",
+     "agropecuario": "0",
+     "alcantarillado": "0",
+     "approved": "0",
+     "cabezas": "0",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "1800",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "[removed, C07 scrub]",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "0",
+     "educacion": "0",
+     "energia": "0",
+     "evacuados": "0",
+     "evento": "EROSÃO COSTEIRA",
+     "fechadia": "12",
+     "fechafec": "2017-02-16",
+     "fechames": "7",
+     "fechano": "2016",
+     "fechapor": "[removed, C07 scrub]",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "-1",
+     "hay_damnificados": "-1",
+     "hay_deasparece": "0",
+     "hay_evacuados": "0",
+     "hay_heridos": "-1",
+     "hay_muertos": "-1",
+     "hay_otros": "0",
+     "hay_reubicados": "0",
+     "hay_vivafec": "-1",
+     "hay_vivdest": "0",
+     "heridos": "300",
+     "industrias": "0",
+     "kmvias": "0",
+     "latitude": "-12.35",
+     "level0": "09",
+     "level1": "0905",
+     "level2": "090501",
+     "longitude": "13.57",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "-1",
+       "hay_vivdest": "0"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2016-07-12",
+      "plausibility_flags": [],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "day"
+     },
+     "muertos": "100",
+     "name0": "Benguela",
+     "name1": "Lobito",
+     "name2": "Lobito",
+     "nescuelas": "0",
+     "nhectareas": "0",
+     "nhospitales": "0",
+     "otros": "[removed, C07 scrub]",
+     "reubicados": "0",
+     "salud": "0",
+     "serial": "004",
+     "socorro": "0",
+     "transporte": "0",
+     "uu_id": "17909cdb-e75e-5365-93ef-697bee550d05",
+     "valorloc": "0",
+     "valorus": "0",
+     "vivafec": "1000",
+     "vivdest": "0"
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "6f5bd299-9fcf-5d0d-afb3-9a1d19b13fcc",
+      "map_option": "Geographic level",
+      "title": "[removed, C07 scrub]"
+     }
+    ],
+    "startDate": "2016-07-12"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ago:005",
+   "divisionImportId": "090501",
+   "hipClusterOfCode": null,
+   "hipCode": "MH0102",
+   "humanEffects": [
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "deaths"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         130
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Deaths"
+     },
+     "hasData": true,
+     "presence": {
+      "deaths": true
+     },
+     "table": "Deaths"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "injured"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         450
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Injured"
+     },
+     "hasData": true,
+     "presence": {
+      "injured": true
+     },
+     "table": "Injured"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "direct",
+       "indirect"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         2000,
+         800
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Affected"
+     },
+     "hasData": true,
+     "presence": {
+      "direct": true,
+      "indirect": true
+     },
+     "table": "Affected"
+    }
+   ],
+   "payload": {
+    "apiImportId": "C29FIX:ago:005",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "0",
+     "afectados": "800",
+     "agropecuario": "0",
+     "alcantarillado": "0",
+     "approved": "0",
+     "cabezas": "0",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "2000",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "[removed, C07 scrub]",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "0",
+     "educacion": "0",
+     "energia": "0",
+     "evacuados": "0",
+     "evento": "RELÂMPAGO",
+     "fechadia": "0",
+     "fechafec": "2017-02-16",
+     "fechames": "0",
+     "fechano": "2016",
+     "fechapor": "[removed, C07 scrub]",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "-1",
+     "hay_damnificados": "-1",
+     "hay_deasparece": "0",
+     "hay_evacuados": "0",
+     "hay_heridos": "-1",
+     "hay_muertos": "-1",
+     "hay_otros": "0",
+     "hay_reubicados": "0",
+     "hay_vivafec": "0",
+     "hay_vivdest": "0",
+     "heridos": "450",
+     "industrias": "0",
+     "kmvias": "0",
+     "latitude": "-12.37",
+     "level0": "09",
+     "level1": "0905",
+     "level2": "090501",
+     "longitude": "13.57",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "0",
+       "hay_vivdest": "0"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2016-00-00",
+      "plausibility_flags": [],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "year"
+     },
+     "muertos": "130",
+     "name0": "Benguela",
+     "name1": "Lobito",
+     "name2": "Lobito",
+     "nescuelas": "0",
+     "nhectareas": "0",
+     "nhospitales": "0",
+     "otros": "[removed, C07 scrub]",
+     "reubicados": "0",
+     "salud": "0",
+     "serial": "005",
+     "socorro": "0",
+     "transporte": "0",
+     "uu_id": "7e157754-4110-5e2b-99e3-3a0a9c4f0f73",
+     "valorloc": "0",
+     "valorus": "0",
+     "vivafec": "0",
+     "vivdest": "0"
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "96c8885a-a9dc-5e54-b34e-d67d7dd0205c",
+      "map_option": "Geographic level",
+      "title": "[removed, C07 scrub]"
+     }
+    ],
+    "startDate": "2016"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ago:006",
+   "divisionImportId": "090501",
+   "hipClusterOfCode": null,
+   "hipCode": "MH0600",
+   "humanEffects": [
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "deaths"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         2
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Deaths"
+     },
+     "hasData": true,
+     "presence": {
+      "deaths": true
+     },
+     "table": "Deaths"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "injured"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         1
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Injured"
+     },
+     "hasData": true,
+     "presence": {
+      "injured": true
+     },
+     "table": "Injured"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "direct",
+       "indirect"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         1068,
+         1068
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Affected"
+     },
+     "hasData": true,
+     "presence": {
+      "direct": true,
+      "indirect": true
+     },
+     "table": "Affected"
+    }
+   ],
+   "payload": {
+    "apiImportId": "C29FIX:ago:006",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "0",
+     "afectados": "1068",
+     "agropecuario": "0",
+     "alcantarillado": "0",
+     "approved": "0",
+     "cabezas": "0",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "1068",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "[removed, C07 scrub]",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "0",
+     "educacion": "1",
+     "energia": "1",
+     "evacuados": "0",
+     "evento": "INUNDAÇÃO",
+     "fechadia": "0",
+     "fechafec": "2017-04-21",
+     "fechames": "0",
+     "fechano": "2011",
+     "fechapor": "[removed, C07 scrub]",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "-1",
+     "hay_damnificados": "-1",
+     "hay_deasparece": "0",
+     "hay_evacuados": "0",
+     "hay_heridos": "-1",
+     "hay_muertos": "-1",
+     "hay_otros": "0",
+     "hay_reubicados": "0",
+     "hay_vivafec": "-1",
+     "hay_vivdest": "-1",
+     "heridos": "1",
+     "industrias": "0",
+     "kmvias": "0",
+     "latitude": "-12.48",
+     "level0": "09",
+     "level1": "0905",
+     "level2": "090501",
+     "longitude": "13.54",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "[removed, C07 scrub]",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "-1",
+       "hay_vivdest": "-1"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2011-00-00",
+      "plausibility_flags": [
+       {
+        "code": "IDENTICAL_ACROSS_FIELDS",
+        "fields": [
+         "afectados",
+         "damnificados"
+        ],
+        "note": "1068 in each",
+        "rule_version": "c30-v1"
+       }
+      ],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "year"
+     },
+     "muertos": "2",
+     "name0": "Benguela",
+     "name1": "Lobito",
+     "name2": "Lobito",
+     "nescuelas": "0",
+     "nhectareas": "0",
+     "nhospitales": "0",
+     "otros": "[removed, C07 scrub]",
+     "reubicados": "0",
+     "salud": "1",
+     "serial": "006",
+     "socorro": "1",
+     "transporte": "0",
+     "uu_id": "57bbc837-1923-5708-8372-c5c70da0218c",
+     "valorloc": "0",
+     "valorus": "0",
+     "vivafec": "178",
+     "vivdest": "15"
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "c46a1c25-f48c-5437-ae38-ca4796f3e7ee",
+      "map_option": "Geographic level",
+      "title": "[removed, C07 scrub]"
+     }
+    ],
+    "startDate": "2011"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ago:007",
+   "divisionImportId": "090501",
+   "hipClusterOfCode": null,
+   "hipCode": "MH0600",
+   "humanEffects": [
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "deaths"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         8
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Deaths"
+     },
+     "hasData": true,
+     "presence": {
+      "deaths": true
+     },
+     "table": "Deaths"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "injured"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         7
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Injured"
+     },
+     "hasData": true,
+     "presence": {
+      "injured": true
+     },
+     "table": "Injured"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "direct",
+       "indirect"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         180,
+         180
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Affected"
+     },
+     "hasData": true,
+     "presence": {
+      "direct": true,
+      "indirect": true
+     },
+     "table": "Affected"
+    }
+   ],
+   "payload": {
+    "apiImportId": "C29FIX:ago:007",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "0",
+     "afectados": "180",
+     "agropecuario": "0",
+     "alcantarillado": "1",
+     "approved": "2",
+     "cabezas": "0",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "1",
+     "damnificados": "180",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "[removed, C07 scrub]",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "0",
+     "educacion": "0",
+     "energia": "0",
+     "evacuados": "0",
+     "evento": "CHEIAS",
+     "fechadia": "0",
+     "fechafec": "2017-04-25",
+     "fechames": "0",
+     "fechano": "2016",
+     "fechapor": "[removed, C07 scrub]",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "-1",
+     "hay_damnificados": "-1",
+     "hay_deasparece": "0",
+     "hay_evacuados": "0",
+     "hay_heridos": "-1",
+     "hay_muertos": "-1",
+     "hay_otros": "0",
+     "hay_reubicados": "0",
+     "hay_vivafec": "-1",
+     "hay_vivdest": "-1",
+     "heridos": "7",
+     "industrias": "0",
+     "kmvias": "0",
+     "latitude": "0.0",
+     "level0": "09",
+     "level1": "0905",
+     "level2": "090501",
+     "longitude": "0.0",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "-1",
+       "hay_vivdest": "-1"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2016-00-00",
+      "plausibility_flags": [],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "year"
+     },
+     "muertos": "8",
+     "name0": "Benguela",
+     "name1": "Lobito",
+     "name2": "Lobito",
+     "nescuelas": "0",
+     "nhectareas": "0",
+     "nhospitales": "0",
+     "otros": "",
+     "reubicados": "0",
+     "salud": "0",
+     "serial": "007",
+     "socorro": "1",
+     "transporte": "0",
+     "uu_id": "8f21bb20-dc44-5797-8ef9-5b2e550fa833",
+     "valorloc": "0",
+     "valorus": "0",
+     "vivafec": "30",
+     "vivdest": "80"
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "bce4c617-9b82-514e-84f2-1de57401535d",
+      "map_option": "Geographic level",
+      "title": "[removed, C07 scrub]"
+     }
+    ],
+    "startDate": "2016"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ago:008",
+   "divisionImportId": "090501",
+   "hipClusterOfCode": null,
+   "hipCode": "MH0600",
+   "humanEffects": [
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "deaths"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         71
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Deaths"
+     },
+     "hasData": true,
+     "presence": {
+      "deaths": true
+     },
+     "table": "Deaths"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "injured"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         3
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Injured"
+     },
+     "hasData": true,
+     "presence": {
+      "injured": true
+     },
+     "table": "Injured"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "asOf",
+       "missing"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         0
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Missing"
+     },
+     "hasData": true,
+     "presence": {
+      "missing": true
+     },
+     "table": "Missing"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "direct",
+       "indirect"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         2696,
+         2696
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Affected"
+     },
+     "hasData": true,
+     "presence": {
+      "direct": true,
+      "indirect": true
+     },
+     "table": "Affected"
+    }
+   ],
+   "payload": {
+    "apiImportId": "C29FIX:ago:008",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "1",
+     "afectados": "2696",
+     "agropecuario": "1",
+     "alcantarillado": "0",
+     "approved": "2",
+     "cabezas": "1",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "1",
+     "damnificados": "2696",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "[removed, C07 scrub]",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "0",
+     "educacion": "0",
+     "energia": "0",
+     "evacuados": "0",
+     "evento": "CHEIAS",
+     "fechadia": "0",
+     "fechafec": "2017-04-27",
+     "fechames": "0",
+     "fechano": "2015",
+     "fechapor": "[removed, C07 scrub]",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "-1",
+     "hay_damnificados": "-1",
+     "hay_deasparece": "-1",
+     "hay_evacuados": "0",
+     "hay_heridos": "-1",
+     "hay_muertos": "-1",
+     "hay_otros": "0",
+     "hay_reubicados": "0",
+     "hay_vivafec": "-1",
+     "hay_vivdest": "-1",
+     "heridos": "3",
+     "industrias": "0",
+     "kmvias": "0",
+     "latitude": "0.0",
+     "level0": "09",
+     "level1": "0905",
+     "level2": "090501",
+     "longitude": "0.0",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "[removed, C07 scrub]",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "-1",
+       "hay_vivdest": "-1"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2015-00-00",
+      "plausibility_flags": [
+       {
+        "code": "IDENTICAL_ACROSS_FIELDS",
+        "fields": [
+         "afectados",
+         "damnificados"
+        ],
+        "note": "2696 in each",
+        "rule_version": "c30-v1"
+       }
+      ],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "year"
+     },
+     "muertos": "71",
+     "name0": "Benguela",
+     "name1": "Lobito",
+     "name2": "Lobito",
+     "nescuelas": "0",
+     "nhectareas": "2",
+     "nhospitales": "0",
+     "otros": "[removed, C07 scrub]",
+     "reubicados": "0",
+     "salud": "0",
+     "serial": "008",
+     "socorro": "1",
+     "transporte": "1",
+     "uu_id": "7395ace9-6a6d-501d-957f-5bce5077a9df",
+     "valorloc": "0",
+     "valorus": "0",
+     "vivafec": "449",
+     "vivdest": "375"
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "809e48e4-aa91-547b-9b8e-e9b3f04fcc64",
+      "map_option": "Geographic level",
+      "title": "[removed, C07 scrub]"
+     }
+    ],
+    "startDate": "2015"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ago:009",
+   "divisionImportId": "090501",
+   "hipClusterOfCode": null,
+   "hipCode": "TL0405",
+   "humanEffects": [
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "deaths"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         1
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Deaths"
+     },
+     "hasData": true,
+     "presence": {
+      "deaths": true
+     },
+     "table": "Deaths"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "injured"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         4
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Injured"
+     },
+     "hasData": true,
+     "presence": {
+      "injured": true
+     },
+     "table": "Injured"
+    }
+   ],
+   "payload": {
+    "apiImportId": "C29FIX:ago:009",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "0",
+     "afectados": "0",
+     "agropecuario": "0",
+     "alcantarillado": "0",
+     "approved": "1",
+     "cabezas": "0",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "0",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "[removed, C07 scrub]",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "0",
+     "educacion": "0",
+     "energia": "0",
+     "evacuados": "0",
+     "evento": "ACIDENTE DE CARRO",
+     "fechadia": "8",
+     "fechafec": "24-07-2025",
+     "fechames": "4",
+     "fechano": "2024",
+     "fechapor": "",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "0",
+     "hay_damnificados": "0",
+     "hay_deasparece": "0",
+     "hay_evacuados": "0",
+     "hay_heridos": "-1",
+     "hay_muertos": "-1",
+     "hay_otros": "0",
+     "hay_reubicados": "0",
+     "hay_vivafec": "0",
+     "hay_vivdest": "0",
+     "heridos": "4",
+     "industrias": "0",
+     "kmvias": "0",
+     "latitude": "0.0",
+     "level0": "09",
+     "level1": "0905",
+     "level2": "090501",
+     "longitude": "0.0",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "0",
+       "hay_vivdest": "0"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2024-04-08",
+      "plausibility_flags": [],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "day"
+     },
+     "muertos": "1",
+     "name0": "Benguela",
+     "name1": "Lobito",
+     "name2": "Lobito",
+     "nescuelas": "0",
+     "nhectareas": "0",
+     "nhospitales": "0",
+     "otros": "",
+     "reubicados": "0",
+     "salud": "0",
+     "serial": "009",
+     "socorro": "0",
+     "transporte": "0",
+     "uu_id": "5e746352-dba1-5c1c-ae82-9abc612b94be",
+     "valorloc": "0",
+     "valorus": "0",
+     "vivafec": "0",
+     "vivdest": "0"
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "be0ec216-b60c-5dc6-aa38-ba17a2be26b1",
+      "map_option": "Geographic level",
+      "title": "[removed, C07 scrub]"
+     }
+    ],
+    "startDate": "2024-04-08"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ago:010",
+   "divisionImportId": "180102",
+   "hipClusterOfCode": null,
+   "hipCode": "MH0600",
+   "humanEffects": [],
+   "payload": {
+    "apiImportId": "C29FIX:ago:010",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "1",
+     "afectados": "0",
+     "agropecuario": "1",
+     "alcantarillado": "0",
+     "approved": "0",
+     "cabezas": "0",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "0",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "[removed, C07 scrub]",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "5",
+     "educacion": "1",
+     "energia": "1",
+     "evacuados": "0",
+     "evento": "INUNDAÇÃO",
+     "fechadia": "8",
+     "fechafec": "2017-02-01",
+     "fechames": "3",
+     "fechano": "2016",
+     "fechapor": "[removed, C07 scrub]",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "0",
+     "hay_damnificados": "0",
+     "hay_deasparece": "0",
+     "hay_evacuados": "0",
+     "hay_heridos": "0",
+     "hay_muertos": "0",
+     "hay_otros": "0",
+     "hay_reubicados": "0",
+     "hay_vivafec": "-1",
+     "hay_vivdest": "-1",
+     "heridos": "0",
+     "industrias": "0",
+     "kmvias": "0",
+     "latitude": "-8.58",
+     "level0": "18",
+     "level1": "1801",
+     "level2": "180102",
+     "longitude": "13.67",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "-1",
+       "hay_vivdest": "-1"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2016-03-08",
+      "plausibility_flags": [],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "day"
+     },
+     "muertos": "0",
+     "name0": "Bengo",
+     "name1": "Dande (Caxito)",
+     "name2": "Barra do Dande",
+     "nescuelas": "0",
+     "nhectareas": "0",
+     "nhospitales": "0",
+     "otros": "[removed, C07 scrub]",
+     "reubicados": "0",
+     "salud": "0",
+     "serial": "010",
+     "socorro": "0",
+     "transporte": "1",
+     "uu_id": "1e9429f5-c80e-514b-8d8d-06da8dec317d",
+     "valorloc": "0",
+     "valorus": "0",
+     "vivafec": "697",
+     "vivdest": "3"
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "5616b8e3-fab5-555b-9ec0-c8ef4b723479",
+      "map_option": "Geographic level",
+      "title": "[removed, C07 scrub]"
+     }
+    ],
+    "startDate": "2016-03-08"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ago:011",
+   "divisionImportId": "16",
+   "hipClusterOfCode": null,
+   "hipCode": "MH0401",
+   "humanEffects": [
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "deaths"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         0
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Deaths"
+     },
+     "hasData": true,
+     "presence": {
+      "deaths": true
+     },
+     "table": "Deaths"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "direct",
+       "indirect"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         963,
+         963
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Affected"
+     },
+     "hasData": true,
+     "presence": {
+      "direct": true,
+      "indirect": true
+     },
+     "table": "Affected"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "assisted",
+       "timing",
+       "duration",
+       "asOf",
+       "displaced"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         1080
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Displaced"
+     },
+     "hasData": true,
+     "presence": {
+      "displaced": true
+     },
+     "table": "Displaced"
+    }
+   ],
+   "payload": {
+    "apiImportId": "C29FIX:ago:011",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "0",
+     "afectados": "963",
+     "agropecuario": "1",
+     "alcantarillado": "0",
+     "approved": "0",
+     "cabezas": "0",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "963",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "[removed, C07 scrub]",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "90",
+     "educacion": "0",
+     "energia": "0",
+     "evacuados": "540",
+     "evento": "SECA",
+     "fechadia": "0",
+     "fechafec": "2017-02-13",
+     "fechames": "0",
+     "fechano": "1917",
+     "fechapor": "[removed, C07 scrub]",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "-1",
+     "hay_damnificados": "-1",
+     "hay_deasparece": "0",
+     "hay_evacuados": "-1",
+     "hay_heridos": "0",
+     "hay_muertos": "-1",
+     "hay_otros": "0",
+     "hay_reubicados": "-1",
+     "hay_vivafec": "-1",
+     "hay_vivdest": "-1",
+     "heridos": "0",
+     "industrias": "0",
+     "kmvias": "0",
+     "latitude": "-17.0",
+     "level0": "16",
+     "level1": "",
+     "level2": "",
+     "longitude": "15.72",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "-1",
+       "hay_vivdest": "-1"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "1917-00-00",
+      "plausibility_flags": [],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "year"
+     },
+     "muertos": "0",
+     "name0": "Cunene",
+     "name1": "",
+     "name2": "",
+     "nescuelas": "0",
+     "nhectareas": "0",
+     "nhospitales": "0",
+     "otros": "[removed, C07 scrub]",
+     "reubicados": "540",
+     "salud": "0",
+     "serial": "011",
+     "socorro": "0",
+     "transporte": "0",
+     "uu_id": "49189dcd-21cd-51d2-9baa-684f01d78b7d",
+     "valorloc": "0",
+     "valorus": "0",
+     "vivafec": "162",
+     "vivdest": "0"
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "6933cd20-6e0a-577d-bd43-a1b380acb8cc",
+      "map_option": "Geographic level",
+      "title": "[removed, C07 scrub]"
+     }
+    ],
+    "startDate": "1917"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ago:012",
+   "divisionImportId": "130904",
+   "hipClusterOfCode": null,
+   "hipCode": "MH0401",
+   "humanEffects": [
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "deaths"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         0
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Deaths"
+     },
+     "hasData": true,
+     "presence": {
+      "deaths": true
+     },
+     "table": "Deaths"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "injured"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         0
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Injured"
+     },
+     "hasData": true,
+     "presence": {
+      "injured": true
+     },
+     "table": "Injured"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "direct",
+       "indirect"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         0
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Affected"
+     },
+     "hasData": true,
+     "presence": {
+      "indirect": true
+     },
+     "table": "Affected"
+    }
+   ],
+   "payload": {
+    "apiImportId": "C29FIX:ago:012",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "0",
+     "afectados": "0",
+     "agropecuario": "1",
+     "alcantarillado": "0",
+     "approved": "3",
+     "cabezas": "1",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "0",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "[removed, C07 scrub]",
+     "di_comments": "",
+     "duracion": "6",
+     "educacion": "0",
+     "energia": "0",
+     "evacuados": "0",
+     "evento": "SECA",
+     "fechadia": "5",
+     "fechafec": "",
+     "fechames": "10",
+     "fechano": "2018",
+     "fechapor": "",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "-1",
+     "hay_damnificados": "0",
+     "hay_deasparece": "0",
+     "hay_evacuados": "0",
+     "hay_heridos": "-1",
+     "hay_muertos": "-1",
+     "hay_otros": "1",
+     "hay_reubicados": "0",
+     "hay_vivafec": "-1",
+     "hay_vivdest": "-1",
+     "heridos": "0",
+     "industrias": "0",
+     "kmvias": "5",
+     "latitude": "0.0",
+     "level0": "13",
+     "level1": "1309",
+     "level2": "130904",
+     "longitude": "0.0",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "-1",
+       "hay_vivdest": "-1"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2018-10-05",
+      "plausibility_flags": [
+       {
+        "code": "HAZARD_EFFECT_MISMATCH",
+        "fields": [
+         "vivdest"
+        ],
+        "note": "sudden-impact effect on a drought card (source event SECA)",
+        "rule_version": "c30-v1"
+       }
+      ],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "day"
+     },
+     "muertos": "0",
+     "name0": "Cuando Cubango",
+     "name1": "Mavinga",
+     "name2": "Luengue",
+     "nescuelas": "0",
+     "nhectareas": "2",
+     "nhospitales": "2",
+     "otros": "",
+     "reubicados": "0",
+     "salud": "1",
+     "serial": "012",
+     "socorro": "0",
+     "transporte": "1",
+     "uu_id": "29dc9fed-4c8e-5fdb-97a8-e06b43576b8f",
+     "valorloc": "0",
+     "valorus": "0",
+     "vivafec": "34",
+     "vivdest": "10"
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "2c0eabb6-dab5-5e97-b578-e0ab6958033f",
+      "map_option": "Geographic level",
+      "title": "[removed, C07 scrub]"
+     }
+    ],
+    "startDate": "2018-10-05"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ago:013",
+   "divisionImportId": "050703",
+   "hipClusterOfCode": null,
+   "hipCode": null,
+   "humanEffects": [
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "deaths"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         67
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Deaths"
+     },
+     "hasData": true,
+     "presence": {
+      "deaths": true
+     },
+     "table": "Deaths"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "direct",
+       "indirect"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         402,
+         402
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Affected"
+     },
+     "hasData": true,
+     "presence": {
+      "direct": true,
+      "indirect": true
+     },
+     "table": "Affected"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "assisted",
+       "timing",
+       "duration",
+       "asOf",
+       "displaced"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         0
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Displaced"
+     },
+     "hasData": true,
+     "presence": {
+      "displaced": true
+     },
+     "table": "Displaced"
+    }
+   ],
+   "payload": {
+    "apiImportId": "C29FIX:ago:013",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "1",
+     "afectados": "402",
+     "agropecuario": "0",
+     "alcantarillado": "0",
+     "approved": "0",
+     "cabezas": "0",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "402",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "[removed, C07 scrub]",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "9",
+     "educacion": "0",
+     "energia": "0",
+     "evacuados": "0",
+     "evento": "EPIDEMIAS",
+     "fechadia": "15",
+     "fechafec": "2017-04-13",
+     "fechames": "12",
+     "fechano": "2010",
+     "fechapor": "[removed, C07 scrub]",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "-1",
+     "hay_damnificados": "-1",
+     "hay_deasparece": "0",
+     "hay_evacuados": "0",
+     "hay_heridos": "0",
+     "hay_muertos": "-1",
+     "hay_otros": "0",
+     "hay_reubicados": "-1",
+     "hay_vivafec": "-1",
+     "hay_vivdest": "0",
+     "heridos": "0",
+     "industrias": "0",
+     "kmvias": "0",
+     "latitude": "-9.75",
+     "level0": "05",
+     "level1": "0507",
+     "level2": "050703",
+     "longitude": "14.52",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "[removed, C07 scrub]",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "-1",
+       "hay_vivdest": "0"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2010-12-15",
+      "plausibility_flags": [],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "day"
+     },
+     "muertos": "67",
+     "name0": "Cuanza Norte",
+     "name1": "Cambambe",
+     "name2": "S. Pedro da Quilemba",
+     "nescuelas": "0",
+     "nhectareas": "0",
+     "nhospitales": "0",
+     "otros": "[removed, C07 scrub]",
+     "reubicados": "0",
+     "salud": "1",
+     "serial": "013",
+     "socorro": "1",
+     "transporte": "0",
+     "uu_id": "eb84bdc9-a071-529b-86ca-99a576205121",
+     "valorloc": "0",
+     "valorus": "0",
+     "vivafec": "67",
+     "vivdest": "0"
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "7d41015c-81ca-5371-83a8-60c8b1bebef4",
+      "map_option": "Geographic level",
+      "title": "[removed, C07 scrub]"
+     }
+    ],
+    "startDate": "2010-12-15"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ago:014",
+   "divisionImportId": "050701",
+   "hipClusterOfCode": null,
+   "hipCode": "MH0600",
+   "humanEffects": [
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "deaths"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         10
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Deaths"
+     },
+     "hasData": true,
+     "presence": {
+      "deaths": true
+     },
+     "table": "Deaths"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "injured"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         3
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Injured"
+     },
+     "hasData": true,
+     "presence": {
+      "injured": true
+     },
+     "table": "Injured"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "direct",
+       "indirect"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         0,
+         1242
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Affected"
+     },
+     "hasData": true,
+     "presence": {
+      "direct": true,
+      "indirect": true
+     },
+     "table": "Affected"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "assisted",
+       "timing",
+       "duration",
+       "asOf",
+       "displaced"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         30
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Displaced"
+     },
+     "hasData": true,
+     "presence": {
+      "displaced": true
+     },
+     "table": "Displaced"
+    }
+   ],
+   "payload": {
+    "apiImportId": "C29FIX:ago:014",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "0",
+     "afectados": "1242",
+     "agropecuario": "1",
+     "alcantarillado": "0",
+     "approved": "2",
+     "cabezas": "0",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "0",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "[removed, C07 scrub]",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "0",
+     "educacion": "0",
+     "energia": "0",
+     "evacuados": "30",
+     "evento": "INUNDAÇÃO",
+     "fechadia": "1",
+     "fechafec": "2017-05-04",
+     "fechames": "1",
+     "fechano": "2005",
+     "fechapor": "[removed, C07 scrub]",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "-1",
+     "hay_damnificados": "-1",
+     "hay_deasparece": "0",
+     "hay_evacuados": "-1",
+     "hay_heridos": "-1",
+     "hay_muertos": "-1",
+     "hay_otros": "0",
+     "hay_reubicados": "0",
+     "hay_vivafec": "-1",
+     "hay_vivdest": "0",
+     "heridos": "3",
+     "industrias": "0",
+     "kmvias": "4",
+     "latitude": "-9.67",
+     "level0": "05",
+     "level1": "0507",
+     "level2": "050701",
+     "longitude": "14.43",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "economic_carry": {
+       "currency_code": "AOA",
+       "loaded_into_delta_totals": false,
+       "price_year": "2005",
+       "unit_multiplier": null,
+       "values": {
+        "losses_subtotal_local_currency": {
+         "note": "value in local currency",
+         "source_field": "valorloc",
+         "value": 340000.0
+        }
+       }
+      },
+      "house_presence": {
+       "hay_vivafec": "-1",
+       "hay_vivdest": "0"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2005-01-01",
+      "plausibility_flags": [],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "day"
+     },
+     "muertos": "10",
+     "name0": "Cuanza Norte",
+     "name1": "Cambambe",
+     "name2": "Dondo",
+     "nescuelas": "0",
+     "nhectareas": "0",
+     "nhospitales": "0",
+     "otros": "[removed, C07 scrub]",
+     "reubicados": "0",
+     "salud": "1",
+     "serial": "014",
+     "socorro": "1",
+     "transporte": "1",
+     "uu_id": "cd640c5d-191a-5366-9fc9-5c0ff01e2b6f",
+     "valorloc": "340000",
+     "valorus": "0",
+     "vivafec": "207",
+     "vivdest": "0"
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "98c9a18c-0d0d-5efb-b791-35194a15af63",
+      "map_option": "Geographic level",
+      "title": "[removed, C07 scrub]"
+     }
+    ],
+    "startDate": "2005-01-01"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ago:015",
+   "divisionImportId": "060101",
+   "hipClusterOfCode": null,
+   "hipCode": "MH0600",
+   "humanEffects": [
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "deaths"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         7
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Deaths"
+     },
+     "hasData": true,
+     "presence": {
+      "deaths": true
+     },
+     "table": "Deaths"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "direct",
+       "indirect"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         12
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Affected"
+     },
+     "hasData": true,
+     "presence": {
+      "indirect": true
+     },
+     "table": "Affected"
+    }
+   ],
+   "payload": {
+    "apiImportId": "C29FIX:ago:015",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "1",
+     "afectados": "12",
+     "agropecuario": "0",
+     "alcantarillado": "0",
+     "approved": "0",
+     "cabezas": "0",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "0",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "[removed, C07 scrub]",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "0",
+     "educacion": "0",
+     "energia": "0",
+     "evacuados": "0",
+     "evento": "INUNDAÇÃO",
+     "fechadia": "4",
+     "fechafec": "2017-02-01",
+     "fechames": "3",
+     "fechano": "2016",
+     "fechapor": "[removed, C07 scrub]",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "-1",
+     "hay_damnificados": "0",
+     "hay_deasparece": "0",
+     "hay_evacuados": "0",
+     "hay_heridos": "0",
+     "hay_muertos": "-1",
+     "hay_otros": "0",
+     "hay_reubicados": "0",
+     "hay_vivafec": "-1",
+     "hay_vivdest": "-1",
+     "heridos": "0",
+     "industrias": "0",
+     "kmvias": "0",
+     "latitude": "-11.21",
+     "level0": "06",
+     "level1": "0601",
+     "level2": "060101",
+     "longitude": "13.84",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "-1",
+       "hay_vivdest": "-1"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2016-03-04",
+      "plausibility_flags": [],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "day"
+     },
+     "muertos": "7",
+     "name0": "Cuanza Sul",
+     "name1": "Sumbe (ex. Ngunza)",
+     "name2": "Sumbe Sede",
+     "nescuelas": "0",
+     "nhectareas": "0",
+     "nhospitales": "0",
+     "otros": "[removed, C07 scrub]",
+     "reubicados": "0",
+     "salud": "0",
+     "serial": "015",
+     "socorro": "0",
+     "transporte": "1",
+     "uu_id": "44fd13f5-56be-5fe8-88c5-058c907a0467",
+     "valorloc": "0",
+     "valorus": "0",
+     "vivafec": "168",
+     "vivdest": "25"
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "6691938e-5d73-561d-8fc9-9803ac1d50f0",
+      "map_option": "Geographic level",
+      "title": "[removed, C07 scrub]"
+     }
+    ],
+    "startDate": "2016-03-04"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ago:016",
+   "divisionImportId": "080501",
+   "hipClusterOfCode": null,
+   "hipCode": "MH0600",
+   "humanEffects": [
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "injured"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         7
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Injured"
+     },
+     "hasData": true,
+     "presence": {
+      "injured": true
+     },
+     "table": "Injured"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "direct",
+       "indirect"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         7,
+         null
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Affected"
+     },
+     "hasData": true,
+     "presence": {
+      "direct": true
+     },
+     "table": "Affected"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "assisted",
+       "timing",
+       "duration",
+       "asOf",
+       "displaced"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         1
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Displaced"
+     },
+     "hasData": true,
+     "presence": {
+      "displaced": true
+     },
+     "table": "Displaced"
+    }
+   ],
+   "payload": {
+    "apiImportId": "C29FIX:ago:016",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "0",
+     "afectados": "0",
+     "agropecuario": "0",
+     "alcantarillado": "0",
+     "approved": "0",
+     "cabezas": "0",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "7",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "0",
+     "educacion": "1",
+     "energia": "0",
+     "evacuados": "1",
+     "evento": "INUNDAÇÃO",
+     "fechadia": "3",
+     "fechafec": "2017-02-01",
+     "fechames": "3",
+     "fechano": "2016",
+     "fechapor": "[removed, C07 scrub]",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "0",
+     "hay_damnificados": "-1",
+     "hay_deasparece": "0",
+     "hay_evacuados": "-1",
+     "hay_heridos": "-1",
+     "hay_muertos": "0",
+     "hay_otros": "1",
+     "hay_reubicados": "0",
+     "hay_vivafec": "0",
+     "hay_vivdest": "-1",
+     "heridos": "7",
+     "industrias": "0",
+     "kmvias": "0",
+     "latitude": "0.0",
+     "level0": "08",
+     "level1": "0805",
+     "level2": "080501",
+     "longitude": "0.0",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "0",
+       "hay_vivdest": "-1"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2016-03-03",
+      "plausibility_flags": [],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "day"
+     },
+     "muertos": "0",
+     "name0": "Lunda Norte",
+     "name1": "Chitato",
+     "name2": "Chitato",
+     "nescuelas": "0",
+     "nhectareas": "0",
+     "nhospitales": "0",
+     "otros": "[removed, C07 scrub]",
+     "reubicados": "0",
+     "salud": "1",
+     "serial": "016",
+     "socorro": "0",
+     "transporte": "0",
+     "uu_id": "c9c7dcdd-a343-5320-92b9-9729903ae571",
+     "valorloc": "0",
+     "valorus": "0",
+     "vivafec": "0",
+     "vivdest": "2"
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "054bd880-b04a-5b17-8ede-3eb59b82f773",
+      "map_option": "Geographic level",
+      "title": "[removed, C07 scrub]"
+     }
+    ],
+    "startDate": "2016-03-03"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ago:017",
+   "divisionImportId": "110101",
+   "hipClusterOfCode": null,
+   "hipCode": "MH0600",
+   "humanEffects": [
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "deaths"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         1
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Deaths"
+     },
+     "hasData": true,
+     "presence": {
+      "deaths": true
+     },
+     "table": "Deaths"
+    }
+   ],
+   "payload": {
+    "apiImportId": "C29FIX:ago:017",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "0",
+     "afectados": "0",
+     "agropecuario": "0",
+     "alcantarillado": "0",
+     "approved": "3",
+     "cabezas": "0",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "0",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "",
+     "di_comments": "",
+     "duracion": "0",
+     "educacion": "0",
+     "energia": "0",
+     "evacuados": "0",
+     "evento": "INUNDAÇÃO",
+     "fechadia": "26",
+     "fechafec": "",
+     "fechames": "1",
+     "fechano": "2016",
+     "fechapor": "[removed, C07 scrub]",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "0",
+     "hay_damnificados": "0",
+     "hay_deasparece": "0",
+     "hay_evacuados": "0",
+     "hay_heridos": "0",
+     "hay_muertos": "-1",
+     "hay_otros": "0",
+     "hay_reubicados": "0",
+     "hay_vivafec": "0",
+     "hay_vivdest": "0",
+     "heridos": "0",
+     "industrias": "0",
+     "kmvias": "0",
+     "latitude": "-12.4",
+     "level0": "11",
+     "level1": "1101",
+     "level2": "110101",
+     "longitude": "16.94",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "0",
+       "hay_vivdest": "0"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2016-01-26",
+      "plausibility_flags": [],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "day"
+     },
+     "muertos": "1",
+     "name0": "Bié",
+     "name1": "Cuito",
+     "name2": "Cuito",
+     "nescuelas": "0",
+     "nhectareas": "0",
+     "nhospitales": "0",
+     "otros": "",
+     "reubicados": "0",
+     "salud": "0",
+     "serial": "017",
+     "socorro": "0",
+     "transporte": "0",
+     "uu_id": "17b157db-a712-591e-9eac-c264a7b8d426",
+     "valorloc": "0",
+     "valorus": "0",
+     "vivafec": "0",
+     "vivdest": "0"
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "08cbfb2a-a683-5d80-adcb-5a3213b784d8",
+      "map_option": "Geographic level",
+      "title": "[removed, C07 scrub]"
+     }
+    ],
+    "startDate": "2016-01-26"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ago:018",
+   "divisionImportId": "060101",
+   "hipClusterOfCode": null,
+   "hipCode": "MH0600",
+   "humanEffects": [
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "deaths"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         1
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Deaths"
+     },
+     "hasData": true,
+     "presence": {
+      "deaths": true
+     },
+     "table": "Deaths"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "injured"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         3
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Injured"
+     },
+     "hasData": true,
+     "presence": {
+      "injured": true
+     },
+     "table": "Injured"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "direct",
+       "indirect"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         383
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Affected"
+     },
+     "hasData": true,
+     "presence": {
+      "indirect": true
+     },
+     "table": "Affected"
+    }
+   ],
+   "payload": {
+    "apiImportId": "C29FIX:ago:018",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "0",
+     "afectados": "383",
+     "agropecuario": "0",
+     "alcantarillado": "0",
+     "approved": "0",
+     "cabezas": "0",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "0",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "0",
+     "educacion": "0",
+     "energia": "0",
+     "evacuados": "0",
+     "evento": "INUNDAÇÃO",
+     "fechadia": "3",
+     "fechafec": "2017-02-01",
+     "fechames": "8",
+     "fechano": "2016",
+     "fechapor": "[removed, C07 scrub]",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "-1",
+     "hay_damnificados": "0",
+     "hay_deasparece": "0",
+     "hay_evacuados": "0",
+     "hay_heridos": "-1",
+     "hay_muertos": "-1",
+     "hay_otros": "0",
+     "hay_reubicados": "0",
+     "hay_vivafec": "-1",
+     "hay_vivdest": "-1",
+     "heridos": "3",
+     "industrias": "0",
+     "kmvias": "0",
+     "latitude": "0.0",
+     "level0": "06",
+     "level1": "0601",
+     "level2": "060101",
+     "longitude": "0.0",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "-1",
+       "hay_vivdest": "-1"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2016-08-03",
+      "plausibility_flags": [],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "day"
+     },
+     "muertos": "1",
+     "name0": "Cuanza Sul",
+     "name1": "Sumbe (ex. Ngunza)",
+     "name2": "Sumbe Sede",
+     "nescuelas": "0",
+     "nhectareas": "0",
+     "nhospitales": "0",
+     "otros": "[removed, C07 scrub]",
+     "reubicados": "0",
+     "salud": "0",
+     "serial": "018",
+     "socorro": "1",
+     "transporte": "1",
+     "uu_id": "c762eaaf-24a5-5c31-9bd0-f85039a43926",
+     "valorloc": "0",
+     "valorus": "0",
+     "vivafec": "283",
+     "vivdest": "283"
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "dcebbd4b-36eb-5cff-a046-9c922d88a519",
+      "map_option": "Geographic level",
+      "title": "[removed, C07 scrub]"
+     }
+    ],
+    "startDate": "2016-08-03"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ago:019",
+   "divisionImportId": "0101",
+   "hipClusterOfCode": null,
+   "hipCode": "BI0204",
+   "humanEffects": [
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "deaths"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         26
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Deaths"
+     },
+     "hasData": true,
+     "presence": {
+      "deaths": true
+     },
+     "table": "Deaths"
+    }
+   ],
+   "payload": {
+    "apiImportId": "C29FIX:ago:019",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "0",
+     "afectados": "0",
+     "agropecuario": "0",
+     "alcantarillado": "0",
+     "approved": "3",
+     "cabezas": "0",
+     "causa": "",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "0",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "[removed, C07 scrub]",
+     "di_comments": "",
+     "duracion": "0",
+     "educacion": "0",
+     "energia": "0",
+     "evacuados": "0",
+     "evento": "COLERA",
+     "fechadia": "31",
+     "fechafec": "",
+     "fechames": "1",
+     "fechano": "2007",
+     "fechapor": "",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "0",
+     "hay_damnificados": "0",
+     "hay_deasparece": "0",
+     "hay_evacuados": "0",
+     "hay_heridos": "0",
+     "hay_muertos": "-1",
+     "hay_otros": "0",
+     "hay_reubicados": "0",
+     "hay_vivafec": "0",
+     "hay_vivdest": "0",
+     "heridos": "0",
+     "industrias": "0",
+     "kmvias": "0",
+     "latitude": "0.0",
+     "level0": "01",
+     "level1": "0101",
+     "level2": "",
+     "longitude": "0.0",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "0",
+       "hay_vivdest": "0"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2007-01-31",
+      "plausibility_flags": [],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "day"
+     },
+     "muertos": "26",
+     "name0": "Cabinda",
+     "name1": "Cabinda",
+     "name2": "",
+     "nescuelas": "0",
+     "nhectareas": "0",
+     "nhospitales": "0",
+     "otros": "",
+     "reubicados": "0",
+     "salud": "0",
+     "serial": "019",
+     "socorro": "0",
+     "transporte": "0",
+     "uu_id": "cb613704-6880-5a54-82f8-afb397f7d2c0",
+     "valorloc": "0",
+     "valorus": "0",
+     "vivafec": "0",
+     "vivdest": "0"
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "8be46381-692b-517e-a839-d85ee31b27dc",
+      "map_option": "Geographic level",
+      "title": "[removed, C07 scrub]"
+     }
+    ],
+    "startDate": "2007-01-31"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ago:020",
+   "divisionImportId": "07",
+   "hipClusterOfCode": null,
+   "hipCode": "MH0103",
+   "humanEffects": [
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "direct",
+       "indirect"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         90
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Affected"
+     },
+     "hasData": true,
+     "presence": {
+      "indirect": true
+     },
+     "table": "Affected"
+    }
+   ],
+   "payload": {
+    "apiImportId": "C29FIX:ago:020",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "0",
+     "afectados": "90",
+     "agropecuario": "0",
+     "alcantarillado": "0",
+     "approved": "2",
+     "cabezas": "0",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "0",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "",
+     "di_comments": "",
+     "duracion": "0",
+     "educacion": "0",
+     "energia": "0",
+     "evacuados": "0",
+     "evento": "Chuvas Forts C/Ventos Relampag",
+     "fechadia": "14",
+     "fechafec": "2017-04-25",
+     "fechames": "11",
+     "fechano": "2016",
+     "fechapor": "[removed, C07 scrub]",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "-1",
+     "hay_damnificados": "0",
+     "hay_deasparece": "0",
+     "hay_evacuados": "0",
+     "hay_heridos": "0",
+     "hay_muertos": "0",
+     "hay_otros": "1",
+     "hay_reubicados": "0",
+     "hay_vivafec": "-1",
+     "hay_vivdest": "-1",
+     "heridos": "0",
+     "industrias": "0",
+     "kmvias": "0",
+     "latitude": "0.0",
+     "level0": "07",
+     "level1": "",
+     "level2": "",
+     "longitude": "0.0",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "-1",
+       "hay_vivdest": "-1"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2016-11-14",
+      "plausibility_flags": [],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "day"
+     },
+     "muertos": "0",
+     "name0": "Malanje",
+     "name1": "",
+     "name2": "",
+     "nescuelas": "0",
+     "nhectareas": "0",
+     "nhospitales": "0",
+     "otros": "[removed, C07 scrub]",
+     "reubicados": "0",
+     "salud": "0",
+     "serial": "020",
+     "socorro": "0",
+     "transporte": "0",
+     "uu_id": "c3f904e2-06b5-5961-9e56-ae5e622337af",
+     "valorloc": "0",
+     "valorus": "0",
+     "vivafec": "15",
+     "vivdest": "15"
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "45dcd691-6492-5376-aed1-65ec34f0c2b0",
+      "map_option": "Geographic level",
+      "title": "[removed, C07 scrub]"
+     }
+    ],
+    "startDate": "2016-11-14"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ago:021",
+   "divisionImportId": null,
+   "hipClusterOfCode": null,
+   "hipCode": "MH0705",
+   "humanEffects": [],
+   "payload": {
+    "apiImportId": "C29FIX:ago:021",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "0",
+     "afectados": "0",
+     "agropecuario": "0",
+     "alcantarillado": "0",
+     "approved": "3",
+     "cabezas": "0",
+     "causa": "",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "0",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "",
+     "di_comments": "",
+     "duracion": "0",
+     "educacion": "0",
+     "energia": "0",
+     "evacuados": "0",
+     "evento": "TSUNAMI",
+     "fechadia": "28",
+     "fechafec": "",
+     "fechames": "1",
+     "fechano": "2020",
+     "fechapor": "",
+     "fuentes": "",
+     "glide": "",
+     "hay_afectados": "0",
+     "hay_damnificados": "0",
+     "hay_deasparece": "0",
+     "hay_evacuados": "0",
+     "hay_heridos": "0",
+     "hay_muertos": "0",
+     "hay_otros": "0",
+     "hay_reubicados": "0",
+     "hay_vivafec": "0",
+     "hay_vivdest": "0",
+     "heridos": "0",
+     "industrias": "0",
+     "kmvias": "0",
+     "latitude": "0.0",
+     "level0": "",
+     "level1": "",
+     "level2": "",
+     "longitude": "0.0",
+     "lugar": "",
+     "magnitud2": "",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "0",
+       "hay_vivdest": "0"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2020-01-28",
+      "plausibility_flags": [],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "day"
+     },
+     "muertos": "0",
+     "name0": "",
+     "name1": "",
+     "name2": "",
+     "nescuelas": "0",
+     "nhectareas": "0",
+     "nhospitales": "0",
+     "otros": "",
+     "reubicados": "0",
+     "salud": "0",
+     "serial": "021",
+     "socorro": "0",
+     "transporte": "0",
+     "uu_id": "567625cb-34ce-5b6a-99db-274ec487ed74",
+     "valorloc": "0",
+     "valorus": "0",
+     "vivafec": "0",
+     "vivdest": "0"
+    },
+    "locationDesc": "",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "DesInventar (migrated)",
+    "startDate": "2020-01-28"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ago:022",
+   "divisionImportId": "160901",
+   "hipClusterOfCode": null,
+   "hipCode": "MH0305",
+   "humanEffects": [
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "deaths"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         0
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Deaths"
+     },
+     "hasData": true,
+     "presence": {
+      "deaths": true
+     },
+     "table": "Deaths"
+    }
+   ],
+   "payload": {
+    "apiImportId": "C29FIX:ago:022",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "0",
+     "afectados": "0",
+     "agropecuario": "1",
+     "alcantarillado": "0",
+     "approved": "0",
+     "cabezas": "0",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "0",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "[removed, C07 scrub]",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "0",
+     "educacion": "0",
+     "energia": "0",
+     "evacuados": "0",
+     "evento": "TORNADO",
+     "fechadia": "0",
+     "fechafec": "2017-02-13",
+     "fechames": "0",
+     "fechano": "2014",
+     "fechapor": "[removed, C07 scrub]",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "0",
+     "hay_damnificados": "0",
+     "hay_deasparece": "0",
+     "hay_evacuados": "0",
+     "hay_heridos": "0",
+     "hay_muertos": "-1",
+     "hay_otros": "1",
+     "hay_reubicados": "0",
+     "hay_vivafec": "-1",
+     "hay_vivdest": "-1",
+     "heridos": "0",
+     "industrias": "0",
+     "kmvias": "0",
+     "latitude": "-17.29",
+     "level0": "16",
+     "level1": "1609",
+     "level2": "160901",
+     "longitude": "15.84",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "-1",
+       "hay_vivdest": "-1"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2014-00-00",
+      "plausibility_flags": [],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "year"
+     },
+     "muertos": "0",
+     "name0": "Cunene",
+     "name1": "Namacunde",
+     "name2": "Namacunde",
+     "nescuelas": "0",
+     "nhectareas": "0",
+     "nhospitales": "0",
+     "otros": "[removed, C07 scrub]",
+     "reubicados": "0",
+     "salud": "0",
+     "serial": "022",
+     "socorro": "0",
+     "transporte": "0",
+     "uu_id": "78ed838c-8246-57bb-902b-13644b66c0e1",
+     "valorloc": "0",
+     "valorus": "0",
+     "vivafec": "0",
+     "vivdest": "0"
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "40be40a7-8b8e-516a-a930-588f7215b106",
+      "map_option": "Geographic level",
+      "title": "[removed, C07 scrub]"
+     }
+    ],
+    "startDate": "2014"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ago:023",
+   "divisionImportId": "050101",
+   "hipClusterOfCode": null,
+   "hipCode": "MH0600",
+   "humanEffects": [
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "deaths"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         2
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Deaths"
+     },
+     "hasData": true,
+     "presence": {
+      "deaths": true
+     },
+     "table": "Deaths"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "injured"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         9
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Injured"
+     },
+     "hasData": true,
+     "presence": {
+      "injured": true
+     },
+     "table": "Injured"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "direct",
+       "indirect"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         90
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Affected"
+     },
+     "hasData": true,
+     "presence": {
+      "indirect": true
+     },
+     "table": "Affected"
+    }
+   ],
+   "payload": {
+    "apiImportId": "C29FIX:ago:023",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "0",
+     "afectados": "90",
+     "agropecuario": "0",
+     "alcantarillado": "0",
+     "approved": "3",
+     "cabezas": "0",
+     "causa": "",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "0",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "0",
+     "educacion": "0",
+     "energia": "0",
+     "evacuados": "0",
+     "evento": "INUNDAÇÃO",
+     "fechadia": "0",
+     "fechafec": "2017-02-16",
+     "fechames": "4",
+     "fechano": "2007",
+     "fechapor": "[removed, C07 scrub]",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "-1",
+     "hay_damnificados": "0",
+     "hay_deasparece": "0",
+     "hay_evacuados": "0",
+     "hay_heridos": "-1",
+     "hay_muertos": "-1",
+     "hay_otros": "0",
+     "hay_reubicados": "0",
+     "hay_vivafec": "0",
+     "hay_vivdest": "0",
+     "heridos": "9",
+     "industrias": "0",
+     "kmvias": "0",
+     "latitude": "-9.16",
+     "level0": "05",
+     "level1": "0501",
+     "level2": "050101",
+     "longitude": "14.87",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "economic_carry": {
+       "currency_code": "AOA",
+       "loaded_into_delta_totals": false,
+       "price_year": "2007",
+       "unit_multiplier": null,
+       "values": {
+        "losses_subtotal_local_currency": {
+         "note": "value in local currency",
+         "source_field": "valorloc",
+         "value": 1500000000.0
+        }
+       }
+      },
+      "house_presence": {
+       "hay_vivafec": "0",
+       "hay_vivdest": "0"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2007-04-00",
+      "plausibility_flags": [],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "month"
+     },
+     "muertos": "2",
+     "name0": "Cuanza Norte",
+     "name1": "Cazengo",
+     "name2": "Ndalatando",
+     "nescuelas": "0",
+     "nhectareas": "0",
+     "nhospitales": "0",
+     "otros": "",
+     "reubicados": "0",
+     "salud": "0",
+     "serial": "023",
+     "socorro": "0",
+     "transporte": "0",
+     "uu_id": "92290ee7-68b2-5022-a447-1cb9e6c8fe57",
+     "valorloc": "1500000000",
+     "valorus": "0",
+     "vivafec": "0",
+     "vivdest": "0"
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "1b92f524-4ca3-550e-9270-572922831882",
+      "map_option": "Geographic level",
+      "title": "[removed, C07 scrub]"
+     }
+    ],
+    "startDate": "2007-04"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ago:024",
+   "divisionImportId": "150101",
+   "hipClusterOfCode": null,
+   "hipCode": "MH0600",
+   "humanEffects": [
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "deaths"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         34
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Deaths"
+     },
+     "hasData": true,
+     "presence": {
+      "deaths": true
+     },
+     "table": "Deaths"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "injured"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         1
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Injured"
+     },
+     "hasData": true,
+     "presence": {
+      "injured": true
+     },
+     "table": "Injured"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "direct",
+       "indirect"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         37
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Affected"
+     },
+     "hasData": true,
+     "presence": {
+      "indirect": true
+     },
+     "table": "Affected"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "assisted",
+       "timing",
+       "duration",
+       "asOf",
+       "displaced"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         2
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Displaced"
+     },
+     "hasData": true,
+     "presence": {
+      "displaced": true
+     },
+     "table": "Displaced"
+    }
+   ],
+   "payload": {
+    "apiImportId": "C29FIX:ago:024",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "0",
+     "afectados": "37",
+     "agropecuario": "0",
+     "alcantarillado": "0",
+     "approved": "0",
+     "cabezas": "0",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "0",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "[removed, C07 scrub]",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "7",
+     "educacion": "0",
+     "energia": "0",
+     "evacuados": "1",
+     "evento": "CHEIAS",
+     "fechadia": "29",
+     "fechafec": "2017-04-04",
+     "fechames": "2",
+     "fechano": "2015",
+     "fechapor": "[removed, C07 scrub]",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "-1",
+     "hay_damnificados": "0",
+     "hay_deasparece": "0",
+     "hay_evacuados": "-1",
+     "hay_heridos": "-1",
+     "hay_muertos": "-1",
+     "hay_otros": "0",
+     "hay_reubicados": "-1",
+     "hay_vivafec": "-1",
+     "hay_vivdest": "0",
+     "heridos": "1",
+     "industrias": "0",
+     "kmvias": "0",
+     "latitude": "-14.93",
+     "level0": "15",
+     "level1": "1501",
+     "level2": "150101",
+     "longitude": "13.53",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "-1",
+       "hay_vivdest": "0"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2015-02-29",
+      "plausibility_flags": [],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "review"
+     },
+     "muertos": "34",
+     "name0": "Huíla",
+     "name1": "Lubango",
+     "name2": "Lubango",
+     "nescuelas": "0",
+     "nhectareas": "0",
+     "nhospitales": "0",
+     "otros": "[removed, C07 scrub]",
+     "reubicados": "1",
+     "salud": "0",
+     "serial": "024",
+     "socorro": "0",
+     "transporte": "0",
+     "uu_id": "be866e87-d218-5006-83b3-aee9531a4cb2",
+     "valorloc": "0",
+     "valorus": "0",
+     "vivafec": "6",
+     "vivdest": "0"
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "48943f99-6363-5737-800f-67ac2682185e",
+      "map_option": "Geographic level",
+      "title": "[removed, C07 scrub]"
+     }
+    ]
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ago:025",
+   "divisionImportId": "030101",
+   "hipClusterOfCode": null,
+   "hipCode": null,
+   "humanEffects": [
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "deaths"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         227
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Deaths"
+     },
+     "hasData": true,
+     "presence": {
+      "deaths": true
+     },
+     "table": "Deaths"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "direct",
+       "indirect"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         252,
+         252
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Affected"
+     },
+     "hasData": true,
+     "presence": {
+      "direct": true,
+      "indirect": true
+     },
+     "table": "Affected"
+    }
+   ],
+   "payload": {
+    "apiImportId": "C29FIX:ago:025",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "0",
+     "afectados": "252",
+     "agropecuario": "0",
+     "alcantarillado": "0",
+     "approved": "0",
+     "cabezas": "0",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "252",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "[removed, C07 scrub]",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "6",
+     "educacion": "1",
+     "energia": "0",
+     "evacuados": "0",
+     "evento": "EPIDEMIAS",
+     "fechadia": "2",
+     "fechafec": "2017-02-27",
+     "fechames": "11",
+     "fechano": "2005",
+     "fechapor": "[removed, C07 scrub]",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "-1",
+     "hay_damnificados": "-1",
+     "hay_deasparece": "0",
+     "hay_evacuados": "0",
+     "hay_heridos": "0",
+     "hay_muertos": "-1",
+     "hay_otros": "0",
+     "hay_reubicados": "0",
+     "hay_vivafec": "0",
+     "hay_vivdest": "0",
+     "heridos": "0",
+     "industrias": "0",
+     "kmvias": "0",
+     "latitude": "-7.24",
+     "level0": "03",
+     "level1": "0301",
+     "level2": "030101",
+     "longitude": "15.08",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "[removed, C07 scrub]",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "0",
+       "hay_vivdest": "0"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2005-11-02",
+      "plausibility_flags": [],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "day"
+     },
+     "muertos": "227",
+     "name0": "Uíge",
+     "name1": "Uíge",
+     "name2": "Uíge",
+     "nescuelas": "0",
+     "nhectareas": "0",
+     "nhospitales": "0",
+     "otros": "",
+     "reubicados": "0",
+     "salud": "1",
+     "serial": "025",
+     "socorro": "0",
+     "transporte": "0",
+     "uu_id": "7845c491-cb2a-5e77-be91-e52ee06d09d6",
+     "valorloc": "0",
+     "valorus": "0",
+     "vivafec": "0",
+     "vivdest": "0"
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "01dcfe8f-c149-5eb2-9e44-c9da6d115293",
+      "map_option": "Geographic level",
+      "title": "[removed, C07 scrub]"
+     }
+    ],
+    "startDate": "2005-11-02"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ago:026",
+   "divisionImportId": "150101",
+   "hipClusterOfCode": null,
+   "hipCode": "GH0201",
+   "humanEffects": [
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "injured"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         8
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Injured"
+     },
+     "hasData": true,
+     "presence": {
+      "injured": true
+     },
+     "table": "Injured"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "direct",
+       "indirect"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         3924,
+         3924
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Affected"
+     },
+     "hasData": true,
+     "presence": {
+      "direct": true,
+      "indirect": true
+     },
+     "table": "Affected"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "assisted",
+       "timing",
+       "duration",
+       "asOf",
+       "displaced"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         58
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Displaced"
+     },
+     "hasData": true,
+     "presence": {
+      "displaced": true
+     },
+     "table": "Displaced"
+    }
+   ],
+   "payload": {
+    "apiImportId": "C29FIX:ago:026",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "0",
+     "afectados": "3924",
+     "agropecuario": "0",
+     "alcantarillado": "0",
+     "approved": "0",
+     "cabezas": "0",
+     "causa": "",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "3924",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "[removed, C07 scrub]",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "0",
+     "educacion": "1",
+     "energia": "1",
+     "evacuados": "58",
+     "evento": "TERREMOTO",
+     "fechadia": "0",
+     "fechafec": "2017-02-15",
+     "fechames": "0",
+     "fechano": "1979",
+     "fechapor": "[removed, C07 scrub]",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "-1",
+     "hay_damnificados": "-1",
+     "hay_deasparece": "0",
+     "hay_evacuados": "-1",
+     "hay_heridos": "-1",
+     "hay_muertos": "0",
+     "hay_otros": "1",
+     "hay_reubicados": "0",
+     "hay_vivafec": "-1",
+     "hay_vivdest": "-1",
+     "heridos": "8",
+     "industrias": "0",
+     "kmvias": "0",
+     "latitude": "-14.76",
+     "level0": "15",
+     "level1": "1501",
+     "level2": "150101",
+     "longitude": "13.52",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "[removed, C07 scrub]",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "-1",
+       "hay_vivdest": "-1"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "1979-00-00",
+      "plausibility_flags": [
+       {
+        "code": "IDENTICAL_ACROSS_FIELDS",
+        "fields": [
+         "afectados",
+         "damnificados"
+        ],
+        "note": "3924 in each",
+        "rule_version": "c30-v1"
+       }
+      ],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "year"
+     },
+     "muertos": "0",
+     "name0": "Huíla",
+     "name1": "Lubango",
+     "name2": "Lubango",
+     "nescuelas": "0",
+     "nhectareas": "0",
+     "nhospitales": "0",
+     "otros": "[removed, C07 scrub]",
+     "reubicados": "0",
+     "salud": "0",
+     "serial": "026",
+     "socorro": "0",
+     "transporte": "1",
+     "uu_id": "b02e9d16-941f-570b-96d4-ae0d6abff01a",
+     "valorloc": "0",
+     "valorus": "0",
+     "vivafec": "654",
+     "vivdest": "0"
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "8d2593b9-1878-54c8-beae-15f279a7b985",
+      "map_option": "Geographic level",
+      "title": "[removed, C07 scrub]"
+     }
+    ],
+    "startDate": "1979"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ago:027",
+   "divisionImportId": "151901",
+   "hipClusterOfCode": null,
+   "hipCode": "GH0201",
+   "humanEffects": [],
+   "payload": {
+    "apiImportId": "C29FIX:ago:027",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "0",
+     "afectados": "0",
+     "agropecuario": "0",
+     "alcantarillado": "0",
+     "approved": "0",
+     "cabezas": "0",
+     "causa": "",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "0",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "[removed, C07 scrub]",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "0",
+     "educacion": "0",
+     "energia": "0",
+     "evacuados": "0",
+     "evento": "TERREMOTO",
+     "fechadia": "22",
+     "fechafec": "2017-02-15",
+     "fechames": "4",
+     "fechano": "2013",
+     "fechapor": "[removed, C07 scrub]",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "0",
+     "hay_damnificados": "0",
+     "hay_deasparece": "0",
+     "hay_evacuados": "0",
+     "hay_heridos": "0",
+     "hay_muertos": "0",
+     "hay_otros": "0",
+     "hay_reubicados": "0",
+     "hay_vivafec": "-1",
+     "hay_vivdest": "0",
+     "heridos": "0",
+     "industrias": "0",
+     "kmvias": "0",
+     "latitude": "-15.13",
+     "level0": "15",
+     "level1": "1519",
+     "level2": "151901",
+     "longitude": "13.95",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "[removed, C07 scrub]",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "-1",
+       "hay_vivdest": "0"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2013-04-22",
+      "plausibility_flags": [],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "day"
+     },
+     "muertos": "0",
+     "name0": "Huíla",
+     "name1": "Chicomba",
+     "name2": "Chicomba",
+     "nescuelas": "0",
+     "nhectareas": "0",
+     "nhospitales": "0",
+     "otros": "[removed, C07 scrub]",
+     "reubicados": "0",
+     "salud": "0",
+     "serial": "027",
+     "socorro": "0",
+     "transporte": "0",
+     "uu_id": "4ff28925-2bda-5d16-a774-81b6b07d1bf5",
+     "valorloc": "0",
+     "valorus": "0",
+     "vivafec": "2",
+     "vivdest": "0"
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "66a19784-5452-5d19-bc1a-e58641c09ba2",
+      "map_option": "Geographic level",
+      "title": "[removed, C07 scrub]"
+     }
+    ],
+    "startDate": "2013-04-22"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ago:028",
+   "divisionImportId": "090101",
+   "hipClusterOfCode": null,
+   "hipCode": "MH0600",
+   "humanEffects": [
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "deaths"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         13
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Deaths"
+     },
+     "hasData": true,
+     "presence": {
+      "deaths": true
+     },
+     "table": "Deaths"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "asOf",
+       "missing"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         2
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Missing"
+     },
+     "hasData": true,
+     "presence": {
+      "missing": true
+     },
+     "table": "Missing"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "direct",
+       "indirect"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         6606,
+         6606
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Affected"
+     },
+     "hasData": true,
+     "presence": {
+      "direct": true,
+      "indirect": true
+     },
+     "table": "Affected"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "assisted",
+       "timing",
+       "duration",
+       "asOf",
+       "displaced"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         440
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Displaced"
+     },
+     "hasData": true,
+     "presence": {
+      "displaced": true
+     },
+     "table": "Displaced"
+    }
+   ],
+   "payload": {
+    "apiImportId": "C29FIX:ago:028",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "1",
+     "afectados": "6606",
+     "agropecuario": "1",
+     "alcantarillado": "0",
+     "approved": "0",
+     "cabezas": "500000000",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "6606",
+     "defaultab": "0",
+     "desaparece": "2",
+     "descausa": "[removed, C07 scrub]",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "0",
+     "educacion": "1",
+     "energia": "0",
+     "evacuados": "220",
+     "evento": "INUNDAÇÃO",
+     "fechadia": "24",
+     "fechafec": "2017-02-13",
+     "fechames": "3",
+     "fechano": "2015",
+     "fechapor": "[removed, C07 scrub]",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "-1",
+     "hay_damnificados": "-1",
+     "hay_deasparece": "-1",
+     "hay_evacuados": "-1",
+     "hay_heridos": "0",
+     "hay_muertos": "-1",
+     "hay_otros": "1",
+     "hay_reubicados": "-1",
+     "hay_vivafec": "-1",
+     "hay_vivdest": "-1",
+     "heridos": "0",
+     "industrias": "0",
+     "kmvias": "22000000000",
+     "latitude": "-12.59",
+     "level0": "09",
+     "level1": "0901",
+     "level2": "090101",
+     "longitude": "13.42",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "economic_carry": {
+       "currency_code": "AOA",
+       "loaded_into_delta_totals": false,
+       "price_year": "2015",
+       "unit_multiplier": null,
+       "values": {
+        "losses_subtotal_local_currency": {
+         "note": "value in local currency",
+         "source_field": "valorloc",
+         "value": 10500000000.0
+        }
+       }
+      },
+      "house_presence": {
+       "hay_vivafec": "-1",
+       "hay_vivdest": "-1"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2015-03-24",
+      "plausibility_flags": [
+       {
+        "code": "IDENTICAL_ACROSS_FIELDS",
+        "fields": [
+         "afectados",
+         "damnificados"
+        ],
+        "note": "6606 in each",
+        "rule_version": "c30-v1"
+       },
+       {
+        "code": "SENTINEL_MAGNITUDE",
+        "fields": [
+         "kmvias"
+        ],
+        "note": "kmvias=22000000000",
+        "rule_version": "c30-v1"
+       }
+      ],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "day"
+     },
+     "muertos": "13",
+     "name0": "Benguela",
+     "name1": "Benguela",
+     "name2": "Benguela",
+     "nescuelas": "330300000",
+     "nhectareas": "0",
+     "nhospitales": "585360000",
+     "otros": "[removed, C07 scrub]",
+     "reubicados": "220",
+     "salud": "1",
+     "serial": "028",
+     "socorro": "0",
+     "transporte": "1",
+     "uu_id": "b8a3e6b4-2a9e-5927-9a41-f5e94ca30a1d",
+     "valorloc": "10500000000",
+     "valorus": "0",
+     "vivafec": "1101",
+     "vivdest": "1506"
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "60c681f6-659d-56ce-b90d-ac2d2f4025c1",
+      "map_option": "Geographic level",
+      "title": "[removed, C07 scrub]"
+     }
+    ],
+    "startDate": "2015-03-24"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ecu:029",
+   "divisionImportId": null,
+   "hipClusterOfCode": null,
+   "hipCode": "GH0202",
+   "humanEffects": [],
+   "payload": {
+    "apiImportId": "C29FIX:ecu:029",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "",
+     "afectados": "",
+     "agropecuario": "",
+     "alcantarillado": "",
+     "approved": "0",
+     "cabezas": "",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "",
+     "damnificados": "",
+     "defaultab": "",
+     "desaparece": "",
+     "descausa": "[removed, C07 scrub]",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "",
+     "educacion": "",
+     "energia": "",
+     "evacuados": "",
+     "evento": "ACTIVIDAD VOLCÁNICA",
+     "fechadia": "16",
+     "fechafec": "",
+     "fechames": "11",
+     "fechano": "1988",
+     "fechapor": "",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "",
+     "hay_damnificados": "",
+     "hay_deasparece": "",
+     "hay_evacuados": "",
+     "hay_heridos": "",
+     "hay_muertos": "",
+     "hay_otros": "",
+     "hay_reubicados": "",
+     "hay_vivafec": "",
+     "hay_vivdest": "",
+     "heridos": "",
+     "industrias": "",
+     "kmvias": "",
+     "latitude": "",
+     "level0": "20",
+     "level1": "",
+     "level2": "",
+     "longitude": "",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "[removed, C07 scrub]",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "",
+       "hay_vivdest": ""
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "1988-11-16",
+      "plausibility_flags": [],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "day"
+     },
+     "muertos": "",
+     "name0": "GALAPAGOS",
+     "name1": "",
+     "name2": "",
+     "nescuelas": "",
+     "nhectareas": "",
+     "nhospitales": "",
+     "otros": "[removed, C07 scrub]",
+     "reubicados": "",
+     "salud": "",
+     "serial": "029",
+     "socorro": "",
+     "transporte": "",
+     "uu_id": "c8e10ace-84c3-55dc-a118-34bc3964bf9b",
+     "valorloc": "",
+     "valorus": "",
+     "vivafec": "",
+     "vivdest": ""
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "startDate": "1988-11-16"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ecu:030",
+   "divisionImportId": null,
+   "hipClusterOfCode": null,
+   "hipCode": "GH0205",
+   "humanEffects": [],
+   "payload": {
+    "apiImportId": "C29FIX:ecu:030",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "",
+     "afectados": "",
+     "agropecuario": "",
+     "alcantarillado": "",
+     "approved": "0",
+     "cabezas": "",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "",
+     "damnificados": "",
+     "defaultab": "",
+     "desaparece": "",
+     "descausa": "[removed, C07 scrub]",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "1",
+     "educacion": "",
+     "energia": "",
+     "evacuados": "",
+     "evento": "Lahares",
+     "fechadia": "9",
+     "fechafec": "",
+     "fechames": "4",
+     "fechano": "2008",
+     "fechapor": "",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "",
+     "hay_damnificados": "",
+     "hay_deasparece": "",
+     "hay_evacuados": "",
+     "hay_heridos": "",
+     "hay_muertos": "",
+     "hay_otros": "",
+     "hay_reubicados": "",
+     "hay_vivafec": "",
+     "hay_vivdest": "",
+     "heridos": "",
+     "industrias": "",
+     "kmvias": "",
+     "latitude": "",
+     "level0": "18",
+     "level1": "1802",
+     "level2": "",
+     "longitude": "",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "[removed, C07 scrub]",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "",
+       "hay_vivdest": ""
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2008-04-09",
+      "plausibility_flags": [],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "day"
+     },
+     "muertos": "",
+     "name0": "TUNGURAHUA",
+     "name1": "BAÑOS DE AGUA SANTA",
+     "name2": "",
+     "nescuelas": "",
+     "nhectareas": "",
+     "nhospitales": "",
+     "otros": "[removed, C07 scrub]",
+     "reubicados": "",
+     "salud": "",
+     "serial": "030",
+     "socorro": "",
+     "transporte": "",
+     "uu_id": "5c8a256f-4de9-5f82-801e-c957027f9679",
+     "valorloc": "",
+     "valorus": "",
+     "vivafec": "",
+     "vivdest": ""
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "startDate": "2008-04-09"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:ecu:031",
+   "divisionImportId": null,
+   "hipClusterOfCode": null,
+   "hipCode": "TL0305",
+   "humanEffects": [
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "injured"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         2
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Injured"
+     },
+     "hasData": true,
+     "presence": {
+      "injured": true
+     },
+     "table": "Injured"
+    },
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "direct",
+       "indirect"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         null
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Affected"
+     },
+     "hasData": false,
+     "presence": {
+      "direct": true
+     },
+     "table": "Affected"
+    }
+   ],
+   "payload": {
+    "apiImportId": "C29FIX:ecu:031",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "",
+     "afectados": "",
+     "agropecuario": "",
+     "alcantarillado": "",
+     "approved": "0",
+     "cabezas": "",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "",
+     "damnificados": "",
+     "defaultab": "",
+     "desaparece": "",
+     "descausa": "[removed, C07 scrub]",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "",
+     "educacion": "",
+     "energia": "",
+     "evacuados": "",
+     "evento": "INCENDIO ESTRUCTURAL",
+     "fechadia": "7",
+     "fechafec": "",
+     "fechames": "1",
+     "fechano": "1970",
+     "fechapor": "",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "",
+     "hay_damnificados": "1",
+     "hay_deasparece": "",
+     "hay_evacuados": "",
+     "hay_heridos": "1",
+     "hay_muertos": "",
+     "hay_otros": "",
+     "hay_reubicados": "",
+     "hay_vivafec": "1",
+     "hay_vivdest": "1",
+     "heridos": "2",
+     "industrias": "",
+     "kmvias": "",
+     "latitude": "",
+     "level0": "09",
+     "level1": "0901",
+     "level2": "",
+     "longitude": "",
+     "lugar": "[removed, C07 scrub]",
+     "magnitud2": "",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "1",
+       "hay_vivdest": "1"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "1970-01-07",
+      "plausibility_flags": [],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "day"
+     },
+     "muertos": "",
+     "name0": "GUAYAS",
+     "name1": "GUAYAQUIL",
+     "name2": "",
+     "nescuelas": "",
+     "nhectareas": "",
+     "nhospitales": "",
+     "otros": "",
+     "reubicados": "",
+     "salud": "",
+     "serial": "031",
+     "socorro": "",
+     "transporte": "",
+     "uu_id": "fc330c1d-c82a-54be-b019-e07e41fee1f0",
+     "valorloc": "",
+     "valorus": "",
+     "vivafec": "7",
+     "vivdest": "7"
+    },
+    "locationDesc": "[removed, C07 scrub]",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "startDate": "1970-01-07"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:syn:032",
+   "divisionImportId": "041702",
+   "hipClusterOfCode": null,
+   "hipCode": "MH0600",
+   "humanEffects": [
+    {
+     "body": null,
+     "hasData": false,
+     "presence": {
+      "deaths": false
+     },
+     "table": "Deaths"
+    }
+   ],
+   "payload": {
+    "apiImportId": "C29FIX:syn:032",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "0",
+     "afectados": "0",
+     "agropecuario": "0",
+     "alcantarillado": "0",
+     "approved": "0",
+     "c29_note": "SYNTHETIC native DELTA entry: Deaths answered No, no count",
+     "cabezas": "0",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "0",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "0",
+     "educacion": "0",
+     "energia": "0",
+     "evacuados": "0",
+     "evento": "INUNDAÇÃO",
+     "fechadia": "27",
+     "fechafec": "2017-02-01",
+     "fechames": "3",
+     "fechano": "2016",
+     "fechapor": "[removed, C07 scrub]",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "0",
+     "hay_damnificados": "0",
+     "hay_deasparece": "0",
+     "hay_evacuados": "0",
+     "hay_heridos": "0",
+     "hay_muertos": "0",
+     "hay_otros": "0",
+     "hay_reubicados": "0",
+     "hay_vivafec": "0",
+     "hay_vivdest": "0",
+     "heridos": "0",
+     "industrias": "0",
+     "kmvias": "0",
+     "latitude": "-9.01",
+     "level0": "04",
+     "level1": "0417",
+     "level2": "041702",
+     "longitude": "13.41",
+     "lugar": "",
+     "magnitud2": "",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "0",
+       "hay_vivdest": "0"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2016-03-27",
+      "plausibility_flags": [],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "day"
+     },
+     "muertos": "0",
+     "name0": "Luanda",
+     "name1": "Viana",
+     "name2": "Zango",
+     "nescuelas": "0",
+     "nhectareas": "0",
+     "nhospitales": "0",
+     "otros": "[removed, C07 scrub]",
+     "reubicados": "0",
+     "salud": "0",
+     "serial": "032",
+     "socorro": "1",
+     "transporte": "1",
+     "uu_id": "5179455e-2834-5413-ba1f-57b9a2ea6178",
+     "valorloc": "0",
+     "valorus": "0",
+     "vivafec": "0",
+     "vivdest": "0"
+    },
+    "locationDesc": "",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "3be7eeec-d079-5867-a74a-a9701a33bd13",
+      "map_option": "Geographic level",
+      "title": "Luanda"
+     }
+    ],
+    "startDate": "2016-03-27"
+   }
+  },
+  {
+   "apiImportId": "C29FIX:syn:033",
+   "divisionImportId": "041702",
+   "hipClusterOfCode": "GH0202",
+   "hipCode": null,
+   "humanEffects": [
+    {
+     "body": {
+      "columns": [
+       "sex",
+       "age",
+       "disability",
+       "globalPovertyLine",
+       "nationalPovertyLine",
+       "direct",
+       "indirect"
+      ],
+      "data": {
+       "deletes": [],
+       "newRows": {
+        "_temp1": [
+         null,
+         null,
+         null,
+         null,
+         null,
+         null,
+         40
+        ]
+       },
+       "updates": {}
+      },
+      "table": "Affected"
+     },
+     "hasData": true,
+     "presence": {
+      "indirect": true
+     },
+     "table": "Affected"
+    }
+   ],
+   "payload": {
+    "apiImportId": "C29FIX:syn:033",
+    "approvalStatus": "draft",
+    "endDate": null,
+    "legacyData": {
+     "acueducto": "0",
+     "afectados": "40",
+     "agropecuario": "0",
+     "alcantarillado": "0",
+     "approved": "0",
+     "c29_note": "SYNTHETIC cluster-only outcome (C13 not built): the volcanic cluster of GH0202, no specific hazard",
+     "cabezas": "0",
+     "causa": "[removed, C07 scrub]",
+     "clave": "",
+     "comunicaciones": "0",
+     "damnificados": "0",
+     "defaultab": "0",
+     "desaparece": "0",
+     "descausa": "",
+     "di_comments": "[removed, C07 scrub]",
+     "duracion": "0",
+     "educacion": "0",
+     "energia": "0",
+     "evacuados": "0",
+     "evento": "INUNDAÇÃO",
+     "fechadia": "27",
+     "fechafec": "2017-02-01",
+     "fechames": "3",
+     "fechano": "2016",
+     "fechapor": "[removed, C07 scrub]",
+     "fuentes": "[removed, C07 scrub]",
+     "glide": "",
+     "hay_afectados": "-1",
+     "hay_damnificados": "0",
+     "hay_deasparece": "0",
+     "hay_evacuados": "0",
+     "hay_heridos": "0",
+     "hay_muertos": "0",
+     "hay_otros": "0",
+     "hay_reubicados": "0",
+     "hay_vivafec": "0",
+     "hay_vivdest": "0",
+     "heridos": "0",
+     "industrias": "0",
+     "kmvias": "0",
+     "latitude": "-9.01",
+     "level0": "04",
+     "level1": "0417",
+     "level2": "041702",
+     "longitude": "13.41",
+     "lugar": "",
+     "magnitud2": "",
+     "migration": {
+      "decision_register_version": "decisions=13@2026-09-25+sha1:7edc4939",
+      "house_presence": {
+       "hay_vivafec": "0",
+       "hay_vivdest": "0"
+      },
+      "loaded_at": "2026-09-30T00:00:00",
+      "original_start_date": "2016-03-27",
+      "plausibility_flags": [],
+      "run_id": "c29-fixture-v1",
+      "start_date_precision": "day"
+     },
+     "muertos": "0",
+     "name0": "Luanda",
+     "name1": "Viana",
+     "name2": "Zango",
+     "nescuelas": "0",
+     "nhectareas": "0",
+     "nhospitales": "0",
+     "otros": "[removed, C07 scrub]",
+     "reubicados": "0",
+     "salud": "0",
+     "serial": "033",
+     "socorro": "1",
+     "transporte": "1",
+     "uu_id": "e7fc3752-ef39-5306-9d04-c091f4bcd6f9",
+     "valorloc": "0",
+     "valorus": "0",
+     "vivafec": "0",
+     "vivdest": "0"
+    },
+    "locationDesc": "",
+    "originatorRecorderInst": "UNDRR DesInventar migration",
+    "primaryDataSource": "[removed, C07 scrub]",
+    "spatialFootprint": [
+     {
+      "division_id": "__DIVISION__",
+      "id": "afcab274-6f71-51f1-8203-b32119769879",
+      "map_option": "Geographic level",
+      "title": "Luanda"
+     }
+    ],
+    "startDate": "2016-03-27"
+   }
+  }
+ ],
+ "runId": "c29-fixture-v1"
+}

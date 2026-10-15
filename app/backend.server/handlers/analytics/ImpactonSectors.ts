@@ -1,6 +1,6 @@
 import { fetchSectorImpactData } from "~/backend.server/models/analytics/ImpactonSectors";
 
-import { eq, and, sql, SQL, or } from "drizzle-orm";
+import { eq, and, sql, SQL } from "drizzle-orm";
 
 import { dr } from "~/db.server";
 import { sectorDisasterRecordsRelationTable } from "~/drizzle/schema/sectorDisasterRecordsRelationTable";
@@ -13,13 +13,34 @@ import { damagesTable } from "~/drizzle/schema/damagesTable";
 import { disruptionTable } from "~/drizzle/schema/disruptionTable";
 import { disasterEventTable } from "~/drizzle/schema/disasterEventTable";
 import { BackendContext } from "~/backend.server/context";
+import { approvalBasis, type ApprovalAudience } from "~/utils/approvalBasis";
+import { monetaryValue, type MonetaryValue } from "~/utils/valueState";
+
+/**
+ * Monetary figure from a total row: the summed cost, the records that
+ * reported one and all records in scope. No reported cost is null and
+ * not_reported, never 0; money has no tri-state source, so a summed 0 is a
+ * reported 0, never zero_confirmed (TR-076, PD-04:596).
+ */
+function monetaryFromRow(
+	row: { total: unknown; reported: unknown; records: unknown } | undefined,
+): MonetaryValue {
+	return monetaryValue({
+		sum: (row?.total as string | number | null | undefined) ?? null,
+		reported: (row?.reported as string | number | undefined) ?? 0,
+		total: (row?.records as string | number | undefined) ?? 0,
+	});
+}
 
 interface SectorImpactResponse {
 	success: boolean;
 	data?: {
 		eventCount: number;
+		/** null when no record reported a cost (TR-076). */
 		totalDamage: string | null;
 		totalLoss: string | null;
+		damage: MonetaryValue;
+		loss: MonetaryValue;
 		eventsOverTime: { [key: string]: string };
 		damageOverTime: { [key: string]: string };
 		lossOverTime: { [key: string]: string };
@@ -44,6 +65,7 @@ interface Filters {
 export const getImpactOnSector = async (
 	ctx: BackendContext,
 	countryAccountsId: string,
+	audience: ApprovalAudience,
 	sectorId: string,
 	filters?: Filters,
 	currency?: any,
@@ -74,6 +96,7 @@ export const getImpactOnSector = async (
 		const data = await fetchSectorImpactData(
 			ctx,
 			countryAccountsId,
+			audience,
 			sectorId,
 			filters,
 			currency,
@@ -122,6 +145,7 @@ export const getImpactOnSector = async (
  * // Get damages for a specific sector
  * await getSectorImpactTotal({
  *   countryAccountsId: "UUID",
+ *   audience: "public",
  *   impact: "damages",
  * });
  *
@@ -129,22 +153,27 @@ export const getImpactOnSector = async (
  * // Get losses for a specific disaster with extra conditions
  * await getSectorImpactTotal({
  *   countryAccountsId: "UUID",
+ *   audience: "public",
  *   impact: "losses",
  *   type: { disasterEventId: "UUID" },
  *   divisionId: "UUID"
  * }, [sql`${disasterRecordsTable.startDate} > '2024-01-01'`]);
  *
- * @returns {Promise<Object>} - A promise that resolves to an object containing the total impact values based on the type of impact requested:
+ * @returns {Promise<Object>} - A promise that resolves to an object containing the total impact values based on the type of impact requested.
+ *  Each total is null when no record in scope reported a cost, never 0
+ *  (TR-076), and comes with its MonetaryValue (value state and counts):
  *  - If `args.impact` is 'damages':
- *      - { damagesTotal: number, recoveryTotal: number }
+ *      - { damagesTotal, recoveryTotal, damages, recovery }
  *  - If `args.impact` is 'losses':
- *      - { lossesTotal: number }
+ *      - { lossesTotal, losses }
  *  - If `args.impact` is 'disruption':
- *      - { disruptionTotal: number }
+ *      - { disruptionTotal, disruption }
  */
 export async function getSectorImpactTotal(
 	args: {
 		countryAccountsId: string;
+		/** Approval basis audience (C23). */
+		audience: ApprovalAudience;
 		impact: "damages" | "losses" | "disruption";
 		type?:
 			| {
@@ -164,7 +193,8 @@ export async function getSectorImpactTotal(
 ) {
 	// select base columns to include
 	const selects: any = {
-		recordId: disasterRecordsTable.id,
+		// Aliased so the total queries can count records over the CTE.
+		recordId: sql<string>`${disasterRecordsTable.id}`.as("cte_record_id"),
 		recordSectorId: sectorDisasterRecordsRelationTable.id,
 		recordSector_SectorId: sectorDisasterRecordsRelationTable.sectorId,
 		// flags that live on the sector relation
@@ -176,10 +206,7 @@ export async function getSectorImpactTotal(
 	// base where conditions
 	const baseWhere: SQL[] = [
 		eq(disasterRecordsTable.countryAccountsId, args.countryAccountsId),
-		or(
-			eq(disasterRecordsTable.approvalStatus, "published"),
-			eq(disasterRecordsTable.approvalStatus, "validated"),
-		)!,
+		approvalBasis(args.audience, disasterRecordsTable),
 	];
 
 	const distinctOnCols = [
@@ -195,11 +222,13 @@ export async function getSectorImpactTotal(
 			sectorDisasterRecordsRelationTable.damageRecoveryCost;
 		selects.damageRecoveryCostCurrency =
 			sectorDisasterRecordsRelationTable.damageRecoveryCostCurrency;
+		// Per record and sector: the override, else the asset rows. NULL, not
+		// 0, when neither carries a cost (TR-076).
 		selects.damageCostComputed = sql`
         (
             COALESCE(
             ${sectorDisasterRecordsRelationTable.damageCost},
-            COALESCE(SUM(${damagesTable.totalRepairReplacement}), 0)
+            SUM(${damagesTable.totalRepairReplacement})
             )
         )
         `.as("damageCostComputed");
@@ -207,7 +236,7 @@ export async function getSectorImpactTotal(
         (
             COALESCE(
             ${sectorDisasterRecordsRelationTable.damageRecoveryCost},
-            COALESCE(SUM(${damagesTable.totalRecovery}), 0)
+            SUM(${damagesTable.totalRecovery})
             )
         )
         `.as("damageCostRecoveryComputed");
@@ -215,21 +244,25 @@ export async function getSectorImpactTotal(
 		selects.lossesCost = sectorDisasterRecordsRelationTable.lossesCost;
 		selects.lossesCostCurrency =
 			sectorDisasterRecordsRelationTable.lossesCostCurrency;
+		// A loss row with only a public or only a private total still
+		// reports a cost; a row with neither reports none (TR-076).
 		selects.lossesCostComputed = sql`
         (
             COALESCE(
             ${sectorDisasterRecordsRelationTable.lossesCost},
-            COALESCE(SUM(${lossesTable.privateCostTotal} + ${lossesTable.publicCostTotal}), 0)
+            SUM(
+                CASE
+                    WHEN ${lossesTable.privateCostTotal} IS NOT NULL OR ${lossesTable.publicCostTotal} IS NOT NULL
+                    THEN COALESCE(${lossesTable.privateCostTotal}, 0) + COALESCE(${lossesTable.publicCostTotal}, 0)
+                END
+            )
             )
         )
         `.as("lossesCostComputed");
 	} else if (args.impact === "disruption") {
 		selects.disruptionCostComputed = sql`
         (
-            COALESCE(
-              SUM(${disruptionTable.responseCost}),
-              0
-            )
+            SUM(${disruptionTable.responseCost})
         )
         `.as("disruptionCostComputed");
 	}
@@ -296,10 +329,19 @@ export async function getSectorImpactTotal(
 	// Condition for division
 	if (args.divisionId) {
 		baseWhere.push(sql`EXISTS (
+			WITH RECURSIVE division_tree AS (
+				SELECT id
+				FROM division
+				WHERE id = ${args.divisionId}::uuid
+				UNION ALL
+				SELECT d.id
+				FROM division d
+				INNER JOIN division_tree dt ON d.parent_id = dt.id
+			)
 			SELECT 1
 			FROM disaster_records_division drd
 			WHERE drd.disaster_record_id = ${disasterRecordsTable.id}
-				AND drd.division_id = ${args.divisionId}::uuid
+				AND drd.division_id IN (SELECT id FROM division_tree)
 		)`);
 	}
 
@@ -383,32 +425,29 @@ export async function getSectorImpactTotal(
 		const totalRowDamages = await dr
 			.with(cteDamages)
 			.select({
-				total: sql`COALESCE(SUM(${cteDamages.damageCostComputed}), 0)`.mapWith(
-					Number,
-				),
+				total: sql`SUM(${cteDamages.damageCostComputed})`,
+				reported: sql`COUNT(DISTINCT ${cteDamages.recordId}) FILTER (WHERE ${cteDamages.damageCostComputed} IS NOT NULL)`,
+				records: sql`COUNT(DISTINCT ${cteDamages.recordId})`,
 			})
 			.from(cteDamages);
 
 		const totalRowRecovery = await dr
 			.with(cteDamages)
 			.select({
-				total:
-					sql`COALESCE(SUM(${cteDamages.damageCostRecoveryComputed}), 0)`.mapWith(
-						Number,
-					),
+				total: sql`SUM(${cteDamages.damageCostRecoveryComputed})`,
+				reported: sql`COUNT(DISTINCT ${cteDamages.recordId}) FILTER (WHERE ${cteDamages.damageCostRecoveryComputed} IS NOT NULL)`,
+				records: sql`COUNT(DISTINCT ${cteDamages.recordId})`,
 			})
 			.from(cteDamages);
 
-		const damagesTotal = totalRowDamages.length
-			? Number(totalRowDamages[0].total)
-			: 0;
-		const recoveryTotal = totalRowRecovery.length
-			? Number(totalRowRecovery[0].total)
-			: 0;
+		const damages = monetaryFromRow(totalRowDamages[0]);
+		const recovery = monetaryFromRow(totalRowRecovery[0]);
 
 		return {
-			damagesTotal: damagesTotal,
-			recoveryTotal: recoveryTotal,
+			damagesTotal: damages.value,
+			recoveryTotal: recovery.value,
+			damages,
+			recovery,
 		};
 	} else if (args.impact === "losses") {
 		// create a CTE named 'cteLosses' from the losses query
@@ -418,19 +457,17 @@ export async function getSectorImpactTotal(
 		const totalRowLosses = await dr
 			.with(cteLosses)
 			.select({
-				total: sql`COALESCE(SUM(${cteLosses.lossesCostComputed}), 0)`.mapWith(
-					Number,
-				),
+				total: sql`SUM(${cteLosses.lossesCostComputed})`,
+				reported: sql`COUNT(DISTINCT ${cteLosses.recordId}) FILTER (WHERE ${cteLosses.lossesCostComputed} IS NOT NULL)`,
+				records: sql`COUNT(DISTINCT ${cteLosses.recordId})`,
 			})
 			.from(cteLosses);
 
-		// extract numeric total
-		const lossesTotal = totalRowLosses.length
-			? Number(totalRowLosses[0].total)
-			: 0;
+		const losses = monetaryFromRow(totalRowLosses[0]);
 
 		return {
-			lossesTotal: lossesTotal,
+			lossesTotal: losses.value,
+			losses,
 		};
 	} else if (args.impact === "disruption") {
 		// create a CTE named 'cteDisruption' from the disruption query
@@ -440,17 +477,16 @@ export async function getSectorImpactTotal(
 		const totalRow = await dr
 			.with(cteDisruption)
 			.select({
-				total:
-					sql`COALESCE(SUM(${cteDisruption.disruptionCostComputed}), 0)`.mapWith(
-						Number,
-					),
+				total: sql`SUM(${cteDisruption.disruptionCostComputed})`,
+				reported: sql`COUNT(DISTINCT ${cteDisruption.recordId}) FILTER (WHERE ${cteDisruption.disruptionCostComputed} IS NOT NULL)`,
+				records: sql`COUNT(DISTINCT ${cteDisruption.recordId})`,
 			})
 			.from(cteDisruption);
 
-		// extract numeric total
-		const disruptionTotal = totalRow.length ? Number(totalRow[0].total) : 0;
+		const disruption = monetaryFromRow(totalRow[0]);
 		return {
-			disruptionTotal: disruptionTotal,
+			disruptionTotal: disruption.value,
+			disruption,
 		};
 	}
 
