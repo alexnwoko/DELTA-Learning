@@ -1862,6 +1862,8 @@ export async function getTotalAffectedPeopleByDivision(
 interface DisasterEventCountByDivision {
 	divisionId: string;
 	eventCount: number;
+	/** Events placed through their member records (no division links). */
+	eventsFromRecords: number;
 }
 
 export async function getDisasterEventCountByDivision(
@@ -1888,20 +1890,33 @@ export async function getDisasterEventCountByDivision(
 	if (specificHazardId)
 		whereConditions.push(sql`de."hip_hazard_id" = ${specificHazardId}`);
 	if (geographicLevelId) {
-		whereConditions.push(sql`EXISTS (
-			WITH RECURSIVE division_tree AS (
-				SELECT id
-				FROM division
-				WHERE id = ${geographicLevelId}::uuid
-				UNION ALL
-				SELECT d.id
-				FROM division d
-				INNER JOIN division_tree dt ON d.parent_id = dt.id
+		// An event is in the division through its own division links, or,
+		// when it has none, through its member records' divisions (as the
+		// geoportal places it; migrated events carry no division links).
+		const tree = divisionAndDescendantsSql(
+			geographicLevelId,
+			countryAccountsId,
+		);
+		whereConditions.push(sql`(
+			EXISTS (
+				SELECT 1 FROM disaster_event_division ded
+				WHERE ded.disaster_event_id = de.id AND ded.division_id IN ${tree}
 			)
-			SELECT 1
-			FROM disaster_event_division ded
-			WHERE ded.disaster_event_id = de.id
-				AND ded.division_id IN (SELECT id FROM division_tree)
+			OR (
+				NOT EXISTS (
+					SELECT 1 FROM disaster_event_division ded
+					WHERE ded.disaster_event_id = de.id
+				)
+				AND EXISTS (
+					SELECT 1
+					FROM disaster_records r
+					JOIN disaster_records_division drd ON drd.disaster_record_id = r.id
+					WHERE r.disaster_event_id = de.id
+						AND r.country_accounts_id = ${countryAccountsId}
+						AND ${approvalBasis(filters.audience, basisColumns("r"))}
+						AND drd.division_id IN ${tree}
+				)
+			)
 		)`);
 	}
 	if (fromDate || toDate) {
@@ -1959,16 +1974,38 @@ export async function getDisasterEventCountByDivision(
 	  event_level1 AS (
 		SELECT DISTINCT
 		  ded."disaster_event_id" AS event_id,
-		  dh.level1_id::text AS level1_id
+		  dh.level1_id::text AS level1_id,
+		  false AS from_records
 		FROM "disaster_event_division" ded
 		INNER JOIN filtered_events fe
 		  ON fe.event_id = ded."disaster_event_id"
 		INNER JOIN division_hierarchy dh
 		  ON dh.id = ded."division_id"
+		UNION
+		-- An event without division links is placed where its member records
+		-- sit (derivation from_records, as in the geoportal).
+		SELECT DISTINCT
+		  r."disaster_event_id" AS event_id,
+		  dh.level1_id::text AS level1_id,
+		  true AS from_records
+		FROM "disaster_records" r
+		INNER JOIN filtered_events fe
+		  ON fe.event_id = r."disaster_event_id"
+		INNER JOIN "disaster_records_division" drd
+		  ON drd."disaster_record_id" = r."id"
+		INNER JOIN division_hierarchy dh
+		  ON dh.id = drd."division_id"
+		WHERE r."country_accounts_id" = ${countryAccountsId}
+		  AND ${approvalBasis(filters.audience, basisColumns("r"))}
+		  AND NOT EXISTS (
+			SELECT 1 FROM "disaster_event_division" ded2
+			WHERE ded2."disaster_event_id" = r."disaster_event_id"
+		  )
 	  )
 	  SELECT 
 		el.level1_id AS division_id,
-		COUNT(*) AS event_count
+		COUNT(*) AS event_count,
+		COUNT(*) FILTER (WHERE el.from_records) AS events_from_records
 	  FROM event_level1 el
 	  GROUP BY el.level1_id
 	`;
@@ -1979,6 +2016,7 @@ export async function getDisasterEventCountByDivision(
 	return result.rows.map((row: any) => ({
 		divisionId: row.division_id,
 		eventCount: Number(row.event_count),
+		eventsFromRecords: Number(row.events_from_records),
 	}));
 }
 
