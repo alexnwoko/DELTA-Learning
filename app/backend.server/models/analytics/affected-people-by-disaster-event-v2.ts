@@ -19,6 +19,8 @@ import {
 } from "~/utils/valueState";
 
 interface Conditions {
+	/** The tenant; the event must belong to it (checked in getAffected). */
+	countryAccountsId: string;
 	divisionId?: string;
 	/** The division and its descendants, resolved once in getAffected. */
 	divisionIds?: string[];
@@ -48,10 +50,27 @@ export async function getAffected(
 	disasterEventId: string,
 	conditions: Conditions,
 ) {
+	// Every query below filters on the event id only, so the event's tenant
+	// is checked here once; another tenant's event is not found.
+	const owner = await tx
+		.select({ id: disasterEventTable.id })
+		.from(disasterEventTable)
+		.where(
+			and(
+				eq(disasterEventTable.id, disasterEventId),
+				eq(disasterEventTable.countryAccountsId, conditions.countryAccountsId),
+			),
+		);
+	if (owner.length === 0) {
+		throw new Response("Not Found", { status: 404 });
+	}
 	if (conditions?.divisionId && !conditions.divisionIds) {
 		conditions = {
 			...conditions,
-			divisionIds: await getDescendantDivisionIds(conditions.divisionId),
+			divisionIds: await getDescendantDivisionIds(
+				conditions.divisionId,
+				conditions.countryAccountsId,
+			),
 		};
 	}
 	let res = {

@@ -152,8 +152,18 @@ describe("C23 approval basis and tenant isolation", () => {
 			expect(res.totalDeaths).toBe(5);
 			expect(res.measures.deaths.recordsTotal).toBe(1);
 		}
-		const ev = await getAffected(dr as any, eventA, { audience: "public" });
+		const ev = await getAffected(dr as any, eventA, {
+			countryAccountsId: a.countryAccountId,
+			audience: "public",
+		});
 		expect(Number(ev.noDisaggregations.tables.deaths)).toBe(5);
+		// Tenant B cannot read tenant A's event figures by its id.
+		await expect(
+			getAffected(dr as any, eventA, {
+				countryAccountsId: b.countryAccountId,
+				audience: "public",
+			}),
+		).rejects.toMatchObject({ status: 404 });
 	});
 
 	it("never shows tenant A's rows to tenant B", async () => {

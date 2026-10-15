@@ -112,7 +112,10 @@ describe("disaster event value states", () => {
 	});
 
 	it("human effects: null and not_reported for an event with no reporting record", async () => {
-		const res = await getAffected(dr, ev.empty, { audience: "public" });
+		const res = await getAffected(dr, ev.empty, {
+			countryAccountsId: A.countryAccountId,
+			audience: "public",
+		});
 		const n = res.noDisaggregations;
 		expect(n.tables.deaths).toBeNull();
 		expect(n.measures.deaths).toMatchObject({
@@ -126,7 +129,10 @@ describe("disaster event value states", () => {
 	});
 
 	it("human effects: the sum and reported for an event with data", async () => {
-		const res = await getAffected(dr, ev.reported, { audience: "public" });
+		const res = await getAffected(dr, ev.reported, {
+			countryAccountsId: A.countryAccountId,
+			audience: "public",
+		});
 		const n = res.noDisaggregations;
 		expect(n.tables.deaths).toBe(5);
 		expect(n.measures.deaths).toMatchObject({
@@ -140,6 +146,7 @@ describe("disaster event value states", () => {
 
 	it("human effects by division: a division without the event's records is not_reported", async () => {
 		const res = await getAffected(dr, ev.reported, {
+			countryAccountsId: A.countryAccountId,
 			audience: "public",
 			divisionId: div.empty,
 		});
