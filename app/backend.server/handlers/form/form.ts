@@ -1,4 +1,6 @@
 import { dr, Tx } from "~/db.server";
+import { rowOnApprovalBasis } from "~/utils/approvalBasis";
+import { isMigratedProvisional } from "~/utils/provisional";
 
 import { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
 
@@ -742,14 +744,14 @@ export function createViewLoaderPublicApproved<
 				throw new Response("Not Found", { status: 404 });
 			}
 			const isPublic = authLoaderIsPublic(loaderArgs);
-			if (isPublic) {
-				if (item.approvalStatus != "published") {
-					throw new Response("Permission denied, item is private", {
-						status: 404,
-					});
-				}
+			// C23: a public request sees only records on the public basis.
+			if (isPublic && !rowOnApprovalBasis("public", item)) {
+				throw new Response("Permission denied, item is private", {
+					status: 404,
+				});
 			}
-			return { item, isPublic };
+			const provisional = isMigratedProvisional(item);
+			return { item, isPublic, provisional };
 		})(loaderArgs);
 	};
 }
@@ -768,13 +770,13 @@ export function createViewLoaderPublicApprovedWithAuditLog<
 				throw new Response("Not Found", { status: 404 });
 			}
 			const isPublic = authLoaderIsPublic(loaderArgs);
-			if (isPublic) {
-				if (item.approvalStatus != "published") {
-					throw new Response("Permission denied, item is private", {
-						status: 404,
-					});
-				}
+			// C23: a public request sees only records on the public basis.
+			if (isPublic && !rowOnApprovalBasis("public", item)) {
+				throw new Response("Permission denied, item is private", {
+					status: 404,
+				});
 			}
+			const provisional = isMigratedProvisional(item);
 
 			const auditLogs = await dr
 				.select({
@@ -795,7 +797,7 @@ export function createViewLoaderPublicApprovedWithAuditLog<
 				.orderBy(desc(auditLogsTable.timestamp));
 			let user = await authLoaderGetUserForFrontend(loaderArgs);
 
-			return { item, isPublic, auditLogs, user };
+			return { item, isPublic, auditLogs, user, provisional };
 		})(loaderArgs);
 	};
 }

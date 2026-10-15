@@ -31,6 +31,9 @@ import { getHazardTypes } from "~/backend.server/handlers/analytics/hazard-types
 import { getHazardClustersHandler } from "~/backend.server/handlers/analytics/hazard-clusters";
 import { getSpecificHazardsHandler } from "~/backend.server/handlers/analytics/specific-hazards";
 import { getRelatedHazardDataHandler } from "~/backend.server/handlers/analytics/related-hazard-data";
+import { approvalAudienceFromRequest } from "~/backend.server/approvalAudience.server";
+import { basisIncludesProvisional } from "~/utils/approvalBasis";
+import { ProvisionalFiguresNotice } from "~/frontend/analytics/ProvisionalFiguresNotice";
 
 import type { HazardImpactFilters } from "~/types/hazardImpact";
 import { redirectLangFromRoute } from "~/utils/url.backend";
@@ -60,8 +63,9 @@ interface ApiResponse {
 	success: boolean;
 	data: {
 		eventCount: number;
-		totalDamage: string;
-		totalLoss: string;
+		/** null when no record reported a cost (TR-076). */
+		totalDamage: string | null;
+		totalLoss: string | null;
 		eventsOverTime: Record<string, string>;
 		damageOverTime: Record<string, string>;
 		lossOverTime: Record<string, string>;
@@ -79,20 +83,20 @@ interface HazardImpactApiResponse {
 		eventsCount: Array<{
 			hazardId: string; // Changed from number to string to match actual data
 			hazardName: string;
-			value: string;
-			percentage: number;
+			value: string | null;
+			percentage: number | null;
 		}>;
 		damages: Array<{
 			hazardId: string; // Changed from number to string to match actual data
 			hazardName: string;
-			value: string;
-			percentage: number;
+			value: string | null;
+			percentage: number | null;
 		}>;
 		losses: Array<{
 			hazardId: string; // Changed from number to string to match actual data
 			hazardName: string;
-			value: string;
-			percentage: number;
+			value: string | null;
+			percentage: number | null;
 		}>;
 	};
 }
@@ -115,6 +119,9 @@ export const loader = authLoaderPublicOrWithPerm(
 				"/error/unauthorized?reason=content-not-published",
 			);
 		}
+
+		// C23: one approval basis for every figure on this page.
+		const audience = await approvalAudienceFromRequest(request);
 
 		try {
 			const toGeoJsonGeometry = (rawGeojson: unknown) => {
@@ -294,7 +301,10 @@ export const loader = authLoaderPublicOrWithPerm(
 			try {
 				if (countryAccountsId) {
 					// Get raw data from handler
-					const rawDisasterEvents = await getDisasterEvents(countryAccountsId);
+					const rawDisasterEvents = await getDisasterEvents(
+						countryAccountsId,
+						audience,
+					);
 
 					// Format it to match the original API response structure
 					disasterEventsData = { disasterEvents: rawDisasterEvents };
@@ -340,6 +350,7 @@ export const loader = authLoaderPublicOrWithPerm(
 				const sectorHandlerResponse = await getImpactOnSector(
 					ctx,
 					countryAccountsId,
+					audience,
 					subSectorId || sectorId || "",
 					handlerFilters,
 					currency,
@@ -351,8 +362,9 @@ export const loader = authLoaderPublicOrWithPerm(
 						success: sectorHandlerResponse.success,
 						data: {
 							eventCount: sectorHandlerResponse.data.eventCount,
-							totalDamage: sectorHandlerResponse.data.totalDamage || "0",
-							totalLoss: sectorHandlerResponse.data.totalLoss || "0",
+							// null stays null: not reported, never 0 (TR-076).
+							totalDamage: sectorHandlerResponse.data.totalDamage,
+							totalLoss: sectorHandlerResponse.data.totalLoss,
 							eventsOverTime: sectorHandlerResponse.data.eventsOverTime || {},
 							damageOverTime: sectorHandlerResponse.data.damageOverTime || {},
 							lossOverTime: sectorHandlerResponse.data.lossOverTime || {},
@@ -381,6 +393,7 @@ export const loader = authLoaderPublicOrWithPerm(
 					const hazardHandlerResponse = await getHazardImpact(
 						ctx,
 						countryAccountsId,
+						audience,
 						hazardFilters,
 					);
 
@@ -414,13 +427,14 @@ export const loader = authLoaderPublicOrWithPerm(
 
 					const geoHandlerResponse = await handleGeographicImpactQuery(
 						countryAccountsId,
+						audience,
 						geoFilters,
 					);
 
 					if (geoHandlerResponse) {
 						// Transform the handler response into proper GeoJSON format
-					if (geoHandlerResponse.success && geoHandlerResponse.divisions) {
-						const features = geoHandlerResponse.divisions
+						if (geoHandlerResponse.success && geoHandlerResponse.divisions) {
+							const features = geoHandlerResponse.divisions
 							.map((division) => {
 								const geometry = toGeoJsonGeometry(division.geojson);
 
@@ -436,9 +450,11 @@ export const loader = authLoaderPublicOrWithPerm(
 										name: division.name,
 										level: division.level,
 										parentId: division.parentId,
+										// A division without figures is not reported, never 0
+										// (TR-076).
 										values: geoHandlerResponse.values[division.id.toString()] || {
-											totalDamage: 0,
-											totalLoss: 0,
+											totalDamage: null,
+											totalLoss: null,
 											metadata: {
 												assessmentType: filters.assessmentType || "rapid",
 												confidenceLevel: filters.confidenceLevel || "low",
@@ -490,6 +506,7 @@ export const loader = authLoaderPublicOrWithPerm(
 					const effectDetailsResponse = await getEffectDetailsHandler(
 						ctx,
 						countryAccountsId,
+						audience,
 						effectDetailsFilters,
 					);
 
@@ -534,6 +551,7 @@ export const loader = authLoaderPublicOrWithPerm(
 					const mostDamagingEventsResponse =
 						await handleMostDamagingEventsRequest(
 							countryAccountsId,
+							audience,
 							mostDamagingEventsFilters,
 						);
 
@@ -583,6 +601,7 @@ export const loader = authLoaderPublicOrWithPerm(
 				hazardClustersData,
 				specificHazardsData,
 				relatedHazardData,
+				provisional: basisIncludesProvisional(audience),
 			};
 		} catch (error) {
 			console.error("Failed to load sectors analytics data", {
@@ -796,6 +815,10 @@ function SectorsAnalysisContent() {
 			<div style={{ maxWidth: "100%", overflow: "hidden" }}>
 				{/* Main content - only shown when JavaScript is enabled */}
 				<div className="sectors-page">
+					<ProvisionalFiguresNotice
+						ctx={ctx}
+						show={"provisional" in ld ? ld.provisional : false}
+					/>
 					{/* Filters Section */}
 					<ErrorBoundary>
 						<Filters

@@ -404,14 +404,56 @@
     {
       "idx": 57,
       "version": "7",
-      "when": 1790279315863,
-      "tag": "20260924200000_add_missing_gist_indexes",
+      "when": 1791520114180,
+      "tag": "20261009042834_migrate_hips_with_multi_language_support_and_fixed_hipsUUID",
       "breakpoints": true
     },
     {
       "idx": 58,
       "version": "7",
-      "when": 1790596800000,
+      "when": 1791537033187,
+      "tag": "20261009091033_alter_language_table",
+      "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1791676800000,
+      "tag": "20261011000000_fix_hips_multilang_corrections",
+      "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1791763200000,
+      "tag": "20261012000000_widen_language_cd_bcp47",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1791766800000,
+      "tag": "20260924200000_add_missing_gist_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1791777600000,
+      "tag": "20260930120000_add_effect_lookup_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1791788400000,
+      "tag": "20261011120000_add_fk_lookup_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1791795600000,
       "tag": "20260928120000_geo_read_model",
       "breakpoints": true
     }

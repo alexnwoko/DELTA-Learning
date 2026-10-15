@@ -1,4 +1,5 @@
 import { disasterRecordLoader } from "~/backend.server/handlers/disaster_record";
+import { ProvisionalBadge } from "~/frontend/analytics/ProvisionalFiguresNotice";
 
 import { DataScreen } from "~/frontend/data_screen";
 
@@ -204,6 +205,7 @@ export default function Data() {
 							data-pr-position="top"
 						></span>
 						{} {approvalStatusKeyToLabel(ctx, item.approvalStatus)}
+						<ProvisionalBadge ctx={ctx} show={item.provisional} />
 					</td>
 				)}
 				<td>

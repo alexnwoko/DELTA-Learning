@@ -50,9 +50,10 @@ interface DamageRecord {
 	type: string;
 	assetName: string;
 	unit: string;
-	totalDamageAmount: number;
-	totalRepairReplacement: string;
-	totalRecovery: string;
+	/** Row costs: null when the row carries no cost (TR-076). */
+	totalDamageAmount: string | null;
+	totalRepairReplacement: string | null;
+	totalRecovery: string | null;
 	sectorId: number;
 	attachments: Array<{ url: string; type: string }>;
 }
@@ -98,6 +99,8 @@ interface TableProps {
 	columns: TableColumn[];
 	data: TableData[];
 	currency: string;
+	/** Shown for a cost that is not reported, never 0 (TR-076). */
+	notReportedLabel: string;
 }
 
 export function EffectDetails({
@@ -319,6 +322,10 @@ export function EffectDetails({
 												totalRecovery: damage.totalRecovery,
 											}))}
 											currency={currency}
+											notReportedLabel={ctx.t({
+												code: "analysis.not_reported",
+												msg: "Not reported",
+											})}
 										/>
 									) : (
 										<div
@@ -384,10 +391,16 @@ export function EffectDetails({
 											data={effectDetailsData.data.losses.map((loss) => ({
 												type: getTypeLabel(loss.type),
 												description: loss.description,
-												publicCostTotal: loss.publicCostTotal || "-",
-												privateCostTotal: loss.privateCostTotal || "-",
+												// Raw costs: null reads "Not reported" and a
+												// reported 0 reads 0 (TR-076).
+												publicCostTotal: loss.publicCostTotal,
+												privateCostTotal: loss.privateCostTotal,
 											}))}
 											currency={currency}
+											notReportedLabel={ctx.t({
+												code: "analysis.not_reported",
+												msg: "Not reported",
+											})}
 										/>
 									) : (
 										<div
@@ -463,10 +476,14 @@ export function EffectDetails({
 													durationDays: disruption.durationDays || "-",
 													usersAffected: disruption.usersAffected || "-",
 													peopleAffected: disruption.peopleAffected || "-",
-													responseCost: disruption.responseCost || "-",
+													responseCost: disruption.responseCost,
 												}),
 											)}
 											currency={currency}
+											notReportedLabel={ctx.t({
+												code: "analysis.not_reported",
+												msg: "Not reported",
+											})}
 										/>
 									) : (
 										<div
@@ -491,11 +508,22 @@ export function EffectDetails({
 	);
 }
 
+/** Cost columns: a null cost is not reported, never 0 (TR-076). */
+const MONEY_KEYS = [
+	"totalDamageAmount",
+	"totalRepairReplacement",
+	"totalRecovery",
+	"publicCostTotal",
+	"privateCostTotal",
+	"responseCost",
+];
+
 const SortableTable: React.FC<TableProps> = ({
 	title,
 	columns,
 	data,
 	currency,
+	notReportedLabel,
 }) => {
 	const [sortConfig, setSortConfig] = React.useState<{
 		key: string;
@@ -542,7 +570,9 @@ const SortableTable: React.FC<TableProps> = ({
 	};
 
 	const formatValue = (value: string | number | null, key: string): string => {
-		if (value === null || value === undefined) return "-";
+		if (value === null || value === undefined) {
+			return MONEY_KEYS.includes(key) ? notReportedLabel : "-";
+		}
 
 		// Convert string numbers to actual numbers for currency fields
 		if (

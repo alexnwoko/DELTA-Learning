@@ -22,7 +22,7 @@ const district = randomUUID();
 async function deathsFor(divisionId: string): Promise<number> {
 	const res: any = await getAffected(dr as any, eventId, {
 		divisionId,
-		publishedOnly: true,
+		audience: "public",
 	});
 	return Number(res.noDisaggregations.tables.deaths);
 }

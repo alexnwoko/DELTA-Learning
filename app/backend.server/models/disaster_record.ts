@@ -1,4 +1,5 @@
 import { dr, Tx } from "~/db.server";
+import { approvalBasis } from "~/utils/approvalBasis";
 import { sectorDisasterRecordsRelationTable } from "~/drizzle/schema/sectorDisasterRecordsRelationTable";
 import { nonecoLossesTable } from "~/drizzle/schema/nonecoLossesTable";
 import { disasterRecordsTable } from "~/drizzle/schema/disasterRecordsTable";
@@ -366,7 +367,7 @@ export async function disasterRecordsCreate(
 	// When updating HIPs, all three fields must be available in the partial
 	if (fields.hipTypeId || fields.hipClusterId || fields.hipHazardId) {
 		if (fields.hipHazardId) {
-			const hipRecord = await getHazardById(ctx, fields.hipHazardId);
+			const hipRecord = await getHazardById(ctx, fields.hipHazardId, tx);
 			if (!hipRecord && errors.fields) {
 				errors.fields.hipHazardId = [`Invalid value ${fields.hipHazardId}.`];
 			}
@@ -381,7 +382,7 @@ export async function disasterRecordsCreate(
 				errors.fields.hipTypeId = [`Invalid value ${fields.hipTypeId}.`];
 			}
 		} else if (fields.hipClusterId) {
-			const hipRecord = await getClusterById(ctx, fields.hipClusterId);
+			const hipRecord = await getClusterById(ctx, fields.hipClusterId, tx);
 			if (!hipRecord && errors.fields) {
 				errors.fields.hipClusterId = [`Invalid value ${fields.hipClusterId}.`];
 			}
@@ -389,7 +390,7 @@ export async function disasterRecordsCreate(
 				errors.fields.hipTypeId = [`Invalid value ${fields.hipTypeId}.`];
 			}
 		} else if (fields.hipTypeId) {
-			const hipRecord = await getTypeById(ctx, fields.hipTypeId);
+			const hipRecord = await getTypeById(ctx, fields.hipTypeId, tx);
 			if (!hipRecord && errors.fields) {
 				errors.fields.hipTypeId = [`Invalid value ${fields.hipTypeId}.`];
 			}
@@ -471,7 +472,7 @@ export async function disasterRecordsUpdate(
 	// When updating HIPs, all three fields must be available in the partial
 	if (fields.hipTypeId || fields.hipClusterId || fields.hipHazardId) {
 		if (fields.hipHazardId) {
-			const hipRecord = await getHazardById(ctx, fields.hipHazardId);
+			const hipRecord = await getHazardById(ctx, fields.hipHazardId, tx);
 			if (!hipRecord && errors.fields) {
 				errors.fields.hipHazardId = [`Invalid value ${fields.hipHazardId}.`];
 			}
@@ -486,7 +487,7 @@ export async function disasterRecordsUpdate(
 				errors.fields.hipTypeId = [`Invalid value ${fields.hipTypeId}.`];
 			}
 		} else if (fields.hipClusterId) {
-			const hipRecord = await getClusterById(ctx, fields.hipClusterId);
+			const hipRecord = await getClusterById(ctx, fields.hipClusterId, tx);
 			if (!hipRecord && errors.fields) {
 				errors.fields.hipClusterId = [`Invalid value ${fields.hipClusterId}.`];
 			}
@@ -494,7 +495,7 @@ export async function disasterRecordsUpdate(
 				errors.fields.hipTypeId = [`Invalid value ${fields.hipTypeId}.`];
 			}
 		} else if (fields.hipTypeId) {
-			const hipRecord = await getTypeById(ctx, fields.hipTypeId);
+			const hipRecord = await getTypeById(ctx, fields.hipTypeId, tx);
 			if (!hipRecord && errors.fields) {
 				errors.fields.hipTypeId = [`Invalid value ${fields.hipTypeId}.`];
 			}
@@ -780,7 +781,7 @@ export async function disasterRecordsBasicInfoById(idStr: string) {
 		.where(
 			and(
 				eq(disasterRecordsTable.id, id),
-				eq(disasterRecordsTable.approvalStatus, "published"), // Only published records are accessible
+				approvalBasis("public", disasterRecordsTable), // C23 public basis
 			),
 		)
 		.limit(1);
