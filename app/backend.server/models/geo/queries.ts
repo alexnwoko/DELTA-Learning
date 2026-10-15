@@ -5,7 +5,11 @@ import {
 	basisStatuses,
 	type ApprovalAudience,
 } from "~/utils/approvalBasis";
-import type { AttGradeFloor, DeltaQuery } from "~/utils/deltaQuery";
+import {
+	QUERY_REFUSALS,
+	type AttGradeFloor,
+	type DeltaQuery,
+} from "~/utils/deltaQuery";
 import {
 	GEO_HUMAN_MEASURES,
 	GEO_METHOD_VERSION,
@@ -27,16 +31,14 @@ import {
 export const ATT_GRADES = ["A", "B", "C", "D"] as const;
 export type AttGrade = (typeof ATT_GRADES)[number];
 
+/** Refusal codes; the ones the query parser shares come from QUERY_REFUSALS. */
 export type GeoRefusalCode =
 	| "CROSS_VERSION_AGGREGATION_REFUSED"
 	| "INTENSIVE_QUANTITY_NOT_SUMMABLE"
 	| "PRECISION_BELOW_CEILING"
-	| "MONETARY_CONVENTIONS_PENDING"
-	| "ATT_D_EXCLUDED_FROM_OFFICIAL"
 	| "GRAIN_CARDINALITY_EXCEEDED"
-	| "MULTI_SERIES_CHOROPLETH"
-	| "MEASURE_NOT_AVAILABLE"
-	| "MALFORMED_REQUEST";
+	| "MALFORMED_REQUEST"
+	| (typeof QUERY_REFUSALS)[keyof typeof QUERY_REFUSALS];
 
 /** A resolved geo request: the selection, the map level and the basis. */
 export interface GeoRequest {
@@ -264,6 +266,25 @@ function toCell(c: CellRow): GeoCell {
 }
 
 /**
+ * The atoms a request reads: one per record (disaster impact) or one per
+ * event (the two event dimensions), in the same shape, so one aggregation
+ * serves all three dimensions. An event counts as one, always reported.
+ */
+function atomSource(req: GeoRequest): SQL {
+	if (req.query.dimension === "disaster_impact") return sql`geo.impact_atom`;
+	return sql`(
+		SELECT country_accounts_id, event_id AS disaster_record_id,
+			'events'::text AS measure, 1::numeric AS value, 'reported'::text AS value_state,
+			att_grade, NULL::text AS geo_precision, '{}'::text[] AS plausibility_flags,
+			event_status AS record_status, retired, division_id, unattributed_reason,
+			start_instant, end_instant, hip_type_id, hip_cluster_id, hip_hazard_id,
+			migration_run_id, derivation
+		FROM geo.event_atom
+		WHERE dimension = ${req.query.dimension}
+	)`;
+}
+
+/**
  * Places in-scope atoms at `level` through each division's ancestor, one
  * record once per target division and measure. The first measure carries the
  * record-level reports: unattributed reasons, the grade-floor exclusion,
@@ -286,7 +307,7 @@ async function aggregate(
 
 	const res = await dr.execute(sql`
 		WITH scope AS (
-			SELECT a.* FROM geo.impact_atom a
+			SELECT a.* FROM ${atomSource(req)} a
 			WHERE ${scopeFilters(t, req)}
 				AND a.measure IN (${sql.join(
 					measures.map((m) => sql`${m}`),
@@ -308,7 +329,7 @@ async function aggregate(
 			SELECT DISTINCT ON (g.measure, da.ancestor_id, g.disaster_record_id)
 				g.measure, da.ancestor_id AS division_id, g.disaster_record_id,
 				g.value, g.value_state, g.att_grade, g.geo_precision,
-				g.plausibility_flags, g.record_status, g.migration_run_id
+				g.plausibility_flags, g.record_status, g.migration_run_id, g.derivation
 			FROM graded g
 			JOIN geo.division_ancestor da
 				ON da.division_id = g.division_id
@@ -389,7 +410,10 @@ async function aggregate(
 			(SELECT COUNT(*) FROM (
 				SELECT disaster_record_id FROM placed WHERE measure = ${m0}
 				GROUP BY disaster_record_id HAVING COUNT(*) > 1) m) AS multi_division,
-			(SELECT COALESCE(bool_or(record_status <> 'published'), false) FROM placed) AS provisional
+			(SELECT COALESCE(bool_or(record_status <> 'published'), false) FROM placed) AS provisional,
+			(SELECT COALESCE(jsonb_object_agg(derivation, n), '{}'::jsonb)
+				FROM (SELECT derivation, COUNT(DISTINCT disaster_record_id) AS n
+					FROM placed WHERE measure = ${m0} GROUP BY derivation) dv) AS derivations
 	`);
 
 	const row = res.rows[0] as {
@@ -401,6 +425,7 @@ async function aggregate(
 		run_ids: string[];
 		multi_division: string | number;
 		provisional: boolean;
+		derivations: Record<string, number | string>;
 	};
 
 	const cells = new Map<string, GeoCell[]>();
@@ -432,6 +457,9 @@ async function aggregate(
 		runIds: row.run_ids.slice().sort(),
 		multiDivisionRecords: Number(row.multi_division),
 		provisional: Boolean(row.provisional),
+		derivations: Object.fromEntries(
+			Object.entries(row.derivations).map(([k, v]) => [k, Number(v)]),
+		),
 	};
 }
 
@@ -470,15 +498,27 @@ export async function getChoropleth(
 	meta.migrationRunIds = agg.runIds;
 	meta.provisional = agg.provisional && basisIncludesProvisional(req.audience);
 
+	const dimension = req.query.dimension;
+	const isEvent = dimension !== "disaster_impact";
+	const unit = isEvent ? "events" : "records";
 	const captions = [
-		measure === "records"
-			? "Counts of disaster records."
-			: "Human effects from record totals. Records that did not report the measure are counted, not treated as zero.",
+		isEvent
+			? `Counts of ${dimension === "disaster_event" ? "disaster" : "hazardous"} events.`
+			: measure === "records"
+				? "Counts of disaster records."
+				: measure.startsWith("houses_")
+					? "House counts from Housing damage records. Records that did not report the measure are counted, not treated as zero."
+					: "Human effects from record totals. Records that did not report the measure are counted, not treated as zero.",
 		"Reporting completeness is not modelled.",
 	];
+	if (isEvent && (agg.derivations.from_records ?? 0) > 0) {
+		captions.push(
+			`${agg.derivations.from_records} events have no area of their own and are placed where their records are.`,
+		);
+	}
 	if (agg.multiDivisionRecords > 0) {
 		captions.push(
-			`${agg.multiDivisionRecords} records are linked to more than one area and count in each, so area values do not add up to a total.`,
+			`${agg.multiDivisionRecords} ${unit} are linked to more than one area and count in each, so area values do not add up to a total.`,
 		);
 	}
 	if (meta.provisional) {
@@ -487,7 +527,8 @@ export async function getChoropleth(
 
 	return {
 		meta,
-		entity: "record",
+		dimension,
+		entity: isEvent ? dimension : "record",
 		measure,
 		quantityType: "extensive" as const,
 		level,
@@ -497,6 +538,7 @@ export async function getChoropleth(
 			excluded_by_grade_floor: agg.excludedByGradeFloor,
 		}),
 		multiDivisionRecords: agg.multiDivisionRecords,
+		...(isEvent && { derivation: agg.derivations }),
 		caption: captions.join(" "),
 	};
 }

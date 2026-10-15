@@ -19,7 +19,7 @@ import {
 	type DeltaQuery,
 	type QueryIssue,
 } from "~/utils/deltaQuery";
-import { isGeoMeasure } from "~/utils/geoMeasures";
+import { geoMeasuresFor, isGeoMeasure } from "~/utils/geoMeasures";
 import { getCountryAccountsIdFromSession } from "~/utils/session";
 
 export interface GeoRequestContext {
@@ -155,7 +155,12 @@ const REFUSING_PARAMS = new Set([
  */
 export async function resolveGeoRequest(
 	ctx: GeoRequestContext,
-	opts: { requireMeasure: boolean; requireLevel: boolean },
+	opts: {
+		requireMeasure: boolean;
+		requireLevel: boolean;
+		/** The view serves the two event dimensions as well as disaster impact. */
+		eventDimensions?: boolean;
+	},
 ): Promise<GeoRequest> {
 	const { query, issues } = parseDeltaQuery(ctx.url.searchParams);
 	const notApplied: string[] = [];
@@ -182,7 +187,12 @@ export async function resolveGeoRequest(
 
 async function resolveParsed(
 	ctx: GeoRequestContext,
-	opts: { requireMeasure: boolean; requireLevel: boolean },
+	opts: {
+		requireMeasure: boolean;
+		requireLevel: boolean;
+		/** The view serves the two event dimensions as well as disaster impact. */
+		eventDimensions?: boolean;
+	},
 	query: DeltaQuery,
 	issues: QueryIssue[],
 	notApplied: string[],
@@ -192,7 +202,7 @@ async function resolveParsed(
 	for (const issue of issues) {
 		if (issue.reason === QUERY_REFUSALS.multiSeries) {
 			throw new GeoRefusalError(
-				"MULTI_SERIES_CHOROPLETH",
+				QUERY_REFUSALS.multiSeries,
 				"A choropleth shows one measure. Several were requested.",
 				"TR-167",
 				"Request one measure per map, or use the table view to compare measures.",
@@ -200,7 +210,7 @@ async function resolveParsed(
 		}
 		if (issue.reason === QUERY_REFUSALS.attD) {
 			throw new GeoRefusalError(
-				"ATT_D_EXCLUDED_FROM_OFFICIAL",
+				QUERY_REFUSALS.attD,
 				"Figures attributed by downward split (ATT-D) are excluded from geoportal figures.",
 				"VIS-Q05; pack decision 13",
 				"Use minAttGrade A, B or C.",
@@ -219,21 +229,29 @@ async function resolveParsed(
 		}
 	}
 
+	const isEventDim = query.dimension !== "disaster_impact";
+	if (isEventDim && !opts.eventDimensions) {
+		notApplied.push(`dim: this view counts disaster records`);
+		query.dimension = "disaster_impact";
+	}
+	if (!query.measure && query.dimension !== "disaster_impact") {
+		query.measure = "events";
+	}
 	if (query.measure) {
 		if (isMonetaryMeasure(query.measure)) {
 			throw new GeoRefusalError(
-				"MONETARY_CONVENTIONS_PENDING",
+				QUERY_REFUSALS.monetaryPending,
 				"Monetary figures are not totalled until the money conventions are confirmed.",
 				"TR-167; PD-05 refusal table",
 				"Show human effects or record counts, or wait for the currency and deflator ruling.",
 			);
 		}
-		if (!isGeoMeasure(query.measure)) {
+		if (!isGeoMeasure(query.measure, query.dimension)) {
 			throw new GeoRefusalError(
-				"MEASURE_NOT_AVAILABLE",
-				`The measure "${query.measure}" is not in the geoportal read model yet.`,
+				QUERY_REFUSALS.measureNotAvailable,
+				`The measure "${query.measure}" is not available for the ${query.dimension} dimension.`,
 				"TR-260",
-				"Use records or a human-effect total: deaths, injured, missing, affected_direct, affected_indirect, displaced.",
+				`Use one of: ${geoMeasuresFor(query.dimension).join(", ")}.`,
 			);
 		}
 	} else if (opts.requireMeasure) {
@@ -250,11 +268,6 @@ async function resolveParsed(
 		level = n;
 	}
 
-	if (query.dimension !== "disaster_impact") {
-		notApplied.push(
-			"dim: only disaster_impact is available until increment I-1",
-		);
-	}
 	const w = query.where;
 	if (w.sectors?.length) notApplied.push("sector: not in the read model");
 	if (w.humanEffects?.length) {

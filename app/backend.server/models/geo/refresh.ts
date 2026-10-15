@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { dr, type Dr } from "~/db.server";
 import { GEO_HUMAN_MEASURES, GEO_METHOD_VERSION } from "~/utils/geoMeasures";
 import { notRetired } from "~/utils/approvalBasis";
+import { HOUSING_SECTOR_ID } from "~/utils/geoMeasures";
 import { plausibilitySourceFields } from "~/utils/plausibility";
 
 // Simplification tolerances in degrees, about half a screen pixel per tier.
@@ -46,6 +47,9 @@ export async function refreshGeoReadModel(
 		// One refresh per tenant at a time: a second caller waits, never fails.
 		await tx.execute(
 			sql`SELECT pg_advisory_xact_lock(hashtext('geo.refresh:' || ${t}))`,
+		);
+		await tx.execute(
+			sql`DELETE FROM geo.event_atom WHERE country_accounts_id = ${t}`,
 		);
 		await tx.execute(
 			sql`DELETE FROM geo.impact_atom WHERE country_accounts_id = ${t}`,
@@ -111,8 +115,26 @@ export async function refreshGeoReadModel(
 			sql`, `,
 		);
 
+		const fieldArray = (fields: string[]) =>
+			fields.length
+				? sql`ARRAY[${sql.join(
+						fields.map((f) => sql`${f}`),
+						sql`, `,
+					)}]::text[]`
+				: sql`ARRAY[]::text[]`;
+		const houseRows = sql`
+			('houses_destroyed'::text, h.td_present, h.td::numeric, ${fieldArray(plausibilitySourceFields("houses_destroyed"))}),
+			('houses_damaged'::text, h.pd_present, h.pd::numeric, ${fieldArray(plausibilitySourceFields("houses_damaged"))})
+		`;
+
 		await tx.execute(sql`
-			WITH rec AS (
+			WITH RECURSIVE housing_sectors AS (
+				SELECT id FROM public.sector WHERE id = ${HOUSING_SECTOR_ID}
+				UNION
+				SELECT s.id FROM public.sector s
+				JOIN housing_sectors hs ON s.parent_id = hs.id
+			),
+			rec AS (
 				SELECT
 					r.id, r.disaster_event_id, de.hazardous_event_id,
 					NULLIF(r.hip_type_id, '') AS hip_type_id,
@@ -201,6 +223,18 @@ export async function refreshGeoReadModel(
 				WHERE NOT EXISTS (SELECT 1 FROM linked l WHERE l.record_id = rec.id)
 					AND NOT (gh.n_covered IS NOT NULL AND gh.n_covered = 1 AND gh.n = 1)
 			),
+			houses AS (
+				SELECT dm.record_id,
+					SUM(dm.td_damage_amount) AS td,
+					bool_or(dm.td_damage_amount IS NOT NULL) AS td_present,
+					SUM(dm.pd_damage_amount) AS pd,
+					bool_or(dm.pd_damage_amount IS NOT NULL) AS pd_present
+				FROM public.damages dm
+				JOIN rec ON rec.id = dm.record_id
+				WHERE dm.sector_id IN (SELECT id FROM housing_sectors)
+					AND dm.unit = 'number_count'
+				GROUP BY dm.record_id
+			),
 			measured AS (
 				SELECT rec.id AS record_id, m.measure,
 					CASE
@@ -235,6 +269,33 @@ export async function refreshGeoReadModel(
 				) hcp ON true
 				CROSS JOIN LATERAL (VALUES ${measureRows}) AS m(measure, flag, total, fields)
 				UNION ALL
+				-- Houses: a present count is reported, a stored 0 is a confirmed
+				-- zero (the loader writes 0 only when the source reported the field),
+				-- no Housing row or NULL is not reported.
+				SELECT rec.id, hm.measure,
+					CASE
+						WHEN hm.present AND hm.total > 0 THEN 'reported'
+						WHEN hm.present AND hm.total = 0 THEN 'zero_confirmed'
+						ELSE 'not_reported'
+					END,
+					CASE
+						WHEN hm.present AND hm.total > 0 THEN hm.total
+						WHEN hm.present AND hm.total = 0 THEN 0
+					END,
+					ARRAY(
+						SELECT DISTINCT pf ->> 'code'
+						FROM jsonb_array_elements(
+							CASE WHEN jsonb_typeof(rec.mig -> 'plausibility_flags') = 'array'
+								THEN rec.mig -> 'plausibility_flags' ELSE '[]'::jsonb END
+						) AS pf
+						WHERE jsonb_typeof(pf -> 'fields') = 'array'
+							AND pf -> 'fields' ?| hm.fields
+							AND pf ->> 'code' IS NOT NULL
+					)
+				FROM rec
+				LEFT JOIN houses h ON h.record_id = rec.id
+				CROSS JOIN LATERAL (VALUES ${houseRows}) AS hm(measure, present, total, fields)
+				UNION ALL
 				SELECT rec.id, 'records', 'reported', 1::numeric, ARRAY[]::text[]
 				FROM rec
 			)
@@ -261,10 +322,109 @@ export async function refreshGeoReadModel(
 			JOIN measured ms ON ms.record_id = rec.id
 		`);
 
+		// Event dimensions (I-1). A division link is used as recorded; an event
+		// without one is placed where its member records are placed, with the
+		// best member grade. An event that cannot be placed keeps one row with
+		// its reason. Hazardous events carry no legacy_data, so none is retired.
+		await tx.execute(sql`
+			WITH ev AS (
+				SELECT e.id, 'disaster_event'::text AS dimension,
+					NULLIF(e.hip_type_id, '') AS hip_type_id,
+					NULLIF(e.hip_cluster_id, '') AS hip_cluster_id,
+					NULLIF(e.hip_hazard_id, '') AS hip_hazard_id,
+					geo.date_floor(e.start_date) AS start_instant,
+					COALESCE(geo.date_ceil(NULLIF(e.end_date, '')), geo.date_ceil(e.start_date)) AS end_instant,
+					geo.date_ceil(NULLIF(e.end_date, '')) IS NULL
+						AND geo.date_floor(e.start_date) IS NOT NULL AS end_from_start,
+					geo.date_precision(e.start_date) AS date_precision,
+					e."approvalStatus" AS status,
+					NOT ${notRetired(sql`e.legacy_data`)} AS retired,
+					CASE WHEN jsonb_typeof(e.legacy_data -> 'migration') = 'object'
+						THEN e.legacy_data -> 'migration' END AS mig
+				FROM public.disaster_event e
+				WHERE e.country_accounts_id = ${t}
+				UNION ALL
+				SELECT h.id, 'hazardous_event',
+					NULLIF(h.hip_type_id, ''), NULLIF(h.hip_cluster_id, ''), NULLIF(h.hip_hazard_id, ''),
+					geo.date_floor(h.start_date),
+					COALESCE(geo.date_ceil(NULLIF(h.end_date, '')), geo.date_ceil(h.start_date)),
+					geo.date_ceil(NULLIF(h.end_date, '')) IS NULL
+						AND geo.date_floor(h.start_date) IS NOT NULL,
+					geo.date_precision(h.start_date),
+					h."approvalStatus", false, NULL::jsonb
+				FROM public.hazardous_event h
+				WHERE h.country_accounts_id = ${t}
+			),
+			linked AS (
+				SELECT DISTINCT l.event_id, d.id AS division_id, d.level::int AS admin_level,
+					CASE WHEN COALESCE(d.national_id, '') <> '' THEN 'B' ELSE 'C' END AS att_grade
+				FROM (
+					SELECT disaster_event_id AS event_id, division_id FROM public.disaster_event_division
+					UNION ALL
+					SELECT hazardous_event_id, division_id FROM public.hazardous_event_division
+				) l
+				JOIN ev ON ev.id = l.event_id
+				JOIN public.division d ON d.id = l.division_id AND d.country_accounts_id = ${t}
+			),
+			members AS (
+				SELECT ia.disaster_event_id AS event_id, ia.division_id, ia.admin_level, ia.att_grade,
+					ia.disaster_record_id
+				FROM geo.impact_atom ia
+				WHERE ia.country_accounts_id = ${t} AND ia.measure = 'records'
+					AND ia.disaster_event_id IS NOT NULL AND NOT ia.retired
+				UNION ALL
+				SELECT ia.hazardous_event_id, ia.division_id, ia.admin_level, ia.att_grade,
+					ia.disaster_record_id
+				FROM geo.impact_atom ia
+				WHERE ia.country_accounts_id = ${t} AND ia.measure = 'records'
+					AND ia.hazardous_event_id IS NOT NULL AND NOT ia.retired
+			),
+			from_records AS (
+				SELECT m.event_id, m.division_id, m.admin_level, min(m.att_grade) AS att_grade,
+					count(DISTINCT m.disaster_record_id)::int AS member_records
+				FROM members m
+				WHERE m.division_id IS NOT NULL
+					AND NOT EXISTS (SELECT 1 FROM linked l WHERE l.event_id = m.event_id)
+				GROUP BY m.event_id, m.division_id, m.admin_level
+			),
+			placed AS (
+				SELECT event_id, division_id, admin_level, att_grade,
+					'as_recorded'::text AS derivation, 0 AS member_records,
+					NULL::text AS unattributed_reason
+				FROM linked
+				UNION ALL
+				SELECT event_id, division_id, admin_level, att_grade, 'from_records', member_records, NULL
+				FROM from_records
+				UNION ALL
+				SELECT ev.id, NULL::uuid, NULL::int, NULL::text, 'as_recorded', 0,
+					CASE WHEN EXISTS (SELECT 1 FROM members m WHERE m.event_id = ev.id)
+						THEN 'members_unplaced' ELSE 'no_division_row' END
+				FROM ev
+				WHERE NOT EXISTS (SELECT 1 FROM linked l WHERE l.event_id = ev.id)
+					AND NOT EXISTS (SELECT 1 FROM from_records f WHERE f.event_id = ev.id)
+			)
+			INSERT INTO geo.event_atom (
+				country_accounts_id, dimension, event_id, division_id, admin_level,
+				unattributed_reason, att_grade, derivation, member_records,
+				hip_type_id, hip_cluster_id, hip_hazard_id,
+				start_instant, end_instant, end_from_start, date_precision,
+				event_status, provisional, retired, migration_run_id, method_version
+			)
+			SELECT ${t}::uuid, ev.dimension, ev.id, p.division_id, p.admin_level,
+				p.unattributed_reason, p.att_grade, p.derivation, p.member_records,
+				ev.hip_type_id, ev.hip_cluster_id, ev.hip_hazard_id,
+				ev.start_instant, ev.end_instant, ev.end_from_start, ev.date_precision,
+				ev.status, ev.mig IS NOT NULL AND ev.status <> 'published', ev.retired,
+				ev.mig ->> 'run_id', ${GEO_METHOD_VERSION}
+			FROM ev
+			JOIN placed p ON p.event_id = ev.id
+		`);
+
 		const counts = await tx.execute(sql`
 			SELECT
 				(SELECT count(*) FROM geo.division_geom_cache WHERE country_accounts_id = ${t})::int AS division_count,
-				(SELECT count(*) FROM geo.impact_atom WHERE country_accounts_id = ${t})::int AS atom_count,
+				((SELECT count(*) FROM geo.impact_atom WHERE country_accounts_id = ${t})
+					+ (SELECT count(*) FROM geo.event_atom WHERE country_accounts_id = ${t}))::int AS atom_count,
 				now() AS refreshed_at
 		`);
 		const row = counts.rows[0] as {
