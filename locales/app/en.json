@@ -247,7 +247,7 @@
   {
     "id": "analysis.affected_areas_zones",
     "translation": "Affected areas/zones",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1325"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1359"
   },
   {
     "id": "analysis.affected_people",
@@ -267,7 +267,7 @@
   {
     "id": "analysis.affiliated_records",
     "translation": "Affiliated record(s)",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:763"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:764"
   },
   {
     "id": "analysis.age_group_distribution_tooltip",
@@ -277,7 +277,7 @@
   {
     "id": "analysis.apply_filters",
     "translation": "Apply filters",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:699"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:700"
   },
   {
     "id": "analysis.applying_filters",
@@ -302,17 +302,17 @@
   {
     "id": "analysis.children_adults_and_seniors_affected",
     "translation": "Children, adults, and seniors affected",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1271"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1305"
   },
   {
     "id": "analysis.clear",
     "translation": "Clear",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:710"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:711"
   },
   {
     "id": "analysis.damage",
     "translation": "Damage",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1449"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1483"
   },
   {
     "id": "analysis.damage_id",
@@ -322,7 +322,7 @@
   {
     "id": "analysis.damage_in_currency",
     "translation": "Damage in {currency}",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:835"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:836"
   },
   {
     "id": "analysis.damage_in_sector_and_currency",
@@ -357,7 +357,7 @@
   {
     "id": "analysis.data_based_on_published_records",
     "translation": "Data shown is based on published records",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1642"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1676"
   },
   {
     "id": "analysis.data_not_recorded_or_still_processing",
@@ -372,7 +372,7 @@
   {
     "id": "analysis.date_range",
     "translation": "Date: {startDate} to {endDate}",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:804"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:805"
   },
   {
     "id": "analysis.dead_icon",
@@ -382,7 +382,7 @@
   {
     "id": "analysis.death",
     "translation": "Death",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:968"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:969"
   },
   {
     "id": "analysis.deaths",
@@ -402,7 +402,7 @@
   {
     "id": "analysis.details_of_effects",
     "translation": "Details of effects",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1532"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1566"
   },
   {
     "id": "analysis.disability_poverty_distribution_tooltip",
@@ -412,17 +412,17 @@
   {
     "id": "analysis.disaster_event",
     "translation": "Disaster event",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:668"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:669"
   },
   {
     "id": "analysis.disaster_event_impacts_on_sectors",
     "translation": "{disaster_event} impacts on sectors",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1436"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1470"
   },
   {
     "id": "analysis.disaster_events_analysis",
     "translation": "Disaster events analysis",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:645"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:646"
   },
   {
     "id": "analysis.disaster_events_impacting_sectors",
@@ -462,7 +462,7 @@
   {
     "id": "analysis.displaced",
     "translation": "Displaced",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1104"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1138"
   },
   {
     "id": "analysis.displaced_people",
@@ -617,52 +617,57 @@
   {
     "id": "analysis.human_effects",
     "translation": "Human effects",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:918"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:919"
   },
   {
     "id": "analysis.human_effects.children_adults_and_seniors_affected_tooltip",
     "translation": "Children, adults, and seniors affected is the number of children, adults, and seniors who were affected by the disaster event.",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1282"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1316"
   },
   {
     "id": "analysis.human_effects.death_tooltip",
     "translation": "Death is the number of people who died as a result of the disaster event.",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:976"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:977"
   },
   {
     "id": "analysis.human_effects.displaced_tooltip",
     "translation": "Displaced is the number of people who were displaced as a result of the disaster event.",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1115"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1149"
   },
   {
     "id": "analysis.human_effects.injured_tooltip",
     "translation": "Injured is the number of people who were injured as a result of the disaster event.",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1009"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1010"
   },
   {
     "id": "analysis.human_effects.men_and_women_affected_tooltip",
     "translation": "Men and women affected is the number of men and women who were affected by the disaster event.",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1160"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1194"
   },
   {
     "id": "analysis.human_effects.missing_tooltip",
     "translation": "Missing is the number of people who were missing as a result of the disaster event.",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1042"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1043"
   },
   {
     "id": "analysis.human_effects.people_directly_affected_tooltip",
     "translation": "People directly affected (old DesInventar) is the number of people who were directly affected by the disaster event.",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1082"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1083"
+  },
+  {
+    "id": "analysis.human_effects.people_indirectly_affected_tooltip",
+    "translation": "People indirectly affected (old DesInventar) is the number of people who were indirectly affected by the disaster event.",
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1116"
   },
   {
     "id": "analysis.human_effects.persons_with_disabilities_and_living_in_poverty_affected_tooltip",
     "translation": "Persons with disabilities and living in poverty affected is the number of persons with disabilities and living in poverty who were affected by the disaster event.",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1232"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1266"
   },
   {
-    "id": "analysis.human_effects.total_people_affected_tooltip",
-    "translation": "Total people affected is the sum of injured, missing, directly affected people and displaced",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:939"
+    "id": "analysis.human_effects.total_affected_direct_indirect_tooltip",
+    "translation": "Total affected is the sum of people directly affected and people indirectly affected. Injured, missing and displaced people are shown separately and are not added in.",
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:940"
   },
   {
     "id": "analysis.impact_by_geographic_level",
@@ -712,7 +717,7 @@
   {
     "id": "analysis.injured",
     "translation": "Injured",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:998"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:999"
   },
   {
     "id": "analysis.injured_icon",
@@ -772,7 +777,7 @@
   {
     "id": "analysis.losses_in_currency",
     "translation": "Losses in {currency}",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:859"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:860"
   },
   {
     "id": "analysis.losses_in_sector_and_currency",
@@ -802,7 +807,7 @@
   {
     "id": "analysis.men_and_women_affected",
     "translation": "Men and women affected",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1148"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1182"
   },
   {
     "id": "analysis.metric_in_currency",
@@ -812,7 +817,7 @@
   {
     "id": "analysis.missing",
     "translation": "Missing",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1031"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1032"
   },
   {
     "id": "analysis.missing_icon",
@@ -1007,12 +1012,17 @@
   {
     "id": "analysis.people_directly_affected_old_desinventar",
     "translation": "People directly affected (old DesInventar)",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1071"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1072"
+  },
+  {
+    "id": "analysis.people_indirectly_affected_old_desinventar",
+    "translation": "People indirectly affected (old DesInventar)",
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1105"
   },
   {
     "id": "analysis.persons_with_disabilities_and_living_in_poverty_affected",
     "translation": "Persons with disabilities and living in poverty affected",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1221"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1255"
   },
   {
     "id": "analysis.please_select_filters_to_view_geographic_impact",
@@ -1052,7 +1062,7 @@
   {
     "id": "analysis.recovery_in_currency",
     "translation": "Recovery in {currency}",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:884"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:885"
   },
   {
     "id": "analysis.recovery_in_sector_and_currency",
@@ -1062,7 +1072,7 @@
   {
     "id": "analysis.recovery_need",
     "translation": "Recovery need",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1487"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1521"
   },
   {
     "id": "analysis.repair_replacement",
@@ -1122,7 +1132,7 @@
   {
     "id": "analysis.sector",
     "translation": "Sector",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1544"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1578"
   },
   {
     "id": "analysis.sector_classification",
@@ -1152,7 +1162,7 @@
   {
     "id": "analysis.select_and_apply_filters_above",
     "translation": "Please select and apply filters above to view the analysis.",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:746"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:747"
   },
   {
     "id": "analysis.select_hazard_cluster",
@@ -1167,12 +1177,12 @@
   {
     "id": "analysis.select_sector",
     "translation": "Select sector",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1559"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1593"
   },
   {
     "id": "analysis.select_sector_first",
     "translation": "Select sector first",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1588"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1622"
   },
   {
     "id": "analysis.select_sector_to_view_hazard_impact",
@@ -1207,7 +1217,7 @@
   {
     "id": "analysis.sub_sector",
     "translation": "Sub sector",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1576"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1610"
   },
   {
     "id": "analysis.suppressed",
@@ -1222,17 +1232,22 @@
   {
     "id": "analysis.total_affected",
     "translation": "Total affected",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1378"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1412"
+  },
+  {
+    "id": "analysis.total_affected_direct_indirect",
+    "translation": "Total affected (directly and indirectly)",
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:929"
   },
   {
     "id": "analysis.total_damage",
     "translation": "Total damage",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:410"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:411"
   },
   {
     "id": "analysis.total_damage_in_currency",
     "translation": "Total damage in {currency}",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1352"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1386"
   },
   {
     "id": "analysis.total_damages",
@@ -1247,7 +1262,7 @@
   {
     "id": "analysis.total_damages_legend",
     "translation": "Total damages in {currency}",
-    "description": "Legend title showing total damages; placeholder {currency} is the currency code File: app/routes/$lang+/analytics+/disaster-events.tsx:622"
+    "description": "Legend title showing total damages; placeholder {currency} is the currency code File: app/routes/$lang+/analytics+/disaster-events.tsx:623"
   },
   {
     "id": "analysis.total_disaster_events_impacting_sector",
@@ -1287,12 +1302,12 @@
   {
     "id": "analysis.total_losses",
     "translation": "Total losses",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:388"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:389"
   },
   {
     "id": "analysis.total_losses_in_currency",
     "translation": "Total losses in {currency}",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1397"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1431"
   },
   {
     "id": "analysis.total_losses_monetary_value_of_losses_caused_by_hazards",
@@ -1337,7 +1352,7 @@
   {
     "id": "analysis.total_people_affected",
     "translation": "Total people affected",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:367"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:368"
   },
   {
     "id": "analysis.total_people_affected_tooltip",
@@ -1367,12 +1382,12 @@
   {
     "id": "analysis.view_records",
     "translation": "View records",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:776"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:777"
   },
   {
     "id": "analysis.welcome_disaster_events_dashboard",
     "translation": "Welcome to the disaster events dashboard! 🌟",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:740"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:741"
   },
   {
     "id": "analysis.welcome_hazard_dashboard",
@@ -6007,7 +6022,7 @@
   {
     "id": "human_effects.men",
     "translation": "Men",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1174"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1208"
   },
   {
     "id": "human_effects.missing",
@@ -6037,7 +6052,7 @@
   {
     "id": "human_effects.other_non_binary",
     "translation": "Other non-binary",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1188"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1222"
   },
   {
     "id": "human_effects.permanent",
@@ -6137,7 +6152,7 @@
   {
     "id": "human_effects.women",
     "translation": "Women",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1181"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1215"
   },
   {
     "id": "human_effects.you_have_unsaved_changes",
@@ -6217,7 +6232,7 @@
   {
     "id": "meta.disaster_events_analysis",
     "translation": "Disaster events analysis",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:464"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:465"
   },
   {
     "id": "meta.edit_user",
@@ -6692,7 +6707,7 @@
   {
     "id": "record.data_source",
     "translation": "Data source",
-    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:821"
+    "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:822"
   },
   {
     "id": "record.delete_confirmation",
