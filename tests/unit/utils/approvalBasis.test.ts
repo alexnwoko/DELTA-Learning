@@ -107,20 +107,21 @@ describe("provisional records", () => {
 
 // The approval basis replaces every ad-hoc filter on the analytics read
 // paths. A new hard-coded status filter there is a regression.
-describe("no ad-hoc approval filters on analytics read paths", () => {
-	const roots = [
-		"app/backend.server/models/analytics",
-		"app/backend.server/handlers/analytics",
-		"app/routes/$lang+/analytics+",
-	];
+describe("no ad-hoc approval filters in models, handlers or routes (TR-192)", () => {
+	// TR-192: no model, handler or route file hard-codes an approval-status
+	// read filter; approvalBasis.ts holds every list. Writes that move a
+	// record between statuses, and workflow queues on draft, needs-revision
+	// or waiting-for-validation ("pending my action"), are not read bases and
+	// are not matched; published and validated decide visibility.
+	const roots = ["app/backend.server", "app/routes"];
 	const files = (dir: string): string[] =>
 		readdirSync(dir).flatMap((f) => {
 			const p = join(dir, f);
 			return statSync(p).isDirectory() ? files(p) : [p];
 		});
 	const adHoc = [
-		/approvalStatus"?\)?\s*(IN|=|ILIKE)\s*\(?'(published|validated)'/,
-		/approvalStatus,\s*"(published|validated)"\)/,
+		/approvalStatus"?\)?\s*(IN|=|ILIKE|<>|!=)\s*\(?'(published|validated)'/,
+		/eq\([^)]*approvalStatus,\s*["'](published|validated)["']\)/,
 	];
 
 	it("finds no status literal filter", () => {

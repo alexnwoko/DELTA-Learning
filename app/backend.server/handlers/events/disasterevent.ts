@@ -1,5 +1,5 @@
 import { disasterRecordsTable } from "~/drizzle/schema/disasterRecordsTable";
-import { approvalBasis } from "~/utils/approvalBasis";
+import { approvalBasis, dataViewerListBasis } from "~/utils/approvalBasis";
 import { declarationStatusTable } from "~/drizzle/schema/declarationStatusTable";
 import { disasterEventDeclarationTable } from "~/drizzle/schema/disasterEventDeclarationTable";
 import { disasterEventAssessmentTable } from "~/drizzle/schema/disasterEventAssessmentTable";
@@ -65,8 +65,7 @@ export async function disasterEventsLoader(args: disasterEventLoaderArgs) {
 
 		// New filters
 		disasterEventName: url.searchParams.get("disasterEventName") || "",
-		recordingOrganization:
-			url.searchParams.get("recordingOrganization") || "",
+		recordingOrganization: url.searchParams.get("recordingOrganization") || "",
 		fromDate: url.searchParams.get("fromDate") || "",
 		toDate: url.searchParams.get("toDate") || "",
 		recordStatus: url.searchParams.get("recordStatus") || "",
@@ -278,14 +277,11 @@ export async function disasterEventsLoader(args: disasterEventLoaderArgs) {
 			: undefined,
 	);
 
-	// in case of data viewer role, force the filter on approvalStatus to validated and published
+	// in case of data viewer role, force the filter on approvalStatus to validated and published (TR-192: list held in approvalBasis)
 	if (userRole === "data-viewer") {
 		condition = and(
 			condition,
-			or(
-				eq(disasterEventTable.approvalStatus, "validated"),
-				eq(disasterEventTable.approvalStatus, "published"),
-			),
+			dataViewerListBasis(disasterEventTable.approvalStatus),
 		);
 	}
 
