@@ -33,9 +33,60 @@ export const HUMAN_EFFECTS = [
 ] as const;
 export type QueryHumanEffect = (typeof HUMAN_EFFECTS)[number];
 
+/**
+ * One measure per query (Geoportal proposal 2026-10-15). Monetary measures
+ * parse, but every endpoint refuses them with MONETARY_CONVENTIONS_PENDING
+ * until the money convention (D-04, memo 5b) is ruled.
+ */
+export const QUERY_MEASURES = [
+	"records",
+	...HUMAN_EFFECTS,
+	"houses_destroyed",
+	"houses_damaged",
+	"evacuated",
+	"relocated",
+	"events",
+	"records_per_event",
+	"damages",
+	"losses",
+	"disruption",
+	"total_damage_amount",
+] as const;
+export type QueryMeasure = (typeof QUERY_MEASURES)[number];
+
+export const MONETARY_MEASURES: readonly QueryMeasure[] = [
+	"damages",
+	"losses",
+	"disruption",
+	"total_damage_amount",
+];
+
+export function isMonetaryMeasure(m: QueryMeasure): boolean {
+	return MONETARY_MEASURES.includes(m);
+}
+
+/**
+ * Attribution grade floor (TR-071). D is never a floor: grade D is excluded
+ * from official reporting. A floor narrows attribution, not the record set,
+ * and every response that applies it reports excluded_by_grade_floor beside
+ * the figure (TR-072).
+ */
+export const ATT_GRADE_FLOORS = ["A", "B", "C"] as const;
+export type AttGradeFloor = (typeof ATT_GRADE_FLOORS)[number];
+
+/** Refusal codes the query parser can raise (PD-05 refusal table). */
+export const QUERY_REFUSALS = {
+	multiSeries: "MULTI_SERIES_CHOROPLETH",
+	attD: "ATT_D_EXCLUDED_FROM_OFFICIAL",
+} as const;
+
 export interface DeltaQuery {
 	contract: typeof QUERY_CONTRACT;
 	dimension: QueryDimension;
+	/** One measure; absent means the view's default measure. */
+	measure?: QueryMeasure;
+	/** Attribution grade floor; absent means no floor. */
+	minAttGrade?: AttGradeFloor;
 	scope: {
 		basis: QueryBasis;
 		/** ISO date the figures are read as of; absent means now. */
@@ -101,6 +152,8 @@ const P = {
 	sector: "sector",
 	effect: "effect",
 	disasterEvent: "disasterEvent",
+	measure: "measure",
+	minAttGrade: "minAttGrade",
 	hazardousEvent: "hazardousEvent",
 } as const;
 
@@ -134,6 +187,34 @@ export function parseDeltaQuery(params: URLSearchParams): ParsedQuery {
 		if (d) query.dimension = d;
 		else
 			issues.push({ param: P.dimension, reason: `unknown dimension "${dim}"` });
+	}
+
+	const measures = params.getAll(P.measure).filter((m) => m !== "");
+	if (measures.length > 1) {
+		issues.push({ param: P.measure, reason: QUERY_REFUSALS.multiSeries });
+	} else if (measures.length === 1) {
+		if ((QUERY_MEASURES as readonly string[]).includes(measures[0])) {
+			query.measure = measures[0] as QueryMeasure;
+		} else {
+			issues.push({
+				param: P.measure,
+				reason: `unknown measure "${measures[0]}"`,
+			});
+		}
+	}
+
+	const floor = params.get(P.minAttGrade);
+	if (floor !== null && floor !== "") {
+		if ((ATT_GRADE_FLOORS as readonly string[]).includes(floor)) {
+			query.minAttGrade = floor as AttGradeFloor;
+		} else if (floor === "D") {
+			issues.push({ param: P.minAttGrade, reason: QUERY_REFUSALS.attD });
+		} else {
+			issues.push({
+				param: P.minAttGrade,
+				reason: `unknown grade floor "${floor}"`,
+			});
+		}
 	}
 
 	const basis = params.get(P.basis);
@@ -229,6 +310,8 @@ export function serializeDeltaQuery(query: DeltaQuery): URLSearchParams {
 	if (query.dimension !== DEFAULT_QUERY.dimension) {
 		params.set(P.dimension, query.dimension);
 	}
+	if (query.measure) params.set(P.measure, query.measure);
+	if (query.minAttGrade) params.set(P.minAttGrade, query.minAttGrade);
 	if (query.scope.basis !== "published") params.set(P.basis, query.scope.basis);
 	if (query.scope.asOf) params.set(P.asOf, query.scope.asOf);
 	const w = query.where;
