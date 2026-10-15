@@ -439,7 +439,7 @@
     {
       "idx": 62,
       "version": "7",
-      "when": 1791770400000,
+      "when": 1791777600000,
       "tag": "20260930120000_add_effect_lookup_indexes",
       "breakpoints": true
     }
