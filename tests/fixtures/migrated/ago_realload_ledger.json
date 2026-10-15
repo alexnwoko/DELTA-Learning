@@ -93,5 +93,13 @@
  "records_flagged": 53,
  "run_id": "load-ago-20260925T070921-6f587270",
  "source": "50_Data_Migration/_pilot_output/by_country/AGO/delta_ready.jsonl",
- "tenant": "31038250-8612-489a-a7a2-47921321e9ef"
+ "tenant": "31038250-8612-489a-a7a2-47921321e9ef",
+ "partial_runs": [
+  {
+   "run_id": "load-ago-20261001T185749-80d835ef",
+   "manifest": "50_Data_Migration/_pilot_output/by_country/AGO/load_manifest_ago_hazard_recode_stage0_load.json",
+   "scope": "PARTIAL: stage 0 hazard re-coding only (records step); human effects not rewritten",
+   "records": 16
+  }
+ ]
 }

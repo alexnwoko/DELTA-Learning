@@ -52,7 +52,13 @@ async function main() {
 	process.env.DATABASE_URL = readOnlyUrl(process.env.DATABASE_URL);
 	initDB();
 
-	const scope = { countryAccountsId: ledger.tenant, runId: ledger.run_id };
+	const scope = {
+		countryAccountsId: ledger.tenant,
+		runId: ledger.run_id,
+		partialRunIds: (ledger.partial_runs ?? []).map(
+			(r: { run_id: string }) => r.run_id,
+		),
+	};
 	const readBack = await reconciliationReadBack(scope);
 	const headline = await getAffectedPeopleByHazardFilters(
 		{
@@ -116,6 +122,7 @@ async function main() {
 		ranAt: new Date().toISOString(),
 		tenant: ledger.tenant,
 		runId: ledger.run_id,
+		partialRunIds: scope.partialRunIds,
 		records: readBack.records,
 		byApprovalStatus: readBack.byApprovalStatus,
 		passed,

@@ -21,6 +21,13 @@ export interface ReconciliationScope {
 	countryAccountsId: string;
 	/** The migration run id stamped in legacy_data.migration.run_id. */
 	runId: string;
+	/**
+	 * Partial runs that re-upserted some of this run's records (for example
+	 * the stage 0 hazard re-code of 2026-10-01). A re-upsert restamps the
+	 * record's run id, so without these the record drops out of the run it
+	 * belongs to. Each must be named in a load manifest marked PARTIAL.
+	 */
+	partialRunIds?: readonly string[];
 }
 
 function assertScope(scope: ReconciliationScope) {
@@ -42,7 +49,10 @@ export function reconciliationBasis(
 	assertScope(scope);
 	const p = alias ? sql`${sql.identifier(alias)}.` : sql``;
 	return sql`(${p}"country_accounts_id" = ${scope.countryAccountsId}
-		AND (${p}"legacy_data" -> 'migration' ->> 'run_id') = ${scope.runId}
+		AND (${p}"legacy_data" -> 'migration' ->> 'run_id') IN (${sql.join(
+			[scope.runId, ...(scope.partialRunIds ?? [])].map((r) => sql`${r}`),
+			sql`, `,
+		)})
 		AND ${notRetired(sql`${p}"legacy_data"`)})`;
 }
 
