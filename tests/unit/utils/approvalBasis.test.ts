@@ -31,7 +31,7 @@ const migrated = (status: string, extra: Record<string, unknown> = {}) => ({
 describe("approval basis", () => {
 	it("shows published records only to public, signed-in and official views", () => {
 		expect(basisStatuses("public")).toEqual(["published"]);
-		// D-04 default (pack decision 19) until Alex rules otherwise.
+		// AB-01 default (PD-08:82, TR-192) until Alex rules otherwise.
 		expect(SIGNED_IN_BASIS_STATUSES).toEqual(["published"]);
 		expect(basisStatuses("official")).toEqual(["published"]);
 	});
