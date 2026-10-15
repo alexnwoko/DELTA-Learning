@@ -21,8 +21,9 @@ interface ApiResponse {
 	success: boolean;
 	data: {
 		eventCount: number;
-		totalDamage: string;
-		totalLoss: string;
+		/** null when no record reported a cost (TR-076). */
+		totalDamage: string | null;
+		totalLoss: string | null;
 		eventsOverTime: Record<string, string>;
 		damageOverTime: Record<string, string>;
 		lossOverTime: Record<string, string>;
@@ -358,65 +359,51 @@ function ImpactOnSector({
 		})
 		.sort((a, b) => a.year - b.year);
 
-	// Get the reference year from events data or filters
-	const referenceYear =
-		eventsData.length > 0
-			? eventsData[0].year
-			: filters.fromDate
+	// Years with a reported cost only; a reported 0 is plotted as 0 and a
+	// year with no reported cost is a gap, never 0 (TR-076).
+	const damageData = Object.entries(data.damageOverTime || {})
+		.map(([year, amount]) => {
+			const parsedAmount =
+				typeof amount === "string" ? parseFloat(amount) : Number(amount);
+			return {
+				year: parseInt(year),
+				amount: isNaN(parsedAmount) ? 0 : parsedAmount,
+			};
+		})
+		.filter((entry) => {
+			if (!filters.fromDate && !filters.toDate) return true;
+			const yearNum = entry.year;
+			const fromYear = filters.fromDate
 				? parseInt(filters.fromDate.split("-")[0])
-				: new Date().getFullYear();
+				: 0;
+			const toYear = filters.toDate
+				? parseInt(filters.toDate.split("-")[0])
+				: 9999;
+			return yearNum >= fromYear && yearNum <= toYear;
+		})
+		.sort((a, b) => a.year - b.year);
 
-	// Fix damage data transformation to ensure it properly handles string values and zero impact
-	const damageData =
-		data?.dataAvailability?.damage === "zero"
-			? [{ year: referenceYear, amount: 0 }]
-			: Object.entries(data.damageOverTime || {})
-					.map(([year, amount]) => {
-						const parsedAmount =
-							typeof amount === "string" ? parseFloat(amount) : Number(amount);
-						return {
-							year: parseInt(year),
-							amount: isNaN(parsedAmount) ? 0 : parsedAmount,
-						};
-					})
-					.filter((entry) => {
-						if (!filters.fromDate && !filters.toDate) return true;
-						const yearNum = entry.year;
-						const fromYear = filters.fromDate
-							? parseInt(filters.fromDate.split("-")[0])
-							: 0;
-						const toYear = filters.toDate
-							? parseInt(filters.toDate.split("-")[0])
-							: 9999;
-						return yearNum >= fromYear && yearNum <= toYear;
-					})
-					.sort((a, b) => a.year - b.year);
-
-	// Fix loss data transformation to ensure it properly handles string values and zero impact
-	const lossData =
-		data?.dataAvailability?.loss === "zero"
-			? [{ year: referenceYear, amount: 0 }]
-			: Object.entries(data.lossOverTime || {})
-					.map(([year, amount]) => {
-						const parsedAmount =
-							typeof amount === "string" ? parseFloat(amount) : Number(amount);
-						return {
-							year: parseInt(year),
-							amount: isNaN(parsedAmount) ? 0 : parsedAmount,
-						};
-					})
-					.filter((entry) => {
-						if (!filters.fromDate && !filters.toDate) return true;
-						const yearNum = entry.year;
-						const fromYear = filters.fromDate
-							? parseInt(filters.fromDate.split("-")[0])
-							: 0;
-						const toYear = filters.toDate
-							? parseInt(filters.toDate.split("-")[0])
-							: 9999;
-						return yearNum >= fromYear && yearNum <= toYear;
-					})
-					.sort((a, b) => a.year - b.year);
+	const lossData = Object.entries(data.lossOverTime || {})
+		.map(([year, amount]) => {
+			const parsedAmount =
+				typeof amount === "string" ? parseFloat(amount) : Number(amount);
+			return {
+				year: parseInt(year),
+				amount: isNaN(parsedAmount) ? 0 : parsedAmount,
+			};
+		})
+		.filter((entry) => {
+			if (!filters.fromDate && !filters.toDate) return true;
+			const yearNum = entry.year;
+			const fromYear = filters.fromDate
+				? parseInt(filters.fromDate.split("-")[0])
+				: 0;
+			const toYear = filters.toDate
+				? parseInt(filters.toDate.split("-")[0])
+				: 9999;
+			return yearNum >= fromYear && yearNum <= toYear;
+		})
+		.sort((a, b) => a.year - b.year);
 
 	return (
 		<>
@@ -574,40 +561,27 @@ function ImpactOnSector({
 								</div>
 							</h3>
 							<div className="dts-indicator dts-indicator--target-box-d">
-								{data?.dataAvailability?.damage === "zero" ? (
-									<span>
-										{ctx.t({
-											code: "analysis.zero_impact_confirmed",
-											msg: "Zero Impact (Confirmed)",
-										})}
-									</span>
-								) : data?.dataAvailability?.damage === "no_data" ? (
-									<>
-										<div className="dts-indicator dts-indicator--target-box-d">
-											<img src="/assets/images/empty.png" alt="No data" />
-											<span className="dts-body-text">
-												{ctx.t({
-													code: "common.no_data_available",
-													msg: "No data available",
-												})}
-											</span>
-										</div>
-									</>
-								) : data?.totalDamage !== undefined &&
-								  data?.totalDamage !== null &&
-								  data?.totalDamage !== "" ? (
+								{/* A reported 0 is shown as 0: money has no confirmed
+								    zero (PD-04:596). No reported cost is "Not reported",
+								    never 0 (TR-076). */}
+								{data?.dataAvailability?.damage !== "no_data" &&
+								data?.totalDamage !== undefined &&
+								data?.totalDamage !== null &&
+								data?.totalDamage !== "" ? (
 									<span>
 										{formatCurrencyWithCode(Number(data.totalDamage), currency)}
 									</span>
 								) : (
 									<>
-										<img src="/assets/images/empty.png" alt="No data" />
-										<span className="dts-body-text">
-											{ctx.t({
-												code: "common.no_data_available",
-												msg: "No data available",
-											})}
-										</span>
+										<div className="dts-indicator dts-indicator--target-box-d">
+											<img src="/assets/images/empty.png" alt="" />
+											<span className="dts-body-text">
+												{ctx.t({
+													code: "analysis.not_reported",
+													msg: "Not reported",
+												})}
+											</span>
+										</div>
 									</>
 								)}
 							</div>
@@ -644,26 +618,23 @@ function ImpactOnSector({
 								</div>
 							</h3>
 							<div className="dts-indicator dts-indicator--target-box-c">
-								{data?.dataAvailability?.loss === "zero" ? (
-									<span>Zero Impact (Confirmed)</span>
-								) : data?.dataAvailability?.loss === "no_data" ? (
-									<>
-										<div className="dts-indicator dts-indicator--target-box-c">
-											<img src="/assets/images/empty.png" alt="No data" />
-											<span className="dts-body-text">No data available</span>
-										</div>
-									</>
-								) : data?.totalLoss !== undefined &&
-								  data?.totalLoss !== null &&
-								  data?.totalLoss !== "" ? (
+								{data?.dataAvailability?.loss !== "no_data" &&
+								data?.totalLoss !== undefined &&
+								data?.totalLoss !== null &&
+								data?.totalLoss !== "" ? (
 									<span>
 										{formatCurrencyWithCode(Number(data.totalLoss), currency)}
 									</span>
 								) : (
 									<>
 										<div className="dts-indicator dts-indicator--target-box-c">
-											<img src="/assets/images/empty.png" alt="No data" />
-											<span className="dts-body-text">No data available</span>
+											<img src="/assets/images/empty.png" alt="" />
+											<span className="dts-body-text">
+												{ctx.t({
+													code: "analysis.not_reported",
+													msg: "Not reported",
+												})}
+											</span>
 										</div>
 									</>
 								)}
