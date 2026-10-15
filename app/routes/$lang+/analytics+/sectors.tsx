@@ -448,9 +448,11 @@ export const loader = authLoaderPublicOrWithPerm(
 										name: division.name,
 										level: division.level,
 										parentId: division.parentId,
+										// A division without figures is not reported, never 0
+										// (TR-076).
 										values: geoHandlerResponse.values[division.id.toString()] || {
-											totalDamage: 0,
-											totalLoss: 0,
+											totalDamage: null,
+											totalLoss: null,
 											metadata: {
 												assessmentType: filters.assessmentType || "rapid",
 												confidenceLevel: filters.confidenceLevel || "low",
