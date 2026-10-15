@@ -98,6 +98,14 @@ describe("delta.query/1", () => {
 		]);
 	});
 
+	it("exports the shared refusal codes", async () => {
+		const { QUERY_REFUSALS } = await import("~/utils/deltaQuery");
+		expect(QUERY_REFUSALS).toMatchObject({
+			monetaryPending: "MONETARY_CONVENTIONS_PENDING",
+			measureNotAvailable: "MEASURE_NOT_AVAILABLE",
+		});
+	});
+
 	it("leaves defaults out of the URL", () => {
 		expect(serializeDeltaQuery(DEFAULT_QUERY).toString()).toBe("");
 	});
