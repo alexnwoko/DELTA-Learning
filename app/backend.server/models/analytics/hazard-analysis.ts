@@ -357,7 +357,7 @@ function humanEffectsFilteredRecords(
           division_hierarchy AS (
             SELECT id, parent_id, id AS level1_id
             FROM "division"
-            WHERE parent_id IS NULL
+            WHERE level = 1
             UNION ALL
             SELECT d.id, d.parent_id, dh.level1_id
             FROM "division" d
@@ -1225,7 +1225,7 @@ export async function getTotalDamagesByDivision(
 			WITH RECURSIVE division_hierarchy AS (
 				SELECT id, parent_id, id AS level1_id
 				FROM division
-				WHERE parent_id IS NULL
+				WHERE level = 1
 				UNION ALL
 				SELECT d.id, d.parent_id, dh.level1_id
 				FROM division d
@@ -1406,7 +1406,7 @@ export async function getTotalLossesByDivision(
 			WITH RECURSIVE division_hierarchy AS (
 				SELECT id, parent_id, id AS level1_id
 				FROM division
-				WHERE parent_id IS NULL
+				WHERE level = 1
 				UNION ALL
 				SELECT d.id, d.parent_id, dh.level1_id
 				FROM division d
@@ -1563,7 +1563,7 @@ export async function getTotalDeathsByDivision(
 	  WITH RECURSIVE division_hierarchy AS (
 		SELECT id, parent_id, id AS level1_id
 		FROM "division"
-		WHERE parent_id IS NULL
+		WHERE level = 1
 		UNION ALL
 		SELECT d.id, d.parent_id, dh.level1_id
 		FROM "division" d
@@ -1683,19 +1683,18 @@ export async function getTotalAffectedPeopleByDivision(
 		toDate,
 	} = filters;
 
-	// Build WHERE conditions for disaster_event as SQL objects
+	// Build WHERE conditions for disaster_records as SQL objects
 	const whereConditions: SQL[] = [];
-	whereConditions.push(approvalBasis(filters.audience, basisColumns("de")));
-	whereConditions.push(sql`de."country_accounts_id" = ${countryAccountsId}`);
+	whereConditions.push(recordBasis(filters, "dr"));
+	whereConditions.push(sql`dr."country_accounts_id" = ${countryAccountsId}`);
 	if (hazardTypeId)
-		whereConditions.push(sql`de."hip_type_id" = ${hazardTypeId}`);
+		whereConditions.push(sql`dr."hip_type_id" = ${hazardTypeId}`);
 	if (hazardClusterId)
-		whereConditions.push(sql`de."hip_cluster_id" = ${hazardClusterId}`);
+		whereConditions.push(sql`dr."hip_cluster_id" = ${hazardClusterId}`);
 	if (specificHazardId)
-		whereConditions.push(sql`de."hip_hazard_id" = ${specificHazardId}`);
+		whereConditions.push(sql`dr."hip_hazard_id" = ${specificHazardId}`);
 	if (geographicLevelId) {
-		whereConditions.push(sql`(
-			EXISTS (
+		whereConditions.push(sql`EXISTS (
 			WITH RECURSIVE division_tree AS (
 				SELECT id
 				FROM division
@@ -1706,28 +1705,9 @@ export async function getTotalAffectedPeopleByDivision(
 				INNER JOIN division_tree dt ON d.parent_id = dt.id
 			)
 			SELECT 1
-			FROM disaster_event_division ded
-			WHERE ded.disaster_event_id = de.id
-				AND ded.division_id IN (SELECT id FROM division_tree)
-			)
-			OR EXISTS (
-				WITH RECURSIVE division_tree AS (
-					SELECT id
-					FROM division
-					WHERE id = ${geographicLevelId}::uuid
-					UNION ALL
-					SELECT d.id
-					FROM division d
-					INNER JOIN division_tree dt ON d.parent_id = dt.id
-				)
-				SELECT 1
-				FROM disaster_records dr
-				INNER JOIN disaster_records_division drd
-					ON drd.disaster_record_id = dr.id
-				WHERE dr.disaster_event_id = de.id
-					AND ${approvalBasis(filters.audience, basisColumns("dr"))}
-					AND drd.division_id IN (SELECT id FROM division_tree)
-			)
+			FROM disaster_records_division drd
+			WHERE drd.disaster_record_id = dr.id
+				AND drd.division_id IN (SELECT id FROM division_tree)
 		)`);
 	}
 	if (fromDate || toDate) {
@@ -1736,57 +1716,54 @@ export async function getTotalAffectedPeopleByDivision(
 		whereConditions.push(sql`
 		(
 		  CASE 
-			WHEN de."start_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(de."start_date", 'YYYY-MM-DD')
-			WHEN de."start_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(de."start_date", 'YYYY-MM')
-			WHEN de."start_date" ~ '^[0-9]{4}$' THEN TO_DATE(de."start_date", 'YYYY')
+			WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM-DD')
+			WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM')
+			WHEN dr."start_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."start_date", 'YYYY')
 			ELSE NULL
 		  END IS NULL OR 
 		  CASE 
-			WHEN de."start_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(de."start_date", 'YYYY-MM-DD')
-			WHEN de."start_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(de."start_date", 'YYYY-MM')
-			WHEN de."start_date" ~ '^[0-9]{4}$' THEN TO_DATE(de."start_date", 'YYYY')
+			WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM-DD')
+			WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM')
+			WHEN dr."start_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."start_date", 'YYYY')
 			ELSE NULL
 		  END <= ${to}::date
 		) AND (
 		  CASE 
-			WHEN de."end_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(de."end_date", 'YYYY-MM-DD')
-			WHEN de."end_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(de."end_date", 'YYYY-MM')
-			WHEN de."end_date" ~ '^[0-9]{4}$' THEN TO_DATE(de."end_date", 'YYYY')
+			WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM-DD')
+			WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM')
+			WHEN dr."end_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."end_date", 'YYYY')
 			ELSE NULL
 		  END IS NULL OR 
 		  CASE 
-			WHEN de."end_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(de."end_date", 'YYYY-MM-DD')
-			WHEN de."end_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(de."end_date", 'YYYY-MM')
-			WHEN de."end_date" ~ '^[0-9]{4}$' THEN TO_DATE(de."end_date", 'YYYY')
+			WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM-DD')
+			WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM')
+			WHEN dr."end_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."end_date", 'YYYY')
 			ELSE NULL
 		  END >= ${from}::date
 		)
 	  `);
 	}
 
-	const eventWhereClause =
+	const recordsWhereClause =
 		whereConditions.length > 0 ? sql`WHERE ${and(...whereConditions)}` : sql``;
 
 	const rawQuery = sql`
 	  WITH RECURSIVE division_hierarchy AS (
 		SELECT id, parent_id, id AS level1_id
 		FROM "division"
-		WHERE parent_id IS NULL
+		WHERE level = 1
 		UNION ALL
 		SELECT d.id, d.parent_id, dh.level1_id
 		FROM "division" d
 		INNER JOIN division_hierarchy dh ON d.parent_id = dh.id
 	  ),
-	  filtered_events AS (
-		SELECT de."id"
-		FROM "disaster_event" de
-		${eventWhereClause}
-	  ),
 	  filtered_records AS (
+		-- Records are scoped by tenant, hazard, date and division directly, so
+		-- records without a disaster event count too. The event is used only
+		-- to place a record that has no division link of its own.
 		SELECT dr."id" AS record_id, dr."disaster_event_id" AS event_id
 		FROM "disaster_records" dr
-		WHERE ${approvalBasis(filters.audience, basisColumns("dr"))}
-		  AND dr."disaster_event_id" IN (SELECT fe."id" FROM filtered_events fe)
+		${recordsWhereClause}
 	  ),
 	  record_value AS (
 		-- Composite of injured, missing, displaced and directly affected, from
@@ -1968,7 +1945,7 @@ export async function getDisasterEventCountByDivision(
 	  WITH RECURSIVE division_hierarchy AS (
 		SELECT id, parent_id, id AS level1_id
 		FROM "division"
-		WHERE parent_id IS NULL
+		WHERE level = 1
 		UNION ALL
 		SELECT d.id, d.parent_id, dh.level1_id
 		FROM "division" d
