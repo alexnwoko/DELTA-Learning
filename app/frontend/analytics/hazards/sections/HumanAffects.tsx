@@ -70,16 +70,26 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 	ageCoverage,
 }) => {
 	// A null figure is never shown as 0 (TR-076). It is either not reported,
-	// or too few records confirm zero to show a zero (V-5).
+	// or too few records confirm zero to show a zero (PD-04:596). The label
+	// names the state (PD-04:619); the tooltip gives the reason.
 	const formatFigure = (v: number | null, state?: ValueState) =>
-		v !== null
-			? formatNumberWithoutDecimals(v)
-			: state === "insufficient_reporting"
-				? ctx.t({
-						code: "analysis.insufficient_reporting",
-						msg: "Too few records confirm zero",
-					})
-				: ctx.t({ code: "analysis.not_reported", msg: "Not reported" });
+		v !== null ? (
+			formatNumberWithoutDecimals(v)
+		) : state === "insufficient_reporting" ? (
+			<span
+				title={ctx.t({
+					code: "analysis.too_few_confirm_zero",
+					msg: "Too few records confirm zero",
+				})}
+			>
+				{ctx.t({
+					code: "analysis.insufficient_reporting",
+					msg: "Insufficient reporting",
+				})}
+			</span>
+		) : (
+			ctx.t({ code: "analysis.not_reported", msg: "Not reported" })
+		);
 
 	// TODO: translate
 	const data = [

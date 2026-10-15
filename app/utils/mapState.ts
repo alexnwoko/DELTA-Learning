@@ -103,6 +103,8 @@ export interface StateEncoding {
 	/** Pattern drawn over the fill, in `stroke` colour. */
 	pattern: MapPattern;
 	label: string;
+	/** Why the state applies, for the tooltip; null when the label says it. */
+	detail: string | null;
 }
 
 /**
@@ -121,6 +123,7 @@ export const STATE_ENCODING: Record<
 		strokeWidth: 1.2,
 		pattern: "none",
 		label: "Zero, confirmed",
+		detail: null,
 	},
 	not_reported: {
 		fill: "#c9ced6",
@@ -129,6 +132,7 @@ export const STATE_ENCODING: Record<
 		strokeWidth: 1,
 		pattern: "none",
 		label: "No data",
+		detail: null,
 	},
 	insufficient_reporting: {
 		fill: "#ffffff",
@@ -136,7 +140,11 @@ export const STATE_ENCODING: Record<
 		dashArray: "1 3",
 		strokeWidth: 1.2,
 		pattern: "hatch",
-		label: "Too few records confirm zero",
+		// PD-04:619: an aggregate that rests on fewer distinct events, or less
+		// reporting, than the set minimum. The legend names the state; the
+		// tooltip gives the reason (W-03).
+		label: "Insufficient reporting",
+		detail: "Rests on too little reporting",
 	},
 	not_applicable: {
 		fill: "#f3f4f6",
@@ -145,6 +153,7 @@ export const STATE_ENCODING: Record<
 		strokeWidth: 1,
 		pattern: "dots",
 		label: "Not applicable",
+		detail: null,
 	},
 	suppressed: {
 		fill: "#e5e7eb",
@@ -153,6 +162,7 @@ export const STATE_ENCODING: Record<
 		strokeWidth: 2,
 		pattern: "crosshatch",
 		label: "Suppressed",
+		detail: null,
 	},
 };
 
@@ -167,6 +177,16 @@ export const PLAUSIBILITY_MARKER = {
 // Input.
 
 export type AttGrade = "A" | "B" | "C" | "D";
+
+/**
+ * Letter of a figure quality component, such as the Q2 plausibility letter.
+ * PROPOSED: the Q grade comes from the grading standard and is not in PD
+ * v1.0, which grades attribution (ATT, PD-08:84), reference (REF,
+ * PD-08:147) and method (TR-071) only. Kept apart from AttGrade so a
+ * quality letter is never read as an attribution grade. Lane-internal: no
+ * Q letter appears on a public or official view until Alex rules (W-04).
+ */
+export type QualityGrade = "A" | "B" | "C" | "D";
 
 /** One area of the choropleth envelope. */
 export interface MapCell {
@@ -232,7 +252,7 @@ export type MapStateReason =
 export interface PlausibilityMarker {
 	flaggedRecords: number;
 	/** Q2 component letter; null when the flagged contribution is unknown. */
-	q2: AttGrade | null;
+	q2: QualityGrade | null;
 }
 
 export interface MapQualityMarker {
@@ -244,6 +264,8 @@ export interface MapQualityMarker {
 
 export interface MapTooltipParts {
 	value: number | null;
+	/** Why the area is in its off-ramp state; null when the label says it. */
+	stateDetail: string | null;
 	/** Records that reported the measure (a value or a confirmed zero) of all in scope. */
 	reportedBy: { n: number; of: number };
 	zeroConfirmedBy: { n: number; of: number };
@@ -374,11 +396,26 @@ function baseState(cell: MapCell): {
 	}
 }
 
+/** Tooltip detail for an off-ramp state (PD-04:619 for insufficient_reporting). */
+function stateDetail(
+	state: MapAreaState,
+	reason: MapStateReason | null,
+): string | null {
+	if (state === "shaded") return null;
+	if (
+		state === "insufficient_reporting" &&
+		(reason === "coverage_below_v5" || reason === "too_few_confirm_zero")
+	) {
+		return "Too few records confirm zero";
+	}
+	return STATE_ENCODING[state].detail;
+}
+
 /** Q2 letter from the flagged contribution f and the figure value V. */
 export function q2Grade(
 	flaggedContribution: number | null | undefined,
 	value: number | null,
-): AttGrade | null {
+): QualityGrade | null {
 	if (value === null || !(value > 0)) return null;
 	if (
 		flaggedContribution === null ||
@@ -577,6 +614,7 @@ export function resolveMapState(
 			},
 			tooltip: {
 				value: cell.value,
+				stateDetail: stateDetail(state, reason),
 				reportedBy: { n: reported + zc, of: total },
 				zeroConfirmedBy: { n: zc, of: total },
 				sharedRecords: count(cell.sharedRecords),

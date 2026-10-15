@@ -221,6 +221,12 @@ describe("edge cases", () => {
 		const z = STATE_ENCODING.zero_confirmed;
 		const i = STATE_ENCODING.insufficient_reporting;
 		expect(z.pattern !== i.pattern || z.dashArray !== i.dashArray).toBe(true);
+		// PD-04:619: the legend names the state, the tooltip gives the reason
+		expect(i.label).toBe("Insufficient reporting");
+		expect(byId(r, "few").tooltip.stateDetail).toBe(
+			"Too few records confirm zero",
+		);
+		expect(byId(r, "zero").tooltip.stateDetail).toBeNull();
 		// a confirmed zero never carries a quality marker for coverage
 		expect(byId(r, "zero").quality.plausibility).toBeNull();
 	});
