@@ -2,7 +2,7 @@ import { SQL, sql } from "drizzle-orm";
 import type { approvalStatusIds } from "~/frontend/approval";
 import { isRetiredLegacyData } from "~/utils/provisional";
 
-// C23 (solution pack, decision 19): the one approval basis for every
+// AB-01 (PD-08:82), TR-192: the one approval basis for every
 // analytics and public read path. Call sites never write their own
 // approvalStatus filter; they ask this module for the basis of the audience
 // they serve.
