@@ -998,8 +998,7 @@ async function aggregateLossesData(
                         WHEN ${lossesTable.publicCostTotalOverride} = true THEN
                             COALESCE(${lossesTable.publicCostTotal}, 0)::numeric
                         ELSE
-                            COALESCE(${lossesTable.publicUnits}, 0)::numeric * COALESCE(${lossesTable.publicCostUnit}, 0)::numeric +
-                            COALESCE(${lossesTable.privateCostTotal}, 0)::numeric
+                            COALESCE(${lossesTable.publicUnits}, 0)::numeric * COALESCE(${lossesTable.publicCostUnit}, 0)::numeric
                     END +
                     CASE 
                         WHEN ${lossesTable.privateCostTotalOverride} = true THEN
