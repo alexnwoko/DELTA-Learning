@@ -10,6 +10,7 @@ import { disruptionTable } from "~/drizzle/schema/disruptionTable";
 import { disasterEventTable } from "~/drizzle/schema/disasterEventTable";
 
 import { eq, sql, and, isNull, or, inArray } from "drizzle-orm";
+import { monetaryValue, type MonetaryValue } from "~/utils/valueState";
 import { BackendContext } from "~/backend.server/context";
 import {
 	approvalBasis,
@@ -156,6 +157,7 @@ export async function disasterEventTotalLosses_RecordsAssets__ById(
 	disasterRecordId: string,
 	sectorId: string,
 	audience: ApprovalAudience,
+	countryAccountsId: string,
 ) {
 	const queryLossesTable = dr
 		.selectDistinctOn([lossesTable.id], {
@@ -203,6 +205,7 @@ export async function disasterEventTotalLosses_RecordsAssets__ById(
 		.where(
 			and(
 				eq(disasterEventTable.id, disasterEventId),
+				eq(disasterRecordsTable.countryAccountsId, countryAccountsId),
 				eq(sectorDisasterRecordsRelationTable.withLosses, true),
 				eq(lossesTable.sectorId, sectorId),
 				eq(
@@ -224,6 +227,7 @@ export async function disasterEventTotalRecovery_RecordsAssets__ById(
 	disasterRecordId: string,
 	sectorId: string,
 	audience: ApprovalAudience,
+	countryAccountsId: string,
 ) {
 	const queryDamageTable = dr
 		.selectDistinctOn([damagesTable.id], {
@@ -258,6 +262,7 @@ export async function disasterEventTotalRecovery_RecordsAssets__ById(
 		.where(
 			and(
 				eq(disasterEventTable.id, disasterEventId),
+				eq(disasterRecordsTable.countryAccountsId, countryAccountsId),
 				eq(sectorDisasterRecordsRelationTable.withDamage, true),
 				eq(damagesTable.sectorId, sectorId),
 				eq(
@@ -280,6 +285,7 @@ export async function disasterEventTotalDamages_RecordsAssets__ById(
 	disasterRecordId: string,
 	sectorId: string,
 	audience: ApprovalAudience,
+	countryAccountsId: string,
 ) {
 	const queryDamageTable = dr
 		.selectDistinctOn([damagesTable.id], {
@@ -329,6 +335,7 @@ export async function disasterEventTotalDamages_RecordsAssets__ById(
 		.where(
 			and(
 				eq(disasterEventTable.id, disasterEventId),
+				eq(disasterRecordsTable.countryAccountsId, countryAccountsId),
 				eq(sectorDisasterRecordsRelationTable.withDamage, true),
 				eq(damagesTable.sectorId, sectorId),
 				eq(
@@ -346,12 +353,181 @@ export async function disasterEventTotalDamages_RecordsAssets__ById(
 	return queryDamageTable.execute();
 }
 
+/** One sector effect of an event: its figure in the configured currency. */
+export type SectorEffect = MonetaryValue & {
+	/** The figure value: null when no record reported a cost (TR-076). */
+	total: number | null;
+	/** The tenant's configured currency label; no conversion is applied. */
+	currency: string;
+};
+
+export interface SectorEffects {
+	damages: SectorEffect;
+	losses: SectorEffect;
+	recovery: SectorEffect;
+}
+
+interface SectorRelationRow {
+	recordId: string;
+	recordSector_SectorId: string;
+	withDamage: boolean | null;
+	damageCost: string | null;
+	damageRecoveryCost: string | null;
+	withLosses: boolean | null;
+	lossesCost: string | null;
+}
+
+/** A cost input: null when absent, never 0 (TR-076). */
+function costOrNull(v: unknown): number | null {
+	if (v === null || v === undefined || v === "") return null;
+	const n = Number(v);
+	return Number.isFinite(n) ? n : null;
+}
+
+/** a x b, or null when either factor is absent. */
+function productOrNull(a: unknown, b: unknown): number | null {
+	const x = costOrNull(a);
+	const y = costOrNull(b);
+	return x === null || y === null ? null : x * y;
+}
+
+/** Running sum that stays null until a record reports a cost. */
+class CostSum {
+	sum: number | null = null;
+	reported = new Set<string>();
+	add(recordId: string, v: number | null) {
+		if (v === null) return;
+		this.sum = (this.sum ?? 0) + v;
+		this.reported.add(recordId);
+	}
+	effect(recordsTotal: number, currency: string): SectorEffect {
+		const v = monetaryValue({
+			sum: this.sum,
+			reported: this.reported.size,
+			total: recordsTotal,
+		});
+		return { ...v, total: v.value, currency };
+	}
+}
+
+/**
+ * Damage, loss and recovery totals over an event's sector relation rows. The
+ * sector-level cost is used when set, otherwise the asset rows. A cost that
+ * no record reported is null and not_reported, never 0; money has no
+ * tri-state source, so a summed 0 is a reported 0, never zero_confirmed
+ * (TR-076, PD-04:596). Sums stay in the currency the rows carry; no
+ * conversion (D-04, PD-09:1088).
+ */
+async function sumSectorEffects(
+	rows: SectorRelationRow[],
+	disasterEventId: string,
+	countryAccountsId: string,
+	currency: string,
+	audience: ApprovalAudience,
+): Promise<SectorEffects> {
+	const damages = new CostSum();
+	const losses = new CostSum();
+	const recovery = new CostSum();
+	const records = new Set<string>();
+
+	for (const item of rows) {
+		records.add(item.recordId);
+		if (item.withDamage) {
+			const damageCost = costOrNull(item.damageCost);
+			if (damageCost !== null) {
+				damages.add(item.recordId, damageCost);
+			} else {
+				try {
+					const assets = await disasterEventTotalDamages_RecordsAssets__ById(
+						disasterEventId,
+						item.recordId,
+						item.recordSector_SectorId,
+						audience,
+						countryAccountsId,
+					);
+					for (const a of assets) {
+						damages.add(item.recordId, costOrNull(a.totalRepairReplacement));
+					}
+				} catch (error) {
+					console.error(
+						`Error processing damages for ${item.recordId}:`,
+						error,
+					);
+				}
+			}
+
+			const recoveryCost = costOrNull(item.damageRecoveryCost);
+			if (recoveryCost !== null) {
+				recovery.add(item.recordId, recoveryCost);
+			} else {
+				try {
+					const assets = await disasterEventTotalRecovery_RecordsAssets__ById(
+						disasterEventId,
+						item.recordId,
+						item.recordSector_SectorId,
+						audience,
+						countryAccountsId,
+					);
+					for (const a of assets) {
+						recovery.add(item.recordId, costOrNull(a.totalRecovery));
+					}
+				} catch (error) {
+					console.error(
+						`Error processing recovery for ${item.recordId}:`,
+						error,
+					);
+				}
+			}
+		}
+
+		if (item.withLosses) {
+			const lossesCost = costOrNull(item.lossesCost);
+			if (lossesCost !== null) {
+				losses.add(item.recordId, lossesCost);
+			} else {
+				try {
+					const assets = await disasterEventTotalLosses_RecordsAssets__ById(
+						disasterEventId,
+						item.recordId,
+						item.recordSector_SectorId,
+						audience,
+						countryAccountsId,
+					);
+					for (const a of assets) {
+						const pub = a.publicCostTotalOverride
+							? costOrNull(a.publicCostTotal)
+							: productOrNull(a.publicUnits, a.publicCostUnit);
+						const priv = a.privateCostTotalOverride
+							? costOrNull(a.privateCostTotal)
+							: productOrNull(a.privateUnits, a.privateCostUnit);
+						// A row reports a loss when either part carries a cost;
+						// a missing part then adds nothing.
+						losses.add(
+							item.recordId,
+							pub === null && priv === null ? null : (pub ?? 0) + (priv ?? 0),
+						);
+					}
+				} catch (error) {
+					console.error(`Error processing losses for ${item.recordId}:`, error);
+				}
+			}
+		}
+	}
+
+	return {
+		damages: damages.effect(records.size, currency),
+		losses: losses.effect(records.size, currency),
+		recovery: recovery.effect(records.size, currency),
+	};
+}
+
 export async function disasterEventSectorTotal__ByDivisionId(
+	countryAccountsId: string,
 	disasterEventId: string,
 	divisionId: string,
 	currency: string,
 	audience: ApprovalAudience,
-) {
+): Promise<SectorEffects> {
 	if (typeof disasterEventId !== "string") {
 		throw new Error("Invalid ID: must be a string");
 	}
@@ -401,6 +577,7 @@ export async function disasterEventSectorTotal__ByDivisionId(
 					WHERE drd.disaster_record_id = ${disasterRecordsTable.id}
 						AND drd.division_id = ${divisionId}::uuid
 				)`,
+				eq(disasterRecordsTable.countryAccountsId, countryAccountsId),
 				approvalBasis(audience, disasterRecordsTable),
 				approvalBasis(audience, disasterEventTable),
 				eq(disasterEventTable.id, disasterEventId),
@@ -413,138 +590,22 @@ export async function disasterEventSectorTotal__ByDivisionId(
 
 	// Execute the query
 	const record = await queryRecordSectorTable.execute();
-	let totalDamages: number = 0;
-	let totalLosses: number = 0;
-	let totalRecovery: number = 0;
-	let recordsAssetRecoveryIdArray: any[] = [];
-	let recordsAssetDamagesIdArray: any[] = [];
-	let recordsAssetLossesIdArray: any[] = [];
-
-	let damageCurrency: string = currency;
-
-	record.forEach((item) => {
-		if (item.withDamage) {
-			if (item.damageCost) {
-				totalDamages += Number(item.damageCost); //get the total override from the sector level damage cost
-			} else {
-				// get damage records from damages table
-				recordsAssetDamagesIdArray.push({
-					sector_id: item.recordSector_SectorId,
-					record_id: item.recordId,
-				});
-			}
-
-			if (item.damageRecoveryCost) {
-				totalRecovery += Number(item.damageRecoveryCost);
-			} else {
-				// get the recovery records from damages table
-				recordsAssetRecoveryIdArray.push({
-					sector_id: item.recordSector_SectorId,
-					record_id: item.recordId,
-				});
-			}
-		}
-
-		if (item.withLosses) {
-			if (item.lossesCost) {
-				totalLosses += Number(item.lossesCost);
-			} else {
-				// get the losses records from losses table
-				recordsAssetLossesIdArray.push({
-					sector_id: item.recordSector_SectorId,
-					record_id: item.recordId,
-				});
-			}
-		}
-	});
-
-	// Get recovery from Asset level records
-	for (const item of recordsAssetRecoveryIdArray) {
-		try {
-			const recordsAssetRecovery =
-				await disasterEventTotalRecovery_RecordsAssets__ById(
-					disasterEventId,
-					item.record_id,
-					item.sector_id,
-					audience,
-				);
-			recordsAssetRecovery.forEach((item2) => {
-				totalRecovery += Number(item2.totalRecovery);
-			});
-		} catch (error) {
-			console.error(`Error processing item ${item}:`, error);
-		}
-	}
-
-	// Get damages from Asset level records
-	for (const item of recordsAssetDamagesIdArray) {
-		try {
-			const recordsAssetDamages =
-				await disasterEventTotalDamages_RecordsAssets__ById(
-					disasterEventId,
-					item.record_id,
-					item.sector_id,
-					audience,
-				);
-			recordsAssetDamages.forEach((item2) => {
-				totalDamages += Number(item2.totalRepairReplacement);
-			});
-		} catch (error) {
-			console.error(`Error processing item ${item}:`, error);
-		}
-	}
-
-	// Get losses from Asset level records
-	for (const item of recordsAssetLossesIdArray) {
-		try {
-			const recordsAssetlosses =
-				await disasterEventTotalLosses_RecordsAssets__ById(
-					disasterEventId,
-					item.record_id,
-					item.sector_id,
-					audience,
-				);
-			recordsAssetlosses.forEach((item2) => {
-				if (item2.publicCostTotalOverride) {
-					totalLosses += Number(item2.publicCostTotal);
-				} else {
-					totalLosses +=
-						Number(item2.publicUnits) * Number(item2.publicCostUnit);
-				}
-				if (item2.privateCostTotalOverride) {
-					totalLosses += Number(item2.privateCostTotal);
-				} else {
-					totalLosses +=
-						Number(item2.privateUnits) * Number(item2.privateCostUnit);
-				}
-			});
-		} catch (error) {
-			console.error(`Error processing item ${item}:`, error);
-		}
-	}
-
-	return {
-		damages: {
-			total: totalDamages,
-			currency: damageCurrency,
-		},
-		losses: {
-			total: totalLosses,
-			currency: damageCurrency,
-		},
-		recovery: {
-			total: totalRecovery,
-			currency: damageCurrency,
-		},
-	};
+	return sumSectorEffects(
+		record,
+		disasterEventId,
+		countryAccountsId,
+		currency,
+		audience,
+	);
 }
 
 export async function disasterEventSectorTotal__ById(
+	countryAccountsId: string,
 	disasterEventId: string,
 	isInSectorIds: string[] = [],
 	currency: string,
 	audience: ApprovalAudience,
-) {
+): Promise<SectorEffects> {
 	if (typeof disasterEventId !== "string") {
 		throw new Error("Invalid ID: must be a string");
 	}
@@ -584,6 +645,7 @@ export async function disasterEventSectorTotal__ById(
 		)
 		.where(
 			and(
+				eq(disasterRecordsTable.countryAccountsId, countryAccountsId),
 				approvalBasis(audience, disasterRecordsTable),
 				approvalBasis(audience, disasterEventTable),
 				eq(disasterEventTable.id, disasterEventId),
@@ -599,130 +661,13 @@ export async function disasterEventSectorTotal__ById(
 
 	// Execute the query
 	const record = await queryRecordSectorTable.execute();
-	let totalDamages: number = 0;
-	let totalLosses: number = 0;
-	let totalRecovery: number = 0;
-	let recordsAssetRecoveryIdArray: any[] = [];
-	let recordsAssetDamagesIdArray: any[] = [];
-	let recordsAssetLossesIdArray: any[] = [];
-
-	let damageCurrency: string = currency;
-
-	record.forEach((item) => {
-		if (item.withDamage) {
-			if (item.damageCost) {
-				totalDamages += Number(item.damageCost); //get the total override from the sector level damage cost
-			} else {
-				// get damage records from damages table
-				recordsAssetDamagesIdArray.push({
-					sector_id: item.recordSector_SectorId,
-					record_id: item.recordId,
-				});
-			}
-
-			if (item.damageRecoveryCost) {
-				totalRecovery += Number(item.damageRecoveryCost);
-			} else {
-				// get the recovery records from damages table
-				recordsAssetRecoveryIdArray.push({
-					sector_id: item.recordSector_SectorId,
-					record_id: item.recordId,
-				});
-			}
-		}
-
-		if (item.withLosses) {
-			if (item.lossesCost) {
-				totalLosses += Number(item.lossesCost);
-			} else {
-				// get the losses records from losses table
-				recordsAssetLossesIdArray.push({
-					sector_id: item.recordSector_SectorId,
-					record_id: item.recordId,
-				});
-			}
-		}
-	});
-
-	// Get recovery from Asset level records
-	for (const item of recordsAssetRecoveryIdArray) {
-		try {
-			const recordsAssetRecovery =
-				await disasterEventTotalRecovery_RecordsAssets__ById(
-					disasterEventId,
-					item.record_id,
-					item.sector_id,
-					audience,
-				);
-			recordsAssetRecovery.forEach((item2) => {
-				totalRecovery += Number(item2.totalRecovery);
-			});
-		} catch (error) {
-			console.error(`Error processing item ${item}:`, error);
-		}
-	}
-
-	// Get damages from Asset level records
-	for (const item of recordsAssetDamagesIdArray) {
-		try {
-			const recordsAssetDamages =
-				await disasterEventTotalDamages_RecordsAssets__ById(
-					disasterEventId,
-					item.record_id,
-					item.sector_id,
-					audience,
-				);
-			recordsAssetDamages.forEach((item2) => {
-				totalDamages += Number(item2.totalRepairReplacement);
-			});
-		} catch (error) {
-			console.error(`Error processing item ${item}:`, error);
-		}
-	}
-
-	// Get losses from Asset level records
-	for (const item of recordsAssetLossesIdArray) {
-		try {
-			const recordsAssetlosses =
-				await disasterEventTotalLosses_RecordsAssets__ById(
-					disasterEventId,
-					item.record_id,
-					item.sector_id,
-					audience,
-				);
-			recordsAssetlosses.forEach((item2) => {
-				if (item2.publicCostTotalOverride) {
-					totalLosses += Number(item2.publicCostTotal);
-				} else {
-					totalLosses +=
-						Number(item2.publicUnits) * Number(item2.publicCostUnit);
-				}
-				if (item2.privateCostTotalOverride) {
-					totalLosses += Number(item2.privateCostTotal);
-				} else {
-					totalLosses +=
-						Number(item2.privateUnits) * Number(item2.privateCostUnit);
-				}
-			});
-		} catch (error) {
-			console.error(`Error processing item ${item}:`, error);
-		}
-	}
-
-	return {
-		damages: {
-			total: totalDamages,
-			currency: damageCurrency,
-		},
-		losses: {
-			total: totalLosses,
-			currency: damageCurrency,
-		},
-		recovery: {
-			total: totalRecovery,
-			currency: damageCurrency,
-		},
-	};
+	return sumSectorEffects(
+		record,
+		disasterEventId,
+		countryAccountsId,
+		currency,
+		audience,
+	);
 }
 
 export async function disasterEventSectorDamageDetails__ById(

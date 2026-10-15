@@ -33,7 +33,8 @@ export type MapChartRef = {
 
 /** One area as passed by a screen. Counts come from the envelope cell. */
 export type MapChartArea = {
-	total: number;
+	/** null when not reported (TR-076). */
+	total: number | null;
 	name: string;
 	geojson: any;
 	colorPercentage?: number;
@@ -95,7 +96,8 @@ const DEFAULT_SCOPE: MapScopeQuery = { tenant: null, audience: "public" };
  */
 function toCell(area: MapChartArea, index: number): MapCell {
 	const valueState: ValueState =
-		area.valueState ?? (area.total > 0 ? "reported" : "not_reported");
+		area.valueState ??
+		(area.total !== null && area.total > 0 ? "reported" : "not_reported");
 	const value =
 		valueState === "reported" || valueState === "zero_confirmed"
 			? area.total
@@ -690,7 +692,7 @@ function popupHtml(
 	area: MapArea,
 ): string {
 	const lines: string[] = [];
-	if (region.valueState || region.total > 0) {
+	if (region.valueState || (region.total !== null && region.total > 0)) {
 		if (region.description) lines.push(escapeHtml(region.description));
 	}
 	if (area.state !== "shaded" && !region.valueState) {

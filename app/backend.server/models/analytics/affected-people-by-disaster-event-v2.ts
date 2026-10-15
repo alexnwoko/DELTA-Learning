@@ -1,4 +1,4 @@
-import { eq, sql, and, isNull, sum, isNotNull } from "drizzle-orm";
+import { eq, sql, and, isNull, sum, isNotNull, type SQL } from "drizzle-orm";
 import { Tx } from "~/db.server";
 import { disasterRecordsTable } from "~/drizzle/schema/disasterRecordsTable";
 import { humanCategoryPresenceTable } from "~/drizzle/schema/humanCategoryPresenceTable";
@@ -10,6 +10,13 @@ import {
 	getDescendantDivisionIds,
 	recordInDivisionCondition,
 } from "~/backend.server/utils/geographicFilters";
+import {
+	compositeValue,
+	measureValue,
+	PROVISIONAL_ZERO_COVERAGE,
+	type CompositeValue,
+	type MeasureValue,
+} from "~/utils/valueState";
 
 interface Conditions {
 	divisionId?: string;
@@ -62,15 +69,17 @@ export async function getAffected(
 	return res;
 }
 
+type HumanEffectCode = (typeof affectedTablesAndCols)[number]["code"];
+
 type Total = {
-	totalPeopleAffected: number;
-	tables: {
-		deaths: number;
-		injured: number;
-		missing: number;
-		directlyAffected: number;
-		displaced: number;
-	};
+	/** Sum of the reported components; null when none was reported. */
+	totalPeopleAffected: number | null;
+	/** Value state of totalPeopleAffected, and whether it is partial. */
+	peopleAffected: CompositeValue;
+	/** Each measure's value: null when not reported, never 0 (TR-076). */
+	tables: Record<HumanEffectCode, number | null>;
+	/** Value state and record counts per measure (TR-076, E17). */
+	measures: Record<HumanEffectCode, MeasureValue>;
 };
 
 type humanEffectsDataCode =
@@ -83,82 +92,83 @@ type humanEffectsDataCode =
 
 const totalsTablesAndCols = affectedTablesAndCols;
 
+/**
+ * Per-measure figures for the event's records on the approval basis (and in
+ * the division, when set). Every record in scope counts, including those
+ * with no human-effects row, so "not reported" is measured rather than
+ * dropped. As in hazard-analysis: a record reports a measure when its total
+ * is above 0; it confirms zero when its total is 0 with a Yes flag, or when
+ * it holds an explicit No with no value (tri-state source, PD-03:326).
+ * Aggregate zeros follow the coverage rule (PD-04:596, PD-05:96).
+ */
 async function totalsForEachTable(
 	tx: Tx,
 	disasterEventId: string,
 	conditions: Conditions,
 ): Promise<Total> {
-	let entries = await Promise.all(
-		totalsTablesAndCols.map(async (a) => {
-			let v = await totalsForOneTable(
-				tx,
-				disasterEventId,
-				a.presenceTotalCol,
-				a.presenceCol,
-				conditions,
-			);
-			return [a.code, v] as const;
-		}),
-	);
+	const de = disasterEventTable;
+	const dr = disasterRecordsTable;
+	const hcp = humanCategoryPresenceTable;
 
-	let tables = Object.fromEntries(entries);
-	let totalPeopleAffected =
-		Object.values(tables).reduce((sum, v) => sum + v, 0) - tables.deaths;
-
-	return { totalPeopleAffected, tables } as Total;
-}
-
-// The code for deaths, injured, missing, displaced is exactly the same.
-// For directlyAffected has a minor variation that a table has both direct and indirect columns, we only need direct from there.
-
-async function totalsForOneTable(
-	tx: Tx,
-	disasterEventId: string,
-	resCol: any,
-	presenceCol: any,
-	conditions: Conditions,
-): Promise<number> {
-	/*
-	SELECT SUM(hcp.deaths_total)
-	FROM disaster_event de
-	JOIN disaster_records dr ON de.id = dr.disaster_event_id
-	JOIN human_category_presence hcp ON dr.id = hcp.record_id
-	WHERE de.id = '641495e5-1ece-4376-ab31-40b6861ac001'
-			AND hcp.deaths IS TRUE
-		AND <approval basis, C23>
-		AND EXISTS (
-			SELECT 1
-			FROM jsonb_array_elements(dr.spatial_footprint) AS elem
-			WHERE elem->'geojson'->'features'->0->'properties'->>'division_id' = '74'
-			OR elem->'geojson'->'features'->0->'properties'->'division_ids' @> '74'::jsonb
-		)
-	*/
-
-	let de = disasterEventTable;
-	let dr = disasterRecordsTable;
-	let hcp = humanCategoryPresenceTable;
+	const fields: Record<string, SQL> = { recordsTotal: sql`COUNT(*)` };
+	for (const a of totalsTablesAndCols) {
+		const total = a.presenceTotalCol;
+		const flag = a.presenceCol;
+		fields[`${a.code}Sum`] = sql`SUM(${total}) FILTER (WHERE ${total} > 0)`;
+		fields[`${a.code}Reported`] = sql`COUNT(*) FILTER (WHERE ${total} > 0)`;
+		fields[`${a.code}Zero`] = sql`COUNT(*) FILTER (
+			WHERE (${total} = 0 AND ${flag} IS TRUE)
+				OR (${flag} IS FALSE AND COALESCE(${total}, 0) = 0)
+		)`;
+	}
 
 	const res = await tx
-		.select({
-			sum: sum(resCol),
-		})
-		.from(de)
-		.innerJoin(dr, eq(de.id, dr.disasterEventId))
-		.innerJoin(hcp, eq(dr.id, hcp.recordId))
+		.select(fields)
+		.from(dr)
+		.innerJoin(de, eq(de.id, dr.disasterEventId))
+		.leftJoin(hcp, eq(hcp.recordId, dr.id))
 		.where(
 			and(
 				eq(de.id, disasterEventId),
-				eq(presenceCol, true),
 				approvalBasis(conditions.audience, dr),
 				divisionCondition(conditions),
 			),
 		);
+	const row: Record<string, unknown> = res[0] ?? {};
+	const count = (k: string) => (row[k] as string | number | null) ?? 0;
 
-	if (!res || !res.length) {
-		return 0;
-	}
+	const measures = Object.fromEntries(
+		totalsTablesAndCols.map((a) => [
+			a.code,
+			measureValue(
+				{
+					sum: (row[`${a.code}Sum`] as string | number | null) ?? null,
+					reported: count(`${a.code}Reported`),
+					zeroConfirmed: count(`${a.code}Zero`),
+					total: count("recordsTotal"),
+				},
+				PROVISIONAL_ZERO_COVERAGE,
+			),
+		]),
+	) as Record<HumanEffectCode, MeasureValue>;
+	const tables = Object.fromEntries(
+		totalsTablesAndCols.map((a) => [a.code, measures[a.code].value]),
+	) as Record<HumanEffectCode, number | null>;
 
-	return Number(res[0].sum);
+	// People affected: every measure but deaths, as before. Reported
+	// components only; null when none was reported, never 0.
+	const peopleAffected = compositeValue(
+		totalsTablesAndCols
+			.filter((a) => a.code !== "deaths")
+			.map((a) => measures[a.code]),
+	);
+
+	return {
+		totalPeopleAffected: peopleAffected.value,
+		peopleAffected,
+		tables,
+		measures,
+	};
 }
 
 export async function totalsRecordsForTypeCol(
@@ -215,11 +225,7 @@ async function totalsForOneTableRecords(
 			),
 		);
 
-	if (!res || !res.length) {
-		return 0;
-	}
-
-	return res;
+	return res ?? [];
 }
 
 const tables = [
@@ -450,6 +456,9 @@ async function countsForOneTable(
 		return m;
 	}
 	for (let r of res) {
+		// A group whose rows carry no value is not reported: leave it out
+		// rather than show 0 (TR-076).
+		if (r.sum === null || r.sum === undefined) continue;
 		m.set(r.key, Number(r.sum));
 	}
 	return m;
