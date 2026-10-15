@@ -1,5 +1,5 @@
 import { dr, Tx } from "~/db.server";
-import { rowOnApprovalBasis } from "~/utils/approvalBasis";
+import { dataViewerMaySee, rowOnApprovalBasis } from "~/utils/approvalBasis";
 import { isMigratedProvisional } from "~/utils/provisional";
 
 import { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
@@ -750,6 +750,14 @@ export function createViewLoaderPublicApproved<
 					status: 404,
 				});
 			}
+			// AB-01: a data viewer sees published records only, here as in lists.
+			if (
+				!isPublic &&
+				(await getUserRoleFromSession(loaderArgs.request)) === "data-viewer" &&
+				!dataViewerMaySee(item)
+			) {
+				throw new Response("Not Found", { status: 404 });
+			}
 			const provisional = isMigratedProvisional(item);
 			return { item, isPublic, provisional };
 		})(loaderArgs);
@@ -775,6 +783,14 @@ export function createViewLoaderPublicApprovedWithAuditLog<
 				throw new Response("Permission denied, item is private", {
 					status: 404,
 				});
+			}
+			// AB-01: a data viewer sees published records only, here as in lists.
+			if (
+				!isPublic &&
+				(await getUserRoleFromSession(loaderArgs.request)) === "data-viewer" &&
+				!dataViewerMaySee(item)
+			) {
+				throw new Response("Not Found", { status: 404 });
 			}
 			const provisional = isMigratedProvisional(item);
 
