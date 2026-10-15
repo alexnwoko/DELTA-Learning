@@ -5,15 +5,18 @@ to set it up. It complements [`openspec.md`](openspec.md) and [`.github/agents/R
 
 ## In the repository (works on clone)
 
-| Skill                     | Folder                               | Purpose                                                 | Source and licence                       |
-| ------------------------- | ------------------------------------ | ------------------------------------------------------- | ---------------------------------------- |
-| `delta-house-style`       | `.claude/skills/`, `.github/skills/` | Writing rules and lint for DELTA documents              | DELTA, Apache-2.0                        |
-| `delta-data-honesty`      | `.claude/skills/`, `.github/skills/` | Null-not-zero, grades, refusal, remainder, tenant scope | DELTA, Apache-2.0                        |
-| `delta-security-scan`     | `.claude/skills/`, `.github/skills/` | Pinned gitleaks, Semgrep and Trivy runs and triage      | DELTA, Apache-2.0                        |
-| `openspec-*`, `/opsx`     | `.claude/`, `.github/`               | Spec-driven change workflow                             | OpenSpec, MIT                            |
-| `differential-review`     | `.claude/skills/`                    | Security review of a diff                               | Trail of Bits @ `442fc9d6`, CC-BY-SA-4.0 |
-| `agentic-actions-auditor` | `.claude/skills/`                    | Audit of AI agents in GitHub Actions                    | Trail of Bits @ `442fc9d6`, CC-BY-SA-4.0 |
-| `web-design-guidelines`   | `.claude/skills/`                    | UI and accessibility audit of `app/**/*.tsx`            | Vercel @ `ba469388` and `4ecfb9fb`, MIT  |
+| Skill                     | Folder                               | Purpose                                                 | Source and licence                             |
+| ------------------------- | ------------------------------------ | ------------------------------------------------------- | ---------------------------------------------- |
+| `delta-house-style`       | `.claude/skills/`, `.github/skills/` | Writing rules and lint for DELTA documents              | DELTA, Apache-2.0                              |
+| `delta-data-honesty`      | `.claude/skills/`, `.github/skills/` | Null-not-zero, grades, refusal, remainder, tenant scope | DELTA, Apache-2.0                              |
+| `delta-security-scan`     | `.claude/skills/`, `.github/skills/` | Pinned gitleaks, Semgrep and Trivy runs and triage      | DELTA, Apache-2.0                              |
+| `openspec-*`, `/opsx`     | `.claude/`, `.github/`               | Spec-driven change workflow                             | OpenSpec, MIT                                  |
+| `differential-review`     | `.claude/skills/`                    | Security review of a diff                               | Trail of Bits @ `442fc9d6`, CC-BY-SA-4.0       |
+| `agentic-actions-auditor` | `.claude/skills/`                    | Audit of AI agents in GitHub Actions                    | Trail of Bits @ `442fc9d6`, CC-BY-SA-4.0       |
+| `web-design-guidelines`   | `.claude/skills/`                    | UI and accessibility audit of `app/**/*.tsx`            | Vercel @ `ba469388` and `4ecfb9fb`, MIT        |
+| `playwright` MCP server   | `.mcp.json`                          | Agent-driven browser for UI checks on the local app     | Microsoft `@playwright/mcp@0.0.83`, Apache-2.0 |
+
+The Playwright MCP server is headless and limited to `localhost:3000` with `--allowed-origins`. That flag is not a security boundary and does not follow redirects; it only prevents accidental browsing. Add origins for one session with `PLAYWRIGHT_MCP_ALLOWED_ORIGINS`.
 
 Third-party folders carry a `NOTICE` and, where upstream has one, a `LICENSE`. Their licences
 cover only those folders. DELTA code stays Apache-2.0.
@@ -22,18 +25,25 @@ cover only those folders. DELTA code stays Apache-2.0.
 
 These tools are too large to vendor, or are command-line programs. Install them once.
 
-| Tool          | Install                                                                                                                | Notes                                                                                                  |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| OpenSpec CLI  | `npm i -g --prefix ~/.local @fission-ai/openspec@1.11.0`                                                               | Matches the version the skills were generated with. Then `openspec config set telemetry.enabled false` |
-| gitleaks      | `brew install gitleaks` (8.30.1)                                                                                       | Always `--redact`                                                                                      |
-| Semgrep       | `brew install semgrep` (1.180.0)                                                                                       | Always `--metrics=off` and named rulesets                                                              |
-| Trivy         | `brew install trivy` (0.75.0 or later)                                                                                 | Never 0.69.4                                                                                           |
-| graphify      | `uv tool install graphifyy==0.9.85 && graphify install --platform claude`                                              | User skill. Write output outside the repository                                                        |
-| Archify       | `npx -y skills add tt-a1i/archify --skill archify --agent claude-code --global --copy --yes`                           | User skill, about 11 MB                                                                                |
-| Book to Skill | `git clone --branch v1.4.0 --depth 1 https://github.com/virgiliojr94/book-to-skill.git ~/.claude/skills/book-to-skill` | Expect commit `387d938e`. Only from `virgiliojr94`                                                     |
+| Tool                       | Install                                                                                                                                                                                               | Notes                                                                                                  |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| OpenSpec CLI               | `npm i -g --prefix ~/.local @fission-ai/openspec@1.11.0`                                                                                                                                              | Matches the version the skills were generated with. Then `openspec config set telemetry.enabled false` |
+| gitleaks                   | `brew install gitleaks` (8.30.1)                                                                                                                                                                      | Always `--redact`                                                                                      |
+| Semgrep                    | `brew install semgrep` (1.180.0)                                                                                                                                                                      | Always `--metrics=off` and named rulesets                                                              |
+| Trivy                      | `brew install trivy` (0.75.0 or later)                                                                                                                                                                | Never 0.69.4                                                                                           |
+| graphify                   | `uv tool install graphifyy==0.9.85 && graphify install --platform claude`                                                                                                                             | User skill. Write output outside the repository                                                        |
+| Archify                    | `npx -y skills add tt-a1i/archify --skill archify --agent claude-code --global --copy --yes`                                                                                                          | User skill, about 11 MB                                                                                |
+| Book to Skill              | `git clone --branch v1.4.0 --depth 1 https://github.com/virgiliojr94/book-to-skill.git ~/.claude/skills/book-to-skill`                                                                                | Expect commit `387d938e`. Only from `virgiliojr94`                                                     |
+| Playwright CLI             | `npm i -g --prefix ~/.local @playwright/cli@0.1.22`, then `playwright-cli install --skills` and copy the skill to `~/.claude/skills/`                                                                 | Lighter than the MCP server; use only on `localhost` or approved staging with test accounts            |
+| Pilot skills (pstack)      | Copy `blast-radius`, `principle-prove-it-works`, `principle-make-operations-idempotent`, `principle-test-behavior-not-implementation`, `typescript-best-practices` from `cursor/plugins` @ `e5136d82` | MIT, Lauren Tan. Pilot until reviewed                                                                  |
+| Pilot skills (Matt Pocock) | Copy `grill-with-docs`, `grilling`, `domain-modeling`, `diagnosing-bugs`, `handoff`, `writing-for-agents` from `mattpocock/skills` @ `49dd158d`                                                       | MIT. `domain-modeling` carries a DELTA override: ADRs in `_docs/decisions/`, glossary in PD-08         |
 
 ## Review in GitHub
 
 CodeRabbit reads `.coderabbit.yaml`. It is free for public repositories, but it only runs once
 the CodeRabbit GitHub app is installed on the repository. `auto_review.base_branches` takes
 regex patterns and includes `^v2/.*`. `path_instructions` carry the DELTA rules above.
+
+## Training
+
+Anthropic Academy, "Building effective human-agent teams" (beta): https://academy.claude.com/courses/building-effective-human-agent-teams . Five short lessons on moving from single-agent to team-agent work.
