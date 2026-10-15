@@ -54,6 +54,36 @@ describe("delta.query/1", () => {
 		expect(parseDeltaQuery(serializeDeltaQuery(query)).query).toEqual(query);
 	});
 
+	it("reads one measure and refuses a list", () => {
+		expect(q("measure=houses_damaged").query.measure).toBe("houses_damaged");
+		const many = q("measure=deaths&measure=injured");
+		expect(many.query.measure).toBeUndefined();
+		expect(many.issues).toEqual([
+			{ param: "measure", reason: "MULTI_SERIES_CHOROPLETH" },
+		]);
+		expect(q("measure=dollars").issues[0].param).toBe("measure");
+	});
+
+	it("marks monetary measures for refusal", async () => {
+		const { isMonetaryMeasure } = await import("~/utils/deltaQuery");
+		expect(isMonetaryMeasure("losses")).toBe(true);
+		expect(isMonetaryMeasure("deaths")).toBe(false);
+	});
+
+	it("accepts grade floors A to C and refuses D", () => {
+		expect(q("minAttGrade=B").query.minAttGrade).toBe("B");
+		const d = q("minAttGrade=D");
+		expect(d.query.minAttGrade).toBeUndefined();
+		expect(d.issues).toEqual([
+			{ param: "minAttGrade", reason: "ATT_D_EXCLUDED_FROM_OFFICIAL" },
+		]);
+	});
+
+	it("round-trips measure and grade floor", () => {
+		const { query } = q("measure=evacuated&minAttGrade=A");
+		expect(parseDeltaQuery(serializeDeltaQuery(query)).query).toEqual(query);
+	});
+
 	it("leaves defaults out of the URL", () => {
 		expect(serializeDeltaQuery(DEFAULT_QUERY).toString()).toBe("");
 	});
