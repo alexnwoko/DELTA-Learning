@@ -442,6 +442,13 @@
       "when": 1791777600000,
       "tag": "20260930120000_add_effect_lookup_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1791788400000,
+      "tag": "20261011120000_add_fk_lookup_indexes",
+      "breakpoints": true
     }
   ]
 }
