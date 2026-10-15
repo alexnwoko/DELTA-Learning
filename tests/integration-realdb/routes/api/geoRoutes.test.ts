@@ -80,52 +80,94 @@ describe("api geo routes", () => {
 
 	afterAll(async () => {
 		for (const t of [ids.countryAccountId, tenantB]) {
-			await dr.execute(sql`DELETE FROM geo.impact_atom WHERE country_accounts_id = ${t}`);
-			await dr.execute(sql`DELETE FROM geo.division_ancestor WHERE country_accounts_id = ${t}`);
-			await dr.execute(sql`DELETE FROM geo.division_geom_cache WHERE country_accounts_id = ${t}`);
-			await dr.execute(sql`DELETE FROM geo.refresh_log WHERE country_accounts_id = ${t}`);
-			await dr.execute(sql`DELETE FROM disaster_records WHERE country_accounts_id = ${t}`);
-			await dr.execute(sql`DELETE FROM division WHERE country_accounts_id = ${t}`);
+			await dr.execute(
+				sql`DELETE FROM geo.impact_atom WHERE country_accounts_id = ${t}`,
+			);
+			await dr.execute(
+				sql`DELETE FROM geo.division_ancestor WHERE country_accounts_id = ${t}`,
+			);
+			await dr.execute(
+				sql`DELETE FROM geo.division_geom_cache WHERE country_accounts_id = ${t}`,
+			);
+			await dr.execute(
+				sql`DELETE FROM geo.refresh_log WHERE country_accounts_id = ${t}`,
+			);
+			await dr.execute(
+				sql`DELETE FROM disaster_records WHERE country_accounts_id = ${t}`,
+			);
+			await dr.execute(
+				sql`DELETE FROM division WHERE country_accounts_id = ${t}`,
+			);
 		}
 		await cleanupOtherTenant();
 		await cleanupTestUser(ids);
 	});
 
 	it("returns a choropleth with the envelope and an ETag", async () => {
-		const res = await call(choropleth, ids.countryAccountId, "choropleth?measure=records&level=1");
+		const res = await call(
+			choropleth,
+			ids.countryAccountId,
+			"choropleth?measure=records&level=1",
+		);
 		expect(res.status).toBe(200);
 		const body = await res.json();
 		expect(body.meta.hazardVocabularyVersion).toBe("HIPs 2025");
 		expect(body.meta.readModelRefreshedAt).not.toBeNull();
 		expect(body.cells).toHaveLength(1);
-		expect(body.cells[0]).toMatchObject({ divisionId: divA, value: 1, valueState: "reported" });
+		expect(body.cells[0]).toMatchObject({
+			division_id: divA,
+			value: 1,
+			value_state: "reported",
+		});
 
 		const etag = res.headers.get("ETag") as string;
-		const again = await call(choropleth, ids.countryAccountId, "choropleth?measure=records&level=1", {}, {
-			"If-None-Match": etag,
-		});
+		const again = await call(
+			choropleth,
+			ids.countryAccountId,
+			"choropleth?measure=records&level=1",
+			{},
+			{
+				"If-None-Match": etag,
+			},
+		);
 		expect(again.status).toBe(304);
 	});
 
 	it("returns a semantic refusal as 200 with the envelope", async () => {
-		const res = await call(choropleth, ids.countryAccountId, "choropleth?measure=losses&level=1");
+		const res = await call(
+			choropleth,
+			ids.countryAccountId,
+			"choropleth?measure=losses&level=1",
+		);
 		expect(res.status).toBe(200);
 		const body = await res.json();
 		expect(body.error.code).toBe("MONETARY_CONVENTIONS_PENDING");
 		expect(body.rows).toEqual([]);
 		expect(body.meta.methodVersion).toBe("geo.v1");
+		expect(body.meta.query.measure).toBe("losses");
 	});
 
 	it("returns a malformed request as 400 with the envelope", async () => {
-		const res = await call(choropleth, ids.countryAccountId, "choropleth?measure=deaths");
+		const res = await call(
+			choropleth,
+			ids.countryAccountId,
+			"choropleth?measure=deaths",
+		);
 		expect(res.status).toBe(400);
 		expect((await res.json()).error.code).toBe("MALFORMED_REQUEST");
 	});
 
 	it("returns 404 for another tenant's division, and 200 for the owner", async () => {
-		const other = await call(dossier, ids.countryAccountId, `place/${divB}/dossier`, { divisionId: divB });
+		const other = await call(
+			dossier,
+			ids.countryAccountId,
+			`place/${divB}/dossier`,
+			{ divisionId: divB },
+		);
 		expect(other.status).toBe(404);
-		const own = await call(dossier, tenantB, `place/${divB}/dossier`, { divisionId: divB });
+		const own = await call(dossier, tenantB, `place/${divB}/dossier`, {
+			divisionId: divB,
+		});
 		expect(own.status).toBe(200);
 	});
 
@@ -133,25 +175,53 @@ describe("api geo routes", () => {
 		const res = await call(boundaries, tenantB, "boundaries?level=1");
 		expect(res.headers.get("Content-Type")).toContain("application/geo+json");
 		const fc = await res.json();
-		expect(fc.features.map((f: any) => f.properties.divisionId)).toEqual([divB]);
+		expect(fc.features.map((f: any) => f.properties.divisionId)).toEqual([
+			divB,
+		]);
 	});
 
 	it("serves MVT, 204 for an empty tile and 400 out of range", async () => {
-		const full = await call(tile, ids.countryAccountId, "tiles/divisions/1/3/4/3", {
-			level: "1", z: "3", x: "4", y: "3",
-		});
+		const full = await call(
+			tile,
+			ids.countryAccountId,
+			"tiles/divisions/1/3/4/3",
+			{
+				level: "1",
+				z: "3",
+				x: "4",
+				y: "3",
+			},
+		);
 		expect(full.status).toBe(200);
-		expect(full.headers.get("Content-Type")).toBe("application/vnd.mapbox-vector-tile");
+		expect(full.headers.get("Content-Type")).toBe(
+			"application/vnd.mapbox-vector-tile",
+		);
 		expect((await full.arrayBuffer()).byteLength).toBeGreaterThan(0);
 
-		const empty = await call(tile, ids.countryAccountId, "tiles/divisions/1/5/19/15", {
-			level: "1", z: "5", x: "19", y: "15",
-		});
+		const empty = await call(
+			tile,
+			ids.countryAccountId,
+			"tiles/divisions/1/5/19/15",
+			{
+				level: "1",
+				z: "5",
+				x: "19",
+				y: "15",
+			},
+		);
 		expect(empty.status).toBe(204);
 
-		const bad = await call(tile, ids.countryAccountId, "tiles/divisions/1/3/9/0", {
-			level: "1", z: "3", x: "9", y: "0",
-		});
+		const bad = await call(
+			tile,
+			ids.countryAccountId,
+			"tiles/divisions/1/3/9/0",
+			{
+				level: "1",
+				z: "3",
+				x: "9",
+				y: "0",
+			},
+		);
 		expect(bad.status).toBe(400);
 	});
 });

@@ -12,7 +12,9 @@ async function main() {
 	const tenants = only
 		? [only]
 		: (
-				await dr.execute(sql`SELECT id FROM public.country_accounts ORDER BY id`)
+				await dr.execute(
+					sql`SELECT id FROM public.country_accounts ORDER BY id`,
+				)
 			).rows.map((r) => String((r as { id: string }).id));
 	for (const t of tenants) {
 		const started = Date.now();

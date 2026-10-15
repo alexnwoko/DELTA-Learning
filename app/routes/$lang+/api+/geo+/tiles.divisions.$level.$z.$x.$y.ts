@@ -1,4 +1,4 @@
-import { geoEtag, geoLoader } from "~/backend.server/handlers/geo";
+import { etagMatches, geoEtag, geoLoader } from "~/backend.server/handlers/geo";
 import {
 	getDivisionTile,
 	GeoRefusalError,
@@ -32,13 +32,13 @@ export const loader = geoLoader(
 			);
 		}
 		const refreshedAt = await readModelRefreshedAt(countryAccountsId);
-		const etag = geoEtag(refreshedAt, url);
+		const etag = geoEtag(countryAccountsId, refreshedAt, url);
 		const headers = {
 			ETag: etag,
 			"Cache-Control": "private, no-cache",
 			"X-Boundary-Version": "unknown",
 		};
-		if (request.headers.get("If-None-Match") === etag) {
+		if (etagMatches(request, etag)) {
 			return new Response(null, { status: 304, headers });
 		}
 		const tile = await getDivisionTile(countryAccountsId, level, z, x, y, lang);

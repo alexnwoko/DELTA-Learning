@@ -1,9 +1,7 @@
 import { sql } from "drizzle-orm";
 import { dr, type Dr } from "~/db.server";
-import {
-	GEO_HUMAN_MEASURES,
-	GEO_METHOD_VERSION,
-} from "~/utils/geoMeasures";
+import { GEO_HUMAN_MEASURES, GEO_METHOD_VERSION } from "~/utils/geoMeasures";
+import { notRetired } from "~/utils/approvalBasis";
 import { plausibilitySourceFields } from "~/utils/plausibility";
 
 // Simplification tolerances in degrees, about half a screen pixel per tier.
@@ -23,10 +21,16 @@ export interface GeoRefreshResult {
  * Attribution (ATT grade, pack decision 13):
  * - B or C: the record's division link; B when the division has a national
  *   id, C when it is matched by import id only.
- * - A: no division link, and the record geometry intersects exactly one
- *   division at the tenant's finest level (derivation footprint_intersect).
+ * - A: no division link, and the record geometry is covered by exactly one
+ *   division at the tenant's finest level, touching no other (derivation
+ *   footprint_intersect).
  * - Otherwise the record is unattributed, with the reason, and still counted.
  * Downward split (D) is never produced.
+ *
+ * Dates: an impossible start date makes the record undated, never aborts the
+ * refresh. An unreadable end date falls back to the end of the start date's
+ * period and is marked end_from_start. Retired records (DEC-012) are kept and
+ * marked, so every approval basis can exclude them.
  *
  * Value state per record and measure follows the analytics rule
  * (hazard-analysis.ts humanEffectMeasuresSelect): a total above 0 is
@@ -39,6 +43,10 @@ export async function refreshGeoReadModel(
 ): Promise<GeoRefreshResult> {
 	const t = countryAccountsId;
 	return db.transaction(async (tx) => {
+		// One refresh per tenant at a time: a second caller waits, never fails.
+		await tx.execute(
+			sql`SELECT pg_advisory_xact_lock(hashtext('geo.refresh:' || ${t}))`,
+		);
 		await tx.execute(
 			sql`DELETE FROM geo.impact_atom WHERE country_accounts_id = ${t}`,
 		);
@@ -111,7 +119,13 @@ export async function refreshGeoReadModel(
 					NULLIF(r.hip_cluster_id, '') AS hip_cluster_id,
 					NULLIF(r.hip_hazard_id, '') AS hip_hazard_id,
 					geo.date_floor(r.start_date) AS start_instant,
-					geo.date_ceil(COALESCE(NULLIF(r.end_date, ''), r.start_date)) AS end_instant,
+					COALESCE(
+						geo.date_ceil(NULLIF(r.end_date, '')),
+						geo.date_ceil(r.start_date)
+					) AS end_instant,
+					geo.date_ceil(NULLIF(r.end_date, '')) IS NULL
+						AND geo.date_floor(r.start_date) IS NOT NULL AS end_from_start,
+					NOT ${notRetired(sql`r.legacy_data`)} AS retired,
 					geo.date_precision(r.start_date) AS date_precision,
 					r."approvalStatus" AS record_status,
 					de."approvalStatus" AS event_status,
@@ -147,9 +161,12 @@ export async function refreshGeoReadModel(
 				WHERE NOT EXISTS (SELECT 1 FROM linked l WHERE l.record_id = rg.disaster_record_id)
 				GROUP BY rg.disaster_record_id
 			),
+			-- ATT-A needs the record geometry covered by exactly one division at
+			-- the finest level; touching one is not enough.
 			geom_hits AS (
 				SELECT gr.record_id, count(DISTINCT d.id) AS n,
-					(array_agg(DISTINCT d.id))[1] AS division_id,
+					count(DISTINCT d.id) FILTER (WHERE ST_CoveredBy(rg.geom, d.geom)) AS n_covered,
+					(array_agg(DISTINCT d.id) FILTER (WHERE ST_CoveredBy(rg.geom, d.geom)))[1] AS division_id,
 					min(d.level)::int AS admin_level, bool_and(gr.all_points) AS all_points
 				FROM geom_rec gr
 				JOIN public.disaster_records_geom rg ON rg.disaster_record_id = gr.record_id
@@ -167,11 +184,14 @@ export async function refreshGeoReadModel(
 				SELECT record_id, division_id, admin_level, 'A',
 					CASE WHEN all_points THEN 'P' ELSE 'L' || admin_level::text END,
 					'footprint_intersect', NULL
-				FROM geom_hits WHERE n = 1
+				FROM geom_hits WHERE n_covered = 1 AND n = 1
 				UNION ALL
 				SELECT rec.id, NULL::uuid, NULL::int, NULL::text, NULL::text, 'as_recorded',
 					CASE
-						WHEN gh.n > 1 THEN 'geometry_spans_divisions'
+						WHEN gr.record_id IS NOT NULL AND (SELECT lvl FROM finest) IS NULL
+							THEN 'no_division_geometry'
+						WHEN gh.n > 1 OR (gh.n = 1 AND gh.n_covered = 0)
+							THEN 'geometry_spans_divisions'
 						WHEN gr.record_id IS NOT NULL THEN 'geometry_outside_divisions'
 						ELSE 'no_division_row'
 					END
@@ -179,7 +199,7 @@ export async function refreshGeoReadModel(
 				LEFT JOIN geom_rec gr ON gr.record_id = rec.id
 				LEFT JOIN geom_hits gh ON gh.record_id = rec.id
 				WHERE NOT EXISTS (SELECT 1 FROM linked l WHERE l.record_id = rec.id)
-					AND NOT (gh.n IS NOT NULL AND gh.n = 1)
+					AND NOT (gh.n_covered IS NOT NULL AND gh.n_covered = 1 AND gh.n = 1)
 			),
 			measured AS (
 				SELECT rec.id AS record_id, m.measure,
@@ -205,7 +225,14 @@ export async function refreshGeoReadModel(
 							AND pf ->> 'code' IS NOT NULL
 					) AS plausibility_flags
 				FROM rec
-				LEFT JOIN public.human_category_presence hcp ON hcp.record_id = rec.id
+				-- One presence row per record, chosen stably, so a duplicate row can
+				-- never produce two atoms for one measure.
+				LEFT JOIN LATERAL (
+					SELECT h.* FROM public.human_category_presence h
+					WHERE h.record_id = rec.id
+					ORDER BY h.id
+					LIMIT 1
+				) hcp ON true
 				CROSS JOIN LATERAL (VALUES ${measureRows}) AS m(measure, flag, total, fields)
 				UNION ALL
 				SELECT rec.id, 'records', 'reported', 1::numeric, ARRAY[]::text[]
@@ -216,19 +243,19 @@ export async function refreshGeoReadModel(
 				division_id, admin_level, unattributed_reason, att_grade, geo_precision, derivation,
 				measure, quantity_type, value, value_state,
 				hip_type_id, hip_cluster_id, hip_hazard_id,
-				start_instant, end_instant, date_precision,
+				start_instant, end_instant, end_from_start, date_precision,
 				record_status, event_status, hazard_status,
-				provisional, migration_run_id, plausibility_flags, method_version
+				provisional, retired, migration_run_id, plausibility_flags, method_version
 			)
 			SELECT
 				${t}::uuid, rec.id, rec.disaster_event_id, rec.hazardous_event_id,
 				a.division_id, a.admin_level, a.unattributed_reason, a.att_grade, a.geo_precision, a.derivation,
 				ms.measure, 'extensive', ms.value, ms.value_state,
 				rec.hip_type_id, rec.hip_cluster_id, rec.hip_hazard_id,
-				rec.start_instant, rec.end_instant, rec.date_precision,
+				rec.start_instant, rec.end_instant, rec.end_from_start, rec.date_precision,
 				rec.record_status, rec.event_status, rec.hazard_status,
 				rec.mig IS NOT NULL AND rec.record_status <> 'published',
-				rec.mig ->> 'run_id', ms.plausibility_flags, ${GEO_METHOD_VERSION}
+				rec.retired, rec.mig ->> 'run_id', ms.plausibility_flags, ${GEO_METHOD_VERSION}
 			FROM rec
 			JOIN attrib a ON a.record_id = rec.id
 			JOIN measured ms ON ms.record_id = rec.id

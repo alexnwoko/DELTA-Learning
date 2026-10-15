@@ -1,10 +1,14 @@
 import { sql, type SQL } from "drizzle-orm";
 import { dr } from "~/db.server";
 import {
+	basisIncludesProvisional,
+	basisStatuses,
+	type ApprovalAudience,
+} from "~/utils/approvalBasis";
+import type { AttGradeFloor, DeltaQuery } from "~/utils/deltaQuery";
+import {
 	GEO_HUMAN_MEASURES,
 	GEO_METHOD_VERSION,
-	isGeoMeasure,
-	isGeoMonetaryMeasure,
 	type GeoMeasure,
 } from "~/utils/geoMeasures";
 import {
@@ -13,13 +17,12 @@ import {
 	type ValueState,
 } from "~/utils/valueState";
 
-// Geoportal read side (build spec s5). Every query reads the geo schema only
-// and is scoped to one tenant. Figures are {value, valueState} with counts;
-// records that cannot be placed are counted in the unattributed block, never
-// dropped and never redistributed.
-
-/** Approval basis for every geoportal figure (pack decision 19, D-04). */
-export const GEO_APPROVAL_BASIS = ["published"] as const;
+// Geoportal read side (build spec s5; PD-05). Every query reads the geo
+// schema only and is scoped to one tenant. The selection is delta.query/1
+// (app/utils/deltaQuery.ts, owned by Analytics); the approval basis comes from
+// app/utils/approvalBasis.ts (TR-192). Figures are {value, value_state} with
+// record counts; records that cannot be placed are counted in the
+// unattributed block, never dropped and never redistributed (TR-072).
 
 export const ATT_GRADES = ["A", "B", "C", "D"] as const;
 export type AttGrade = (typeof ATT_GRADES)[number];
@@ -32,22 +35,21 @@ export type GeoRefusalCode =
 	| "ATT_D_EXCLUDED_FROM_OFFICIAL"
 	| "GRAIN_CARDINALITY_EXCEEDED"
 	| "MULTI_SERIES_CHOROPLETH"
+	| "MEASURE_NOT_AVAILABLE"
 	| "MALFORMED_REQUEST";
 
-export interface GeoQuery {
-	measure?: string;
+/** A resolved geo request: the selection, the map level and the basis. */
+export interface GeoRequest {
+	query: DeltaQuery;
+	/** Admin level the map aggregates to; geo view state, not a selection. */
 	level?: number;
-	from?: string | null;
-	to?: string | null;
-	hipTypeId?: string | null;
-	hipClusterId?: string | null;
-	hipHazardId?: string | null;
-	minAttGrade?: AttGrade;
-	mode?: "as-recorded";
+	audience: ApprovalAudience;
+	/** Filters this endpoint could not apply, each named (TR-175). */
+	notApplied: string[];
 }
 
 export interface GeoMeta {
-	query: GeoQuery & { schema: "delta.query/1" };
+	query: DeltaQuery & { level?: number };
 	boundaryVersion: string;
 	hazardVocabularyVersion: "HIPs 2025";
 	methodVersion: string;
@@ -59,7 +61,7 @@ export interface GeoMeta {
 }
 
 export interface GeoRefusal {
-	meta: GeoMeta;
+	meta: GeoMeta | null;
 	error: {
 		code: GeoRefusalCode;
 		message: string;
@@ -75,14 +77,17 @@ export class GeoRefusalError extends Error {
 		message: string,
 		public readonly requirement: string,
 		public readonly resolution: string,
-		/** 200 for a semantic refusal, 422 for a programming violation, 400 malformed. */
+		/** 200 semantic refusal, 422 programming violation, 400 malformed (PD-05). */
 		public readonly status: 200 | 400 | 422 = 200,
 	) {
 		super(message);
 	}
 }
 
-export function refusalBody(err: GeoRefusalError, meta: GeoMeta): GeoRefusal {
+export function refusalBody(
+	err: GeoRefusalError,
+	meta: GeoMeta | null,
+): GeoRefusal {
 	return {
 		meta,
 		error: {
@@ -99,7 +104,8 @@ export async function readModelRefreshedAt(
 	countryAccountsId: string,
 ): Promise<string | null> {
 	const res = await dr.execute(sql`
-		SELECT refreshed_at FROM geo.refresh_log WHERE country_accounts_id = ${countryAccountsId}
+		SELECT refreshed_at FROM geo.refresh_log
+		WHERE country_accounts_id = ${countryAccountsId}
 	`);
 	const row = res.rows[0] as { refreshed_at: Date | string } | undefined;
 	return row ? new Date(row.refreshed_at).toISOString() : null;
@@ -107,155 +113,89 @@ export async function readModelRefreshedAt(
 
 export async function baseMeta(
 	countryAccountsId: string,
-	query: GeoQuery,
+	req: GeoRequest,
 ): Promise<GeoMeta> {
 	return {
-		query: { schema: "delta.query/1", mode: "as-recorded", ...query },
+		query: {
+			...req.query,
+			...(req.level !== undefined && { level: req.level }),
+		},
 		boundaryVersion: "unknown",
 		hazardVocabularyVersion: "HIPs 2025",
 		methodVersion: GEO_METHOD_VERSION,
 		migrationRunIds: [],
-		approvalBasis: GEO_APPROVAL_BASIS,
+		approvalBasis: basisStatuses(req.audience),
 		provisional: false,
-		notApplied: [],
+		notApplied: [...req.notApplied],
 		readModelRefreshedAt: await readModelRefreshedAt(countryAccountsId),
 	};
 }
 
-const DATE_RE = /^\d{4}(-\d{2}(-\d{2})?)?$/;
-
-/** Parses choropleth and dossier parameters; throws a refusal when invalid. */
-export function parseGeoQuery(
-	params: URLSearchParams,
-	opts: { requireMeasure: boolean; requireLevel: boolean },
-): GeoQuery {
-	const q: GeoQuery = { mode: "as-recorded" };
-
-	const measureParam = params.get("measure");
-	if (opts.requireMeasure || measureParam) {
-		if (!measureParam) {
-			throw malformed("measure is required.");
-		}
-		if (measureParam.includes(",")) {
-			throw new GeoRefusalError(
-				"MULTI_SERIES_CHOROPLETH",
-				"A choropleth shows one measure. Several were requested.",
-				"VIS-Q08",
-				"Request one measure per map, or use the table view to compare measures.",
-			);
-		}
-		if (isGeoMonetaryMeasure(measureParam)) {
-			throw new GeoRefusalError(
-				"MONETARY_CONVENTIONS_PENDING",
-				"Monetary figures are not totalled until the Sendai Framework Monitor conventions are confirmed.",
-				"Pack decision 16 (D-17); VIS-L06",
-				"Show human effects or record counts, or wait for the currency and deflator ruling.",
-			);
-		}
-		if (!isGeoMeasure(measureParam)) {
-			throw malformed(`Unknown measure "${measureParam}".`);
-		}
-		q.measure = measureParam;
-	}
-
-	const levelParam = params.get("level");
-	if (opts.requireLevel || levelParam) {
-		const level = Number(levelParam);
-		if (!levelParam || !Number.isInteger(level) || level < 0) {
-			throw malformed("level must be a non-negative integer.");
-		}
-		q.level = level;
-	}
-
-	for (const key of ["from", "to"] as const) {
-		const v = params.get(key);
-		if (v) {
-			if (!DATE_RE.test(v)) {
-				throw malformed(`${key} must be YYYY, YYYY-MM or YYYY-MM-DD.`);
-			}
-			q[key] = v;
-		}
-	}
-
-	q.hipTypeId = params.get("hipTypeId") || null;
-	q.hipClusterId = params.get("hipClusterId") || null;
-	q.hipHazardId = params.get("hipHazardId") || null;
-
-	const grade = (params.get("minAttGrade") || "C").toUpperCase();
-	if (!(ATT_GRADES as readonly string[]).includes(grade)) {
-		throw malformed("minAttGrade must be A, B, C or D.");
-	}
-	if (grade === "D") {
-		throw new GeoRefusalError(
-			"ATT_D_EXCLUDED_FROM_OFFICIAL",
-			"Figures attributed by downward split (ATT-D) are excluded from geoportal figures.",
-			"VIS-Q05; pack decision 13",
-			"Use minAttGrade A, B or C.",
-		);
-	}
-	q.minAttGrade = grade as AttGrade;
-
-	const mode = params.get("mode");
-	if (mode && mode !== "as-recorded") {
-		throw new GeoRefusalError(
-			"CROSS_VERSION_AGGREGATION_REFUSED",
-			"Only the as-recorded mode is available. No boundary version model exists yet.",
-			"VIS-T04, VIS-T09; DEC-005",
-			"Use mode=as-recorded.",
-		);
-	}
-	return q;
-}
-
-function malformed(message: string): GeoRefusalError {
-	return new GeoRefusalError(
-		"MALFORMED_REQUEST",
-		message,
-		"API spec s11",
-		"Correct the request parameters.",
-		400,
-	);
-}
-
-/** Filters shared by every figure: tenant, approval basis, hazard and grade. */
-function scopeFilters(countryAccountsId: string, q: GeoQuery): SQL {
+/**
+ * Filters every figure shares: tenant, approval basis (TR-192) with retired
+ * records excluded (DEC-012), and the hazard. Never the division or the date,
+ * which callers apply so the records they remove can still be reported.
+ */
+function scopeFilters(countryAccountsId: string, req: GeoRequest): SQL {
+	const statuses = basisStatuses(req.audience);
 	const parts: SQL[] = [
 		sql`a.country_accounts_id = ${countryAccountsId}`,
 		sql`a.record_status IN (${sql.join(
-			GEO_APPROVAL_BASIS.map((s) => sql`${s}`),
+			statuses.map((s) => sql`${s}`),
 			sql`, `,
 		)})`,
+		sql`NOT a.retired`,
 	];
-	if (q.hipTypeId) parts.push(sql`a.hip_type_id = ${q.hipTypeId}`);
-	if (q.hipClusterId) parts.push(sql`a.hip_cluster_id = ${q.hipClusterId}`);
-	if (q.hipHazardId) parts.push(sql`a.hip_hazard_id = ${q.hipHazardId}`);
+	const h = req.query.where.hazard;
+	if (h?.typeId) parts.push(sql`a.hip_type_id = ${h.typeId}`);
+	if (h?.clusterId) parts.push(sql`a.hip_cluster_id = ${h.clusterId}`);
+	if (h?.hazardId) parts.push(sql`a.hip_hazard_id = ${h.hazardId}`);
 	return sql.join(parts, sql` AND `);
 }
 
-/**
- * Date overlap test, applied after scoping so undated records can be reported
- * as unattributed ("undated") when a range is set, not silently dropped.
- */
-function dateInRange(q: GeoQuery): SQL {
-	const parts: SQL[] = [];
-	if (q.from) parts.push(sql`a.end_instant >= geo.date_floor(${q.from})`);
-	if (q.to) parts.push(sql`a.start_instant <= geo.date_ceil(${q.to})`);
-	return parts.length ? sql.join(parts, sql` AND `) : sql`true`;
+function hasRange(req: GeoRequest): boolean {
+	return Boolean(req.query.where.time?.from || req.query.where.time?.to);
 }
 
+/** Overlap of the record's period with the requested range. */
+function dateInRange(req: GeoRequest): SQL {
+	const t = req.query.where.time;
+	const parts: SQL[] = [sql`a.start_instant IS NOT NULL`];
+	if (t?.from) parts.push(sql`a.end_instant >= geo.date_floor(${t.from})`);
+	if (t?.to) parts.push(sql`a.start_instant <= geo.date_ceil(${t.to})`);
+	return sql.join(parts, sql` AND `);
+}
+
+/** Atoms placed in the requested division or its descendants. */
+function inDivision(countryAccountsId: string, req: GeoRequest): SQL {
+	const divisionId = req.query.where.geo?.divisionId;
+	if (!divisionId) return sql`true`;
+	return sql`a.division_id IN (
+		SELECT division_id FROM geo.division_ancestor
+		WHERE country_accounts_id = ${countryAccountsId} AND ancestor_id = ${divisionId}
+	)`;
+}
+
+function gradeFloor(floor: AttGradeFloor | undefined): SQL {
+	return floor ? sql`a.att_grade <= ${floor}` : sql`true`;
+}
+
+/** One cell: PD-05 G2 fields, plus the C30 and precision counts. */
 export interface GeoCell {
-	divisionId: string;
+	division_id: string;
 	value: number | null;
-	valueState: ValueState;
-	recordsReported: number;
-	recordsZeroConfirmed: number;
-	recordsNotReported: number;
-	recordsTotal: number;
-	/** Share of records in the cell that reported the measure, zero included. */
+	value_state: ValueState;
+	/** Records that reported the measure, confirmed zeros included (PD-05). */
+	records_reported: number;
+	records_zero_confirmed: number;
+	records_not_reported: number;
+	records_not_applicable: number;
+	records_total: number;
+	/** records_reported / records_total. */
 	coverage: number;
-	plausibilityFlaggedRecords: number;
+	plausibility_flagged_records: number;
 	gradeDistribution: Record<AttGrade, number>;
-	geoPrecision: Record<string, number>;
+	geo_precision: Record<string, number>;
 }
 
 export interface GeoUnattributed {
@@ -263,11 +203,20 @@ export interface GeoUnattributed {
 	reasons: Record<string, number>;
 }
 
-interface PlacedAggregateRow {
+export interface GradeFloorExclusion {
+	/** Records with an attribution, none of which passes the floor. */
+	records: number;
+	/** Those records by their best grade. */
+	by_grade: Partial<Record<AttGrade, number>>;
+}
+
+interface CellRow {
+	measure: string;
 	division_id: string;
 	sum_reported: string | null;
 	reported: string;
 	zero_confirmed: string;
+	not_applicable: string;
 	total: string;
 	flagged: string;
 	grade_a: string;
@@ -277,138 +226,192 @@ interface PlacedAggregateRow {
 	precision: Record<string, number> | null;
 }
 
+function toCell(c: CellRow): GeoCell {
+	const notApplicable = Number(c.not_applicable);
+	const mv = measureValue(
+		{
+			sum: c.sum_reported,
+			reported: c.reported,
+			zeroConfirmed: c.zero_confirmed,
+			total: Number(c.total) - notApplicable,
+			flagged: c.flagged,
+		},
+		PROVISIONAL_ZERO_COVERAGE,
+	);
+	const total = mv.recordsTotal + notApplicable;
+	const reported = mv.recordsReported + mv.recordsZeroConfirmed;
+	return {
+		division_id: c.division_id,
+		value: mv.value,
+		value_state: mv.valueState,
+		records_reported: reported,
+		records_zero_confirmed: mv.recordsZeroConfirmed,
+		records_not_reported: mv.recordsNotReported,
+		records_not_applicable: notApplicable,
+		records_total: total,
+		coverage: total > 0 ? reported / total : 0,
+		plausibility_flagged_records: mv.recordsFlagged,
+		gradeDistribution: {
+			A: Number(c.grade_a),
+			B: Number(c.grade_b),
+			C: Number(c.grade_c),
+			D: Number(c.grade_d),
+		},
+		geo_precision: Object.fromEntries(
+			Object.entries(c.precision ?? {}).map(([k, v]) => [k, Number(v)]),
+		),
+	};
+}
+
 /**
- * Places each in-scope atom at `level` through its division's ancestor, one
- * record once per target division. Returns the aggregate per division, the
- * unattributed block and the run ids, for one measure.
+ * Places in-scope atoms at `level` through each division's ancestor, one
+ * record once per target division and measure. The first measure carries the
+ * record-level reports: unattributed reasons, the grade-floor exclusion,
+ * records counted in several areas, run ids and the provisional flag.
  */
-async function aggregateAtLevel(
+async function aggregate(
 	countryAccountsId: string,
-	q: GeoQuery & { measure: GeoMeasure; level: number },
+	req: GeoRequest,
+	measures: readonly GeoMeasure[],
+	level: number,
 	restrictToDivision?: string,
 ) {
-	const minGrade = q.minAttGrade ?? "C";
-	const hasRange = Boolean(q.from || q.to);
+	const t = countryAccountsId;
+	const m0 = measures[0];
+	const ranged = hasRange(req);
+	const floor = req.query.minAttGrade;
 	const restrict = restrictToDivision
-		? sql`AND p.division_id = ${restrictToDivision}`
+		? sql`AND da.ancestor_id = ${restrictToDivision}`
 		: sql``;
 
 	const res = await dr.execute(sql`
 		WITH scope AS (
 			SELECT a.* FROM geo.impact_atom a
-			WHERE ${scopeFilters(countryAccountsId, q)} AND a.measure = ${q.measure}
+			WHERE ${scopeFilters(t, req)}
+				AND a.measure IN (${sql.join(
+					measures.map((m) => sql`${m}`),
+					sql`, `,
+				)})
 		),
 		ranged AS (
-			SELECT * FROM scope a
-			WHERE ${hasRange ? sql`a.start_instant IS NOT NULL AND ${dateInRange(q)}` : sql`true`}
+			SELECT * FROM scope a WHERE ${ranged ? dateInRange(req) : sql`true`}
+		),
+		in_area AS (
+			SELECT * FROM ranged a
+			WHERE a.division_id IS NULL OR ${inDivision(t, req)}
 		),
 		graded AS (
-			SELECT * FROM ranged a WHERE a.att_grade IS NULL OR a.att_grade <= ${minGrade}
+			SELECT * FROM in_area a
+			WHERE a.division_id IS NOT NULL AND ${gradeFloor(floor)}
 		),
 		placed AS (
-			SELECT DISTINCT ON (da.ancestor_id, g.disaster_record_id)
-				da.ancestor_id AS division_id, g.disaster_record_id, g.value, g.value_state,
-				g.att_grade, g.geo_precision, g.plausibility_flags
+			SELECT DISTINCT ON (g.measure, da.ancestor_id, g.disaster_record_id)
+				g.measure, da.ancestor_id AS division_id, g.disaster_record_id,
+				g.value, g.value_state, g.att_grade, g.geo_precision,
+				g.plausibility_flags, g.record_status, g.migration_run_id
 			FROM graded g
 			JOIN geo.division_ancestor da
 				ON da.division_id = g.division_id
-				AND da.country_accounts_id = ${countryAccountsId}
-				AND da.ancestor_level = ${q.level}
-			ORDER BY da.ancestor_id, g.disaster_record_id, g.att_grade
+				AND da.country_accounts_id = ${t}
+				AND da.ancestor_level = ${level}
+				${restrict}
+			ORDER BY g.measure, da.ancestor_id, g.disaster_record_id, g.att_grade
+		),
+		prec AS (
+			SELECT measure, division_id, jsonb_object_agg(geo_precision, n) AS precision
+			FROM (
+				SELECT measure, division_id, geo_precision, COUNT(*) AS n
+				FROM placed WHERE geo_precision IS NOT NULL
+				GROUP BY measure, division_id, geo_precision
+			) x
+			GROUP BY measure, division_id
 		),
 		agg AS (
-			SELECT p.division_id,
+			SELECT p.measure, p.division_id,
 				SUM(p.value) FILTER (WHERE p.value_state = 'reported') AS sum_reported,
 				COUNT(*) FILTER (WHERE p.value_state = 'reported') AS reported,
 				COUNT(*) FILTER (WHERE p.value_state = 'zero_confirmed') AS zero_confirmed,
+				COUNT(*) FILTER (WHERE p.value_state = 'not_applicable') AS not_applicable,
 				COUNT(*) AS total,
 				COUNT(*) FILTER (WHERE cardinality(p.plausibility_flags) > 0) AS flagged,
 				COUNT(*) FILTER (WHERE p.att_grade = 'A') AS grade_a,
 				COUNT(*) FILTER (WHERE p.att_grade = 'B') AS grade_b,
 				COUNT(*) FILTER (WHERE p.att_grade = 'C') AS grade_c,
-				COUNT(*) FILTER (WHERE p.att_grade = 'D') AS grade_d,
-				(SELECT jsonb_object_agg(gp, n) FROM (
-					SELECT p2.geo_precision AS gp, COUNT(*) AS n FROM placed p2
-					WHERE p2.division_id = p.division_id AND p2.geo_precision IS NOT NULL
-					GROUP BY p2.geo_precision) x) AS precision
+				COUNT(*) FILTER (WHERE p.att_grade = 'D') AS grade_d
 			FROM placed p
-			WHERE true ${restrict}
-			GROUP BY p.division_id
+			GROUP BY p.measure, p.division_id
+		),
+		cells AS (
+			SELECT agg.*, prec.precision
+			FROM agg LEFT JOIN prec USING (measure, division_id)
+		),
+		placed_records AS (
+			SELECT DISTINCT disaster_record_id FROM placed WHERE measure = ${m0}
+		),
+		passing_records AS (
+			SELECT DISTINCT disaster_record_id FROM graded WHERE measure = ${m0}
 		),
 		unplaced AS (
 			SELECT DISTINCT ON (s.disaster_record_id) s.disaster_record_id,
 				CASE
-					WHEN ${hasRange} AND s.start_instant IS NULL THEN 'undated'
+					WHEN ${ranged} AND s.start_instant IS NULL THEN 'undated'
 					WHEN s.unattributed_reason IS NOT NULL THEN s.unattributed_reason
 					ELSE 'coarser_than_level'
 				END AS reason
 			FROM scope s
-			WHERE (${hasRange} AND s.start_instant IS NULL)
-				OR (s.disaster_record_id IN (SELECT disaster_record_id FROM ranged)
-					AND s.disaster_record_id IN (SELECT disaster_record_id FROM graded)
-					AND s.disaster_record_id NOT IN (SELECT disaster_record_id FROM placed))
+			WHERE s.measure = ${m0}
+				AND (
+					(${ranged} AND s.start_instant IS NULL)
+					OR (s.division_id IS NULL
+						AND s.disaster_record_id IN (SELECT disaster_record_id FROM ranged))
+					OR (s.disaster_record_id IN (SELECT disaster_record_id FROM passing_records)
+						AND s.disaster_record_id NOT IN (SELECT disaster_record_id FROM placed_records))
+				)
 			ORDER BY s.disaster_record_id, s.unattributed_reason NULLS LAST
 		),
-		runs AS (
-			SELECT DISTINCT a.migration_run_id FROM graded a WHERE a.migration_run_id IS NOT NULL
+		floor_excluded AS (
+			SELECT a.disaster_record_id, min(a.att_grade) AS best_grade
+			FROM in_area a
+			WHERE a.measure = ${m0} AND a.division_id IS NOT NULL
+				AND a.disaster_record_id NOT IN (SELECT disaster_record_id FROM passing_records)
+			GROUP BY a.disaster_record_id
 		)
 		SELECT
-			(SELECT COALESCE(jsonb_agg(to_jsonb(agg)), '[]'::jsonb) FROM agg) AS cells,
+			(SELECT COALESCE(jsonb_agg(to_jsonb(cells)), '[]'::jsonb) FROM cells) AS cells,
 			(SELECT COALESCE(jsonb_object_agg(reason, n), '{}'::jsonb)
 				FROM (SELECT reason, COUNT(*) AS n FROM unplaced GROUP BY reason) u) AS reasons,
 			(SELECT COUNT(*) FROM unplaced) AS unattributed,
-			(SELECT COALESCE(jsonb_agg(migration_run_id), '[]'::jsonb) FROM runs) AS run_ids,
-			(SELECT COUNT(DISTINCT disaster_record_id) FROM ranged a WHERE NOT (a.att_grade IS NULL OR a.att_grade <= ${minGrade})) AS excluded_by_grade,
-			(SELECT COUNT(*) FROM (SELECT disaster_record_id FROM placed GROUP BY disaster_record_id HAVING COUNT(*) > 1) m) AS multi_division,
-			(SELECT bool_or(provisional) FROM graded) AS provisional
+			(SELECT COUNT(*) FROM floor_excluded) AS floor_excluded,
+			(SELECT COALESCE(jsonb_object_agg(best_grade, n), '{}'::jsonb)
+				FROM (SELECT best_grade, COUNT(*) AS n FROM floor_excluded GROUP BY best_grade) f) AS floor_by_grade,
+			(SELECT COALESCE(jsonb_agg(DISTINCT migration_run_id), '[]'::jsonb)
+				FROM placed WHERE migration_run_id IS NOT NULL) AS run_ids,
+			(SELECT COUNT(*) FROM (
+				SELECT disaster_record_id FROM placed WHERE measure = ${m0}
+				GROUP BY disaster_record_id HAVING COUNT(*) > 1) m) AS multi_division,
+			(SELECT COALESCE(bool_or(record_status <> 'published'), false) FROM placed) AS provisional
 	`);
 
 	const row = res.rows[0] as {
-		cells: PlacedAggregateRow[];
+		cells: CellRow[];
 		reasons: Record<string, number | string>;
 		unattributed: string | number;
+		floor_excluded: string | number;
+		floor_by_grade: Record<string, number | string>;
 		run_ids: string[];
-		excluded_by_grade: string | number;
 		multi_division: string | number;
-		provisional: boolean | null;
+		provisional: boolean;
 	};
 
-	const cells: GeoCell[] = row.cells.map((c) => {
-		const mv = measureValue(
-			{
-				sum: c.sum_reported,
-				reported: c.reported,
-				zeroConfirmed: c.zero_confirmed,
-				total: c.total,
-				flagged: c.flagged,
-			},
-			PROVISIONAL_ZERO_COVERAGE,
-		);
-		return {
-			divisionId: c.division_id,
-			value: mv.value,
-			valueState: mv.valueState,
-			recordsReported: mv.recordsReported,
-			recordsZeroConfirmed: mv.recordsZeroConfirmed,
-			recordsNotReported: mv.recordsNotReported,
-			recordsTotal: mv.recordsTotal,
-			coverage:
-				mv.recordsTotal > 0
-					? (mv.recordsReported + mv.recordsZeroConfirmed) / mv.recordsTotal
-					: 0,
-			plausibilityFlaggedRecords: mv.recordsFlagged,
-			gradeDistribution: {
-				A: Number(c.grade_a),
-				B: Number(c.grade_b),
-				C: Number(c.grade_c),
-				D: Number(c.grade_d),
-			},
-			geoPrecision: Object.fromEntries(
-				Object.entries(c.precision ?? {}).map(([k, v]) => [k, Number(v)]),
-			),
-		};
-	});
-	cells.sort((a, b) => a.divisionId.localeCompare(b.divisionId));
+	const cells = new Map<string, GeoCell[]>();
+	for (const c of row.cells) {
+		const list = cells.get(c.measure) ?? [];
+		list.push(toCell(c));
+		cells.set(c.measure, list);
+	}
+	for (const list of cells.values()) {
+		list.sort((a, b) => a.division_id.localeCompare(b.division_id));
+	}
 
 	return {
 		cells,
@@ -418,45 +421,54 @@ async function aggregateAtLevel(
 				Object.entries(row.reasons).map(([k, v]) => [k, Number(v)]),
 			),
 		} as GeoUnattributed,
+		excludedByGradeFloor: floor
+			? ({
+					records: Number(row.floor_excluded),
+					by_grade: Object.fromEntries(
+						Object.entries(row.floor_by_grade).map(([k, v]) => [k, Number(v)]),
+					),
+				} as GradeFloorExclusion)
+			: null,
 		runIds: row.run_ids.slice().sort(),
-		excludedByGrade: Number(row.excluded_by_grade),
 		multiDivisionRecords: Number(row.multi_division),
 		provisional: Boolean(row.provisional),
 	};
 }
 
-async function tenantMaxLevel(countryAccountsId: string): Promise<number | null> {
+async function tenantMaxLevel(
+	countryAccountsId: string,
+): Promise<number | null> {
 	const res = await dr.execute(sql`
 		SELECT max(admin_level) AS max_level FROM geo.division_geom_cache
 		WHERE country_accounts_id = ${countryAccountsId}
 	`);
-	const v = (res.rows[0] as { max_level: number | null } | undefined)?.max_level;
+	const v = (res.rows[0] as { max_level: number | null } | undefined)
+		?.max_level;
 	return v === null || v === undefined ? null : Number(v);
 }
 
 /** G2. One measure aggregated by division at one admin level. */
-export async function getChoropleth(countryAccountsId: string, q: GeoQuery) {
-	const measure = q.measure as GeoMeasure;
-	const level = q.level as number;
-	const meta = await baseMeta(countryAccountsId, q);
+export async function getChoropleth(
+	countryAccountsId: string,
+	req: GeoRequest,
+) {
+	const measure = req.query.measure as GeoMeasure;
+	const level = req.level as number;
+	const meta = await baseMeta(countryAccountsId, req);
 
 	const maxLevel = await tenantMaxLevel(countryAccountsId);
 	if (maxLevel !== null && level > maxLevel) {
 		throw new GeoRefusalError(
 			"PRECISION_BELOW_CEILING",
 			`Level ${level} is finer than the finest admin level this instance holds (${maxLevel}).`,
-			"Pack C28, C16",
+			"TR-174; pack C28, C16",
 			`Request level ${maxLevel} or coarser.`,
 		);
 	}
 
-	const agg = await aggregateAtLevel(countryAccountsId, {
-		...q,
-		measure,
-		level,
-	});
+	const agg = await aggregate(countryAccountsId, req, [measure], level);
 	meta.migrationRunIds = agg.runIds;
-	meta.provisional = agg.provisional;
+	meta.provisional = agg.provisional && basisIncludesProvisional(req.audience);
 
 	const captions = [
 		measure === "records"
@@ -469,6 +481,9 @@ export async function getChoropleth(countryAccountsId: string, q: GeoQuery) {
 			`${agg.multiDivisionRecords} records are linked to more than one area and count in each, so area values do not add up to a total.`,
 		);
 	}
+	if (meta.provisional) {
+		captions.push("Provisional: includes records not yet published.");
+	}
 
 	return {
 		meta,
@@ -476,16 +491,20 @@ export async function getChoropleth(countryAccountsId: string, q: GeoQuery) {
 		measure,
 		quantityType: "extensive" as const,
 		level,
-		cells: agg.cells,
+		cells: agg.cells.get(measure) ?? [],
 		unattributed: agg.unattributed,
-		excludedByGrade: agg.excludedByGrade,
+		...(agg.excludedByGradeFloor && {
+			excluded_by_grade_floor: agg.excludedByGradeFloor,
+		}),
 		multiDivisionRecords: agg.multiDivisionRecords,
 		caption: captions.join(" "),
 	};
 }
 
 /** Tier column for a zoom level. */
-export function geomColumnForZoom(z: number): "geom_z4" | "geom_z8" | "geom_z12" {
+export function geomColumnForZoom(
+	z: number,
+): "geom_z4" | "geom_z8" | "geom_z12" {
 	if (z <= 5) return "geom_z4";
 	if (z <= 9) return "geom_z8";
 	return "geom_z12";
@@ -575,16 +594,17 @@ export async function getDivisionTile(
 export async function getPlaceDossier(
 	countryAccountsId: string,
 	divisionId: string,
-	q: GeoQuery,
+	req: GeoRequest,
 	lang: string,
 ) {
+	const t = countryAccountsId;
 	const divRes = await dr.execute(sql`
 		SELECT c.division_id, c.admin_level, c.national_id, c.name,
 			p.division_id AS parent_id, p.name AS parent_name
 		FROM geo.division_geom_cache c
 		LEFT JOIN geo.division_geom_cache p
 			ON p.division_id = c.parent_id AND p.country_accounts_id = c.country_accounts_id
-		WHERE c.division_id = ${divisionId} AND c.country_accounts_id = ${countryAccountsId}
+		WHERE c.division_id = ${divisionId} AND c.country_accounts_id = ${t}
 	`);
 	const div = divRes.rows[0] as
 		| {
@@ -599,24 +619,28 @@ export async function getPlaceDossier(
 	if (!div) {
 		return null;
 	}
-	const meta = await baseMeta(countryAccountsId, q);
+	const meta = await baseMeta(t, req);
 	const level = Number(div.admin_level);
 	const localName = (n: Record<string, string> | null) =>
 		n ? (n[lang] ?? n.en ?? "") : null;
+	const ranged = hasRange(req);
+	const floor = req.query.minAttGrade;
 
-	const recordsQ = { ...q, measure: "records" as const, level };
+	// Records placed in this division or below it: one row per record.
 	const yearsRes = await dr.execute(sql`
 		WITH placed AS (
-			SELECT DISTINCT a.disaster_record_id, a.start_instant, a.hip_type_id
+			SELECT DISTINCT ON (a.disaster_record_id)
+				a.disaster_record_id, a.start_instant, a.hip_type_id, a.att_grade
 			FROM geo.impact_atom a
 			JOIN geo.division_ancestor da
 				ON da.division_id = a.division_id
-				AND da.country_accounts_id = ${countryAccountsId}
+				AND da.country_accounts_id = ${t}
 				AND da.ancestor_id = ${divisionId}
-			WHERE ${scopeFilters(countryAccountsId, recordsQ)}
+			WHERE ${scopeFilters(t, req)}
 				AND a.measure = 'records'
-				AND ${dateInRange(recordsQ)}
-				AND (a.att_grade IS NULL OR a.att_grade <= ${recordsQ.minAttGrade ?? "C"})
+				AND ${ranged ? dateInRange(req) : sql`true`}
+				AND ${gradeFloor(floor)}
+			ORDER BY a.disaster_record_id, a.att_grade
 		)
 		SELECT
 			(SELECT COALESCE(jsonb_agg(jsonb_build_object('year', y, 'recordCount', n) ORDER BY y), '[]'::jsonb)
@@ -625,13 +649,16 @@ export async function getPlaceDossier(
 			(SELECT COUNT(*) FROM placed WHERE start_instant IS NULL) AS undated,
 			(SELECT COALESCE(jsonb_agg(jsonb_build_object('hipTypeId', hip_type_id, 'recordCount', n) ORDER BY n DESC, hip_type_id), '[]'::jsonb)
 				FROM (SELECT hip_type_id, COUNT(*) AS n FROM placed GROUP BY hip_type_id) t) AS hazard_mix,
-			(SELECT COUNT(*) FROM placed) AS record_count
+			(SELECT COUNT(*) FROM placed) AS record_count,
+			(SELECT COALESCE(jsonb_object_agg(att_grade, n), '{}'::jsonb)
+				FROM (SELECT att_grade, COUNT(*) AS n FROM placed GROUP BY att_grade) g) AS grades
 	`);
 	const yr = yearsRes.rows[0] as {
 		by_year: { year: number; recordCount: number }[];
 		undated: string | number;
 		hazard_mix: { hipTypeId: string | null; recordCount: number }[];
 		record_count: string | number;
+		grades: Record<string, number | string>;
 	};
 
 	const years = yr.by_year.map((b) => b.year);
@@ -651,38 +678,37 @@ export async function getPlaceDossier(
 		}
 	}
 
-	const cumulative: Record<string, Omit<GeoCell, "divisionId">> = {};
-	const runIds = new Set<string>();
-	let provisional = false;
+	// All human-effect measures for this division in one pass, restricted to
+	// it, so provenance (run ids, provisional) describes this place only.
+	const agg = await aggregate(t, req, GEO_HUMAN_MEASURES, level, divisionId);
+	const cumulative: Record<string, Omit<GeoCell, "division_id">> = {};
 	for (const measure of GEO_HUMAN_MEASURES) {
-		const agg = await aggregateAtLevel(
-			countryAccountsId,
-			{ ...q, measure, level },
-			divisionId,
-		);
-		agg.runIds.forEach((r) => runIds.add(r));
-		provisional ||= agg.provisional;
-		const cell = agg.cells[0];
+		const cell = agg.cells.get(measure)?.[0];
 		if (cell) {
-			const { divisionId: _ignored, ...rest } = cell;
+			const { division_id: _ignored, ...rest } = cell;
 			cumulative[measure] = rest;
 		} else {
 			cumulative[measure] = {
 				value: null,
-				valueState: "not_reported",
-				recordsReported: 0,
-				recordsZeroConfirmed: 0,
-				recordsNotReported: 0,
-				recordsTotal: 0,
+				value_state: "not_reported",
+				records_reported: 0,
+				records_zero_confirmed: 0,
+				records_not_reported: 0,
+				records_not_applicable: 0,
+				records_total: 0,
 				coverage: 0,
-				plausibilityFlaggedRecords: 0,
+				plausibility_flagged_records: 0,
 				gradeDistribution: { A: 0, B: 0, C: 0, D: 0 },
-				geoPrecision: {},
+				geo_precision: {},
 			};
 		}
 	}
-	meta.migrationRunIds = [...runIds].sort();
-	meta.provisional = provisional;
+	meta.migrationRunIds = agg.runIds;
+	meta.provisional = agg.provisional && basisIncludesProvisional(req.audience);
+
+	const grades = Object.fromEntries(
+		ATT_GRADES.map((g) => [g, Number(yr.grades[g] ?? 0)]),
+	) as Record<AttGrade, number>;
 
 	return {
 		meta,
@@ -702,6 +728,7 @@ export async function getPlaceDossier(
 			lastYear: years[years.length - 1] ?? null,
 			undatedRecordCount: Number(yr.undated),
 			periodsWithNoReporting,
+			gradeDistribution: grades,
 			note: "Periods with no records are shown as no reporting, never as zero. Completeness is not modelled.",
 		},
 		hazardMix: yr.hazard_mix,
@@ -714,20 +741,30 @@ export async function getPlaceDossier(
  * G6. HIPs tree with self and subtree record counts for the tenant (VIS-H03,
  * VIS-H04). A chapeau code (ending "00", for example MH0600) counts itself
  * as "self", and every hazard sharing its four-character prefix as "subtree",
- * so records coded at the chapeau never vanish from the tree.
+ * so records coded at the chapeau never vanish from the tree. Counts follow
+ * the approval basis; no date, division or grade filter applies.
  */
-export async function getHazardTree(countryAccountsId: string, lang: string) {
-	const basis = sql.join(
-		GEO_APPROVAL_BASIS.map((s) => sql`${s}`),
-		sql`, `,
-	);
+export async function getHazardTree(
+	countryAccountsId: string,
+	req: GeoRequest,
+	lang: string,
+) {
+	const meta = await baseMeta(countryAccountsId, req);
+	const w = req.query.where;
+	for (const [name, set] of [
+		["division", Boolean(w.geo)],
+		["from/to", Boolean(w.time)],
+		["minAttGrade", Boolean(req.query.minAttGrade)],
+	] as const) {
+		if (set)
+			meta.notApplied.push(`${name}: the hazard tree counts all records`);
+	}
 	const res = await dr.execute(sql`
 		WITH recs AS (
 			SELECT DISTINCT a.disaster_record_id, a.hip_type_id, a.hip_cluster_id, a.hip_hazard_id
 			FROM geo.impact_atom a
-			WHERE a.country_accounts_id = ${countryAccountsId}
+			WHERE ${scopeFilters(countryAccountsId, { ...req, query: { ...req.query, where: {} } })}
 				AND a.measure = 'records'
-				AND a.record_status IN (${basis})
 		),
 		by_type AS (
 			SELECT hip_type_id AS id, COUNT(*) AS subtree,
@@ -782,22 +819,41 @@ export async function getHazardTree(countryAccountsId: string, lang: string) {
 			(SELECT COUNT(*) FROM recs WHERE hip_type_id IS NULL) AS unclassified
 	`);
 	const row = res.rows[0] as {
-		types: { id: string; name: string; recordCountSelf: number; recordCountSubtree: number }[];
-		clusters: { id: string; typeId: string; name: string; recordCountSelf: number; recordCountSubtree: number }[];
-		hazards: { id: string; clusterId: string; code: string; name: string; isChapeau: boolean; recordCountSelf: number; recordCountSubtree: number }[];
+		types: {
+			id: string;
+			name: string;
+			recordCountSelf: number;
+			recordCountSubtree: number;
+		}[];
+		clusters: {
+			id: string;
+			typeId: string;
+			name: string;
+			recordCountSelf: number;
+			recordCountSubtree: number;
+		}[];
+		hazards: {
+			id: string;
+			clusterId: string;
+			code: string;
+			name: string;
+			isChapeau: boolean;
+			recordCountSelf: number;
+			recordCountSubtree: number;
+		}[];
 		unclassified: string | number;
 	};
-	const types = row.types.map((t) => ({
-		...t,
+	const types = row.types.map((ty) => ({
+		...ty,
 		clusters: row.clusters
-			.filter((c) => c.typeId === t.id)
+			.filter((c) => c.typeId === ty.id)
 			.map((c) => ({
 				...c,
 				hazards: row.hazards.filter((h) => h.clusterId === c.id),
 			})),
 	}));
 	return {
-		meta: await baseMeta(countryAccountsId, {}),
+		meta,
 		vocabularyVersion: "HIPs 2025" as const,
 		unclassifiedRecordCount: Number(row.unclassified),
 		types,
