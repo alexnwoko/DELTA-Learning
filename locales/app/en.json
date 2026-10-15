@@ -287,7 +287,7 @@
   {
     "id": "analysis.aria_label_loading_data",
     "translation": "Loading data",
-    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:238"
+    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:241"
   },
   {
     "id": "analysis.asset",
@@ -342,7 +342,7 @@
   {
     "id": "analysis.damages_by_hazard_type",
     "translation": "Damages by hazard type",
-    "description": "File: app/frontend/analytics/sectors/sections/ImpactByHazard.tsx:648"
+    "description": "File: app/frontend/analytics/sectors/sections/ImpactByHazard.tsx:655"
   },
   {
     "id": "analysis.damages_in_currency_due_to_hazard",
@@ -392,7 +392,7 @@
   {
     "id": "analysis.description",
     "translation": "Description",
-    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:364"
+    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:371"
   },
   {
     "id": "analysis.detailed_effects_in_sector",
@@ -502,22 +502,22 @@
   {
     "id": "analysis.effect_details",
     "translation": "Effect details",
-    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:135"
+    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:138"
   },
   {
     "id": "analysis.effect_details_description",
     "translation": "View detailed information about damages, losses, and disruptions in the selected sector.",
-    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:221"
+    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:224"
   },
   {
     "id": "analysis.effect_details_in_sector",
     "translation": "Effect details in {sector} Sector",
-    "description": "Title for effect details in a specific sector. {sector} is the name of the sector. File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:164"
+    "description": "Title for effect details in a specific sector. {sector} is the name of the sector. File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:167"
   },
   {
     "id": "analysis.effect_details_in_subsector_and_sector",
     "translation": "Effect details in {subsector} ({sector} Sector)",
-    "description": "Title for effect details in a subsector under a main sector. {subsector} is the subsector name, {sector} is the main sector name. File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:147"
+    "description": "Title for effect details in a subsector under a main sector. {subsector} is the subsector name, {sector} is the main sector name. File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:150"
   },
   {
     "id": "analysis.end",
@@ -582,7 +582,7 @@
   {
     "id": "analysis.hazard_impact_description",
     "translation": "Analysis of how different hazards affect this sector",
-    "description": "File: app/frontend/analytics/sectors/sections/ImpactByHazard.tsx:596"
+    "description": "File: app/frontend/analytics/sectors/sections/ImpactByHazard.tsx:603"
   },
   {
     "id": "analysis.hazard_impacts_across_country",
@@ -747,7 +747,7 @@
   {
     "id": "analysis.loading_data",
     "translation": "Loading data",
-    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:230"
+    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:233"
   },
   {
     "id": "analysis.loading_sectors",
@@ -762,7 +762,7 @@
   {
     "id": "analysis.losses_by_hazard_type",
     "translation": "Losses by hazard type",
-    "description": "File: app/frontend/analytics/sectors/sections/ImpactByHazard.tsx:688"
+    "description": "File: app/frontend/analytics/sectors/sections/ImpactByHazard.tsx:701"
   },
   {
     "id": "analysis.losses_id",
@@ -822,22 +822,22 @@
   {
     "id": "analysis.most_damaging_events",
     "translation": "Most damaging events",
-    "description": "File: app/frontend/analytics/sectors/sections/MostDamagingEvents.tsx:133"
+    "description": "File: app/frontend/analytics/sectors/sections/MostDamagingEvents.tsx:134"
   },
   {
     "id": "analysis.most_damaging_events_description",
     "translation": "Displays key disasters by damage, losses, and dates.",
-    "description": "File: app/frontend/analytics/sectors/sections/MostDamagingEvents.tsx:239"
+    "description": "File: app/frontend/analytics/sectors/sections/MostDamagingEvents.tsx:244"
   },
   {
     "id": "analysis.most_damaging_events_for_sector",
     "translation": "Most damaging events for the {sector} Sector",
-    "description": "Title showing the most damaging events for a specific sector. {sector} is the name of the sector. File: app/frontend/analytics/sectors/sections/MostDamagingEvents.tsx:164"
+    "description": "Title showing the most damaging events for a specific sector. {sector} is the name of the sector. File: app/frontend/analytics/sectors/sections/MostDamagingEvents.tsx:165"
   },
   {
     "id": "analysis.most_damaging_events_for_subsector_and_sector",
     "translation": "Most damaging events for {subsector} ({sector} Sector)",
-    "description": "Title showing the most damaging events for a subsector within a main sector. {subsector} is the subsector name, {sector} is the main sector name. File: app/frontend/analytics/sectors/sections/MostDamagingEvents.tsx:148"
+    "description": "Title showing the most damaging events for a subsector within a main sector. {subsector} is the subsector name, {sector} is the main sector name. File: app/frontend/analytics/sectors/sections/MostDamagingEvents.tsx:149"
   },
   {
     "id": "analysis.most_recent_events_across_country",
@@ -857,7 +857,7 @@
   {
     "id": "analysis.no_damage_records_details",
     "translation": "No damage records details available for the selected criteria.",
-    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:329"
+    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:336"
   },
   {
     "id": "analysis.no_damages_data_for_criteria",
@@ -882,7 +882,7 @@
   {
     "id": "analysis.no_disruption_records_details",
     "translation": "No disruption records details available for the selected criteria.",
-    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:477"
+    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:494"
   },
   {
     "id": "analysis.no_economic_impact",
@@ -892,7 +892,7 @@
   {
     "id": "analysis.no_events_found_for_filters",
     "translation": "No events found for the selected filters.",
-    "description": "File: app/frontend/analytics/sectors/sections/MostDamagingEvents.tsx:266"
+    "description": "File: app/frontend/analytics/sectors/sections/MostDamagingEvents.tsx:271"
   },
   {
     "id": "analysis.no_geographic_data_available",
@@ -917,7 +917,7 @@
   {
     "id": "analysis.no_loss_records_details",
     "translation": "No loss records details available for the selected criteria.",
-    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:398"
+    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:411"
   },
   {
     "id": "analysis.no_losses_data_for_criteria",
@@ -972,7 +972,7 @@
   {
     "id": "analysis.number_of_disaster_events",
     "translation": "Number of disaster events",
-    "description": "File: app/frontend/analytics/sectors/sections/ImpactByHazard.tsx:608"
+    "description": "File: app/frontend/analytics/sectors/sections/ImpactByHazard.tsx:615"
   },
   {
     "id": "analysis.number_of_events",
@@ -997,7 +997,7 @@
   {
     "id": "analysis.people_affected",
     "translation": "People affected",
-    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:447"
+    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:460"
   },
   {
     "id": "analysis.people_directly_affected",
@@ -1042,7 +1042,7 @@
   {
     "id": "analysis.recovery",
     "translation": "Recovery",
-    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:309"
+    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:312"
   },
   {
     "id": "analysis.recovery_cost",
@@ -1067,7 +1067,7 @@
   {
     "id": "analysis.repair_replacement",
     "translation": "Repair/Replacement",
-    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:302"
+    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:305"
   },
   {
     "id": "analysis.repair_replacement_cost",
@@ -1352,12 +1352,12 @@
   {
     "id": "analysis.type",
     "translation": "Type",
-    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:357"
+    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:364"
   },
   {
     "id": "analysis.users_affected",
     "translation": "Users affected",
-    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:440"
+    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:453"
   },
   {
     "id": "analysis.view_detailed_info_sector",
@@ -2027,7 +2027,7 @@
   {
     "id": "common.error_loading_data",
     "translation": "Error loading data. Please try again.",
-    "description": "File: app/frontend/analytics/sectors/sections/MostDamagingEvents.tsx:257"
+    "description": "File: app/frontend/analytics/sectors/sections/MostDamagingEvents.tsx:262"
   },
   {
     "id": "common.errors",
@@ -2057,7 +2057,7 @@
   {
     "id": "common.failed_to_load_data",
     "translation": "Failed to load data",
-    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:258"
+    "description": "File: app/frontend/analytics/sectors/sections/EffectDetails.tsx:261"
   },
   {
     "id": "common.field_required",
@@ -2202,7 +2202,7 @@
   {
     "id": "common.loading_data",
     "translation": "Loading data...",
-    "description": "File: app/frontend/analytics/sectors/sections/MostDamagingEvents.tsx:248"
+    "description": "File: app/frontend/analytics/sectors/sections/MostDamagingEvents.tsx:253"
   },
   {
     "id": "common.loading_data_dotdotdot",
@@ -2457,7 +2457,7 @@
   {
     "id": "common.page_of_total_pages",
     "translation": "Page {page} of {totalPages}",
-    "description": "Pagination indicator showing current page and total pages. {page} is the current page number, {totalPages} is the total number of pages. File: app/frontend/analytics/sectors/sections/MostDamagingEvents.tsx:364"
+    "description": "Pagination indicator showing current page and total pages. {page} is the current page number, {totalPages} is the total number of pages. File: app/frontend/analytics/sectors/sections/MostDamagingEvents.tsx:369"
   },
   {
     "id": "common.pagination",
@@ -5017,7 +5017,7 @@
   {
     "id": "event.name",
     "translation": "Event name",
-    "description": "File: app/frontend/analytics/sectors/sections/MostDamagingEvents.tsx:283"
+    "description": "File: app/frontend/analytics/sectors/sections/MostDamagingEvents.tsx:288"
   },
   {
     "id": "event.not_found",

@@ -13,6 +13,7 @@ import createLogger from "~/utils/logger.server";
 // Initialize logger for this module
 const logger = createLogger("backend.server/models/analytics/hazardImpact");
 import { HazardDataPoint, HazardImpactFilters } from "~/types/hazardImpact";
+import { monetaryValue } from "~/utils/valueState";
 import { getSectorsByParentId } from "./sectors";
 import {
 	createAssessmentMetadata,
@@ -296,33 +297,61 @@ export async function fetchHazardImpactData(
 		percentage: total > 0 ? (Number(item.value) / total) * 100 : 0,
 	}));
 
+	// Per record and sector relation: the sector-level cost, else the first
+	// asset row. NULL, not 0, when neither carries a cost (TR-076).
+	const damageCost = sql`
+        CASE
+            WHEN ${sectorDisasterRecordsRelationTable.withDamage} = true AND ${sectorDisasterRecordsRelationTable.damageCost} IS NOT NULL THEN
+                ${sectorDisasterRecordsRelationTable.damageCost}::numeric
+            ELSE (
+                SELECT
+                    CASE
+                        WHEN ${damagesTable.totalRepairReplacementOverride} = true THEN
+                            ${damagesTable.totalRepairReplacement}::numeric
+                        WHEN (${damagesTable.pdDamageAmount} IS NOT NULL AND ${damagesTable.pdRepairCostUnit} IS NOT NULL)
+                            OR (${damagesTable.tdDamageAmount} IS NOT NULL AND ${damagesTable.tdReplacementCostUnit} IS NOT NULL) THEN
+                            COALESCE(${damagesTable.pdDamageAmount}::numeric * ${damagesTable.pdRepairCostUnit}::numeric, 0) +
+                            COALESCE(${damagesTable.tdDamageAmount}::numeric * ${damagesTable.tdReplacementCostUnit}::numeric, 0)
+                    END
+                FROM ${damagesTable}
+                WHERE ${damagesTable.recordId} = ${disasterRecordsTable.id}
+                AND ${damagesTable.sectorId} = ${sectorDisasterRecordsRelationTable.sectorId}
+                LIMIT 1
+            )
+        END`;
+	const lossPublic = sql`CASE
+            WHEN ${lossesTable.publicCostTotalOverride} = true THEN ${lossesTable.publicCostTotal}::numeric
+            ELSE ${lossesTable.publicUnits}::numeric * ${lossesTable.publicCostUnit}::numeric
+        END`;
+	const lossPrivate = sql`CASE
+            WHEN ${lossesTable.privateCostTotalOverride} = true THEN ${lossesTable.privateCostTotal}::numeric
+            ELSE ${lossesTable.privateUnits}::numeric * ${lossesTable.privateCostUnit}::numeric
+        END`;
+	const lossCost = sql`
+        CASE
+            WHEN ${sectorDisasterRecordsRelationTable.withLosses} = true AND ${sectorDisasterRecordsRelationTable.lossesCost} IS NOT NULL THEN
+                ${sectorDisasterRecordsRelationTable.lossesCost}::numeric
+            ELSE (
+                SELECT
+                    CASE
+                        WHEN (${lossPublic}) IS NULL AND (${lossPrivate}) IS NULL THEN NULL
+                        ELSE COALESCE(${lossPublic}, 0) + COALESCE(${lossPrivate}, 0)
+                    END
+                FROM ${lossesTable}
+                WHERE ${lossesTable.recordId} = ${disasterRecordsTable.id}
+                AND ${lossesTable.sectorId} = ${sectorDisasterRecordsRelationTable.sectorId}
+                LIMIT 1
+            )
+        END`;
+
 	// Query for damages by hazard type
 	const damages = await dr
 		.select({
 			hazardId: sql<string>`${hazardousEventTable.hipTypeId}`,
 			hazardName: sql<string>`dts_jsonb_localized(${hipTypeTable.name}, ${ctx.lang})`,
-			value: sql<string>`
-                SUM(
-                    CASE 
-                        WHEN ${sectorDisasterRecordsRelationTable.withDamage} = true AND ${sectorDisasterRecordsRelationTable.damageCost} IS NOT NULL THEN
-                            COALESCE(${sectorDisasterRecordsRelationTable.damageCost}, 0)::numeric
-                        ELSE
-                            COALESCE((
-                                SELECT 
-                                    CASE 
-                                        WHEN ${damagesTable.totalRepairReplacementOverride} = true THEN
-                                            COALESCE(${damagesTable.totalRepairReplacement}, 0)::numeric
-                                        ELSE
-                                            COALESCE(${damagesTable.pdDamageAmount}, 0)::numeric * COALESCE(${damagesTable.pdRepairCostUnit}, 0)::numeric +
-                                            COALESCE(${damagesTable.tdDamageAmount}, 0)::numeric * COALESCE(${damagesTable.tdReplacementCostUnit}, 0)::numeric
-                                    END
-                                FROM ${damagesTable}
-                                WHERE ${damagesTable.recordId} = ${disasterRecordsTable.id}
-                                AND ${damagesTable.sectorId} = ${sectorDisasterRecordsRelationTable.sectorId}
-                                LIMIT 1
-                            ), 0)::numeric
-                    END
-                )`,
+			value: sql<string | null>`SUM(${damageCost})`,
+			recordsReported: sql<string>`COUNT(DISTINCT ${disasterRecordsTable.id}) FILTER (WHERE (${damageCost}) IS NOT NULL)`,
+			recordsTotal: sql<string>`COUNT(DISTINCT ${disasterRecordsTable.id})`,
 		})
 		.from(disasterRecordsTable)
 		.innerJoin(
@@ -346,62 +375,16 @@ export async function fetchHazardImpactData(
 		.leftJoin(hipTypeTable, eq(hazardousEventTable.hipTypeId, hipTypeTable.id))
 		.where(and(...baseConditions))
 		.groupBy(hazardousEventTable.hipTypeId, hipTypeTable.id)
-		.orderBy(
-			desc(sql<string>`SUM(
-            CASE 
-                WHEN ${sectorDisasterRecordsRelationTable.withDamage} = true AND ${sectorDisasterRecordsRelationTable.damageCost} IS NOT NULL THEN
-                    COALESCE(${sectorDisasterRecordsRelationTable.damageCost}, 0)::numeric
-                ELSE
-                    COALESCE((
-                        SELECT 
-                            CASE 
-                                WHEN ${damagesTable.totalRepairReplacementOverride} = true THEN
-                                    COALESCE(${damagesTable.totalRepairReplacement}, 0)::numeric
-                                ELSE
-                                    COALESCE(${damagesTable.pdDamageAmount}, 0)::numeric * COALESCE(${damagesTable.pdRepairCostUnit}, 0)::numeric +
-                                    COALESCE(${damagesTable.tdDamageAmount}, 0)::numeric * COALESCE(${damagesTable.tdReplacementCostUnit}, 0)::numeric
-                            END
-                        FROM ${damagesTable}
-                        WHERE ${damagesTable.recordId} = ${disasterRecordsTable.id}
-                        AND ${damagesTable.sectorId} = ${sectorDisasterRecordsRelationTable.sectorId}
-                        LIMIT 1
-                    ), 0)::numeric
-            END
-        )`),
-		);
+		.orderBy(sql`SUM(${damageCost}) DESC NULLS LAST`);
 
 	// Query for losses by hazard type
 	const losses = await dr
 		.select({
 			hazardId: sql<string>`${hazardousEventTable.hipTypeId}`,
 			hazardName: sql<string>`dts_jsonb_localized(${hipTypeTable.name}, ${ctx.lang})`,
-			value: sql<string>`
-                SUM(
-                    CASE 
-                        WHEN ${sectorDisasterRecordsRelationTable.withLosses} = true AND ${sectorDisasterRecordsRelationTable.lossesCost} IS NOT NULL THEN
-                            COALESCE(${sectorDisasterRecordsRelationTable.lossesCost}, 0)::numeric
-                        ELSE
-                            COALESCE((
-                                SELECT 
-                                    CASE 
-                                        WHEN ${lossesTable.publicCostTotalOverride} = true THEN
-                                            COALESCE(${lossesTable.publicCostTotal}, 0)::numeric
-                                        ELSE
-                                            COALESCE(${lossesTable.publicUnits}, 0)::numeric * COALESCE(${lossesTable.publicCostUnit}, 0)::numeric
-                                    END +
-                                    CASE 
-                                        WHEN ${lossesTable.privateCostTotalOverride} = true THEN
-                                            COALESCE(${lossesTable.privateCostTotal}, 0)::numeric
-                                        ELSE
-                                            COALESCE(${lossesTable.privateUnits}, 0)::numeric * COALESCE(${lossesTable.privateCostUnit}, 0)::numeric
-                                    END
-                                FROM ${lossesTable}
-                                WHERE ${lossesTable.recordId} = ${disasterRecordsTable.id}
-                                AND ${lossesTable.sectorId} = ${sectorDisasterRecordsRelationTable.sectorId}
-                                LIMIT 1
-                            ), 0)::numeric
-                    END
-                )`,
+			value: sql<string | null>`SUM(${lossCost})`,
+			recordsReported: sql<string>`COUNT(DISTINCT ${disasterRecordsTable.id}) FILTER (WHERE (${lossCost}) IS NOT NULL)`,
+			recordsTotal: sql<string>`COUNT(DISTINCT ${disasterRecordsTable.id})`,
 		})
 		.from(disasterRecordsTable)
 		.innerJoin(
@@ -425,57 +408,57 @@ export async function fetchHazardImpactData(
 		.leftJoin(hipTypeTable, eq(hazardousEventTable.hipTypeId, hipTypeTable.id))
 		.where(and(...baseConditions))
 		.groupBy(hazardousEventTable.hipTypeId, hipTypeTable.id)
-		.orderBy(
-			desc(sql<string>`SUM(
-            CASE 
-                WHEN ${sectorDisasterRecordsRelationTable.withLosses} = true AND ${sectorDisasterRecordsRelationTable.lossesCost} IS NOT NULL THEN
-                    COALESCE(${sectorDisasterRecordsRelationTable.lossesCost}, 0)::numeric
-                ELSE
-                    COALESCE((
-                        SELECT 
-                            CASE 
-                                WHEN ${lossesTable.publicCostTotalOverride} = true THEN
-                                    COALESCE(${lossesTable.publicCostTotal}, 0)::numeric
-                                ELSE
-                                    COALESCE(${lossesTable.publicUnits}, 0)::numeric * COALESCE(${lossesTable.publicCostUnit}, 0)::numeric
-                            END +
-                            CASE 
-                                WHEN ${lossesTable.privateCostTotalOverride} = true THEN
-                                    COALESCE(${lossesTable.privateCostTotal}, 0)::numeric
-                                ELSE
-                                    COALESCE(${lossesTable.privateUnits}, 0)::numeric * COALESCE(${lossesTable.privateCostUnit}, 0)::numeric
-                            END
-                        FROM ${lossesTable}
-                        WHERE ${lossesTable.recordId} = ${disasterRecordsTable.id}
-                        AND ${lossesTable.sectorId} = ${sectorDisasterRecordsRelationTable.sectorId}
-                        LIMIT 1
-                    ), 0)::numeric
-            END
-        )`),
-		);
+		.orderBy(sql`SUM(${lossCost}) DESC NULLS LAST`);
 
-	// Calculate total damages and losses for percentage
-	const totalDamages = damages.reduce(
-		(sum, item) => sum + Number(item.value),
+	// Each hazard's figure carries its state. Money has no tri-state source:
+	// a summed 0 is a reported 0, never zero_confirmed; a hazard with no
+	// reported cost is null and not_reported, never 0 (TR-076, PD-04:596).
+	const withState = (
+		rows: {
+			hazardId: string;
+			hazardName: string;
+			value: string | null;
+			recordsReported: string;
+			recordsTotal: string;
+		}[],
+	): HazardDataPoint[] => {
+		const figures = rows.map((item) => ({
+			item,
+			figure: monetaryValue({
+				sum: item.value,
+				reported: item.recordsReported,
+				total: item.recordsTotal,
+			}),
+		}));
+		// Shares of the reported total only.
+		const total = figures.reduce((sum, f) => sum + (f.figure.value ?? 0), 0);
+		return figures.map(({ item, figure }) => ({
+			hazardId: item.hazardId,
+			hazardName: String(item.hazardName),
+			value: figure.value === null ? null : String(figure.value),
+			percentage:
+				figure.value === null
+					? null
+					: total > 0
+						? (figure.value / total) * 100
+						: 0,
+			valueState: figure.valueState,
+			recordsReported: figure.recordsReported,
+			recordsTotal: figure.recordsTotal,
+		}));
+	};
+	const damagesWithPercentage = withState(damages);
+	const lossesWithPercentage = withState(losses);
+	const totalDamages = damagesWithPercentage.reduce(
+		(sum, item) => sum + Number(item.value ?? 0),
 		0,
 	);
-	const totalLosses = losses.reduce((sum, item) => sum + Number(item.value), 0);
-
-	// Add percentage to damages and losses
-	const damagesWithPercentage = damages.map((item) => ({
-		hazardId: item.hazardId,
-		hazardName: String(item.hazardName),
-		value: String(item.value),
-		percentage:
-			totalDamages > 0 ? (Number(item.value) / totalDamages) * 100 : 0,
-	}));
-
-	const lossesWithPercentage = losses.map((item) => ({
-		hazardId: item.hazardId,
-		hazardName: String(item.hazardName),
-		value: String(item.value),
-		percentage: totalLosses > 0 ? (Number(item.value) / totalLosses) * 100 : 0,
-	}));
+	const totalLosses = lossesWithPercentage.reduce(
+		(sum, item) => sum + Number(item.value ?? 0),
+		0,
+	);
+	const anyReported = (rows: HazardDataPoint[]) =>
+		rows.some((r) => r.valueState === "reported");
 
 	return {
 		eventsCount:
@@ -491,18 +474,17 @@ export async function fetchHazardImpactData(
 						? "available"
 						: "zero"
 					: "no_data",
-			damages:
-				damagesWithPercentage.length > 0
-					? totalDamages > 0
-						? "available"
-						: "zero"
-					: "no_data",
-			losses:
-				lossesWithPercentage.length > 0
-					? totalLosses > 0
-						? "available"
-						: "zero"
-					: "no_data",
+			// zero: a reported 0, not a confirmed zero (money, PD-04:596).
+			damages: anyReported(damagesWithPercentage)
+				? totalDamages > 0
+					? "available"
+					: "zero"
+				: "no_data",
+			losses: anyReported(lossesWithPercentage)
+				? totalLosses > 0
+					? "available"
+					: "zero"
+				: "no_data",
 		},
 	};
 }

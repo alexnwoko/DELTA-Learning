@@ -1,5 +1,6 @@
 import { and, eq, sql, inArray, exists, SQL } from "drizzle-orm";
 import { approvalBasis, type ApprovalAudience } from "~/utils/approvalBasis";
+import type { MonetaryValueState } from "~/utils/valueState";
 import { dr } from "~/db.server";
 import createLogger from "~/utils/logger.server";
 
@@ -280,22 +281,26 @@ export async function getEffectDetails(
 			ELSE ${assetTable.customName}
 		END`.as("assetName"),
 			assetIsBuiltIn: assetTable.isBuiltIn,
-			totalDamageAmount: sql<string>`
-        CASE 
+			// NULL, not 0, when the row carries no cost: the override total, or
+			// an amount with its unit cost (TR-076).
+			totalDamageAmount: sql<string | null>`
+        CASE
             WHEN ${damagesTable.totalRepairReplacementOverride} = true THEN
-                COALESCE(${damagesTable.totalRepairReplacement}, 0)::numeric
-            ELSE
-                COALESCE(${damagesTable.pdDamageAmount}, 0)::numeric * COALESCE(${damagesTable.pdRepairCostUnit}, 0)::numeric +
-                COALESCE(${damagesTable.tdDamageAmount}, 0)::numeric * COALESCE(${damagesTable.tdReplacementCostUnit}, 0)::numeric
+                ${damagesTable.totalRepairReplacement}::numeric
+            WHEN (${damagesTable.pdDamageAmount} IS NOT NULL AND ${damagesTable.pdRepairCostUnit} IS NOT NULL)
+                OR (${damagesTable.tdDamageAmount} IS NOT NULL AND ${damagesTable.tdReplacementCostUnit} IS NOT NULL) THEN
+                COALESCE(${damagesTable.pdDamageAmount}::numeric * ${damagesTable.pdRepairCostUnit}::numeric, 0) +
+                COALESCE(${damagesTable.tdDamageAmount}::numeric * ${damagesTable.tdReplacementCostUnit}::numeric, 0)
         END`.as("totalDamageAmount"),
 			totalRepairReplacement: damagesTable.totalRepairReplacement,
-			totalRecovery: sql<string>`
-        CASE 
+			totalRecovery: sql<string | null>`
+        CASE
             WHEN ${damagesTable.totalRecoveryOverride} = true THEN
-                COALESCE(${damagesTable.totalRecovery}, 0)::numeric
-            ELSE
-                COALESCE(${damagesTable.pdDamageAmount}, 0)::numeric * COALESCE(${damagesTable.pdRecoveryCostUnit}, 0)::numeric +
-                COALESCE(${damagesTable.tdDamageAmount}, 0)::numeric * COALESCE(${damagesTable.tdRecoveryCostUnit}, 0)::numeric
+                ${damagesTable.totalRecovery}::numeric
+            WHEN (${damagesTable.pdDamageAmount} IS NOT NULL AND ${damagesTable.pdRecoveryCostUnit} IS NOT NULL)
+                OR (${damagesTable.tdDamageAmount} IS NOT NULL AND ${damagesTable.tdRecoveryCostUnit} IS NOT NULL) THEN
+                COALESCE(${damagesTable.pdDamageAmount}::numeric * ${damagesTable.pdRecoveryCostUnit}::numeric, 0) +
+                COALESCE(${damagesTable.tdDamageAmount}::numeric * ${damagesTable.tdRecoveryCostUnit}::numeric, 0)
         END`.as("totalRecovery"),
 			sectorId: damagesTable.sectorId,
 			attachments: damagesTable.attachments,
@@ -327,21 +332,22 @@ export async function getEffectDetails(
 			description: lossesTable.description,
 			publicUnit: lossesTable.publicUnit,
 			publicUnits: lossesTable.publicUnits,
-			publicCostTotal: sql<string>`
-        CASE 
+			// NULL, not 0, when the part carries no cost (TR-076).
+			publicCostTotal: sql<string | null>`
+        CASE
             WHEN ${lossesTable.publicCostTotalOverride} = true THEN
-                COALESCE(${lossesTable.publicCostTotal}, 0)::numeric
+                ${lossesTable.publicCostTotal}::numeric
             ELSE
-                COALESCE(${lossesTable.publicUnits}, 0)::numeric * COALESCE(${lossesTable.publicCostUnit}, 0)::numeric
+                ${lossesTable.publicUnits}::numeric * ${lossesTable.publicCostUnit}::numeric
         END`.as("publicCostTotal"),
 			privateUnit: lossesTable.privateUnit,
 			privateUnits: lossesTable.privateUnits,
-			privateCostTotal: sql<string>`
-        CASE 
+			privateCostTotal: sql<string | null>`
+        CASE
             WHEN ${lossesTable.privateCostTotalOverride} = true THEN
-                COALESCE(${lossesTable.privateCostTotal}, 0)::numeric
+                ${lossesTable.privateCostTotal}::numeric
             ELSE
-                COALESCE(${lossesTable.privateUnits}, 0)::numeric * COALESCE(${lossesTable.privateCostUnit}, 0)::numeric
+                ${lossesTable.privateUnits}::numeric * ${lossesTable.privateCostUnit}::numeric
         END`.as("privateCostTotal"),
 			sectorId: lossesTable.sectorId,
 			attachments: lossesTable.attachments,
@@ -392,9 +398,35 @@ export async function getEffectDetails(
 		)
 		.groupBy(disruptionTable.id);
 
+	// Each row figure carries its state: a row cost is reported or not; a
+	// stored 0 is a reported 0, never zero_confirmed, since money has no
+	// tri-state source (TR-076, PD-04:596).
 	return {
-		damages: damagesData,
-		losses: lossesData,
-		disruptions: disruptionsData,
+		damages: damagesData.map((r) => ({
+			...r,
+			valueStates: {
+				totalDamageAmount: rowState(r.totalDamageAmount),
+				totalRepairReplacement: rowState(r.totalRepairReplacement),
+				totalRecovery: rowState(r.totalRecovery),
+			},
+		})),
+		losses: lossesData.map((r) => ({
+			...r,
+			valueStates: {
+				publicCostTotal: rowState(r.publicCostTotal),
+				privateCostTotal: rowState(r.privateCostTotal),
+			},
+		})),
+		disruptions: disruptionsData.map((r) => ({
+			...r,
+			valueStates: { responseCost: rowState(r.responseCost) },
+		})),
 	};
+}
+
+/** State of one row's cost: reported when the row carries a value. */
+function rowState(v: unknown): MonetaryValueState {
+	return v === null || v === undefined || v === ""
+		? "not_reported"
+		: "reported";
 }
