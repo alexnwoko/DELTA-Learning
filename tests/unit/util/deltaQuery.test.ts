@@ -84,6 +84,20 @@ describe("delta.query/1", () => {
 		expect(parseDeltaQuery(serializeDeltaQuery(query)).query).toEqual(query);
 	});
 
+	it("accepts numeric HIP ids as stored on records", () => {
+		const { query, issues } = q("hipType=1037&hipCluster=1844&hip=78443");
+		expect(issues).toEqual([]);
+		expect(query.where.hazard).toEqual({
+			typeId: "1037",
+			clusterId: "1844",
+			hazardId: "78443",
+		});
+		expect(parseDeltaQuery(serializeDeltaQuery(query)).query).toEqual(query);
+		expect(q("hip=12ab").issues).toEqual([
+			{ param: "hip", reason: "not a valid hazard id" },
+		]);
+	});
+
 	it("leaves defaults out of the URL", () => {
 		expect(serializeDeltaQuery(DEFAULT_QUERY).toString()).toBe("");
 	});

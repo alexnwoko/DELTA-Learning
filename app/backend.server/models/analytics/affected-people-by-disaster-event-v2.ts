@@ -155,13 +155,14 @@ async function totalsForEachTable(
 		totalsTablesAndCols.map((a) => [a.code, measures[a.code].value]),
 	) as Record<HumanEffectCode, number | null>;
 
-	// People affected: every measure but deaths, as before. Reported
-	// components only; null when none was reported, never 0.
-	const peopleAffected = compositeValue(
-		totalsTablesAndCols
-			.filter((a) => a.code !== "deaths")
-			.map((a) => measures[a.code]),
-	);
+	// Total affected = directly affected + indirectly affected (Alex,
+	// 2026-10-15). Injured, missing and displaced are shown on their own and
+	// are not added in. Reported components only; null when neither was
+	// reported, never 0 (TR-076).
+	const peopleAffected = compositeValue([
+		measures.directlyAffected,
+		measures.indirectlyAffected,
+	]);
 
 	return {
 		totalPeopleAffected: peopleAffected.value,

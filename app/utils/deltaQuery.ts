@@ -118,6 +118,17 @@ const UUID =
 	/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 const PARTIAL_DATE = /^\d{4}(-\d{2}(-\d{2})?)?$/;
 
+/**
+ * HIP ids (hip_class, hip_cluster, hip_hazard and the record columns that
+ * point at them) are numeric text, for example "1037"; the newer hazard
+ * tables use UUIDs. Either form is a valid hazard id.
+ */
+const HIP_ID = /^\d{1,12}$/;
+
+export function isHipId(v: unknown): v is string {
+	return typeof v === "string" && (HIP_ID.test(v) || UUID.test(v));
+}
+
 export function isUuid(v: unknown): v is string {
 	return typeof v === "string" && UUID.test(v);
 }
@@ -240,9 +251,16 @@ export function parseDeltaQuery(params: URLSearchParams): ParsedQuery {
 		return undefined;
 	};
 
-	const typeId = uuidParam(P.hazardType);
-	const clusterId = uuidParam(P.hazardCluster);
-	const hazardId = uuidParam(P.hazard);
+	const hipParam = (name: string): string | undefined => {
+		const v = params.get(name);
+		if (v === null || v === "") return undefined;
+		if (isHipId(v)) return v;
+		issues.push({ param: name, reason: "not a valid hazard id" });
+		return undefined;
+	};
+	const typeId = hipParam(P.hazardType);
+	const clusterId = hipParam(P.hazardCluster);
+	const hazardId = hipParam(P.hazard);
 	if (typeId || clusterId || hazardId) {
 		query.where.hazard = {
 			...(typeId && { typeId }),
