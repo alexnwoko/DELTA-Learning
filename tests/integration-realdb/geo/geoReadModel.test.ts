@@ -27,6 +27,7 @@ import {
 } from "~/backend.server/handlers/geo";
 import type { ApprovalAudience } from "~/utils/approvalBasis";
 import { parseDeltaQuery } from "~/utils/deltaQuery";
+import { HOUSING_SECTOR_ID } from "~/utils/geoMeasures";
 
 // Geoportal read model and G1, T1, G2, G3, G6 (build spec s9, increment G1;
 // PD v1.0 reflection fixes G-01 to G-17).
@@ -64,6 +65,15 @@ const rec = {
 	r15: randomUUID(), // no link, point on the D1/D2 border, 2020
 	rb: randomUUID(), // tenant B, RB, deaths 50
 };
+const ev = {
+	e1: randomUUID(), // published, linked to D1; member r1
+	e2: randomUUID(), // published, no link; members r10 (D1, D2) and r3 (D2)
+	e3: randomUUID(), // published, no link, no members
+	e4: randomUUID(), // draft, no link; member r4 (D2)
+};
+const assetId = randomUUID();
+// Housing's parent sector: outside the Housing subtree, never counted.
+const OTHER_SECTOR = "fa1b8e2c-8c43-4a18-9d24-5dbd1e4a6e9c";
 
 async function insertDivision(
 	id: string,
@@ -133,6 +143,16 @@ async function point(recordId: string, x: number, y: number) {
 
 async function cleanupTenant(tenant: string) {
 	await dr.execute(
+		sql`DELETE FROM geo.event_atom WHERE country_accounts_id = ${tenant}`,
+	);
+	await dr.execute(sql`
+		DELETE FROM damages WHERE record_id IN (
+			SELECT id FROM disaster_records WHERE country_accounts_id = ${tenant})
+	`);
+	await dr.execute(
+		sql`DELETE FROM asset WHERE country_accounts_id = ${tenant}`,
+	);
+	await dr.execute(
 		sql`DELETE FROM geo.impact_atom WHERE country_accounts_id = ${tenant}`,
 	);
 	await dr.execute(
@@ -151,6 +171,15 @@ async function cleanupTenant(tenant: string) {
 	await dr.execute(
 		sql`DELETE FROM disaster_records WHERE country_accounts_id = ${tenant}`,
 	);
+	const events = await dr.execute(
+		sql`SELECT id FROM disaster_event WHERE country_accounts_id = ${tenant}`,
+	);
+	await dr.execute(
+		sql`DELETE FROM disaster_event WHERE country_accounts_id = ${tenant}`,
+	);
+	for (const e of events.rows as { id: string }[]) {
+		await dr.execute(sql`DELETE FROM event WHERE id = ${e.id}`);
+	}
 	await dr.execute(
 		sql`DELETE FROM division WHERE country_accounts_id = ${tenant} AND level = 2`,
 	);
@@ -189,7 +218,11 @@ function resolve(tenant: string, query: string) {
 		request: new Request(url),
 		viaApiKey: true,
 	};
-	return resolveGeoRequest(ctx, { requireMeasure: true, requireLevel: true });
+	return resolveGeoRequest(ctx, {
+		requireMeasure: true,
+		requireLevel: true,
+		eventDimensions: true,
+	});
 }
 
 /** The refusal a request raised: a GeoRefusalError (unwrapped) or a Response. */
@@ -304,6 +337,52 @@ describe("geoportal read model (G1)", () => {
 		await point(rec.r5, 7, 2);
 		await point(rec.r15, 5, 2);
 
+		// Disaster events (I-1).
+		for (const [id, status] of [
+			[ev.e1, "published"],
+			[ev.e2, "published"],
+			[ev.e3, "published"],
+			[ev.e4, "draft"],
+		] as const) {
+			await dr.execute(sql`INSERT INTO event (id) VALUES (${id})`);
+			await dr.execute(sql`
+				INSERT INTO disaster_event (id, country_accounts_id, "approvalStatus", start_date)
+				VALUES (${id}, ${a}, ${status}, '2020')
+			`);
+		}
+		await dr.execute(sql`
+			INSERT INTO disaster_event_division (disaster_event_id, division_id)
+			VALUES (${ev.e1}, ${div.d1})
+		`);
+		for (const [r, e] of [
+			[rec.r1, ev.e1],
+			[rec.r10, ev.e2],
+			[rec.r3, ev.e2],
+			[rec.r4, ev.e4],
+		]) {
+			await dr.execute(
+				sql`UPDATE disaster_records SET disaster_event_id = ${e} WHERE id = ${r}`,
+			);
+		}
+
+		// Houses (I-1): one Housing asset, destroyed in td, damaged in pd.
+		await dr.execute(sql`
+			INSERT INTO asset (id, sector_ids, is_built_in, custom_name, country_accounts_id)
+			VALUES (${assetId}, ${HOUSING_SECTOR_ID}, false, 'Dwellings (test)', ${a})
+		`);
+		for (const [r, sector, td, pd] of [
+			[rec.r1, HOUSING_SECTOR_ID, 3, 10],
+			[rec.r2, HOUSING_SECTOR_ID, 0, null],
+			[rec.r3, HOUSING_SECTOR_ID, null, 0],
+			[rec.r5, HOUSING_SECTOR_ID, 4, null],
+			[rec.r1, OTHER_SECTOR, 99, 99],
+		] as const) {
+			await dr.execute(sql`
+				INSERT INTO damages (record_id, sector_id, asset_id, unit, td_damage_amount, pd_damage_amount)
+				VALUES (${r}, ${sector}, ${assetId}, 'number_count', ${td}, ${pd})
+			`);
+		}
+
 		await refreshGeoReadModel(a);
 		await refreshGeoReadModel(tenantB);
 	});
@@ -342,6 +421,9 @@ describe("geoportal read model (G1)", () => {
 				"geo_atom_tenant_start_idx",
 				"geo_atom_tenant_hip_idx",
 				"geo_atom_record_idx",
+				"geo_event_tenant_dim_idx",
+				"geo_event_tenant_start_idx",
+				"geo_event_event_idx",
 			]) {
 				expect(byName.has(btree)).toBe(true);
 			}
@@ -603,7 +685,7 @@ describe("geoportal read model (G1)", () => {
 					"measure=deaths&level=1&minAttGrade=D",
 					"ATT_D_EXCLUDED_FROM_OFFICIAL",
 				],
-				["measure=houses_destroyed&level=1", "MEASURE_NOT_AVAILABLE"],
+				["measure=relocated&level=1", "MEASURE_NOT_AVAILABLE"],
 			] as const) {
 				const e = (await refusalOf(resolve(a(), q))) as GeoRefusalError;
 				expect(e.code).toBe(code);
@@ -643,13 +725,121 @@ describe("geoportal read model (G1)", () => {
 		it("names the filters it cannot apply", async () => {
 			const r = await resolve(
 				a(),
-				`measure=deaths&level=1&dim=hazardous_event&sector=${randomUUID()}&asOf=2026-01-01`,
+				`measure=deaths&level=1&effect=deaths&sector=${randomUUID()}&asOf=2026-01-01`,
 			);
 			expect(r.notApplied.map((s) => s.split(":")[0]).sort()).toEqual([
 				"asOf",
-				"dim",
+				"effect",
 				"sector",
 			]);
+		});
+	});
+
+	describe("I-1 houses", () => {
+		it("counts houses from Housing damages only, keeping null apart from zero", async () => {
+			const destroyed = await getChoropleth(
+				ids.countryAccountId,
+				req({ measure: "houses_destroyed", level: "2" }),
+			);
+			const d1 = cellOf(destroyed.cells, div.d1);
+			expect(d1.value).toBe(3); // r1; the 99 in another sector is never counted
+			expect(d1.records_reported).toBe(2); // r1, and r2's confirmed 0
+			expect(d1.records_zero_confirmed).toBe(1);
+			expect(cellOf(destroyed.cells, div.d2).value).toBe(4); // r5
+
+			const damaged = await getChoropleth(
+				ids.countryAccountId,
+				req({ measure: "houses_damaged", level: "2" }),
+			);
+			expect(cellOf(damaged.cells, div.d1).value).toBe(10);
+			// D2: r3's stored 0 is 1 of 5 records (20%): not enough for a confirmed zero.
+			const d2 = cellOf(damaged.cells, div.d2);
+			expect(d2.value_state).toBe("insufficient_reporting");
+			expect(d2.value).toBeNull();
+			expect(damaged.caption).toMatch(/House counts/);
+		});
+	});
+
+	describe("I-1 event dimensions", () => {
+		it("counts each disaster event once per area, by link or by its records", async () => {
+			const body = await getChoropleth(
+				ids.countryAccountId,
+				req({ dim: "disaster_event", measure: "events", level: "2" }),
+			);
+			expect(body.entity).toBe("disaster_event");
+			expect(cellOf(body.cells, div.d1).value).toBe(2); // e1 (link), e2 (via r10)
+			expect(cellOf(body.cells, div.d2).value).toBe(1); // e2 (via r10, r3)
+			expect(body.multiDivisionRecords).toBe(1); // e2 in both areas
+			expect(body.unattributed.reasons).toEqual({ no_division_row: 1 }); // e3
+			expect(body.derivation).toEqual({ as_recorded: 1, from_records: 1 });
+			expect(body.caption).toMatch(/placed where their records are/);
+		});
+
+		it("grades an event placed through its records by its best record grade", async () => {
+			const body = await getChoropleth(
+				ids.countryAccountId,
+				req({ dim: "disaster_event", measure: "events", level: "2" }),
+			);
+			expect(cellOf(body.cells, div.d1).gradeDistribution).toEqual({
+				A: 0,
+				B: 2,
+				C: 0,
+				D: 0,
+			});
+			expect(cellOf(body.cells, div.d2).gradeDistribution).toEqual({
+				A: 0,
+				B: 0,
+				C: 1,
+				D: 0,
+			});
+		});
+
+		it("counts an event once at a coarser level", async () => {
+			const body = await getChoropleth(
+				ids.countryAccountId,
+				req({ dim: "disaster_event", measure: "events", level: "1" }),
+			);
+			expect(cellOf(body.cells, div.r1).value).toBe(2);
+			expect(body.multiDivisionRecords).toBe(0);
+		});
+
+		it("adds draft events on the reviewer basis only", async () => {
+			const body = await getChoropleth(
+				ids.countryAccountId,
+				req(
+					{ dim: "disaster_event", measure: "events", level: "2" },
+					"reviewer-provisional",
+				),
+			);
+			expect(cellOf(body.cells, div.d2).value).toBe(2); // e2 and the draft e4
+			expect(body.meta.provisional).toBe(true);
+		});
+
+		it("shows no hazardous events where none exist, never zeros", async () => {
+			const body = await getChoropleth(
+				ids.countryAccountId,
+				req({ dim: "hazardous_event", measure: "events", level: "1" }),
+			);
+			expect(body.cells).toEqual([]);
+			expect(body.unattributed.records).toBe(0);
+		});
+
+		it("refuses a measure that does not belong to the dimension", async () => {
+			for (const q of [
+				"dim=disaster_event&measure=deaths&level=1",
+				"measure=events&level=1",
+				"measure=evacuated&level=1",
+			]) {
+				const e = (await refusalOf(
+					resolve(ids.countryAccountId, q),
+				)) as GeoRefusalError;
+				expect(e.code).toBe("MEASURE_NOT_AVAILABLE");
+			}
+			const r = await resolve(
+				ids.countryAccountId,
+				"dim=disaster_event&level=1",
+			);
+			expect(r.query.measure).toBe("events");
 		});
 	});
 

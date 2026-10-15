@@ -17,6 +17,7 @@ export const loader = geoLoader(async (_args, ctx) => {
 	const req = await resolveGeoRequest(ctx, {
 		requireMeasure: true,
 		requireLevel: true,
+		eventDimensions: true,
 	});
 	const etag = geoEtag(
 		ctx.countryAccountsId,

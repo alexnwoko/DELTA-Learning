@@ -456,6 +456,13 @@
       "when": 1791795600000,
       "tag": "20260928120000_geo_read_model",
       "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1791806400000,
+      "tag": "20261015200000_geo_event_atom",
+      "breakpoints": true
     }
   ]
 }
