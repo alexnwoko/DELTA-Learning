@@ -130,7 +130,7 @@ describe("state guards", () => {
 		expect(a.reason).toBe("coverage_below_v5");
 	});
 
-	it("public views withhold zero_confirmed until V-5 is final", () => {
+	it("public views show a confirmed zero that meets coverage (TR-260)", () => {
 		const a = resolve(
 			[
 				cell("z", "zero_confirmed", {
@@ -140,8 +140,8 @@ describe("state guards", () => {
 			],
 			{ ...signedIn, audience: "public" },
 		).areas[0];
-		expect(a.state).toBe("insufficient_reporting");
-		expect(a.reason).toBe("zero_withheld_until_v5");
+		expect(a.state).toBe("zero_confirmed");
+		expect(a.reason).toBeNull();
 	});
 });
 
