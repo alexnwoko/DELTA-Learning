@@ -362,7 +362,7 @@
   {
     "id": "analysis.data_not_recorded_or_still_processing",
     "translation": "This could mean either no impacts were recorded, or the data is still being processed.",
-    "description": "File: app/components/CustomMap.tsx:866"
+    "description": "File: app/components/CustomMap.tsx:894"
   },
   {
     "id": "analysis.date_format_error_database",
@@ -897,7 +897,7 @@
   {
     "id": "analysis.no_geographic_data_available",
     "translation": "No geographic data available",
-    "description": "File: app/components/CustomMap.tsx:848"
+    "description": "File: app/components/CustomMap.tsx:876"
   },
   {
     "id": "analysis.no_geographic_data_for_filters",
@@ -907,7 +907,7 @@
   {
     "id": "analysis.no_geographic_impact_data_found_for_filters",
     "translation": "No geographic impact data found for the selected filters. Try adjusting your selection.",
-    "description": "File: app/components/CustomMap.tsx:855"
+    "description": "File: app/components/CustomMap.tsx:883"
   },
   {
     "id": "analysis.no_impact_data_for_filters",
@@ -932,7 +932,7 @@
   {
     "id": "analysis.no_metric_unit",
     "translation": "No {unit}",
-    "description": "Indicates no data is available for a count-type metric. {unit} is the unit of measurement (e.g. impact, event). File: app/components/CustomMap.tsx:581"
+    "description": "Indicates no data is available for a count-type metric. {unit} is the unit of measurement (e.g. impact, event). File: app/components/CustomMap.tsx:609"
   },
   {
     "id": "analysis.no_sector_selected",
@@ -957,7 +957,7 @@
   {
     "id": "analysis.not_reported",
     "translation": "Not reported",
-    "description": "File: app/frontend/analytics/hazards/sections/DisasterEventsList.tsx:103"
+    "description": "File: app/components/CustomMap.tsx:502"
   },
   {
     "id": "analysis.number_of_deaths",
@@ -1017,7 +1017,7 @@
   {
     "id": "analysis.please_select_filters_to_view_geographic_impact",
     "translation": "Please select appropriate filters to view geographic impact data.",
-    "description": "File: app/components/CustomMap.tsx:859"
+    "description": "File: app/components/CustomMap.tsx:887"
   },
   {
     "id": "analysis.private_cost",
@@ -1073,6 +1073,11 @@
     "id": "analysis.repair_replacement_cost",
     "translation": "Repair/Replacement cost",
     "description": "File: app/routes/$lang+/analytics+/disaster-events.sector.tsx:454"
+  },
+  {
+    "id": "analysis.reported_as_zero",
+    "translation": "Reported as 0",
+    "description": "File: app/components/CustomMap.tsx:489"
   },
   {
     "id": "analysis.reported_by_n_of_n",
@@ -1137,7 +1142,7 @@
   {
     "id": "analysis.sectors",
     "translation": "Sectors analysis",
-    "description": "File: app/routes/$lang+/analytics+/sectors.tsx:808"
+    "description": "File: app/routes/$lang+/analytics+/sectors.tsx:810"
   },
   {
     "id": "analysis.select_and_apply_filters",
@@ -1377,7 +1382,7 @@
   {
     "id": "analysis.welcome_to_sectors_dashboard",
     "translation": "Welcome to the sectors dashboard! 🌟",
-    "description": "File: app/routes/$lang+/analytics+/sectors.tsx:854"
+    "description": "File: app/routes/$lang+/analytics+/sectors.tsx:856"
   },
   {
     "id": "analysis.zero_confirmed",
@@ -1387,7 +1392,7 @@
   {
     "id": "analysis.zero_impact_confirmed",
     "translation": "Zero Impact (Confirmed)",
-    "description": "File: app/components/CustomMap.tsx:589"
+    "description": "File: app/components/CustomMap.tsx:490"
   },
   {
     "id": "api_keys",
@@ -6257,7 +6262,7 @@
   {
     "id": "meta.sectors_analysis",
     "translation": "Sectors analysis",
-    "description": "File: app/routes/$lang+/analytics+/sectors.tsx:622"
+    "description": "File: app/routes/$lang+/analytics+/sectors.tsx:624"
   },
   {
     "id": "meta.sectors_disaster_records",
@@ -7120,7 +7125,7 @@
   {
     "id": "spatial_footprint.loading_map_data",
     "translation": "Loading map data...",
-    "description": "File: app/components/CustomMap.tsx:892"
+    "description": "File: app/components/CustomMap.tsx:920"
   },
   {
     "id": "spatial_footprint.longitude",
