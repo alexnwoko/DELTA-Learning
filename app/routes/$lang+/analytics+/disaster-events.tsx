@@ -926,8 +926,8 @@ function DisasterEventsAnalysisContent() {
 												<h3 className="dts-body-label">
 													<span>
 														{ctx.t({
-															code: "analysis.total_people_affected",
-															msg: "Total people affected",
+															code: "analysis.total_affected_direct_indirect",
+															msg: "Total affected (directly and indirectly)",
 														})}
 													</span>
 													<div className="dts-tooltip__button">
@@ -937,8 +937,8 @@ function DisasterEventsAnalysisContent() {
 															focusable="false"
 															role="img"
 															data-pr-tooltip={ctx.t({
-																code: "analysis.human_effects.total_people_affected_tooltip",
-																msg: "Total people affected is the sum of injured, missing, directly affected people and displaced",
+																code: "analysis.human_effects.total_affected_direct_indirect_tooltip",
+																msg: "Total affected is the sum of people directly affected and people indirectly affected. Injured, missing and displaced people are shown separately and are not added in.",
 															})}
 															data-pr-position="top"
 														>
@@ -1094,6 +1094,39 @@ function DisasterEventsAnalysisContent() {
 														{figure(
 															ld.totalAffectedPeople2.noDisaggregations.tables
 																.directlyAffected,
+														)}
+													</span>
+												</div>
+											</div>
+											<div className="dts-data-box">
+												<h3 className="dts-body-label">
+													<span>
+														{ctx.t({
+															code: "analysis.people_indirectly_affected_old_desinventar",
+															msg: "People indirectly affected (old DesInventar)",
+														})}
+													</span>
+													<div className="dts-tooltip__button">
+														<svg
+															className="custom-target-icon"
+															aria-hidden="true"
+															focusable="false"
+															role="img"
+															data-pr-tooltip={ctx.t({
+																code: "analysis.human_effects.people_indirectly_affected_tooltip",
+																msg: "People indirectly affected (old DesInventar) is the number of people who were indirectly affected by the disaster event.",
+															})}
+															data-pr-position="top"
+														>
+															<use href="/assets/icons/information_outline.svg#information"></use>
+														</svg>
+													</div>
+												</h3>
+												<div className="dts-indicator dts-indicator--target-box-g">
+													<span>
+														{figure(
+															ld.totalAffectedPeople2.noDisaggregations.tables
+																.indirectlyAffected,
 														)}
 													</span>
 												</div>
