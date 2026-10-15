@@ -647,7 +647,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 								<li style={legendRow}>
 									{ctx.t({
 										code: "analysis.provisional_not_for_citation",
-										msg: "Provisional, not for citation",
+										msg: "Provisional",
 									})}
 								</li>
 							)}
@@ -750,7 +750,7 @@ function popupHtml(
 			escapeHtml(
 				ctx.t({
 					code: "analysis.provisional_not_for_citation",
-					msg: "Provisional, not for citation",
+					msg: "Provisional",
 				}),
 			),
 		);

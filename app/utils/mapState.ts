@@ -466,7 +466,7 @@ export function scopeLabel(scope: MapScopeQuery): ScopeLabel {
 		`Hazard: ${hazard}`,
 		`Basis: ${basis.join(", ")}`,
 	].filter((p): p is string => !!p);
-	if (provisional) parts.push("Provisional, not for citation");
+	if (provisional) parts.push("Provisional");
 	return {
 		tenant: scope.tenant,
 		period,

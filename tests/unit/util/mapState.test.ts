@@ -320,7 +320,7 @@ describe("scope label and not-applied strips", () => {
 		});
 		expect(s.provisional).toBe(true);
 		expect(s.text).toBe(
-			"all dates · Hazard: all hazards · Basis: published · Provisional, not for citation",
+			"all dates · Hazard: all hazards · Basis: published · Provisional",
 		);
 		const r = resolveMapState([reported("x", 1)], {
 			family: "money",

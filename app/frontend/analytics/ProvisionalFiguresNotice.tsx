@@ -1,7 +1,7 @@
 import type { DContext } from "~/utils/dcontext";
 
 // C23 methodology condition: when the approval basis admits records below
-// published (a D-04 ruling for signed-in views), the figures can include
+// published (the reviewer provisional basis, AB-01), the figures can include
 // provisional migrated records and must say so. Renders nothing otherwise.
 export function ProvisionalFiguresNotice(props: {
 	ctx: DContext;
@@ -17,7 +17,7 @@ export function ProvisionalFiguresNotice(props: {
 			{props.ctx.t({
 				code: "analysis.provisional_not_for_citation",
 				desc: "Label on analytics figures that include provisional (unpublished, migrated) records",
-				msg: "Provisional, not for citation",
+				msg: "Provisional",
 			})}
 		</p>
 	);
