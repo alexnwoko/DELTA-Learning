@@ -63,8 +63,9 @@ interface ApiResponse {
 	success: boolean;
 	data: {
 		eventCount: number;
-		totalDamage: string;
-		totalLoss: string;
+		/** null when no record reported a cost (TR-076). */
+		totalDamage: string | null;
+		totalLoss: string | null;
 		eventsOverTime: Record<string, string>;
 		damageOverTime: Record<string, string>;
 		lossOverTime: Record<string, string>;
@@ -361,8 +362,9 @@ export const loader = authLoaderPublicOrWithPerm(
 						success: sectorHandlerResponse.success,
 						data: {
 							eventCount: sectorHandlerResponse.data.eventCount,
-							totalDamage: sectorHandlerResponse.data.totalDamage || "0",
-							totalLoss: sectorHandlerResponse.data.totalLoss || "0",
+							// null stays null: not reported, never 0 (TR-076).
+							totalDamage: sectorHandlerResponse.data.totalDamage,
+							totalLoss: sectorHandlerResponse.data.totalLoss,
 							eventsOverTime: sectorHandlerResponse.data.eventsOverTime || {},
 							damageOverTime: sectorHandlerResponse.data.damageOverTime || {},
 							lossOverTime: sectorHandlerResponse.data.lossOverTime || {},

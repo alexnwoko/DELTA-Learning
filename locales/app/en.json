@@ -347,12 +347,12 @@
   {
     "id": "analysis.damages_in_currency_due_to_hazard",
     "translation": "Damages in {currency} due to {hazard}",
-    "description": "Title showing total damages in a specific currency caused by a hazard type. {currency} is the currency code (e.g. USD), {hazard} is the display name of the hazard. File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:547"
+    "description": "Title showing total damages in a specific currency caused by a hazard type. {currency} is the currency code (e.g. USD), {hazard} is the display name of the hazard. File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:534"
   },
   {
     "id": "analysis.dashboard_description",
     "translation": "This dashboard shows the aggregated impact data for the selected sector, including all its subsectors.",
-    "description": "File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:439"
+    "description": "File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:426"
   },
   {
     "id": "analysis.data_based_on_published_records",
@@ -367,7 +367,7 @@
   {
     "id": "analysis.date_format_error_database",
     "translation": "The system encountered an issue with the date format. Please contact your administrator to resolve this database issue.",
-    "description": "File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:281"
+    "description": "File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:282"
   },
   {
     "id": "analysis.date_range",
@@ -427,7 +427,7 @@
   {
     "id": "analysis.disaster_events_impacting_sectors",
     "translation": "Disaster events impacting sectors",
-    "description": "File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:450"
+    "description": "File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:437"
   },
   {
     "id": "analysis.disaster_record_id",
@@ -537,7 +537,7 @@
   {
     "id": "analysis.events_over_time_tooltip",
     "translation": "Distribution of events over time showing frequency and patterns",
-    "description": "File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:515"
+    "description": "File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:502"
   },
   {
     "id": "analysis.failed_to_fetch_geographic_data",
@@ -677,7 +677,7 @@
   {
     "id": "analysis.impact_in_sector",
     "translation": "Impact in {sector} Sector",
-    "description": "Selected sector name to be interpolated in the impact analysis title. {sector} is the name of the sector. File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:210"
+    "description": "Selected sector name to be interpolated in the impact analysis title. {sector} is the name of the sector. File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:211"
   },
   {
     "id": "analysis.impact_in_sector_by_geographic_level",
@@ -702,7 +702,7 @@
   {
     "id": "analysis.impact_in_subsector_with_sector",
     "translation": "Impact in {subsector} ({sector} Sector)",
-    "description": "Subsector name and sector name to be interpolated in the impact analysis title. {subsector} is the specific subsector, {sector} is the parent sector. File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:192"
+    "description": "Subsector name and sector name to be interpolated in the impact analysis title. {subsector} is the specific subsector, {sector} is the parent sector. File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:193"
   },
   {
     "id": "analysis.impact_summary",
@@ -912,7 +912,7 @@
   {
     "id": "analysis.no_impact_data_for_filters",
     "translation": "No impact data available for the selected filters.",
-    "description": "File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:329"
+    "description": "File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:330"
   },
   {
     "id": "analysis.no_loss_records_details",
@@ -937,7 +937,7 @@
   {
     "id": "analysis.no_sector_selected",
     "translation": "No sector selected",
-    "description": "File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:300"
+    "description": "File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:301"
   },
   {
     "id": "analysis.no_sectors_found",
@@ -1132,17 +1132,17 @@
   {
     "id": "analysis.sector_dashboard_description",
     "translation": "This dashboard shows the aggregated impact data for the selected sector, including all its subsectors.",
-    "description": "File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:264"
+    "description": "File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:265"
   },
   {
     "id": "analysis.sector_impact_analysis",
     "translation": "Sector impact analysis",
-    "description": "File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:179"
+    "description": "File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:180"
   },
   {
     "id": "analysis.sectors",
     "translation": "Sectors analysis",
-    "description": "File: app/routes/$lang+/analytics+/sectors.tsx:810"
+    "description": "File: app/routes/$lang+/analytics+/sectors.tsx:812"
   },
   {
     "id": "analysis.select_and_apply_filters",
@@ -1182,7 +1182,7 @@
   {
     "id": "analysis.select_sector_to_view_impact",
     "translation": "Please select a sector to view impact data.",
-    "description": "File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:308"
+    "description": "File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:309"
   },
   {
     "id": "analysis.select_specific_hazard",
@@ -1252,7 +1252,7 @@
   {
     "id": "analysis.total_disaster_events_impacting_sector",
     "translation": "Total number of disaster events that have impacted this sector",
-    "description": "File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:461"
+    "description": "File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:448"
   },
   {
     "id": "analysis.total_economic_damage",
@@ -1302,7 +1302,7 @@
   {
     "id": "analysis.total_monetary_damage_tooltip",
     "translation": "Total monetary damage in {currency} caused by events in this sector",
-    "description": "Tooltip explaining that the value shows total monetary damage in a specific currency caused by events in the current sector. {currency} is the currency code (e.g. USD). File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:562"
+    "description": "Tooltip explaining that the value shows total monetary damage in a specific currency caused by events in the current sector. {currency} is the currency code (e.g. USD). File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:549"
   },
   {
     "id": "analysis.total_monetary_value_of_damages_caused_by_hazards",
@@ -1382,7 +1382,7 @@
   {
     "id": "analysis.welcome_to_sectors_dashboard",
     "translation": "Welcome to the sectors dashboard! 🌟",
-    "description": "File: app/routes/$lang+/analytics+/sectors.tsx:856"
+    "description": "File: app/routes/$lang+/analytics+/sectors.tsx:858"
   },
   {
     "id": "analysis.zero_confirmed",
@@ -5497,7 +5497,7 @@
   {
     "id": "hip.all_hazards",
     "translation": "All hazards",
-    "description": "File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:141"
+    "description": "File: app/frontend/analytics/sectors/sections/ImpactOnSector.tsx:142"
   },
   {
     "id": "hip.cluster",
@@ -6262,7 +6262,7 @@
   {
     "id": "meta.sectors_analysis",
     "translation": "Sectors analysis",
-    "description": "File: app/routes/$lang+/analytics+/sectors.tsx:624"
+    "description": "File: app/routes/$lang+/analytics+/sectors.tsx:626"
   },
   {
     "id": "meta.sectors_disaster_records",
