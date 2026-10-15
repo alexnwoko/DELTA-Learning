@@ -2,6 +2,7 @@ import { Form } from "react-router";
 import { useState, useEffect } from "react";
 import { ViewContext } from "../context";
 import { canAddNewRecord } from "../user/roles";
+import { DATA_VIEWER_LIST_STATUSES } from "~/utils/approvalBasis";
 
 interface Organization {
 	id: string;
@@ -105,10 +106,10 @@ export function getRecordStatusOptions(ctx: ViewContext) {
 		},
 	];
 
-	// If the user is a data viewer, only show validated and published statuses
+	// A data viewer sees published records only (AB-01), so only that status.
 	if (ctx.user?.role === "data-viewer") {
 		statusArray = statusArray.filter((status) =>
-			["validated", "published"].includes(status.value),
+			(DATA_VIEWER_LIST_STATUSES as readonly string[]).includes(status.value),
 		);
 	}
 

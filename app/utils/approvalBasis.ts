@@ -44,15 +44,27 @@ export const OFFICIAL_BASIS_STATUSES: readonly approvalStatusIds[] = [
 ];
 
 /**
- * Signed-in record and event lists for the data-viewer role show validated
- * and published records (existing workflow rule, kept unchanged). Held here
- * so no handler hard-codes a status (TR-192). Whether a data viewer should
- * see validated records under AB-01 is open with Alex.
+ * Data viewers see published records only, in lists and detail pages, the
+ * same as AB-01 (Alex, 2026-10-15). Before, their lists also showed
+ * validated records that were not yet published. Held here so no handler
+ * hard-codes a status (TR-192).
  */
 export const DATA_VIEWER_LIST_STATUSES: readonly approvalStatusIds[] = [
-	"validated",
 	"published",
 ];
+
+/** True when a data viewer may open this row (AB-01; retired excluded). */
+export function dataViewerMaySee(row: {
+	approvalStatus?: string | null;
+	legacyData?: unknown;
+}): boolean {
+	if (!row.approvalStatus) return false;
+	if (
+		!DATA_VIEWER_LIST_STATUSES.includes(row.approvalStatus as approvalStatusIds)
+	)
+		return false;
+	return !isRetiredLegacyData(row.legacyData);
+}
 
 /** The data-viewer list filter on an approval status column. */
 export function dataViewerListBasis(approvalStatus: unknown): SQL {

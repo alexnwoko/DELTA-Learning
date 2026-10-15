@@ -159,3 +159,26 @@ describe("reconciliation basis is not reachable from routes", () => {
 		expect(importers).toEqual([]);
 	});
 });
+
+// AB-01 for data viewers (Alex, 2026-10-15): published records only, in
+// lists and on detail pages.
+describe("data viewer basis", () => {
+	it("lists published records only", async () => {
+		const { DATA_VIEWER_LIST_STATUSES } = await import("~/utils/approvalBasis");
+		expect(DATA_VIEWER_LIST_STATUSES).toEqual(["published"]);
+	});
+
+	it("opens a published record, never a validated, draft or retired one", async () => {
+		const { dataViewerMaySee } = await import("~/utils/approvalBasis");
+		expect(dataViewerMaySee({ approvalStatus: "published" })).toBe(true);
+		expect(dataViewerMaySee({ approvalStatus: "validated" })).toBe(false);
+		expect(dataViewerMaySee({ approvalStatus: "draft" })).toBe(false);
+		expect(
+			dataViewerMaySee({
+				approvalStatus: "published",
+				legacyData: { migration: { retired: true } },
+			}),
+		).toBe(false);
+		expect(dataViewerMaySee({ approvalStatus: null })).toBe(false);
+	});
+});

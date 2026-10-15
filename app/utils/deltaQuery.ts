@@ -78,6 +78,10 @@ export type AttGradeFloor = (typeof ATT_GRADE_FLOORS)[number];
 export const QUERY_REFUSALS = {
 	multiSeries: "MULTI_SERIES_CHOROPLETH",
 	attD: "ATT_D_EXCLUDED_FROM_OFFICIAL",
+	/** Monetary measures until the money convention (D-04, memo 5b) is ruled. */
+	monetaryPending: "MONETARY_CONVENTIONS_PENDING",
+	/** A valid measure the read model does not hold yet (Geoportal I-0). */
+	measureNotAvailable: "MEASURE_NOT_AVAILABLE",
 } as const;
 
 export interface DeltaQuery {
