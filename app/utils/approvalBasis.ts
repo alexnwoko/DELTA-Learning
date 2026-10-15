@@ -8,9 +8,9 @@ import { isRetiredLegacyData } from "~/utils/provisional";
 // they serve.
 //
 // - public: requests without a signed-in user.
-// - signed-in: requests with a signed-in user. Follows D-04.
+// - signed-in: requests with a signed-in user. Follows AB-01.
 // - official: official and Sendai Framework Monitor exports. Never follows
-//   D-04, so provisional records can never enter them.
+//   AB-01, so provisional records can never enter them.
 //
 // Every basis excludes retired records (DEC-012, standard OP-29).
 //
@@ -18,15 +18,22 @@ import { isRetiredLegacyData } from "~/utils/provisional";
 // content picker configs are shared with the browser). The request audience
 // comes from ~/backend.server/approvalAudience.server.
 
-export type ApprovalAudience = "public" | "signed-in" | "official";
+// - reviewer-provisional: a signed-in reviewer with ValidateData who asked
+//   for the provisional basis (AB-01, PD-05). Never granted on a public
+//   route; the server guard in approvalAudience.server enforces it.
+export type ApprovalAudience =
+	| "public"
+	| "signed-in"
+	| "official"
+	| "reviewer-provisional";
 
 export const PUBLIC_BASIS_STATUSES: readonly approvalStatusIds[] = [
 	"published",
 ];
 
 /**
- * D-04 is not ruled. Until Alex rules it, signed-in views see published
- * records only (pack decision 19). The ruling changes this one line.
+ * AB-01: signed-in views see published records only by default (TR-192).
+ * A reviewer sees records below published only on the provisional basis.
  */
 export const SIGNED_IN_BASIS_STATUSES: readonly approvalStatusIds[] = [
 	"published",
@@ -34,6 +41,18 @@ export const SIGNED_IN_BASIS_STATUSES: readonly approvalStatusIds[] = [
 
 export const OFFICIAL_BASIS_STATUSES: readonly approvalStatusIds[] = [
 	"published",
+];
+
+/**
+ * The reviewer provisional basis (AB-01): every record still in the
+ * workflow plus published ones. Records sent back for revision are left out,
+ * because a reviewer has already found them wrong.
+ */
+export const PROVISIONAL_BASIS_STATUSES: readonly approvalStatusIds[] = [
+	"published",
+	"validated",
+	"waiting-for-validation",
+	"draft",
 ];
 
 export function basisStatuses(
@@ -46,13 +65,15 @@ export function basisStatuses(
 			return SIGNED_IN_BASIS_STATUSES;
 		case "official":
 			return OFFICIAL_BASIS_STATUSES;
+		case "reviewer-provisional":
+			return PROVISIONAL_BASIS_STATUSES;
 	}
 }
 
 /**
  * True when the basis can admit records below published, so figures built
  * on it may include provisional records and must carry the
- * "provisional, not for citation" label.
+ * "Provisional" label.
  */
 export function basisIncludesProvisional(audience: ApprovalAudience): boolean {
 	return basisStatuses(audience).some((s) => s !== "published");
