@@ -1,4 +1,5 @@
 import { SQL, sql, eq, and, inArray, desc, exists } from "drizzle-orm";
+import { monetaryValue, type MonetaryValue } from "~/utils/valueState";
 import { approvalBasis, type ApprovalAudience } from "~/utils/approvalBasis";
 import { dr as db } from "~/db.server";
 import createLogger from "~/utils/logger.server";
@@ -41,9 +42,9 @@ const getAllSubsectorIds = async (sectorId: string): Promise<string[]> => {
         SELECT id, parent_id, level
         FROM sector
         WHERE id = ${sectorId}
-        
+
         UNION ALL
-        
+
         -- Recursive case: all children
         SELECT s.id, s.parent_id, s.level
         FROM sector s
@@ -308,61 +309,62 @@ export async function getMostDamagingEvents(
 			};
 		}
 
+		// Per record and sector relation: the sector-level cost, else the
+		// first asset row. NULL, not 0, when neither carries a cost (TR-076).
+		const damageCost = sql`
+        CASE
+          WHEN ${sectorDisasterRecordsRelationTable.withDamage} = true AND ${sectorDisasterRecordsRelationTable.damageCost} IS NOT NULL THEN
+            ${sectorDisasterRecordsRelationTable.damageCost}::numeric
+          ELSE
+            (SELECT
+                CASE
+                  WHEN ${damagesTable.totalRepairReplacementOverride} = true THEN
+                    ${damagesTable.totalRepairReplacement}::numeric
+                  WHEN (${damagesTable.pdDamageAmount} IS NOT NULL AND ${damagesTable.pdRepairCostUnit} IS NOT NULL)
+                    OR (${damagesTable.tdDamageAmount} IS NOT NULL AND ${damagesTable.tdReplacementCostUnit} IS NOT NULL) THEN
+                    COALESCE(${damagesTable.pdDamageAmount}::numeric * ${damagesTable.pdRepairCostUnit}::numeric, 0) +
+                    COALESCE(${damagesTable.tdDamageAmount}::numeric * ${damagesTable.tdReplacementCostUnit}::numeric, 0)
+                END
+              FROM ${damagesTable}
+              WHERE ${damagesTable.recordId} = ${disasterRecordsTable.id}
+              AND ${damagesTable.sectorId} = ${sectorDisasterRecordsRelationTable.sectorId}
+              LIMIT 1)
+        END`;
+		const lossPublic = sql`CASE
+              WHEN ${lossesTable.publicCostTotalOverride} = true THEN ${lossesTable.publicCostTotal}::numeric
+              ELSE ${lossesTable.publicUnits}::numeric * ${lossesTable.publicCostUnit}::numeric
+            END`;
+		const lossPrivate = sql`CASE
+              WHEN ${lossesTable.privateCostTotalOverride} = true THEN ${lossesTable.privateCostTotal}::numeric
+              ELSE ${lossesTable.privateUnits}::numeric * ${lossesTable.privateCostUnit}::numeric
+            END`;
+		const lossCost = sql`
+        CASE
+          WHEN ${sectorDisasterRecordsRelationTable.withLosses} = true AND ${sectorDisasterRecordsRelationTable.lossesCost} IS NOT NULL THEN
+            ${sectorDisasterRecordsRelationTable.lossesCost}::numeric
+          ELSE
+            (SELECT
+                CASE
+                  WHEN (${lossPublic}) IS NULL AND (${lossPrivate}) IS NULL THEN NULL
+                  ELSE COALESCE(${lossPublic}, 0) + COALESCE(${lossPrivate}, 0)
+                END
+              FROM ${lossesTable}
+              WHERE ${lossesTable.recordId} = ${disasterRecordsTable.id}
+              AND ${lossesTable.sectorId} = ${sectorDisasterRecordsRelationTable.sectorId}
+              LIMIT 1)
+        END`;
+
 		// Create optimized main query with proper sorting and pagination
 		const query = db
 			.select({
 				eventId: disasterEventTable.id,
 				eventName: disasterEventTable.nameNational,
 				createdAt: disasterEventTable.createdAt,
-				totalDamages: sql<number>`
-      COALESCE(SUM(
-        CASE 
-          WHEN ${sectorDisasterRecordsRelationTable.withDamage} = true AND ${sectorDisasterRecordsRelationTable.damageCost} IS NOT NULL THEN
-            COALESCE(${sectorDisasterRecordsRelationTable.damageCost}, 0)::numeric
-          ELSE
-            COALESCE(
-              (SELECT 
-                CASE 
-                  WHEN ${damagesTable.totalRepairReplacementOverride} = true THEN
-                    COALESCE(${damagesTable.totalRepairReplacement}, 0)::numeric
-                  ELSE
-                    COALESCE(${damagesTable.pdDamageAmount}, 0)::numeric * COALESCE(${damagesTable.pdRepairCostUnit}, 0)::numeric +
-                    COALESCE(${damagesTable.tdDamageAmount}, 0)::numeric * COALESCE(${damagesTable.tdReplacementCostUnit}, 0)::numeric
-                END
-              FROM ${damagesTable}
-              WHERE ${damagesTable.recordId} = ${disasterRecordsTable.id}
-              AND ${damagesTable.sectorId} = ${sectorDisasterRecordsRelationTable.sectorId}
-              LIMIT 1
-              ), 0)::numeric
-        END
-      ), 0)`,
-				totalLosses: sql<number>`COALESCE(SUM(
-            CASE 
-              WHEN ${sectorDisasterRecordsRelationTable.withLosses} = true AND ${sectorDisasterRecordsRelationTable.lossesCost} IS NOT NULL THEN
-                COALESCE(${sectorDisasterRecordsRelationTable.lossesCost}, 0)::numeric
-              ELSE
-                COALESCE(
-                  (SELECT 
-                    CASE 
-                      WHEN ${lossesTable.publicCostTotalOverride} = true THEN
-                        COALESCE(${lossesTable.publicCostTotal}, 0)::numeric
-                      ELSE
-                        COALESCE(${lossesTable.publicUnits}, 0)::numeric * COALESCE(${lossesTable.publicCostUnit}, 0)::numeric
-                      END +
-                      CASE 
-                        WHEN ${lossesTable.privateCostTotalOverride} = true THEN
-                          COALESCE(${lossesTable.privateCostTotal}, 0)::numeric
-                        ELSE
-                          COALESCE(${lossesTable.privateUnits}, 0)::numeric * COALESCE(${lossesTable.privateCostUnit}, 0)::numeric
-                        END
-                    END
-                  FROM ${lossesTable}
-                  WHERE ${lossesTable.recordId} = ${disasterRecordsTable.id}
-                  AND ${lossesTable.sectorId} = ${sectorDisasterRecordsRelationTable.sectorId}
-                  LIMIT 1
-                  ), 0)::numeric
-            END
-        ), 0)`,
+				totalDamages: sql<string | null>`SUM(${damageCost})`,
+				damageRecordsReported: sql<string>`COUNT(DISTINCT ${disasterRecordsTable.id}) FILTER (WHERE (${damageCost}) IS NOT NULL)`,
+				totalLosses: sql<string | null>`SUM(${lossCost})`,
+				lossRecordsReported: sql<string>`COUNT(DISTINCT ${disasterRecordsTable.id}) FILTER (WHERE (${lossCost}) IS NOT NULL)`,
+				recordsTotal: sql<string>`COUNT(DISTINCT ${disasterRecordsTable.id})`,
 			})
 			.from(disasterRecordsTable)
 			.innerJoin(
@@ -480,22 +482,42 @@ export async function getMostDamagingEvents(
 
 			results = await fallbackQuery;
 
-			// Add zero values for damages and losses
+			// No figures from the fallback: not reported, never 0 (TR-076).
 			results = results.map((row) => ({
 				...row,
-				totalDamages: 0,
-				totalLosses: 0,
+				totalDamages: null,
+				totalLosses: null,
+				damageRecordsReported: 0,
+				lossRecordsReported: 0,
+				recordsTotal: 0,
 			}));
 		}
 
 		// Map results to expected format with proper type handling
-		const events = results.map((row) => ({
-			eventId: String(row.eventId),
-			eventName: String(row.eventName || ""),
-			createdAt: new Date(row.createdAt),
-			totalDamages: Number(row.totalDamages || 0),
-			totalLosses: Number(row.totalLosses || 0),
-		}));
+		// Money has no tri-state source: a summed 0 is a reported 0, never
+		// zero_confirmed; no reported cost is null and not_reported, never 0
+		// (TR-076, PD-04:596). Sums stay in the currency the rows carry.
+		const events = results.map((row) => {
+			const damages = monetaryValue({
+				sum: row.totalDamages,
+				reported: row.damageRecordsReported,
+				total: row.recordsTotal,
+			});
+			const losses = monetaryValue({
+				sum: row.totalLosses,
+				reported: row.lossRecordsReported,
+				total: row.recordsTotal,
+			});
+			return {
+				eventId: String(row.eventId),
+				eventName: String(row.eventName || ""),
+				createdAt: new Date(row.createdAt),
+				totalDamages: damages.value,
+				totalLosses: losses.value,
+				damages,
+				losses,
+			};
+		});
 
 		const metadata = await createAssessmentMetadata(
 			params.assessmentType || "rapid",
@@ -590,8 +612,11 @@ interface QueryResult {
 	eventId: string;
 	eventName: string;
 	createdAt: Date;
-	totalDamages: number;
-	totalLosses: number;
+	/** null when no record of the event reported a cost (TR-076). */
+	totalDamages: number | null;
+	totalLosses: number | null;
+	damages: MonetaryValue;
+	losses: MonetaryValue;
 	total: number;
 }
 

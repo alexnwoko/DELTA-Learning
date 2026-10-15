@@ -1,4 +1,5 @@
 import type { DisasterImpactMetadata } from "./disasterCalculations";
+import type { ValueState } from "~/utils/valueState";
 
 export interface HazardImpactData {
 	eventsCount: HazardDataPoint[] | null;
@@ -10,8 +11,14 @@ export interface HazardImpactData {
 export interface HazardDataPoint {
 	hazardId: string;
 	hazardName: string;
-	value: string;
-	percentage: number;
+	/** null when no record reported the figure, never "0" (TR-076). */
+	value: string | null;
+	/** Share of the reported total; null when the figure is not reported. */
+	percentage: number | null;
+	/** Set on monetary figures: reported or not_reported (PD-04:596). */
+	valueState?: ValueState;
+	recordsReported?: number;
+	recordsTotal?: number;
 }
 
 export interface HazardImpactFilters {

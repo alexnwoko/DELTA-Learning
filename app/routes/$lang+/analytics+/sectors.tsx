@@ -83,20 +83,20 @@ interface HazardImpactApiResponse {
 		eventsCount: Array<{
 			hazardId: string; // Changed from number to string to match actual data
 			hazardName: string;
-			value: string;
-			percentage: number;
+			value: string | null;
+			percentage: number | null;
 		}>;
 		damages: Array<{
 			hazardId: string; // Changed from number to string to match actual data
 			hazardName: string;
-			value: string;
-			percentage: number;
+			value: string | null;
+			percentage: number | null;
 		}>;
 		losses: Array<{
 			hazardId: string; // Changed from number to string to match actual data
 			hazardName: string;
-			value: string;
-			percentage: number;
+			value: string | null;
+			percentage: number | null;
 		}>;
 	};
 }
