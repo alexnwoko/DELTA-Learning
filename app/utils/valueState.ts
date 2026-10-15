@@ -1,6 +1,6 @@
 // Value states for analytical figures. A figure is never a bare number: it
 // carries its state and the record counts behind it, so "not reported" is
-// never shown as a confirmed zero (TRD TR-076; solution pack C10, C11).
+// never shown as a confirmed zero (TR-076, E17; PD-04:596, PD-05:96).
 // Pure module: safe to import from server and client code.
 
 export const VALUE_STATES = [
@@ -47,10 +47,18 @@ export interface CoverageRule {
 }
 
 /**
- * Coverage rule applied to every aggregate zero on the analytics screens
- * (solution pack V-5, C11). The 25% share is the provisional V-5 value. The
- * minimum record count is not yet ruled (pack decision 8); 1 adds no test
- * beyond "at least one confirming record" until it is.
+ * Coverage rule for an aggregate zero_confirmed (PD-04:596, PD-05:96). An
+ * aggregate zero is confirmed only when all three hold:
+ * - the measure has a tri-state source (reported, confirmed zero, not
+ *   reported), such as the human-effect measures (PD-03:326);
+ * - the share of records in scope that confirm zero is at or above the
+ *   platform threshold, 25% (provisional; PD-04:877 lists it as open);
+ * - at least the minimum record count confirms zero.
+ * Otherwise the aggregate is insufficient_reporting, never 0.
+ *
+ * The minimum record count is not ruled (PD-04:877; the grading standard
+ * proposes 2, OP-18). It stays 1, which adds no test beyond "at least one
+ * confirming record", until Alex rules.
  */
 export const PROVISIONAL_ZERO_COVERAGE: CoverageRule = {
 	minCoverage: 0.25,
@@ -72,6 +80,11 @@ function toValue(v: number | string | null | undefined): number | null {
 
 /**
  * Builds a figure from a measure's sum and record counts.
+ *
+ * Only for measures with a tri-state source (PD-04:596): every caller passes
+ * a human-effect measure, whose stored 0 or explicit No is a confirmed zero
+ * (PD-03:326). A measure without a tri-state source, such as a monetary
+ * column, has no confirmed zero and must not be passed here.
  *
  * - reported: at least one record reported a non-zero value.
  * - zero_confirmed: no record reported a value and at least one confirmed
