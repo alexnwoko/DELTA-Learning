@@ -1,4 +1,4 @@
-import { geoEtag, geoLoader } from "~/backend.server/handlers/geo";
+import { etagMatches, geoEtag, geoLoader } from "~/backend.server/handlers/geo";
 import {
 	getBoundaries,
 	GeoRefusalError,
@@ -10,7 +10,7 @@ function malformed(message: string) {
 	return new GeoRefusalError(
 		"MALFORMED_REQUEST",
 		message,
-		"API spec s11",
+		"PD-05 error codes",
 		"Correct the request parameters.",
 		400,
 	);
@@ -42,8 +42,8 @@ export const loader = geoLoader(
 		}
 
 		const refreshedAt = await readModelRefreshedAt(countryAccountsId);
-		const etag = geoEtag(refreshedAt, url);
-		if (request.headers.get("If-None-Match") === etag) {
+		const etag = geoEtag(countryAccountsId, refreshedAt, url);
+		if (etagMatches(request, etag)) {
 			return new Response(null, { status: 304, headers: { ETag: etag } });
 		}
 		const fc = await getBoundaries(countryAccountsId, {

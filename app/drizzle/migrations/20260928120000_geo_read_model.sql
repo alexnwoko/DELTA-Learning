@@ -8,34 +8,48 @@ CREATE SCHEMA IF NOT EXISTS geo;
 
 -- Date text in DELTA is 'YYYY', 'YYYY-MM' or 'YYYY-MM-DD'. The floor is the
 -- first day of the stated period and the ceiling its last day, so '2015' ends
--- on 2015-12-31, not 2015-01-01. Anything else is NULL (undated).
+-- on 2015-12-31, not 2015-01-01. Anything else, including impossible dates
+-- such as '2015-02-30' or '2015-00-00', is NULL (undated): one bad record
+-- must never abort a tenant's refresh.
 CREATE OR REPLACE FUNCTION geo.date_floor(t text) RETURNS date
-LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$
-	SELECT CASE
-		WHEN t ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN to_date(t, 'YYYY-MM-DD')
-		WHEN t ~ '^[0-9]{4}-[0-9]{2}$' THEN to_date(t, 'YYYY-MM')
-		WHEN t ~ '^[0-9]{4}$' THEN to_date(t, 'YYYY')
-		ELSE NULL
-	END
+LANGUAGE plpgsql IMMUTABLE PARALLEL SAFE AS $$
+BEGIN
+	IF t ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN
+		RETURN make_date(substr(t, 1, 4)::int, substr(t, 6, 2)::int, substr(t, 9, 2)::int);
+	ELSIF t ~ '^[0-9]{4}-[0-9]{2}$' THEN
+		RETURN make_date(substr(t, 1, 4)::int, substr(t, 6, 2)::int, 1);
+	ELSIF t ~ '^[0-9]{4}$' THEN
+		RETURN make_date(t::int, 1, 1);
+	END IF;
+	RETURN NULL;
+EXCEPTION WHEN data_exception THEN
+	RETURN NULL;
+END
 $$;
 --> statement-breakpoint
 CREATE OR REPLACE FUNCTION geo.date_ceil(t text) RETURNS date
-LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$
-	SELECT CASE
-		WHEN t ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN to_date(t, 'YYYY-MM-DD')
-		WHEN t ~ '^[0-9]{4}-[0-9]{2}$' THEN (to_date(t, 'YYYY-MM') + interval '1 month' - interval '1 day')::date
-		WHEN t ~ '^[0-9]{4}$' THEN (to_date(t, 'YYYY') + interval '1 year' - interval '1 day')::date
-		ELSE NULL
-	END
+LANGUAGE plpgsql IMMUTABLE PARALLEL SAFE AS $$
+DECLARE
+	f date := geo.date_floor(t);
+BEGIN
+	IF f IS NULL THEN
+		RETURN NULL;
+	ELSIF t ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN
+		RETURN f;
+	ELSIF t ~ '^[0-9]{4}-[0-9]{2}$' THEN
+		RETURN (f + interval '1 month' - interval '1 day')::date;
+	END IF;
+	RETURN (f + interval '1 year' - interval '1 day')::date;
+END
 $$;
 --> statement-breakpoint
 CREATE OR REPLACE FUNCTION geo.date_precision(t text) RETURNS text
 LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$
 	SELECT CASE
+		WHEN geo.date_floor(t) IS NULL THEN 'none'
 		WHEN t ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN 'day'
 		WHEN t ~ '^[0-9]{4}-[0-9]{2}$' THEN 'month'
-		WHEN t ~ '^[0-9]{4}$' THEN 'year'
-		ELSE 'none'
+		ELSE 'year'
 	END
 $$;
 --> statement-breakpoint
@@ -120,11 +134,15 @@ CREATE TABLE IF NOT EXISTS geo.impact_atom (
 	hip_hazard_id text,
 	start_instant date,
 	end_instant date,
+	-- True when the end date was unreadable and the start date's period stands in.
+	end_from_start boolean NOT NULL DEFAULT false,
 	date_precision text NOT NULL DEFAULT 'none',
 	record_status text NOT NULL,
 	event_status text,
 	hazard_status text,
 	provisional boolean NOT NULL DEFAULT false,
+	-- Retired by a later migration run (DEC-012); excluded from every basis.
+	retired boolean NOT NULL DEFAULT false,
 	migration_run_id text,
 	plausibility_flags text[] NOT NULL DEFAULT '{}',
 	method_version text NOT NULL,
