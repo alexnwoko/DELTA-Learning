@@ -787,7 +787,7 @@
   {
     "id": "analysis.map_flagged_records",
     "translation": "Caveat: includes {n} record(s) flagged for review",
-    "description": "Map tooltip caveat. {n} is the number of records flagged for review. File: app/components/MapChart.tsx:729"
+    "description": "Map tooltip caveat. {n} is the number of records flagged for review. File: app/components/MapChart.tsx:717"
   },
   {
     "id": "analysis.map_single_tone_few_areas",
@@ -1077,7 +1077,7 @@
   {
     "id": "analysis.reported_by_n_of_n",
     "translation": "Reported by {n} of {total} records",
-    "description": "Map tooltip. {n} records reported the measure out of {total} in scope. File: app/components/MapChart.tsx:715"
+    "description": "Map tooltip. {n} records reported the measure out of {total} in scope. File: app/components/MapChart.tsx:703"
   },
   {
     "id": "analysis.response_cost",
@@ -1198,6 +1198,11 @@
     "id": "analysis.sub_sector",
     "translation": "Sub sector",
     "description": "File: app/routes/$lang+/analytics+/disaster-events.tsx:1526"
+  },
+  {
+    "id": "analysis.suppressed",
+    "translation": "Suppressed",
+    "description": "File: app/components/MapChart.tsx:682"
   },
   {
     "id": "analysis.too_few_confirm_zero",
@@ -1370,11 +1375,6 @@
     "description": "File: app/routes/$lang+/analytics+/sectors.tsx:854"
   },
   {
-    "id": "analysis.withheld",
-    "translation": "Withheld",
-    "description": "File: app/components/MapChart.tsx:682"
-  },
-  {
     "id": "analysis.zero_confirmed",
     "translation": "Zero, confirmed",
     "description": "File: app/components/MapChart.tsx:668"
@@ -1383,11 +1383,6 @@
     "id": "analysis.zero_impact_confirmed",
     "translation": "Zero Impact (Confirmed)",
     "description": "File: app/components/CustomMap.tsx:589"
-  },
-  {
-    "id": "analysis.zero_withheld_public",
-    "translation": "Confirmed zeros are not shown publicly until the coverage rule is final",
-    "description": "File: app/components/MapChart.tsx:704"
   },
   {
     "id": "api_keys",

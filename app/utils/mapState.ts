@@ -37,12 +37,6 @@ export const MIN_AREAS_FOR_CLASSES = MAP_CLASS_COUNT;
 export const SINGLE_TONE_CLASS = 3;
 
 /**
- * V-5 is approved provisionally (pack decision 8): no public view shows an
- * aggregate zero_confirmed until V-5 is final. Set to true when it is.
- */
-export const V5_FINAL = false;
-
-/**
  * PROPOSED (grading standard Q2, SF-4, OP-25). With f the flagged
  * contribution and V the figure value: B if 20 x f < V, C if 4 x f < V,
  * otherwise D.
@@ -158,7 +152,7 @@ export const STATE_ENCODING: Record<
 		dashArray: null,
 		strokeWidth: 2,
 		pattern: "crosshatch",
-		label: "Withheld",
+		label: "Suppressed",
 	},
 };
 
@@ -232,8 +226,6 @@ export type MapStateReason =
 	| "negative_value"
 	/** zero_confirmed that fails the V-5 coverage rule (C11). */
 	| "coverage_below_v5"
-	/** zero_confirmed withheld from a public view until V-5 is final. */
-	| "zero_withheld_until_v5"
 	/** insufficient_reporting as supplied by the envelope. */
 	| "too_few_confirm_zero";
 
@@ -350,10 +342,10 @@ function meetsZeroCoverage(cell: MapCell): boolean {
 	return zc >= rule.minRecords && zc > 0 && zc >= rule.minCoverage * total;
 }
 
-function baseState(
-	cell: MapCell,
-	audience: ApprovalAudience,
-): { state: MapAreaState; reason: MapStateReason | null } {
+function baseState(cell: MapCell): {
+	state: MapAreaState;
+	reason: MapStateReason | null;
+} {
 	switch (cell.valueState) {
 		case "reported": {
 			const v = cell.value;
@@ -366,12 +358,6 @@ function baseState(
 		case "zero_confirmed":
 			if (!meetsZeroCoverage(cell)) {
 				return { state: "insufficient_reporting", reason: "coverage_below_v5" };
-			}
-			if (!V5_FINAL && audience === "public") {
-				return {
-					state: "insufficient_reporting",
-					reason: "zero_withheld_until_v5",
-				};
 			}
 			return { state: "zero_confirmed", reason: null };
 		case "insufficient_reporting":
@@ -527,7 +513,7 @@ export function resolveMapState(
 
 	const resolved = cells.map((cell) => ({
 		cell,
-		...baseState(cell, options.scope.audience),
+		...baseState(cell),
 	}));
 
 	const shadedValues = resolved

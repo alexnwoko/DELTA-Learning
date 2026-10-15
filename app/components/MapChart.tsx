@@ -679,7 +679,7 @@ function stateLabel(
 				msg: "Not applicable",
 			});
 		case "suppressed":
-			return ctx.t({ code: "analysis.withheld", msg: "Withheld" });
+			return ctx.t({ code: "analysis.suppressed", msg: "Suppressed" });
 	}
 }
 
@@ -690,23 +690,11 @@ function popupHtml(
 	area: MapArea,
 ): string {
 	const lines: string[] = [];
-	// A withheld zero shows its state, not the screen's text with the 0.
-	const withheld = area.reason === "zero_withheld_until_v5";
-	if ((region.valueState || region.total > 0) && !withheld) {
+	if (region.valueState || region.total > 0) {
 		if (region.description) lines.push(escapeHtml(region.description));
 	}
-	if (area.state !== "shaded" && (!region.valueState || withheld)) {
+	if (area.state !== "shaded" && !region.valueState) {
 		lines.push(escapeHtml(stateLabel(ctx, area.state)));
-	}
-	if (withheld) {
-		lines.push(
-			escapeHtml(
-				ctx.t({
-					code: "analysis.zero_withheld_public",
-					msg: "Confirmed zeros are not shown publicly until the coverage rule is final",
-				}),
-			),
-		);
 	}
 	const t = area.tooltip;
 	if (region.recordsTotal !== undefined && t.reportedBy.of > 0) {
