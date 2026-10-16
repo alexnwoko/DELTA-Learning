@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { dr, type Dr } from "~/db.server";
 import { GEO_HUMAN_MEASURES, GEO_METHOD_VERSION } from "~/utils/geoMeasures";
+import { displacedHeadlineSql } from "~/backend.server/models/analytics/displacedHeadline";
 import { notRetired } from "~/utils/approvalBasis";
 import { HOUSING_SECTOR_ID } from "~/utils/geoMeasures";
 import { plausibilitySourceFields } from "~/utils/plausibility";
@@ -110,7 +111,13 @@ export async function refreshGeoReadModel(
 							sql`, `,
 						)}]::text[]`
 					: sql`ARRAY[]::text[]`;
-				return sql`(${m}::text, hcp.${sql.raw(`"${m}"`)}, hcp.${sql.raw(`"${m}_total"`)}::numeric, ${fieldArray})`;
+				// Displaced leaves out people relocated after the event (shared
+				// rule, Alex 2026-10-16; same expression as the analytics headline).
+				const total =
+					m === "displaced"
+						? displacedHeadlineSql("hcp")
+						: sql`hcp.${sql.raw(`"${m}_total"`)}`;
+				return sql`(${m}::text, hcp.${sql.raw(`"${m}"`)}, (${total})::numeric, ${fieldArray})`;
 			}),
 			sql`, `,
 		);
