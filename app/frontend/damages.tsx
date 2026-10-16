@@ -479,7 +479,7 @@ export function DamagesView(props: DamagesViewProps) {
 	let override: Record<string, JSX.Element | null | undefined> = {
 		recordId: (
 			<p key="recordId">
-				{ctx.t({ code: "disaster_records.id", msg: "Disaster record ID" })}:{" "}
+				{ctx.t({ code: "disaster_records.id", msg: "Disaster impact ID" })}:{" "}
 				{props.item.recordId}
 			</p>
 		),

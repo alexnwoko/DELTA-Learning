@@ -140,7 +140,7 @@ export const renderMapperDialog = (
 											}
 										}
 										fetch(
-											`https://nominatim.openstreetmap.org/search?q=${query}&format=json`,
+											`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json`,
 										)
 											.then((response) => response.json())
 											.then((data) => {

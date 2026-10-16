@@ -473,7 +473,7 @@ export const ContentRepeater = forwardRef<HTMLDivElement, ContentRepeaterProps>(
 			bounds?: [[number, number], [number, number]];
 		}> => {
 			const iso3 = ctryIso3; // Default country code
-			const apiUrl = `https://data.undrr.org/api/json/gis/countries/1.0.0/?cca3=${iso3}`;
+			const apiUrl = `https://data.undrr.org/api/json/gis/countries/1.0.0/?cca3=${encodeURIComponent(iso3 ?? "")}`;
 
 			// Default location (Urumqi)
 			const defaultCoords: [number, number] = [43.833, 87.616];
@@ -503,7 +503,7 @@ export const ContentRepeater = forwardRef<HTMLDivElement, ContentRepeaterProps>(
 				if (!cca2) throw new Error(`Country code not found for ${iso3}`);
 
 				// Step 2: Fetch Country Center & Bounds from Nominatim
-				const nominatimUrl = `https://nominatim.openstreetmap.org/search?country=${cca2}&format=json&limit=1&polygon_geojson=1`;
+				const nominatimUrl = `https://nominatim.openstreetmap.org/search?country=${encodeURIComponent(cca2)}&format=json&limit=1&polygon_geojson=1`;
 				const responseNominatim = await fetch(nominatimUrl);
 
 				if (!responseNominatim.ok)

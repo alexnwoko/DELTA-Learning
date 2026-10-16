@@ -37,7 +37,7 @@ export const meta: MetaFunction = ({ params }) => {
 				ctx,
 				ctx.t({
 					code: "meta.non_economic_losses_disaster_records",
-					msg: "Non-economic losses - Disaster records",
+					msg: "Non-economic losses - Disaster impacts",
 				}),
 			),
 		},
@@ -45,7 +45,7 @@ export const meta: MetaFunction = ({ params }) => {
 			name: "description",
 			content: ctx.t({
 				code: "meta.non_economic_losses_disaster_records",
-				msg: "Non-economic losses - Disaster records",
+				msg: "Non-economic losses - Disaster impacts",
 			}),
 		},
 	];
@@ -164,7 +164,7 @@ export default function Screen() {
 		<MainContainer
 			title={ctx.t({
 				code: "disaster_record.disaster_records_non_economic_losses",
-				msg: "Disaster records: non-economic losses",
+				msg: "Disaster impacts: non-economic losses",
 			})}
 		>
 			<>
@@ -174,7 +174,7 @@ export default function Screen() {
 				>
 					{ctx.t({
 						code: "disaster_record.back",
-						msg: "Back to disaster record",
+						msg: "Back to disaster impact",
 					})}
 				</a>
 				<div className="dts-form__intro">
