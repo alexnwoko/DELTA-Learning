@@ -338,7 +338,7 @@ export default function PlausibilityReviewPage() {
 							})}
 						>
 							<Button
-								className="rounded border border-brand-border px-3 py-1 disabled:opacity-40 data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
+								className="rounded border border-brand-border-control px-3 py-1 disabled:opacity-40 data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
 								isDisabled={pageIndex === 0}
 								onPress={() => setFirst(Math.max(0, first - rows))}
 							>
@@ -354,7 +354,7 @@ export default function PlausibilityReviewPage() {
 								)}
 							</span>
 							<Button
-								className="rounded border border-brand-border px-3 py-1 disabled:opacity-40 data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
+								className="rounded border border-brand-border-control px-3 py-1 disabled:opacity-40 data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
 								isDisabled={pageIndex >= pageCount - 1}
 								onPress={() => setFirst(first + rows)}
 							>
@@ -399,10 +399,10 @@ function FilterSelect(props: {
 			className="flex flex-col gap-1"
 		>
 			<Label className="text-sm font-medium">{props.label}</Label>
-			<Button className="min-w-40 rounded border border-brand-border px-2 py-1 text-left data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring">
+			<Button className="min-w-40 rounded border border-brand-border-control px-2 py-1 text-left data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring">
 				<SelectValue />
 			</Button>
-			<Popover className="rounded border border-brand-border bg-brand-surface shadow">
+			<Popover className="rounded border border-brand-border-control bg-brand-surface shadow">
 				<ListBox items={props.options} className="max-h-72 overflow-auto">
 					{(o) => (
 						<ListBoxItem
