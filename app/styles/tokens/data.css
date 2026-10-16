@@ -37,6 +37,12 @@
   --delta-data-map-selected-outline-stroke-width: 2.5;
   --delta-data-map-plausibility-marker-stroke: #b45309;
   --delta-data-map-plausibility-marker-stroke-width: 2.5;
+  --delta-data-map-shaded-outline-stroke: #374151;
+  --delta-data-map-shaded-outline-stroke-width: 1.2;
+  --delta-data-map-not-applied-note-border: #b45309;
+  --delta-data-map-not-applied-note-border-width: 3;
+  --delta-data-map-not-applied-note-background: #fff7ed;
+  --delta-data-map-canvas-background: #f3f4f6;
   --delta-data-ramp-people-1: #dbe7f3;
   --delta-data-ramp-people-2: #a9c8e4;
   --delta-data-ramp-people-3: #6fa4d0;

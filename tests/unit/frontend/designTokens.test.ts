@@ -40,6 +40,12 @@ describe("data-layer tokens (FE-Tokens-01)", () => {
 		expect(dataTokens.map.selectedOutline).toEqual({ stroke: "#111827", strokeWidth: 2.5 });
 	});
 
+	it("carry the MapChart map states with today's MapChart.tsx values", () => {
+		expect(dataTokens.map.shadedOutline).toEqual({ stroke: "#374151", strokeWidth: 1.2 });
+		expect(dataTokens.map.notAppliedNote).toEqual({ border: "#b45309", borderWidth: 3, background: "#fff7ed" });
+		expect(dataTokens.map.canvas).toEqual({ background: "#f3f4f6" });
+	});
+
 	it("keep no-records and not-reported as separate tokens (TR-076)", () => {
 		expect(dataTokens.map.noRecords).toBeDefined();
 		expect(dataTokens.state.notReported).toBeDefined();

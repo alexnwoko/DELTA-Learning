@@ -63,6 +63,18 @@ export const dataTokens = {
 		"plausibilityMarker": {
 			"stroke": "#b45309",
 			"strokeWidth": 2.5
+		},
+		"shadedOutline": {
+			"stroke": "#374151",
+			"strokeWidth": 1.2
+		},
+		"notAppliedNote": {
+			"border": "#b45309",
+			"borderWidth": 3,
+			"background": "#fff7ed"
+		},
+		"canvas": {
+			"background": "#f3f4f6"
 		}
 	},
 	"ramp": {

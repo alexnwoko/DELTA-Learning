@@ -222,6 +222,39 @@
 					"$type": "number",
 					"$value": 2.5
 				}
+			},
+			"shaded-outline": {
+				"$description": "Outline of shaded areas on the analytics dashboard map (MapChart). The geoportal draws data.map.area-boundary instead; converging the two is a design decision, not made here.",
+				"stroke": {
+					"$type": "color",
+					"$value": "#374151"
+				},
+				"stroke-width": {
+					"$type": "number",
+					"$value": 1.2
+				}
+			},
+			"not-applied-note": {
+				"$description": "Note that a filter could not be applied to the map. Shares its border colour with data.map.plausibility-marker but means something else: never merge the two.",
+				"border": {
+					"$type": "color",
+					"$value": "#b45309"
+				},
+				"border-width": {
+					"$type": "number",
+					"$value": 3
+				},
+				"background": {
+					"$type": "color",
+					"$value": "#fff7ed"
+				}
+			},
+			"canvas": {
+				"$description": "Background behind the analytics dashboard map (MapChart). The geoportal map uses brand.surface; converging the two is a design decision, not made here.",
+				"background": {
+					"$type": "color",
+					"$value": "#f3f4f6"
+				}
 			}
 		},
 		"ramp": {
