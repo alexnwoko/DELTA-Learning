@@ -313,7 +313,7 @@ export default function GeoportalPage() {
 								<section aria-live="polite" className="text-sm border-t pt-2">
 									<h3 className="font-semibold">{dossier.division.name}</h3>
 									<p>
-										{dossier.recurrence.recordCount} disaster impacts
+										{dossier.recurrence.recordCount.toLocaleString()} disaster impacts
 										{dossier.recurrence.firstYear
 											? `, ${dossier.recurrence.firstYear} to ${dossier.recurrence.lastYear}`
 											: ""}
