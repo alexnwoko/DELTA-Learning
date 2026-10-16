@@ -1,4 +1,5 @@
 import { eq, and, sum } from "drizzle-orm";
+import { displacedHeadlineCol } from "~/backend.server/models/analytics/displacedHeadline";
 import { Tx } from "~/db.server";
 import { disasterRecordsTable } from "~/drizzle/schema/disasterRecordsTable";
 import { humanCategoryPresenceTable } from "~/drizzle/schema/humanCategoryPresenceTable";
@@ -48,7 +49,7 @@ export async function getAffectedByDisasterEvent(
 			tx,
 			disasterEventId,
 			audience,
-			humanCategoryPresenceTable.displacedTotal,
+			displacedHeadlineCol,
 		),
 	};
 	let total =
@@ -91,12 +92,7 @@ async function getTotalForDisasterEvent(
 		.from(de)
 		.innerJoin(dr, eq(de.id, dr.disasterEventId))
 		.innerJoin(hcp, eq(dr.id, hcp.recordId))
-		.where(
-			and(
-				eq(de.id, disasterEventId),
-				approvalBasis(audience, dr),
-			),
-		);
+		.where(and(eq(de.id, disasterEventId), approvalBasis(audience, dr)));
 
 	if (!res || !res.length) {
 		return 0;
