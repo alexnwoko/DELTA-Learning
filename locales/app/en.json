@@ -8118,6 +8118,11 @@
     "description": "File: app/routes/$lang+/user+/accept-invite.tsx:171"
   },
   {
+    "id": "geoportal.empty.scope",
+    "translation": "Nothing in scope for this dimension and these filters.",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:243"
+  },
+  {
     "id": "geoportal.empty",
     "translation": "No records on this approval basis. Migrated records stay drafts until they are published.",
     "description": "File: app/routes/$lang+/geoportal+/_index.tsx:241"

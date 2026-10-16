@@ -187,11 +187,17 @@ export function GeoFilterBar(props: GeoFilterBarProps) {
 					}
 					className="flex items-center gap-2 text-sm"
 				>
-					<span
-						aria-hidden="true"
-						className="inline-block w-4 h-4 border rounded"
-					/>
-					Include records not yet published (Provisional)
+					{({ isSelected }) => (
+						<>
+							<span
+								aria-hidden="true"
+								className={`inline-flex items-center justify-center w-4 h-4 border rounded text-xs leading-none ${isSelected ? "bg-blue-700 border-blue-700 text-white" : "bg-white"}`}
+							>
+								{isSelected ? "✓" : ""}
+							</span>
+							Include records not yet published (Provisional)
+						</>
+					)}
 				</Checkbox>
 			)}
 		</div>

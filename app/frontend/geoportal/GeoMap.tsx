@@ -11,6 +11,12 @@ import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
 import GeoJSON from "ol/format/GeoJSON";
 import { Fill, Stroke, Style } from "ol/style";
+import {
+	defaults as defaultInteractions,
+	MouseWheelZoom,
+} from "ol/interaction";
+import { platformModifierKeyOnly } from "ol/events/condition";
+import "ol/ol.css";
 import type { FeatureLike } from "ol/Feature";
 
 import {
@@ -148,6 +154,10 @@ export function GeoMap({
 		const map = new OlMap({
 			target: target.current,
 			layers: [layer],
+			// The wheel scrolls the page; Ctrl or Cmd plus the wheel zooms the map.
+			interactions: defaultInteractions({ mouseWheelZoom: false }).extend([
+				new MouseWheelZoom({ condition: platformModifierKeyOnly }),
+			]),
 			view: new View({ center: [0, 0], zoom: 2 }),
 		});
 		map.on("singleclick", (e) => {
