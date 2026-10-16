@@ -32,7 +32,8 @@
 		"i18n:extractor": "tsx ./scripts/extractor-i18n.ts",
 		"i18n:extract:new": "i18next-cli extract",
 		"i18n:check-missing-keys": "tsx scripts/check-i18n-missing-keys.ts",
-		"build:css": "sass source/scss:public/assets/css"
+		"build:css": "sass source/scss:public/assets/css",
+		"build:tokens": "node design-tokens/build/build.mjs"
 	},
 	"keywords": [],
 	"author": "",
@@ -133,6 +134,7 @@
 		"postcss-import": "^16.1.0",
 		"prettier": "^3.8.1",
 		"remix-flat-routes": "^0.8.5",
+		"style-dictionary": "5.6.1",
 		"supertest": "^7.2.2",
 		"ts-morph": "^27.0.2",
 		"tsc": "^2.0.4",

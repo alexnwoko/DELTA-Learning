@@ -1,0 +1,60 @@
+/**
+ * Do not edit directly, this file was auto-generated.
+ */
+
+:root {
+  --delta-data-state-zero-confirmed-fill: #ffffff;
+  --delta-data-state-zero-confirmed-stroke: #4b5563;
+  --delta-data-state-zero-confirmed-stroke-width: 1.2; /** Stroke width in CSS pixels */
+  --delta-data-state-zero-confirmed-dash: 4 3; /** SVG stroke-dasharray; 'none' draws a solid line */
+  --delta-data-state-zero-confirmed-pattern: none; /** Pattern drawn over the fill in the stroke colour */
+  --delta-data-state-not-reported-fill: #c9ced6;
+  --delta-data-state-not-reported-stroke: #8a929c;
+  --delta-data-state-not-reported-stroke-width: 1; /** Stroke width in CSS pixels */
+  --delta-data-state-not-reported-dash: none; /** SVG stroke-dasharray; 'none' draws a solid line */
+  --delta-data-state-not-reported-pattern: none; /** Pattern drawn over the fill in the stroke colour */
+  --delta-data-state-insufficient-reporting-fill: #ffffff;
+  --delta-data-state-insufficient-reporting-stroke: #6b7280;
+  --delta-data-state-insufficient-reporting-stroke-width: 1.2; /** Stroke width in CSS pixels */
+  --delta-data-state-insufficient-reporting-dash: 1 3; /** SVG stroke-dasharray; 'none' draws a solid line */
+  --delta-data-state-insufficient-reporting-pattern: hatch; /** Pattern drawn over the fill in the stroke colour */
+  --delta-data-state-not-applicable-fill: #f3f4f6;
+  --delta-data-state-not-applicable-stroke: #6b7280;
+  --delta-data-state-not-applicable-stroke-width: 1; /** Stroke width in CSS pixels */
+  --delta-data-state-not-applicable-dash: 8 3 1 3; /** SVG stroke-dasharray; 'none' draws a solid line */
+  --delta-data-state-not-applicable-pattern: dots; /** Pattern drawn over the fill in the stroke colour */
+  --delta-data-state-suppressed-fill: #e5e7eb;
+  --delta-data-state-suppressed-stroke: #374151;
+  --delta-data-state-suppressed-stroke-width: 2; /** Stroke width in CSS pixels */
+  --delta-data-state-suppressed-dash: none; /** SVG stroke-dasharray; 'none' draws a solid line */
+  --delta-data-state-suppressed-pattern: crosshatch; /** Pattern drawn over the fill in the stroke colour */
+  --delta-data-map-no-records-fill: #f9fafb;
+  --delta-data-map-no-records-stroke: #d1d5db;
+  --delta-data-map-no-records-stroke-width: 0.8;
+  --delta-data-map-area-boundary-stroke: #ffffff;
+  --delta-data-map-area-boundary-stroke-width: 0.8;
+  --delta-data-map-selected-outline-stroke: #111827;
+  --delta-data-map-selected-outline-stroke-width: 2.5;
+  --delta-data-map-plausibility-marker-stroke: #b45309;
+  --delta-data-map-plausibility-marker-stroke-width: 2.5;
+  --delta-data-ramp-people-1: #dbe7f3;
+  --delta-data-ramp-people-2: #a9c8e4;
+  --delta-data-ramp-people-3: #6fa4d0;
+  --delta-data-ramp-people-4: #3d7cb4;
+  --delta-data-ramp-people-5: #1d548f;
+  --delta-data-ramp-housing-1: #fdd0a2;
+  --delta-data-ramp-housing-2: #fdae6b;
+  --delta-data-ramp-housing-3: #fd8d3c;
+  --delta-data-ramp-housing-4: #e6550d;
+  --delta-data-ramp-housing-5: #a63603;
+  --delta-data-ramp-money-1: #c7e9c0;
+  --delta-data-ramp-money-2: #a1d99b;
+  --delta-data-ramp-money-3: #74c476;
+  --delta-data-ramp-money-4: #31a354;
+  --delta-data-ramp-money-5: #006d2c;
+  --delta-data-ramp-events-1: #dadaeb;
+  --delta-data-ramp-events-2: #bcbddc;
+  --delta-data-ramp-events-3: #9e9ac8;
+  --delta-data-ramp-events-4: #756bb1;
+  --delta-data-ramp-events-5: #54278f;
+}
