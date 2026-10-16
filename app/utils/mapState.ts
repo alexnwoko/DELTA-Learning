@@ -15,6 +15,7 @@ import {
 	basisIncludesProvisional,
 	basisStatuses,
 } from "~/utils/approvalBasis";
+import { dataTokens } from "~/utils/designTokens.generated";
 
 // ---------------------------------------------------------------------------
 // Thresholds. Each names its source; PROVISIONAL marks a value no ruling sets.
@@ -61,14 +62,12 @@ export type MeasureFamily = (typeof MEASURE_FAMILIES)[number];
  * PROVISIONAL events family (V-2 names people, housing and money only) use
  * ColorBrewer sequential ramps without their near-white step, so the lightest
  * class is never read as a confirmed zero. Colours are PROVISIONAL until
- * V-3 and V-4 (brand and dark mode) are settled.
+ * V-3 and V-4 (brand and dark mode) are settled. Values come from the data
+ * token layer (TR-250, ADR-19): edit design-tokens/data/data.json, then run
+ * yarn build:tokens.
  */
-export const FAMILY_RAMPS: Record<MeasureFamily, readonly string[]> = {
-	people: ["#dbe7f3", "#a9c8e4", "#6fa4d0", "#3d7cb4", "#1d548f"],
-	housing: ["#fdd0a2", "#fdae6b", "#fd8d3c", "#e6550d", "#a63603"],
-	money: ["#c7e9c0", "#a1d99b", "#74c476", "#31a354", "#006d2c"],
-	events: ["#dadaeb", "#bcbddc", "#9e9ac8", "#756bb1", "#54278f"],
-};
+export const FAMILY_RAMPS: Record<MeasureFamily, readonly string[]> =
+	dataTokens.ramp;
 
 // ---------------------------------------------------------------------------
 // States and their shared encoding.
@@ -107,69 +106,58 @@ export interface StateEncoding {
 	detail: string | null;
 }
 
+const MAP_PATTERNS: readonly MapPattern[] = ["none", "hatch", "dots", "crosshatch"];
+
+/** Drawing values for a state from the data token layer; labels stay here. */
+function stateFromTokens(
+	key: keyof typeof dataTokens.state,
+	label: string,
+	detail: string | null,
+): StateEncoding {
+	const t = dataTokens.state[key];
+	if (!MAP_PATTERNS.includes(t.pattern as MapPattern)) {
+		throw new Error(`Unknown map pattern in data tokens: ${key}.pattern`);
+	}
+	return {
+		fill: t.fill,
+		stroke: t.stroke,
+		// The tokens write a solid outline as "none"; SVG takes null here.
+		dashArray: t.dash === "none" ? null : t.dash,
+		strokeWidth: t.strokeWidth,
+		pattern: t.pattern as MapPattern,
+		label,
+		detail,
+	};
+}
+
 /**
  * How each off-ramp state is drawn. No two states differ by lightness alone
  * (E2 rule 8; Geoportal Build Spec s6): each pair differs by outline dash,
- * pattern or hue. The first two keep the existing MapChart encoding.
+ * pattern or hue. The first two keep the existing MapChart encoding. Colours,
+ * widths, dashes and patterns come from the data token layer (TR-250).
  */
 export const STATE_ENCODING: Record<
 	Exclude<MapAreaState, "shaded">,
 	StateEncoding
 > = {
-	zero_confirmed: {
-		fill: "#ffffff",
-		stroke: "#4b5563",
-		dashArray: "4 3",
-		strokeWidth: 1.2,
-		pattern: "none",
-		label: "Zero, confirmed",
-		detail: null,
-	},
-	not_reported: {
-		fill: "#c9ced6",
-		stroke: "#8a929c",
-		dashArray: null,
-		strokeWidth: 1,
-		pattern: "none",
-		label: "No data",
-		detail: null,
-	},
-	insufficient_reporting: {
-		fill: "#ffffff",
-		stroke: "#6b7280",
-		dashArray: "1 3",
-		strokeWidth: 1.2,
-		pattern: "hatch",
-		// PD-04:619: an aggregate that rests on fewer distinct events, or less
-		// reporting, than the set minimum. The legend names the state; the
-		// tooltip gives the reason (W-03).
-		label: "Insufficient reporting",
-		detail: "Rests on too little reporting",
-	},
-	not_applicable: {
-		fill: "#f3f4f6",
-		stroke: "#6b7280",
-		dashArray: "8 3 1 3",
-		strokeWidth: 1,
-		pattern: "dots",
-		label: "Not applicable",
-		detail: null,
-	},
-	suppressed: {
-		fill: "#e5e7eb",
-		stroke: "#374151",
-		dashArray: null,
-		strokeWidth: 2,
-		pattern: "crosshatch",
-		label: "Suppressed",
-		detail: null,
-	},
+	zero_confirmed: stateFromTokens("zeroConfirmed", "Zero, confirmed", null),
+	not_reported: stateFromTokens("notReported", "No data", null),
+	// PD-04:619: an aggregate that rests on fewer distinct events, or less
+	// reporting, than the set minimum. The legend names the state; the
+	// tooltip gives the reason (W-03).
+	insufficient_reporting: stateFromTokens(
+		"insufficientReporting",
+		"Insufficient reporting",
+		"Rests on too little reporting",
+	),
+	not_applicable: stateFromTokens("notApplicable", "Not applicable", null),
+	suppressed: stateFromTokens("suppressed", "Suppressed", null),
 };
 
 /** Outline for an area whose figure includes a flagged record (C30). */
 export const PLAUSIBILITY_MARKER = {
-	stroke: "#b45309",
-	strokeWidth: 2.5,
+	stroke: dataTokens.map.plausibilityMarker.stroke,
+	strokeWidth: dataTokens.map.plausibilityMarker.strokeWidth,
 	label: "Includes disaster impacts flagged for review",
 } as const;
 
