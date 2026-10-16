@@ -5,6 +5,7 @@ import { DataView } from "primereact/dataview";
 import LinkedHazardousEventCard from "~/frontend/disaster-event/LinkedHazardousEventCard";
 import LinkedDisasterRecordCard from "~/frontend/disaster-event/LinkedDisasterRecordCard";
 import { ViewContext } from "~/frontend/context";
+import { LEAFLET_CSS, LEAFLET_JS } from "~/utils/leafletAssets";
 
 type LinkedEventOption = {
 	id: string;
@@ -152,8 +153,6 @@ type DisasterEventReviewStepProps = {
 	onSendForValidation: () => void;
 };
 
-const glbMapperJS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-const glbMapperCSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
 
 const ensureLeafletLoaded = (() => {
 	let promise: Promise<any> | null = null;
@@ -171,15 +170,15 @@ const ensureLeafletLoaded = (() => {
 		}
 
 		promise = new Promise((resolve) => {
-			if (!document.querySelector(`link[href="${glbMapperCSS}"]`)) {
+			if (!document.querySelector(`link[href="${LEAFLET_CSS}"]`)) {
 				const leafletCSS = document.createElement("link");
 				leafletCSS.rel = "stylesheet";
-				leafletCSS.href = glbMapperCSS;
+				leafletCSS.href = LEAFLET_CSS;
 				document.head.appendChild(leafletCSS);
 			}
 
 			const script = document.createElement("script");
-			script.src = glbMapperJS;
+			script.src = LEAFLET_JS;
 			script.async = true;
 			script.onload = () => resolve((window as any).L || null);
 			document.head.appendChild(script);

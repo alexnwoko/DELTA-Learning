@@ -7,6 +7,7 @@ import {
 	checkShapeAgainstDivisions,
 } from "~/utils/spatialUtils";
 import { ViewContext } from "~/frontend/context";
+import { absoluteAssetUrl, LEAFLET_CSS, LEAFLET_JS, MAP_MARKER_ICON, MAP_MARKER_ICON_ANCHOR } from "~/utils/leafletAssets";
 
 declare namespace L {
 	export const map: any;
@@ -30,8 +31,6 @@ declare namespace L {
 	export const latLngBounds: any;
 }
 
-const glbMapperJS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-const glbMapperCSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
 const glbColors = {
 	polygon: "#0074D9",
 	line: "#FF851B",
@@ -41,9 +40,9 @@ const glbColors = {
 	geographic_level: "#fc9003",
 };
 const glbMarkerIcon = {
-	iconUrl: "https://maps.google.com/mapfiles/ms/icons/red-dot.png", // Replace with your marker icon if necessary
+	iconUrl: MAP_MARKER_ICON,
 	iconSize: [20, 20],
-	iconAnchor: [5, 20],
+	iconAnchor: MAP_MARKER_ICON_ANCHOR,
 	popupAnchor: [0, -20],
 	shadowUrl: null, // Remove shadow
 	className: "custom-leaflet-marker", // Add a custom class
@@ -882,7 +881,7 @@ export const previewMap = (items: any) => {
       <html lang="en">
       <head>
         <title>Map preview</title>
-        <link rel="stylesheet" href="${glbMapperCSS}" />
+        <link rel="stylesheet" href="${absoluteAssetUrl(LEAFLET_CSS)}" />
         <style>
           #map {
             position: relative;
@@ -894,7 +893,7 @@ export const previewMap = (items: any) => {
       </head>
       <body>
         <div id="map"></div>
-        <script src="${glbMapperJS}"></script>
+        <script src="${absoluteAssetUrl(LEAFLET_JS)}"></script>
         <script>
         const adjustZoomBasedOnDistance = (map, geoJsonLayers) => {
           const L = window.L;
@@ -967,7 +966,7 @@ export const previewMap = (items: any) => {
                         pointToLayer: (feature, latlng) => {
                             if (feature.geometry.type === "Point") {
                               const marker = L.marker(latlng, {
-                                icon: L.icon(${JSON.stringify(glbMarkerIcon)}),
+                                icon: L.icon(${JSON.stringify({ ...glbMarkerIcon, iconUrl: absoluteAssetUrl(MAP_MARKER_ICON) })}),
                               });
 
                               // Bind popup only for markers
