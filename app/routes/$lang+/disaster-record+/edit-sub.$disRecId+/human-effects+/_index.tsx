@@ -114,7 +114,7 @@ export default function Screen() {
 			>
 				{ctx.t({
 					code: "common.back_to_disaster_record",
-					msg: "Back to disaster record",
+					msg: "Back to disaster impact",
 				})}
 			</LangLink>
 			<div className="font-bold">{data.tbl.label}</div>

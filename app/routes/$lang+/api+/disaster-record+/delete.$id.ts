@@ -69,7 +69,7 @@ export const action: ActionFunction = async (args: ActionFunctionArgs) => {
 
 		if (
 			errorMessage.includes(
-				"only published or validated disaster record linked to a validated or published disaster event",
+				"only published or validated disaster impact linked to a validated or published disaster event",
 			)
 		) {
 			statusHeader = 409;

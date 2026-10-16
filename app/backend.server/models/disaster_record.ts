@@ -429,7 +429,7 @@ export async function disasterRecordsCreate(
 				errors: {
 					fields: {},
 					form: [
-						"Cannot create disaster record with disaster event from other country instances of DELTA",
+						"Cannot create disaster impact with disaster event from other country instances of DELTA",
 					],
 				},
 			};
@@ -546,7 +546,7 @@ export async function disasterRecordsUpdate(
 				errors: {
 					fields: {},
 					form: [
-						"Cannot update disaster record with disaster event from other country instances of DELTA",
+						"Cannot update disaster impact with disaster event from other country instances of DELTA",
 					],
 				},
 			};
@@ -886,7 +886,7 @@ export async function disasterRecordsDeleteById(
 				return {
 					ok: false,
 					error:
-						"This is the only published or validated disaster record linked to a validated or published disaster event. It cannot be deleted.",
+						"This is the only published or validated disaster impact linked to a validated or published disaster event. It cannot be deleted.",
 				};
 			}
 		}
@@ -1009,7 +1009,7 @@ export async function deleteAllDataByDisasterRecordId(
 				return {
 					ok: false,
 					error:
-						"This is the only published or validated disaster record linked to a validated or published disaster event. It cannot be deleted.",
+						"This is the only published or validated disaster impact linked to a validated or published disaster event. It cannot be deleted.",
 				};
 			}
 		}

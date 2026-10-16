@@ -190,7 +190,7 @@ export function DisasterRecordsFilter(props: Props) {
 						<div className="dts-form-component__label">
 							{ctx.t({
 								code: "disaster_event.disaster_record",
-								msg: "Disaster record",
+								msg: "Disaster impact",
 							})}
 						</div>
 						<input

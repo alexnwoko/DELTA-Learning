@@ -38,7 +38,7 @@ export const meta: MetaFunction = ({ params }) => {
 				ctx,
 				ctx.t({
 					code: "meta.sectors_disaster_records",
-					msg: "Sectors - Disaster records",
+					msg: "Sectors - Disaster impacts",
 				}),
 			),
 		},
@@ -229,7 +229,7 @@ export default function Screen() {
 		<MainContainer
 			title={ctx.t({
 				code: "disaster_records.disaster_records_sectors",
-				msg: "Disaster records: Sectors",
+				msg: "Disaster impacts: Sectors",
 			})}
 		>
 			<>
@@ -239,7 +239,7 @@ export default function Screen() {
 				>
 					{ctx.t({
 						code: "common.back_to_disaster_record",
-						msg: "Back to disaster record",
+						msg: "Back to disaster impact",
 					})}
 				</a>
 				<div className="dts-form__intro">

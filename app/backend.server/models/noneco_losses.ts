@@ -21,7 +21,7 @@ export interface NonecoLossesFields extends Omit<SelectNonecoLosses, "id"> {}
 export const fieldsDefCommon = [
 	{
 		key: "disasterRecordId",
-		label: "Disaster Record",
+		label: "Disaster impact",
 		type: "uuid",
 		required: true,
 	},
@@ -113,7 +113,7 @@ export async function nonecoLossesUpdateByIdAndCountryAccountsId(
 		return {
 			ok: false,
 			errors: {
-				general: ["No matching disaster record found or you don't have access"],
+				general: ["No matching disaster impact found or you don't have access"],
 			},
 		};
 	}

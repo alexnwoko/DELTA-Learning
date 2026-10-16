@@ -4622,13 +4622,13 @@ function StepperValidation({
 									<h2 className="text-[18px] leading-[24px] font-semibold text-slate-800 tracking-[-0.01em]">
 										{ctx.t({
 											code: "disaster_event.review.linked_disaster_records",
-											msg: "Linked disaster records",
+											msg: "Linked disaster impacts",
 										})}
 									</h2>
 									<p className="mt-2 text-[14px] leading-[22px] text-slate-500">
 										{ctx.t({
 											code: "disaster_event.form.linked_disaster_records_description",
-											msg: "Link this disaster event to related disaster records.",
+											msg: "Link this disaster event to related disaster impacts.",
 										})}
 									</p>
 									<div className="mt-2.5">
@@ -4639,7 +4639,7 @@ function StepperValidation({
 													? ctx.t({ code: "common.opening", msg: "Opening..." })
 													: ctx.t({
 															code: "disaster_event.form.manage_linked_disaster_records",
-															msg: "Manage linked disaster records",
+															msg: "Manage linked disaster impacts",
 														})
 											}
 											outlined
@@ -4652,7 +4652,7 @@ function StepperValidation({
 											{isOpeningLinkedDisasterRecordsModal
 												? ctx.t({
 														code: "disaster_event.form.loading_linked_disaster_records_selector",
-														msg: "Loading linked disaster records selector",
+														msg: "Loading linked disaster impacts selector",
 													})
 												: ""}
 										</span>

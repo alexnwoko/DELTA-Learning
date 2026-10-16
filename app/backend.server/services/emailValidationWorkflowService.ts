@@ -91,7 +91,7 @@ export async function emailAssignedValidators(
 	} else if (entityType === "disaster_records") {
 		recordUrl += `/${ctx.lang}/disaster-record/${entityId}`;
 		recordType = ctx
-			.t({ code: "disaster_event.disaster_record", msg: "Disaster record" })
+			.t({ code: "disaster_event.disaster_record", msg: "Disaster impact" })
 			.toLowerCase();
 	}
 	recordStartDate = eventFields.startDate || "";
@@ -295,7 +295,7 @@ export async function emailValidationWorkflowStatusChangeNotificationService({
 			recordTypeData = ctx
 				.t({
 					code: "disaster_event.disaster_record",
-					msg: "Disaster record",
+					msg: "Disaster impact",
 				})
 				.toLowerCase();
 		}
@@ -486,7 +486,7 @@ export async function emailAssigneesNotificationService({
 	} else if (entityType === "disaster_records") {
 		recordUrl += ctx.fullUrl(`/disaster-record/${entityId}`);
 		recordType = ctx
-			.t({ code: "disaster_event.disaster_record", msg: "Disaster record" })
+			.t({ code: "disaster_event.disaster_record", msg: "Disaster impact" })
 			.toLowerCase();
 	}
 	try {

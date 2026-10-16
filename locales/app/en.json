@@ -431,7 +431,7 @@
   },
   {
     "id": "analysis.disaster_record_id",
-    "translation": "Disaster record ID",
+    "translation": "Disaster impact ID",
     "description": "File: app/routes/$lang+/analytics+/disaster-events.sector.tsx:376"
   },
   {
@@ -1681,7 +1681,7 @@
   },
   {
     "id": "common_err_msg.event_requires_linked_record",
-    "translation": "A validated or published disaster event must have at least one associated published or validated disaster record.",
+    "translation": "A validated or published disaster event must have at least one associated published or validated disaster impact.",
     "description": "File: app/services/disasterEventService.ts:78"
   },
   {
@@ -1696,7 +1696,7 @@
   },
   {
     "id": "common_err_msg.record_requires_linked_event",
-    "translation": "This is the only published or validated disaster record linked to a validated or published disaster event. It cannot be returned for edit.",
+    "translation": "This is the only published or validated disaster impact linked to a validated or published disaster event. It cannot be returned for edit.",
     "description": "File: app/services/disasterRecordService.ts:110"
   },
   {
@@ -1786,7 +1786,7 @@
   },
   {
     "id": "common.back_to_disaster_record",
-    "translation": "Back to disaster record",
+    "translation": "Back to disaster impact",
     "description": "File: app/routes/$lang+/disaster-record+/edit-sec.$disRecId+/_index.tsx:240"
   },
   {
@@ -3151,7 +3151,7 @@
   },
   {
     "id": "disaster_event.disaster_record",
-    "translation": "Disaster record",
+    "translation": "Disaster impact",
     "description": "File: app/backend.server/services/emailValidationWorkflowService.ts:93"
   },
   {
@@ -3386,7 +3386,7 @@
   },
   {
     "id": "disaster_event.form.linked_disaster_records_description",
-    "translation": "Link this disaster event to related disaster records.",
+    "translation": "Link this disaster event to related disaster impacts.",
     "description": "File: app/frontend/disaster-event/DisasterEventForm.tsx:4629"
   },
   {
@@ -3416,7 +3416,7 @@
   },
   {
     "id": "disaster_event.form.linked_records_search_description",
-    "translation": "Search and select disaster records to link this disaster event.",
+    "translation": "Search and select disaster impacts to link this disaster event.",
     "description": "File: app/routes/$lang+/disaster-event+/edit.$id.linked-disaster-records-modal.tsx:257"
   },
   {
@@ -3446,7 +3446,7 @@
   },
   {
     "id": "disaster_event.form.loading_linked_disaster_records_selector",
-    "translation": "Loading linked disaster records selector",
+    "translation": "Loading linked disaster impacts selector",
     "description": "File: app/frontend/disaster-event/DisasterEventForm.tsx:4653"
   },
   {
@@ -3486,7 +3486,7 @@
   },
   {
     "id": "disaster_event.form.manage_linked_disaster_records",
-    "translation": "Manage linked disaster records",
+    "translation": "Manage linked disaster impacts",
     "description": "File: app/frontend/disaster-event/DisasterEventForm.tsx:4640"
   },
   {
@@ -4026,7 +4026,7 @@
   },
   {
     "id": "disaster_event.review.linked_disaster_records",
-    "translation": "Linked disaster records",
+    "translation": "Linked disaster impacts",
     "description": "File: app/frontend/disaster-event/DisasterEventForm.tsx:4623"
   },
   {
@@ -4071,7 +4071,7 @@
   },
   {
     "id": "disaster_event.review.no_linked_disaster_records",
-    "translation": "No disaster records linked yet",
+    "translation": "No disaster impacts linked yet",
     "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:1111"
   },
   {
@@ -4231,12 +4231,12 @@
   },
   {
     "id": "disaster_record",
-    "translation": "Disaster record",
+    "translation": "Disaster impact",
     "description": "File: app/components/AuditLogHistory.tsx:36"
   },
   {
     "id": "disaster_record.add_new",
-    "translation": "Add new disaster record",
+    "translation": "Add new disaster impact",
     "description": "File: app/routes/$lang+/disaster-record+/_index.tsx:134"
   },
   {
@@ -4251,7 +4251,7 @@
   },
   {
     "id": "disaster_record.back",
-    "translation": "Back to disaster record",
+    "translation": "Back to disaster impact",
     "description": "File: app/routes/$lang+/disaster-record+/non-economic-losses.$id+/_index.tsx:175"
   },
   {
@@ -4261,8 +4261,8 @@
   },
   {
     "id": "disaster_record.count_header",
-    "translation": "{total_items} disaster records in {instance_name}",
-    "description": "Header text showing total number of disaster records and instance name. {total_items} is the number of records, {instance_name} is the name of the current instance. File: app/routes/$lang+/disaster-record+/_index.tsx:123"
+    "translation": "{total_items} disaster impacts in {instance_name}",
+    "description": "Header text showing total number of disaster impacts and instance name. {total_items} is the number of records, {instance_name} is the name of the current instance. File: app/routes/$lang+/disaster-record+/_index.tsx:123"
   },
   {
     "id": "disaster_record.damage_cost",
@@ -4416,7 +4416,7 @@
   },
   {
     "id": "disaster_record.disaster_records_non_economic_losses",
-    "translation": "Disaster records: non-economic losses",
+    "translation": "Disaster impacts: non-economic losses",
     "description": "File: app/routes/$lang+/disaster-record+/non-economic-losses.$id+/_index.tsx:165"
   },
   {
@@ -4536,17 +4536,17 @@
   },
   {
     "id": "disaster_records",
-    "translation": "Disaster records",
+    "translation": "Disaster impacts",
     "description": "File: app/frontend/disaster-record/form-non-economic-losses.tsx:96"
   },
   {
     "id": "disaster_records.add",
-    "translation": "Add disaster record",
+    "translation": "Add disaster impact",
     "description": "File: app/frontend/disaster-record/form-non-economic-losses.tsx:101"
   },
   {
     "id": "disaster_records.back_to_disaster_record",
-    "translation": "Back to disaster record",
+    "translation": "Back to disaster impact",
     "description": "File: app/routes/$lang+/disaster-record+/edit-sub.$disRecId+/damages+/_index.tsx:126"
   },
   {
@@ -4566,12 +4566,12 @@
   },
   {
     "id": "disaster_records.disaster_record_id",
-    "translation": "Disaster record ID",
+    "translation": "Disaster impact ID",
     "description": "File: app/routes/$lang+/disaster-record+/edit-sub.$disRecId+/disruptions+/_index.tsx:140"
   },
   {
     "id": "disaster_records.disaster_records_sectors",
-    "translation": "Disaster records: Sectors",
+    "translation": "Disaster impacts: Sectors",
     "description": "File: app/routes/$lang+/disaster-record+/edit-sec.$disRecId+/_index.tsx:230"
   },
   {
@@ -4686,12 +4686,12 @@
   },
   {
     "id": "disaster_records.edit",
-    "translation": "Edit disaster record",
+    "translation": "Edit disaster impact",
     "description": "File: app/frontend/disaster-record/form-non-economic-losses.tsx:97"
   },
   {
     "id": "disaster_records.id",
-    "translation": "Disaster record ID",
+    "translation": "Disaster impact ID",
     "description": "File: app/frontend/damages.tsx:482"
   },
   {
@@ -4911,8 +4911,8 @@
   },
   {
     "id": "disaster_records.showing_filtered_of_total",
-    "translation": "Showing {filtered} of {total} disaster record(s)",
-    "description": "Shows how many disaster events are displayed. {filtered} is the number of matching events, {total} is the total number of events. File: app/routes/$lang+/disaster-record+/_index.tsx:165"
+    "translation": "Showing {filtered} of {total} disaster impact(s)",
+    "description": "Shows how many disaster impacts are displayed. {filtered} is the number of matching disaster impacts, {total} is the total number of disaster impacts. File: app/routes/$lang+/disaster-record+/_index.tsx:165"
   },
   {
     "id": "disruption.duration_days",
@@ -6266,7 +6266,7 @@
   },
   {
     "id": "meta.non_economic_losses_disaster_records",
-    "translation": "Non-economic losses - Disaster records",
+    "translation": "Non-economic losses - Disaster impacts",
     "description": "File: app/routes/$lang+/disaster-record+/non-economic-losses.$id+/_index.tsx:38"
   },
   {
@@ -6281,7 +6281,7 @@
   },
   {
     "id": "meta.sectors_disaster_records",
-    "translation": "Sectors - Disaster records",
+    "translation": "Sectors - Disaster impacts",
     "description": "File: app/routes/$lang+/disaster-record+/edit-sec.$disRecId+/_index.tsx:39"
   },
   {
@@ -6396,7 +6396,7 @@
   },
   {
     "id": "nav.disaster_records",
-    "translation": "Disaster records",
+    "translation": "Disaster impacts",
     "description": "File: app/components/RegularMenuBar.tsx:256"
   },
   {
