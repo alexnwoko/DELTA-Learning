@@ -160,7 +160,9 @@ export function GeoTable(props: {
 								id={row.id}
 								className="cursor-pointer data-[selected]:bg-brand-surface-subtle data-[hovered]:bg-brand-surface-subtle data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:-outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
 							>
-								<Cell className={`${td} text-right tabular-nums text-brand-text-muted`}>
+								<Cell
+									className={`${td} text-right tabular-nums text-brand-text-muted`}
+								>
 									{rank ?? ""}
 								</Cell>
 								<Cell className={td}>{row.name}</Cell>

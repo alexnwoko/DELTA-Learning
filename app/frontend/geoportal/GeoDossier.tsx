@@ -91,7 +91,11 @@ export function YearStrip(props: {
 					height="4"
 					patternUnits="userSpaceOnUse"
 				>
-					<path d="M0,4 L4,0" stroke={dataTokens.state.notReported.stroke} strokeWidth="1" />
+					<path
+						d="M0,4 L4,0"
+						stroke={dataTokens.state.notReported.stroke}
+						strokeWidth="1"
+					/>
 				</pattern>
 			</defs>
 			{years.map((y, i) => {
@@ -260,7 +264,9 @@ export function GeoDossier(props: {
 								.filter(Boolean)
 								.join(". ")}
 						/>
-						{gapText && <p className="text-xs text-brand-text-muted">{gapText}</p>}
+						{gapText && (
+							<p className="text-xs text-brand-text-muted">{gapText}</p>
+						)}
 					</>
 				) : (
 					<p className="text-xs text-brand-text-muted">

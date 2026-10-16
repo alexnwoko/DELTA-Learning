@@ -591,7 +591,11 @@ export async function getBoundaries(
 					'name', COALESCE(c.name ->> ${params.lang}, c.name ->> 'en', ''),
 					'level', c.admin_level,
 					'parentId', c.parent_id,
-					'boundaryVintage', c.boundary_vintage
+					'boundaryVintage', c.boundary_vintage,
+					-- RV-5: a point always inside the division (spike base), and
+					-- its true area for densities per 1,000 km2.
+					'labelPoint', (ST_AsGeoJSON(ST_PointOnSurface(COALESCE(c.geom_z8, c.geom_z12, c.geom_z4)), 6)::jsonb) -> 'coordinates',
+					'areaKm2', round((ST_Area(COALESCE(c.geom_z12, c.geom_z8, c.geom_z4)::geography) / 1e6)::numeric, 3)
 				)
 			) ORDER BY c.division_id), '[]'::jsonb)
 		) AS fc

@@ -20,6 +20,8 @@ import {
 	ModalOverlay,
 	Select,
 	SelectValue,
+	ToggleButton,
+	ToggleButtonGroup,
 	Popover,
 	ListBox,
 	ListBoxItem,
@@ -47,7 +49,11 @@ import {
 } from "~/frontend/geoportal/GeoFilterBar";
 import { GeoReadout } from "~/frontend/geoportal/GeoReadout";
 import { GeoDossier, type DossierData } from "~/frontend/geoportal/GeoDossier";
-import { measureFamily, toMapCell } from "~/frontend/geoportal/geoCells";
+import {
+	densityPer1000Km2,
+	measureFamily,
+	toMapCell,
+} from "~/frontend/geoportal/geoCells";
 import { refusalText } from "~/frontend/geoportal/refusals";
 import type { GeoT } from "~/frontend/geoportal/i18n";
 import {
@@ -63,7 +69,11 @@ import {
 import { authLoaderWithPerm, hasPermission } from "~/utils/auth";
 import { getCountryAccountsIdFromSession } from "~/utils/session";
 import { serializeDeltaQuery, type DeltaQuery } from "~/utils/deltaQuery";
-import { resolveMapState } from "~/utils/mapState";
+import {
+	defaultSymbolFor,
+	resolveMapState,
+	type MapSymbol,
+} from "~/utils/mapState";
 import { GEO_DIMENSION_LABELS, geoMeasureInfo } from "~/utils/geoMeasures";
 import { htmlTitle } from "~/utils/htmlmeta";
 import { PrintButton } from "~/frontend/print/PrintButton";
@@ -104,6 +114,13 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 		url.searchParams.set("measure", "records");
 	}
 	const canReview = await hasPermission(args.request, "ValidateData");
+	// RV-5: every geoportal measure is a count, so spikes by default; the
+	// reader may switch to a density choropleth. View state, not delta.query.
+	const symbolParam = url.searchParams.get("symbol");
+	const symbol: MapSymbol =
+		symbolParam === "choropleth" || symbolParam === "spike"
+			? symbolParam
+			: defaultSymbolFor("count");
 	// Signed-in page: every configured layer (Alex: the reader chooses).
 	const basemaps = selectableBasemaps(
 		basemapLayers(url.origin, lang),
@@ -141,10 +158,18 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 			canReview,
 			choropleth,
 			boundaries: boundaries as {
-				features: { properties: { divisionId: string; name: string } }[];
+				features: {
+					properties: {
+						divisionId: string;
+						name: string;
+						labelPoint?: [number, number];
+						areaKm2?: number | string;
+					};
+				}[];
 			},
 			hazardTree: tree as HazardTree | null,
 			basemaps,
+			symbol,
 			refusal: null,
 		};
 	} catch (err) {
@@ -158,6 +183,7 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 				boundaries: null,
 				hazardTree: null,
 				basemaps,
+				symbol,
 				refusal: refusalBody(err.refusal, err.meta),
 			};
 		}
@@ -257,9 +283,30 @@ export default function GeoportalPage() {
 		? t({ code: "geoportal.unit.events", msg: "events" })
 		: t({ code: "geoportal.unit.disaster_impacts", msg: "disaster impacts" });
 
+	const symbol = data.symbol as MapSymbol;
+	const areaKm2 = useMemo(
+		() =>
+			new Map(
+				(data.boundaries?.features ?? []).map((f) => [
+					f.properties.divisionId,
+					Number(f.properties.areaKm2) || 0,
+				]),
+			),
+		[data.boundaries],
+	);
 	const mapState = useMemo(() => {
 		if (!choropleth) return null;
-		return resolveMapState(choropleth.cells.map(toMapCell), {
+		// RV-5: the choropleth shows density per 1,000 km2 (true area of the
+		// division); spikes show the count itself. Null stays null.
+		const cells = choropleth.cells.map(toMapCell).map((c) => {
+			if (symbol !== "choropleth" || typeof c.value !== "number") return c;
+			return {
+				...c,
+				value: densityPer1000Km2(c.value, areaKm2.get(c.areaId) ?? 0),
+			};
+		});
+		return resolveMapState(cells, {
+			symbol,
 			family: measureFamily(measure),
 			scope: {
 				tenant: null,
@@ -274,7 +321,7 @@ export default function GeoportalPage() {
 			},
 			notApplied: choropleth.meta.notApplied,
 		});
-	}, [choropleth, measure, query]);
+	}, [choropleth, measure, query, symbol, areaKm2]);
 
 	const rows: GeoTableRow[] = useMemo(() => {
 		if (!data.boundaries || !mapState) return [];
@@ -330,6 +377,13 @@ export default function GeoportalPage() {
 	const onFilters = (next: { query: DeltaQuery; level: number }) => {
 		const p = serializeDeltaQuery(next.query);
 		p.set("level", String(next.level));
+		p.set("symbol", symbol);
+		navigate(`?${p.toString()}`);
+	};
+	const setSymbol = (next: MapSymbol) => {
+		const p = serializeDeltaQuery(query);
+		p.set("level", String(data.level));
+		p.set("symbol", next);
 		navigate(`?${p.toString()}`);
 	};
 	const selectFromMap = (id: string | null) => {
@@ -361,7 +415,13 @@ export default function GeoportalPage() {
 
 	const title = t({ code: "geoportal.title", msg: "Geoportal" });
 	const tableId = "geoportal-table";
-	const measureTitle = `${t(GEO_DIMENSION_LABELS[query.dimension])} · ${t(info.label)}`;
+	const densityNote = t({
+		code: "geoportal.unit.per_1000km2",
+		msg: "per 1,000 km²",
+	});
+	const measureTitle = `${t(GEO_DIMENSION_LABELS[query.dimension])} · ${t(info.label)}${symbol === "choropleth" ? ` (${densityNote})` : ""}`;
+	const unitLabel =
+		symbol === "choropleth" ? `${t(info.unit)} ${densityNote}` : t(info.unit);
 	const activeFilters =
 		(query.where.time ? 1 : 0) +
 		(query.where.hazard ? 1 : 0) +
@@ -557,6 +617,8 @@ export default function GeoportalPage() {
 													basemapId={basemapId}
 													onBasemapStatus={setBasemapStatus}
 													homeSignal={homeSignal}
+													symbol={symbol}
+													spikeColor={mapState.legend.spikes?.color}
 													height="100%"
 													label={`${measureTitle}: ${t({ code: "geoportal.map", msg: "map" })}`}
 													describedBy={tableId}
@@ -569,6 +631,33 @@ export default function GeoportalPage() {
 									className="absolute right-2 bottom-8 z-10 flex flex-col items-end gap-1"
 									data-print="hide"
 								>
+									<ToggleButtonGroup
+										aria-label={t({
+											code: "geoportal.map.symbol",
+											msg: "Map style",
+										})}
+										selectionMode="single"
+										disallowEmptySelection
+										selectedKeys={[symbol]}
+										onSelectionChange={(keys) => {
+											const [k] = Array.from(keys);
+											if (k) setSymbol(k as MapSymbol);
+										}}
+										className="flex rounded border border-brand-border-control overflow-hidden text-xs shadow-sm"
+									>
+										<ToggleButton
+											id="spike"
+											className="px-2 py-1 bg-brand-surface data-[selected]:bg-brand-interactive data-[selected]:text-brand-text-on-interactive data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:-outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
+										>
+											{t({ code: "geoportal.map.spikes", msg: "Spikes" })}
+										</ToggleButton>
+										<ToggleButton
+											id="choropleth"
+											className="px-2 py-1 bg-brand-surface data-[selected]:bg-brand-interactive data-[selected]:text-brand-text-on-interactive data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:-outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
+										>
+											{t({ code: "geoportal.map.density", msg: "Density" })}
+										</ToggleButton>
+									</ToggleButtonGroup>
 									<Button
 										onPress={() => setHomeSignal((n) => n + 1)}
 										className="border border-brand-border-control rounded px-2 py-1 text-xs bg-brand-surface shadow-sm data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
@@ -684,7 +773,7 @@ export default function GeoportalPage() {
 										<GeoReadout
 											name={nameOf.get(readoutId) ?? ""}
 											area={readoutArea}
-											unit={t(info.unit)}
+											unit={unitLabel}
 											reportedNoun={reportedNoun}
 											selected={readoutId === shownId && hoverId === null}
 											t={t}
@@ -764,7 +853,7 @@ export default function GeoportalPage() {
 												rows={rows}
 												selectedId={shownId}
 												onSelect={selectFromList}
-												unit={t(info.unit)}
+												unit={unitLabel}
 												t={t}
 											/>
 											<p className="text-xs text-brand-text-muted mt-2">
