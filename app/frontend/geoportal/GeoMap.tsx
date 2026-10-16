@@ -241,10 +241,16 @@ export function GeoMap({
 			hovered = null;
 			onHoverRef.current?.(null);
 		});
+		// Paper is another size: redraw the canvas before and after printing.
+		const resize = () => map.updateSize();
+		window.addEventListener("beforeprint", resize);
+		window.addEventListener("afterprint", resize);
 		mapRef.current = map;
 		layerRef.current = layer;
 		baseRef.current = base;
 		return () => {
+			window.removeEventListener("beforeprint", resize);
+			window.removeEventListener("afterprint", resize);
 			map.setTarget(undefined);
 			mapRef.current = null;
 			layerRef.current = null;
@@ -319,7 +325,7 @@ export function GeoMap({
 			role="img"
 			aria-label={label}
 			aria-describedby={describedBy}
-			className="geo-map"
+			className="geo-map print:[&_.ol-zoom]:hidden print:[&_.ol-rotate]:hidden"
 			style={{
 				width: "100%",
 				height,
