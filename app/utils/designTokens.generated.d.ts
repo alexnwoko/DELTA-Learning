@@ -20,9 +20,11 @@ export declare const dataTokens: {
 		areaBoundary: StrokeTokens;
 		selectedOutline: StrokeTokens;
 		plausibilityMarker: StrokeTokens;
-		shadedOutline: StrokeTokens;
 		notAppliedNote: { border: string; borderWidth: number; background: string };
 		canvas: { background: string };
 	};
+	flag: { reviewChip: { background: string; text: string } };
+	chart: { axis: string };
+	notice: { provisional: { border: string; background: string } };
 	ramp: Record<"people" | "housing" | "money" | "events", readonly string[]>;
 };

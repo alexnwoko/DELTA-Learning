@@ -115,7 +115,7 @@
 		"border": {
 			"$type": "color",
 			"$value": "#cacdd0",
-			"$description": "Control and table borders",
+			"$description": "Table rules and dividers. Decorative: for the edge of a control use border-control.",
 			"$extensions": {
 				"org.undrr.delta": {
 					"mangrove": {
@@ -155,6 +155,104 @@
 					"mangrove": {
 						"release": "v2.1.0",
 						"path": "focus-ring.offset",
+						"brand": "mangrove base"
+					}
+				}
+			}
+		},
+		"text-muted": {
+			"$type": "color",
+			"$value": "#4d4d4d",
+			"$description": "Secondary text and notes",
+			"$extensions": {
+				"org.undrr.delta": {
+					"mangrove": {
+						"release": "v2.1.0",
+						"path": "color.neutral-600",
+						"brand": "mangrove base"
+					}
+				}
+			}
+		},
+		"focus-ring": {
+			"$type": "color",
+			"$value": "#866200",
+			"$description": "Focus ring colour (WCAG 2.4.7)",
+			"$extensions": {
+				"org.undrr.delta": {
+					"mangrove": {
+						"release": "v2.1.0",
+						"path": "color.focus-ring",
+						"brand": "mangrove base"
+					}
+				}
+			}
+		},
+		"border-control": {
+			"$type": "color",
+			"$value": "#7e8082",
+			"$description": "Border that shows where a control is: buttons, inputs, selects (WCAG 1.4.11, 3:1)",
+			"$extensions": {
+				"org.undrr.delta": {
+					"mangrove": {
+						"release": "v2.1.0",
+						"path": "form-input.border-color",
+						"brand": "mangrove base"
+					}
+				}
+			}
+		},
+		"danger": {
+			"$type": "color",
+			"$value": "#c10920",
+			"$description": "Errors and invalid fields",
+			"$extensions": {
+				"org.undrr.delta": {
+					"mangrove": {
+						"release": "v2.1.0",
+						"path": "color.red-900",
+						"brand": "mangrove base"
+					}
+				}
+			}
+		},
+		"text-on-interactive": {
+			"$type": "color",
+			"$value": "#ffffff",
+			"$description": "Text on an interactive-coloured background, such as a selected toggle",
+			"$extensions": {
+				"org.undrr.delta": {
+					"mangrove": {
+						"release": "v2.1.0",
+						"path": "color.text-button",
+						"brand": "mangrove base"
+					}
+				}
+			}
+		},
+		"warning-border": {
+			"$type": "color",
+			"$value": "#fec124",
+			"$description": "Edge of a general warning note, such as a refusal or an unavailable basemap",
+			"$extensions": {
+				"org.undrr.delta": {
+					"mangrove": {
+						"release": "v2.1.0",
+						"path": "color.accent-500",
+						"brand": "mangrove base"
+					}
+				}
+			}
+		},
+		"warning-background": {
+			"$type": "color",
+			"$value": "#fdf6d9",
+			"$description": "Background of a general warning note",
+			"$extensions": {
+				"org.undrr.delta": {
+					"mangrove": {
+						"release": "v2.1.0",
+						"path": "color.accent-300",
 						"brand": "mangrove base"
 					}
 				}

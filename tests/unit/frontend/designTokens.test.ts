@@ -41,9 +41,21 @@ describe("data-layer tokens (FE-Tokens-01)", () => {
 	});
 
 	it("carry the MapChart map states with today's MapChart.tsx values", () => {
-		expect(dataTokens.map.shadedOutline).toEqual({ stroke: "#374151", strokeWidth: 1.2 });
+		expect("shadedOutline" in dataTokens.map, "retired: one map look (Alex, 2026-10-16)").toBe(false);
 		expect(dataTokens.map.notAppliedNote).toEqual({ border: "#b45309", borderWidth: 3, background: "#fff7ed" });
 		expect(dataTokens.map.canvas).toEqual({ background: "#f3f4f6" });
+	});
+
+	it("carry the provisional-basis banner (AB-01), readable with body text", () => {
+		expect(dataTokens.notice.provisional).toEqual({ border: "#d97706", background: "#fffbeb" });
+	});
+
+	it("carry the neutral chart axis", () => {
+		expect(dataTokens.chart.axis).toBe("#6b7280");
+	});
+
+	it("carry the review-flag chip (C30)", () => {
+		expect(dataTokens.flag.reviewChip).toEqual({ background: "#fef3c7", text: "#78350f" });
 	});
 
 	it("keep no-records and not-reported as separate tokens (TR-076)", () => {
@@ -97,5 +109,40 @@ describe("brand-layer tokens (Mangrove v2.1.0)", () => {
 		const css = readFileSync(join(ROOT, "app/styles/tokens/brand.css"), "utf8");
 		expect(css).toMatch(/:root \{[^}]*--delta-brand-interactive: #1a1a1a;/s);
 		expect(css).toMatch(/\[data-brand="delta"\] \{[^}]*--delta-brand-interactive: #004f91;/s);
+	});
+});
+
+describe("brand contrast (WCAG 2.2 AA)", () => {
+	const luminance = (hex: string) => {
+		const [r, g, b] = [1, 3, 5]
+			.map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+			.map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+		return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+	};
+	const ratio = (a: string, b: string) => {
+		const [x, y] = [luminance(a), luminance(b)].sort((p, q) => q - p);
+		return (x + 0.05) / (y + 0.05);
+	};
+	// [foreground, background, minimum, rule]
+	const PAIRS: [string, string, number, string][] = [
+		["text", "surface", 4.5, "1.4.3 text"],
+		["text", "surface-subtle", 4.5, "1.4.3 text"],
+		["text-muted", "surface", 4.5, "1.4.3 text"],
+		["text-muted", "surface-subtle", 4.5, "1.4.3 text"],
+		["interactive", "surface", 4.5, "1.4.3 link text"],
+		["danger", "surface", 4.5, "1.4.3 error text"],
+		["text-on-interactive", "interactive", 4.5, "1.4.3 text on a selected control"],
+		["border-control", "surface", 3, "1.4.11 control boundary"],
+		["border-control", "surface-subtle", 3, "1.4.11 control boundary"],
+		["focus-ring", "surface", 3, "1.4.11 / 2.4.13 focus indicator"],
+		["focus-ring", "surface-subtle", 3, "1.4.11 / 2.4.13 focus indicator"],
+		["text", "warning-background", 4.5, "1.4.3 text in a warning note"],
+	];
+	it.each(["neutral", "delta"])("%s brand meets the thresholds", (brand) => {
+		const tokens = readJson(`design-tokens/brand/${brand}.json`).brand;
+		for (const [fg, bg, min, rule] of PAIRS) {
+			const r = ratio(tokens[fg].$value, tokens[bg].$value);
+			expect(r, `${brand}: ${fg} on ${bg} is ${r.toFixed(2)}:1, needs ${min}:1 (${rule})`).toBeGreaterThanOrEqual(min);
+		}
 	});
 });
