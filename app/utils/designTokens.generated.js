@@ -64,10 +64,6 @@ export const dataTokens = {
 			"stroke": "#b45309",
 			"strokeWidth": 2.5
 		},
-		"shadedOutline": {
-			"stroke": "#374151",
-			"strokeWidth": 1.2
-		},
 		"notAppliedNote": {
 			"border": "#b45309",
 			"borderWidth": 3,

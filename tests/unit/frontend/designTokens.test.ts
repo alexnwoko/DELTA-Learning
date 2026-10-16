@@ -41,7 +41,7 @@ describe("data-layer tokens (FE-Tokens-01)", () => {
 	});
 
 	it("carry the MapChart map states with today's MapChart.tsx values", () => {
-		expect(dataTokens.map.shadedOutline).toEqual({ stroke: "#374151", strokeWidth: 1.2 });
+		expect("shadedOutline" in dataTokens.map, "retired: one map look (Alex, 2026-10-16)").toBe(false);
 		expect(dataTokens.map.notAppliedNote).toEqual({ border: "#b45309", borderWidth: 3, background: "#fff7ed" });
 		expect(dataTokens.map.canvas).toEqual({ background: "#f3f4f6" });
 	});
