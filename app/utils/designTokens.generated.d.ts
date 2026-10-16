@@ -24,5 +24,6 @@ export declare const dataTokens: {
 		canvas: { background: string };
 	};
 	flag: { reviewChip: { background: string; text: string } };
+	chart: { axis: string };
 	ramp: Record<"people" | "housing" | "money" | "events", readonly string[]>;
 };

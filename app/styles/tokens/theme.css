@@ -43,6 +43,7 @@
 	--color-data-ramp-events-5: var(--delta-data-ramp-events-5);
 	--color-data-flag-review-chip-background: var(--delta-data-flag-review-chip-background);
 	--color-data-flag-review-chip-text: var(--delta-data-flag-review-chip-text);
+	--color-data-chart-axis: var(--delta-data-chart-axis);
 	--color-brand-interactive: var(--delta-brand-interactive);
 	--color-brand-interactive-active: var(--delta-brand-interactive-active);
 	--color-brand-secondary: var(--delta-brand-secondary);
