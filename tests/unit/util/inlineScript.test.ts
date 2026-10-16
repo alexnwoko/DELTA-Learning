@@ -117,3 +117,46 @@ describe("ContentRepeater mapper preview pages", () => {
 		expect(written.join("")).not.toContain("<script>");
 	});
 });
+
+describe("SpatialFootprintsMapViewer preview page", () => {
+	const benign = {
+		items: [],
+		legendData: [{ id: "rec-1" }],
+		defaultKeys: ["event"],
+		missing: [],
+		eventId: "ev-1",
+		coords: [-8.8, 13.2],
+		urlLang: "en",
+		filterCaption: "Footprints",
+	};
+
+	it("keeps hostile data, ids, captions and the URL language as data", async () => {
+		const { buildFootprintsPreviewHtml } = await import(
+			"~/components/SpatialFootprintsMapViewer"
+		);
+		const html = buildFootprintsPreviewHtml({
+			...benign,
+			items: FOOTPRINTS,
+			legendData: [{ id: '"</script><script>globalThis.__deltaPwned=4</script>' }],
+			missing: [HOSTILE_TITLE],
+			eventId: "<img src=x onerror=globalThis.__deltaPwned=5>",
+			urlLang: '"+(globalThis.__deltaPwned=6)+"',
+			filterCaption: "<b>caption</b>",
+		});
+
+		const items = evaluateAssignedExpression(html, /const items = (.*);/);
+		expect(items).toEqual(FOOTPRINTS);
+		const missing = evaluateAssignedExpression(html, /const missing = (.*);/);
+		expect(missing).toEqual([HOSTILE_TITLE]);
+		expect((globalThis as any).__deltaPwned).toBeUndefined();
+
+		expect(scriptCloseCount(html)).toBe(
+			scriptCloseCount(buildFootprintsPreviewHtml(benign)),
+		);
+		expect(html).not.toContain("<img src=x");
+		expect(html).not.toContain("<b>caption</b>");
+		expect(html).toContain("&lt;b&gt;caption&lt;/b&gt;");
+		expect(html).not.toContain('fetch("/"+(globalThis');
+		expect(html).toContain("popup.textContent =");
+	});
+});

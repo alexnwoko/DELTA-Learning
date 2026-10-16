@@ -7,6 +7,7 @@ import {
 	MAP_MARKER_ICON_ANCHOR,
 } from "~/utils/leafletAssets";
 import { inlineBasemapScript } from "~/utils/leafletBasemap";
+import { escapeHtml, jsonForInlineScript } from "~/utils/inlineScript";
 
 type SpatialFootprintsMapViewerProps = {
 	dataSource: { id: string }[]; // Define a stricter type for dataSource
@@ -31,92 +32,31 @@ const glbMarkerIcon = {
 	className: "custom-leaflet-marker",
 };
 
-const SpatialFootprintsMapViewer: React.FC<SpatialFootprintsMapViewerProps> = ({
-	dataSource = [],
+/**
+ * The page the footprints preview writes into a new tab. The tab shares
+ * DELTA's origin, so every value from data, the URL or another service is
+ * escaped (inlineScript.ts): it must stay data and never become script or markup.
+ */
+export function buildFootprintsPreviewHtml({
+	items,
+	legendData,
+	defaultKeys,
+	missing = [],
+	eventId = "",
+	coords,
+	urlLang,
 	filterCaption = "",
-	ctryIso3 = "",
-}) => {
-	const defaultMapLocation = async (): Promise<{
-		coords: [number, number];
-		bounds?: [[number, number], [number, number]];
-	}> => {
-		const iso3 = ctryIso3; // Default country code
-		const apiUrl = `https://data.undrr.org/api/json/gis/countries/1.0.0/?cca3=${encodeURIComponent(iso3 ?? "")}`;
-
-		// Default location (Urumqi)
-		const defaultCoords: [number, number] = [43.833, 87.616];
-
-		try {
-			if (!iso3) throw new Error("Country ISO3 code is missing");
-
-			// Step 1: Fetch Country Data (API)
-			const responseCountry = await fetch(apiUrl);
-			if (!responseCountry.ok)
-				throw new Error(
-					`Failed to fetch country data: ${responseCountry.statusText}`,
-				);
-
-			const dataCountry = await responseCountry.json();
-			if (!dataCountry?.data?.length)
-				throw new Error(`Country API returned no data for ${iso3}`);
-
-			const cca2 = dataCountry.data[0]?.cca2;
-			if (!cca2) throw new Error(`Country code not found for ${iso3}`);
-
-			// Step 2: Fetch Country Center & Bounds from Nominatim
-			const nominatimUrl = `https://nominatim.openstreetmap.org/search?country=${encodeURIComponent(cca2)}&format=json&limit=1&polygon_geojson=1`;
-			const responseNominatim = await fetch(nominatimUrl);
-
-			if (!responseNominatim.ok)
-				throw new Error(
-					`Failed to fetch Nominatim data: ${responseNominatim.statusText}`,
-				);
-
-			// ✅ Proof-Check: Ensure valid JSON and non-empty array
-			let dataNominatim;
-			try {
-				dataNominatim = await responseNominatim.json();
-				if (!Array.isArray(dataNominatim) || dataNominatim.length === 0) {
-					throw new Error(`Nominatim returned an empty result for ${cca2}`);
-				}
-			} catch (parseError) {
-				throw new Error(`Failed to parse Nominatim JSON: ${parseError}`);
-			}
-
-			const { lat, lon, boundingbox } = dataNominatim[0];
-
-			return {
-				coords: [parseFloat(lat), parseFloat(lon)], // Extract coordinates
-				bounds: [
-					[parseFloat(boundingbox[0]), parseFloat(boundingbox[2])], // Southwest
-					[parseFloat(boundingbox[1]), parseFloat(boundingbox[3])], // Northeast
-				],
-			};
-		} catch (error) {
-			console.error("Error fetching country/location data:", error);
-			return { coords: defaultCoords }; // 🚀 Immediate fallback!
-		}
-	};
-
-	const previewMap = async (
-		items: any[],
-		legendData: any[],
-		defaultKeys: string[],
-		missing: any[] = [],
-		eventId: string = "",
-	) => {
-		const newTab = window.open("", "_blank");
-		if (!newTab) {
-			alert("Popup blocker is preventing the map from opening.");
-			return;
-		}
-
-		const { coords } = await defaultMapLocation();
-		const strCoords = JSON.stringify(coords);
-		// API routes sit under the language segment of the opener's URL.
-		const urlLang = window.location.pathname.split("/")[1] || "en";
-
-		newTab.document.write(`
+}: {
+	items: any[];
+	legendData: any[];
+	defaultKeys: string[];
+	missing?: any[];
+	eventId?: string;
+	coords: unknown;
+	urlLang: string;
+	filterCaption?: string;
+}): string {
+	return `
       <!DOCTYPE html>
       <html lang="en">
       <head>
@@ -177,25 +117,25 @@ const SpatialFootprintsMapViewer: React.FC<SpatialFootprintsMapViewerProps> = ({
       <body>
         <div id="map"></div>
         <div id="legend">
-            <h4 id="legend-header">${filterCaption || "Map Layers"}</h4>
+            <h4 id="legend-header">${escapeHtml(filterCaption || "Map Layers")}</h4>
             <div class="legend-body">
                 <div class="legend-item">
                 <input type="checkbox" id="layer-event" ${defaultKeys.includes("event") ? "checked" : ""} />
-                <label for="layer-event">Disaster event - ${eventId}</label>
+                <label for="layer-event">Disaster event - ${escapeHtml(eventId)}</label>
                 </div>
                 ${legendData.length > 0 ? '<div for="layer-record" style="margin-top: 0.5rem; padding-left: 0.2rem">Disaster impacts</div>' : ""}
                 ${legendData
 									.map(
 										(rec) => `
                     <div class="legend-item">
-                        <input type="checkbox" id="layer-${rec.id}" ${defaultKeys.includes(rec.id) ? "checked" : ""} />
-                        <label for="layer-${rec.id}">${rec.id.slice(0, 8)}</label>
+                        <input type="checkbox" id="layer-${escapeHtml(rec.id)}" ${defaultKeys.includes(rec.id) ? "checked" : ""} />
+                        <label for="layer-${escapeHtml(rec.id)}">${escapeHtml(String(rec.id).slice(0, 8))}</label>
                         ${["damages", "losses", "disruptions"]
 													.map(
 														(sub) => `
                             <div class="legend-subitem">
-                            <input type="checkbox" id="layer-${rec.id}-${sub}" />
-                            <label for="layer-${rec.id}-${sub}">${sub}</label>
+                            <input type="checkbox" id="layer-${escapeHtml(rec.id)}-${sub}" />
+                            <label for="layer-${escapeHtml(rec.id)}-${sub}">${sub}</label>
                             </div>`,
 													)
 													.join("")}
@@ -239,7 +179,7 @@ const SpatialFootprintsMapViewer: React.FC<SpatialFootprintsMapViewerProps> = ({
                 }
               }
             } else {
-                map.setView(${strCoords}, 6); 
+                map.setView(${jsonForInlineScript(coords)}, 6); 
             }
           };
 
@@ -247,9 +187,9 @@ const SpatialFootprintsMapViewer: React.FC<SpatialFootprintsMapViewerProps> = ({
             const map = L.map("map");
             ${inlineBasemapScript("map")}
 
-            const items = ${JSON.stringify(items)};
-            const defaultKeys = ${JSON.stringify(defaultKeys)};
-            const missing = ${JSON.stringify(missing)};
+            const items = ${jsonForInlineScript(items)};
+            const defaultKeys = ${jsonForInlineScript(defaultKeys)};
+            const missing = ${jsonForInlineScript(missing)};
             const layers = {};
 
             const getColor = (type) => ({
@@ -282,12 +222,14 @@ const SpatialFootprintsMapViewer: React.FC<SpatialFootprintsMapViewerProps> = ({
                     },
                     pointToLayer: function (feature, latlng) {
                         const marker = L.marker(latlng, {
-                            icon: L.icon(${JSON.stringify({ ...glbMarkerIcon, iconUrl: absoluteAssetUrl(MAP_MARKER_ICON) })})
+                            icon: L.icon(${jsonForInlineScript({ ...glbMarkerIcon, iconUrl: absoluteAssetUrl(MAP_MARKER_ICON) })})
                         });
 
                         // Bind popup only for markers with a description
                         if (feature?.properties?.description) {
-                            marker.bindPopup(feature.properties.description);
+                            const popup = document.createElement("div");
+                            popup.textContent = String(feature.properties.description ?? "");
+                            marker.bindPopup(popup);
                         }
 
                         return marker;
@@ -342,7 +284,7 @@ const SpatialFootprintsMapViewer: React.FC<SpatialFootprintsMapViewerProps> = ({
 
                 console.log("📦 Fetching geometry for key:", key);
 
-                fetch("/${urlLang}/api/spatial-footprint-geojson?division_id=" + division_id + "&record_id=" + record_id)
+                fetch("/" + encodeURIComponent(${jsonForInlineScript(urlLang)}) + "/api/spatial-footprint-geojson?division_id=" + encodeURIComponent(division_id) + "&record_id=" + encodeURIComponent(record_id))
                 .then((res) => res.json())
                 .then((geo) => {
                     if (!geo || !geo.geometry) {
@@ -384,7 +326,7 @@ const SpatialFootprintsMapViewer: React.FC<SpatialFootprintsMapViewerProps> = ({
 							.map(
 								(rec) => `
                   (() => {
-                    const base = "${rec.id}";
+                    const base = ${jsonForInlineScript(rec.id)};
               
                     // Disaster record's main footprint layer toggle
                     const groupCb = document.getElementById("layer-" + base);
@@ -520,7 +462,105 @@ const SpatialFootprintsMapViewer: React.FC<SpatialFootprintsMapViewerProps> = ({
         </script>
       </body>
       </html>
-    `);
+    `;
+}
+
+const SpatialFootprintsMapViewer: React.FC<SpatialFootprintsMapViewerProps> = ({
+	dataSource = [],
+	filterCaption = "",
+	ctryIso3 = "",
+}) => {
+	const defaultMapLocation = async (): Promise<{
+		coords: [number, number];
+		bounds?: [[number, number], [number, number]];
+	}> => {
+		const iso3 = ctryIso3; // Default country code
+		const apiUrl = `https://data.undrr.org/api/json/gis/countries/1.0.0/?cca3=${encodeURIComponent(iso3 ?? "")}`;
+
+		// Default location (Urumqi)
+		const defaultCoords: [number, number] = [43.833, 87.616];
+
+		try {
+			if (!iso3) throw new Error("Country ISO3 code is missing");
+
+			// Step 1: Fetch Country Data (API)
+			const responseCountry = await fetch(apiUrl);
+			if (!responseCountry.ok)
+				throw new Error(
+					`Failed to fetch country data: ${responseCountry.statusText}`,
+				);
+
+			const dataCountry = await responseCountry.json();
+			if (!dataCountry?.data?.length)
+				throw new Error(`Country API returned no data for ${iso3}`);
+
+			const cca2 = dataCountry.data[0]?.cca2;
+			if (!cca2) throw new Error(`Country code not found for ${iso3}`);
+
+			// Step 2: Fetch Country Center & Bounds from Nominatim
+			const nominatimUrl = `https://nominatim.openstreetmap.org/search?country=${encodeURIComponent(cca2)}&format=json&limit=1&polygon_geojson=1`;
+			const responseNominatim = await fetch(nominatimUrl);
+
+			if (!responseNominatim.ok)
+				throw new Error(
+					`Failed to fetch Nominatim data: ${responseNominatim.statusText}`,
+				);
+
+			// ✅ Proof-Check: Ensure valid JSON and non-empty array
+			let dataNominatim;
+			try {
+				dataNominatim = await responseNominatim.json();
+				if (!Array.isArray(dataNominatim) || dataNominatim.length === 0) {
+					throw new Error(`Nominatim returned an empty result for ${cca2}`);
+				}
+			} catch (parseError) {
+				throw new Error(`Failed to parse Nominatim JSON: ${parseError}`);
+			}
+
+			const { lat, lon, boundingbox } = dataNominatim[0];
+
+			return {
+				coords: [parseFloat(lat), parseFloat(lon)], // Extract coordinates
+				bounds: [
+					[parseFloat(boundingbox[0]), parseFloat(boundingbox[2])], // Southwest
+					[parseFloat(boundingbox[1]), parseFloat(boundingbox[3])], // Northeast
+				],
+			};
+		} catch (error) {
+			console.error("Error fetching country/location data:", error);
+			return { coords: defaultCoords }; // 🚀 Immediate fallback!
+		}
+	};
+
+	const previewMap = async (
+		items: any[],
+		legendData: any[],
+		defaultKeys: string[],
+		missing: any[] = [],
+		eventId: string = "",
+	) => {
+		const newTab = window.open("", "_blank");
+		if (!newTab) {
+			alert("Popup blocker is preventing the map from opening.");
+			return;
+		}
+
+		const { coords } = await defaultMapLocation();
+		// API routes sit under the language segment of the opener's URL.
+		const urlLang = window.location.pathname.split("/")[1] || "en";
+
+		newTab.document.write(
+			buildFootprintsPreviewHtml({
+				items,
+				legendData,
+				defaultKeys,
+				missing,
+				eventId,
+				coords,
+				urlLang,
+				filterCaption,
+			}),
+		);
 
 		newTab.document.close();
 	};
