@@ -772,7 +772,7 @@ describe("geoportal read model (G1)", () => {
 			expect(body.multiDivisionRecords).toBe(1); // e2 in both areas
 			expect(body.unattributed.reasons).toEqual({ no_division_row: 1 }); // e3
 			expect(body.derivation).toEqual({ as_recorded: 1, from_records: 1 });
-			expect(body.caption).toMatch(/placed where their records are/);
+			expect(body.caption).toMatch(/placed where their disaster impacts are/);
 		});
 
 		it("grades an event placed through its records by its best record grade", async () => {
