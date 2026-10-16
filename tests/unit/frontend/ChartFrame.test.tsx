@@ -10,7 +10,7 @@ const render = (basis: "published" | "provisional" = "published") =>
 		<ChartFrame
 			ctx={ctx}
 			title="Deaths by hazard"
-			meta={{ source: "DELTA Angola", scope: "Angola, 2015-2024", method: "Sum of reported records", grade: "B", basis }}
+			meta={{ source: "DELTA Angola", scope: "Angola, 2015-2024", method: "Sum of reported records", grade: "B", basis, notes: ["2 of 3 records carry this breakdown"] }}
 			rows={[
 				{ label: "Flood", value: 1200, valueState: "reported", recordsFlagged: 2 },
 				{ label: "Drought", value: 0, valueState: "zero_confirmed" },
@@ -42,6 +42,7 @@ describe("ChartFrame (TR-245)", () => {
 			"Method: Sum of reported records; Grade: B",
 			"2 record(s) behind these figures are flagged for review",
 			"Blank values are not reported, not zero",
+			"2 of 3 records carry this breakdown",
 		]) {
 			expect(caption).toContain(note);
 		}

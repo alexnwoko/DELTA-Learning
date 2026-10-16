@@ -38,11 +38,24 @@ describe("chartCsv (TR-245, NFR-131)", () => {
 	it("carries method, grade, basis, source, scope and flagged count on every row", () => {
 		const [header, flood] = csvRows(chartCsv(ROWS, META));
 		expect(header).toBe(
-			"label,series,value,value_state,unit,records_flagged,method,grade,basis,source,scope,title,generated",
+			"label,series,value,value_state,unit,records_flagged,method,grade,basis,source,scope,notes,title,generated",
 		);
 		expect(flood).toBe(
-			'Flood,,120,reported,,2,Sum of reported records,B,Published records,DELTA Angola,"Angola, 2015-2024",Deaths by hazard,2026-10-16',
+			'Flood,,120,reported,,2,Sum of reported records,B,Published records,DELTA Angola,"Angola, 2015-2024",,Deaths by hazard,2026-10-16',
 		);
+	});
+
+	it("leaves an unknown flagged count empty, not zero (TR-076)", () => {
+		const [, , drought] = csvRows(chartCsv(ROWS, META));
+		expect(drought.split(",")[5]).toBe("");
+		const [, flood] = csvRows(chartCsv(ROWS, META));
+		expect(flood.split(",")[5]).toBe("2");
+	});
+
+	it("carries the screen's extra notes, such as coverage, in every format", () => {
+		const meta = { ...META, notes: ["12 of 40 records carry a sex breakdown"] };
+		expect(csvRows(chartCsv(ROWS, meta))[1]).toContain(",12 of 40 records carry a sex breakdown,");
+		expect(exportNotes(meta, ROWS)).toContain("12 of 40 records carry a sex breakdown");
 	});
 
 	it("labels a provisional export as not for publication (AB-01)", () => {
