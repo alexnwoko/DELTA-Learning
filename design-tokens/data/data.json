@@ -332,6 +332,14 @@
 					"$value": "#78350f"
 				}
 			}
+		},
+		"chart": {
+			"$description": "Neutral ink for charts drawn outside Recharts, such as the geoportal dossier.",
+			"axis": {
+				"$description": "Axis lines and neutral chart ink; also the fallback bar colour, which should never show.",
+				"$type": "color",
+				"$value": "#6b7280"
+			}
 		}
 	}
 }

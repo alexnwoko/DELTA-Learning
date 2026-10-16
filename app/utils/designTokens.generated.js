@@ -108,5 +108,8 @@ export const dataTokens = {
 			"background": "#fef3c7",
 			"text": "#78350f"
 		}
+	},
+	"chart": {
+		"axis": "#6b7280"
 	}
 };

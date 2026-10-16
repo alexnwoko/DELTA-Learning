@@ -63,4 +63,5 @@
   --delta-data-ramp-events-5: #54278f;
   --delta-data-flag-review-chip-background: #fef3c7;
   --delta-data-flag-review-chip-text: #78350f;
+  --delta-data-chart-axis: #6b7280; /** Axis lines and neutral chart ink; also the fallback bar colour, which should never show. */
 }
