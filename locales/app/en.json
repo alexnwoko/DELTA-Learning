@@ -786,13 +786,13 @@
   },
   {
     "id": "analysis.map_flagged_marker",
-    "translation": "Includes records flagged for review",
+    "translation": "Includes disaster impacts flagged for review",
     "description": "File: app/components/MapChart.tsx:658"
   },
   {
     "id": "analysis.map_flagged_records",
-    "translation": "Caveat: includes {n} record(s) flagged for review",
-    "description": "Map tooltip caveat. {n} is the number of records flagged for review. File: app/components/MapChart.tsx:752"
+    "translation": "Caveat: includes {n} disaster impact(s) flagged for review",
+    "description": "Map tooltip caveat. {n} is the number of disaster impacts flagged for review. File: app/components/MapChart.tsx:752"
   },
   {
     "id": "analysis.map_single_tone_few_areas",
@@ -1046,7 +1046,7 @@
   },
   {
     "id": "analysis.records_flagged_for_review",
-    "translation": "({n} record(s) flagged for review)",
+    "translation": "({n} disaster impact(s) flagged for review)",
     "description": "File: app/frontend/analytics/hazards/sections/HumanAffects.tsx:142"
   },
   {
@@ -6626,7 +6626,7 @@
   },
   {
     "id": "plausibility.intro",
-    "translation": "These records carry source values that look implausible, for example the same large number in two unrelated fields. The values have not been changed. Figures that include them are marked 'flagged for review'. Check each record against its source and correct it through the record screens where needed.",
+    "translation": "These disaster impacts carry source values that look implausible, for example the same large number in two unrelated fields. The values have not been changed. Figures that include them are marked 'flagged for review'. Check each record against its source and correct it through the disaster impact screens where needed.",
     "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:176"
   },
   {
