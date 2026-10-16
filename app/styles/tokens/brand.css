@@ -14,6 +14,8 @@
   --delta-brand-border: #cacdd0; /** Control and table borders */
   --delta-brand-focus-ring-width: 2px; /** Focus ring width (WCAG 2.4.7) */
   --delta-brand-focus-ring-offset: 2px; /** Focus ring offset */
+  --delta-brand-text-muted: #4d4d4d; /** Secondary text and notes */
+  --delta-brand-focus-ring: #866200; /** Focus ring colour (WCAG 2.4.7) */
 }
 
 /**
@@ -32,4 +34,6 @@
   --delta-brand-border: #cacdd0; /** Control and table borders */
   --delta-brand-focus-ring-width: 2px; /** Focus ring width (WCAG 2.4.7) */
   --delta-brand-focus-ring-offset: 2px; /** Focus ring offset */
+  --delta-brand-text-muted: #4d4d4d; /** Secondary text and notes */
+  --delta-brand-focus-ring: #866200; /** Focus ring colour (WCAG 2.4.7) */
 }

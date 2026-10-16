@@ -23,5 +23,6 @@ export declare const dataTokens: {
 		notAppliedNote: { border: string; borderWidth: number; background: string };
 		canvas: { background: string };
 	};
+	flag: { reviewChip: { background: string; text: string } };
 	ramp: Record<"people" | "housing" | "money" | "events", readonly string[]>;
 };
