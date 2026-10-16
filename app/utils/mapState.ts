@@ -106,7 +106,12 @@ export interface StateEncoding {
 	detail: string | null;
 }
 
-const MAP_PATTERNS: readonly MapPattern[] = ["none", "hatch", "dots", "crosshatch"];
+const MAP_PATTERNS: readonly MapPattern[] = [
+	"none",
+	"hatch",
+	"dots",
+	"crosshatch",
+];
 
 /** Drawing values for a state from the data token layer; labels stay here. */
 function stateFromTokens(
@@ -214,8 +219,36 @@ export interface NotAppliedInput {
 	reason?: string | null;
 }
 
+/**
+ * How shaded areas are drawn (ruling RV-5, Alex 2026-10-16): counts as
+ * spikes, sized symbols per division, so large or populous divisions do not
+ * look worst by area alone; densities and rates as a choropleth.
+ */
+export type MapSymbol = "spike" | "choropleth";
+export type MeasureKind = "count" | "density" | "rate";
+
+/** RV-5 default: spikes for counts, a choropleth for densities and rates. */
+export function defaultSymbolFor(kind: MeasureKind): MapSymbol {
+	return kind === "count" ? "spike" : "choropleth";
+}
+
+/** Default pixel height of the tallest spike. PROVISIONAL: no ruling sets it. */
+export const SPIKE_MAX_HEIGHT_PX = 60;
+
+/**
+ * Smallest drawn spike for a reported value above 0, so a small figure next
+ * to a large one never reads as "no data". Renderers draw
+ * max(ratio * SPIKE_MAX_HEIGHT_PX, SPIKE_MIN_HEIGHT_PX). Ratios stay linear.
+ */
+export const SPIKE_MIN_HEIGHT_PX = 2;
+
+/** Base fill of a reported area in spike mode: the map canvas, so the spike carries the value. */
+export const SPIKE_BASE_FILL = dataTokens.map.canvas.background;
+
 export interface ResolveMapOptions {
 	family: MeasureFamily;
+	/** Default "choropleth"; callers pass defaultSymbolFor(kind) for RV-5. */
+	symbol?: MapSymbol;
 	scope: MapScopeQuery;
 	/** meta.notApplied: filters the endpoint named as not applied. */
 	notApplied?: readonly (string | NotAppliedInput)[];
@@ -276,6 +309,12 @@ export interface MapArea {
 	/** Ramp colour for a shaded area; null for off-ramp states. */
 	color: string | null;
 	reason: MapStateReason | null;
+	/**
+	 * Spike mode only: the value as a share of the largest reported value in
+	 * scope, 0 to 1 (linear, a spike encodes by length). Null for every
+	 * off-ramp state, so a missing figure never reads as a short spike.
+	 */
+	spike: { ratio: number } | null;
 	quality: MapQualityMarker;
 	tooltip: MapTooltipParts;
 }
@@ -296,8 +335,17 @@ export interface MapLegend {
 	family: MeasureFamily;
 	ramp: readonly string[];
 	method: "quantile";
-	/** classes: graded; single_tone: E2 rule 5; empty: no area shaded. */
-	mode: "classes" | "single_tone" | "empty";
+	/** classes: graded; single_tone: E2 rule 5; empty: no area shaded; spikes: RV-5. */
+	mode: "classes" | "single_tone" | "empty" | "spikes";
+	symbol: MapSymbol;
+	/** Spike mode: colour and reference sizes for the legend. */
+	spikes: {
+		color: string;
+		maxValue: number;
+		references: { ratio: number; value: number }[];
+		/** The largest spike includes figures flagged for review (C30). */
+		maxFlagged: boolean;
+	} | null;
 	/** Classes actually used after tied breaks are merged (E3 s7.2, M9). */
 	classes: LegendClass[];
 	singleTone: {
@@ -535,6 +583,7 @@ export function resolveMapState(
 ): MapStateResult {
 	const scope = scopeLabel(options.scope);
 	const ramp = FAMILY_RAMPS[options.family];
+	const symbol: MapSymbol = options.symbol ?? "choropleth";
 
 	const resolved = cells.map((cell) => ({
 		cell,
@@ -551,6 +600,8 @@ export function resolveMapState(
 	let singleToneReason: SingleToneReason | null = null;
 	if (shadedValues.length === 0) {
 		mode = "empty";
+	} else if (symbol === "spike") {
+		mode = "spikes";
 	} else if (shadedValues.length < MIN_AREAS_FOR_CLASSES) {
 		mode = "single_tone";
 		singleToneReason = "too_few_areas";
@@ -561,6 +612,10 @@ export function resolveMapState(
 	const breaks = mode === "classes" ? quantileBreaks(shadedValues) : [];
 	const classCount = breaks.length + 1;
 	const singleToneColor = ramp[SINGLE_TONE_CLASS];
+	const maxValue = shadedValues.length
+		? shadedValues[shadedValues.length - 1]
+		: 0;
+	const spikeColor = ramp[ramp.length - 1];
 
 	const counts = Object.fromEntries(
 		MAP_AREA_STATES.map((s) => [s, 0]),
@@ -570,8 +625,12 @@ export function resolveMapState(
 		counts[state]++;
 		let classIndex: number | null = null;
 		let color: string | null = null;
+		let spike: MapArea["spike"] = null;
 		if (state === "shaded") {
-			if (mode === "classes") {
+			if (mode === "spikes") {
+				color = SPIKE_BASE_FILL;
+				spike = { ratio: maxValue > 0 ? (cell.value as number) / maxValue : 0 };
+			} else if (mode === "classes") {
 				classIndex = classOf(cell.value as number, breaks);
 				color = ramp[rampIndex(classIndex, classCount)];
 			} else {
@@ -590,6 +649,7 @@ export function resolveMapState(
 			singleTone: state === "shaded" && mode === "single_tone",
 			color,
 			reason,
+			spike,
 			quality: {
 				plausibility:
 					flagged > 0
@@ -634,6 +694,21 @@ export function resolveMapState(
 			ramp,
 			method: "quantile",
 			mode,
+			symbol,
+			spikes:
+				mode === "spikes"
+					? {
+							color: spikeColor,
+							maxValue,
+							references: [1, 0.5, 0.25].map((ratio) => ({
+								ratio,
+								value: maxValue * ratio,
+							})),
+							maxFlagged: areas.some(
+								(x) => x.spike?.ratio === 1 && x.quality.plausibility !== null,
+							),
+						}
+					: null,
 			classes,
 			singleTone:
 				mode === "single_tone" && singleToneReason
