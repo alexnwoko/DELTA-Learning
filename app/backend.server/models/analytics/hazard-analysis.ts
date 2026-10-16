@@ -472,7 +472,10 @@ export interface DisaggregationCoverage {
  * by one dimension. Only rows split by that dimension alone are read: every
  * other dimension and the custom columns must be empty, so cross-tab rows
  * (for example sex by age) are never counted twice. A category is null when no
- * record in scope carries the breakdown (TR-076, pack C10).
+ * record in scope carries the breakdown (TR-076, pack C10). Relocated people
+ * (displaced rows with duration 'permanent') are left out: the relocated
+ * measure reports them, and evacuated and relocated people are never added
+ * together (SDG 1.5.1 metadata; contract with Backend Migration, 2026-10-16).
  */
 async function getDisaggregationPanel(
 	filters: HazardFilters,
@@ -493,10 +496,14 @@ async function getDisaggregationPanel(
               ${dim}::text AS category,
               (CASE WHEN inj."injured" > 0 THEN inj."injured" ELSE 0 END +
                CASE WHEN mis."missing" > 0 THEN mis."missing" ELSE 0 END +
-               CASE WHEN dsp."displaced" > 0 THEN dsp."displaced" ELSE 0 END +
+               CASE WHEN dsp."displaced" > 0
+                     AND dsp."duration" IS DISTINCT FROM 'permanent'
+                    THEN dsp."displaced" ELSE 0 END +
                CASE WHEN aff."direct" > 0 THEN aff."direct" ELSE 0 END) AS v,
               (inj."injured" IS NOT NULL OR mis."missing" IS NOT NULL
-               OR dsp."displaced" IS NOT NULL OR aff."direct" IS NOT NULL) AS has_value
+               OR (dsp."displaced" IS NOT NULL
+                   AND dsp."duration" IS DISTINCT FROM 'permanent')
+               OR aff."direct" IS NOT NULL) AS has_value
             FROM filtered_records fr
             INNER JOIN "human_dsg" hd ON hd."record_id" = fr.record_id
             LEFT JOIN "injured" inj ON inj."dsg_id" = hd."id"
