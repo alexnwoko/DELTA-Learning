@@ -3,6 +3,8 @@
 import {
 	OFF_RAMP_STATES,
 	PLAUSIBILITY_MARKER,
+	SPIKE_MAX_HEIGHT_PX,
+	SPIKE_MIN_HEIGHT_PX,
 	STATE_ENCODING,
 	type MapLegend,
 } from "~/utils/mapState";
@@ -54,6 +56,27 @@ function Swatch(props: {
 	);
 }
 
+/** Reference values are fractions of the maximum; show whole numbers once they are large enough. */
+export function spikeReferenceValue(value: number): number {
+	return Math.abs(value) >= 10
+		? Math.round(value)
+		: Math.round(value * 100) / 100;
+}
+
+/** Legend spike drawn at the same scale as the map's spikes. */
+function SpikeSwatch(props: { ratio: number; color: string }) {
+	const h = Math.max(
+		SPIKE_MIN_HEIGHT_PX,
+		Math.round(props.ratio * SPIKE_MAX_HEIGHT_PX),
+	);
+	const top = SPIKE_MAX_HEIGHT_PX + 1;
+	return (
+		<svg width="12" height={top + 1} aria-hidden="true" focusable="false">
+			<polygon points={`1,${top} 11,${top} 6,${top - h}`} fill={props.color} />
+		</svg>
+	);
+}
+
 export interface GeoLegendProvenance {
 	/** Read-model refresh time (ISO), or null when never refreshed. */
 	refreshedAt: string | null;
@@ -86,20 +109,25 @@ export function GeoLegend(props: {
 					{ n: fmt(n) },
 				);
 	const method =
-		legend.mode === "classes"
-			? t(
-					{
-						code: "geoportal.legend.method_quantile",
-						msg: "Quantile classes, {n}",
-					},
-					{ n: legend.classes.length },
-				)
-			: legend.mode === "single_tone"
-				? t({
-						code: "geoportal.legend.method_single",
-						msg: "One colour: too few areas for classes",
-					})
-				: null;
+		legend.mode === "spikes"
+			? t({
+					code: "geoportal.legend.method_spikes",
+					msg: "Spike height is proportional to the value",
+				})
+			: legend.mode === "classes"
+				? t(
+						{
+							code: "geoportal.legend.method_quantile",
+							msg: "Quantile classes, {n}",
+						},
+						{ n: legend.classes.length },
+					)
+				: legend.mode === "single_tone"
+					? t({
+							code: "geoportal.legend.method_single",
+							msg: "One colour: too few areas for classes",
+						})
+					: null;
 	return (
 		<section
 			aria-label={props.title}
@@ -111,10 +139,29 @@ export function GeoLegend(props: {
 			)}
 			{method && <p className="text-xs text-brand-text-muted mb-1">{method}</p>}
 			<ul className="space-y-1">
+				{legend.mode === "spikes" &&
+					legend.spikes &&
+					legend.spikes.references.map((r) => (
+						<li key={r.ratio} className="flex items-end gap-2">
+							<SpikeSwatch ratio={r.ratio} color={legend.spikes!.color} />
+							<span>{fmt(spikeReferenceValue(r.value))}</span>
+						</li>
+					))}
+				{legend.mode === "spikes" && legend.spikes?.maxFlagged && (
+					<li className="text-xs">
+						{t({
+							code: "geoportal.legend.max_flagged",
+							msg: "Largest spike includes figures flagged for review",
+						})}
+					</li>
+				)}
 				{legend.mode === "classes" &&
 					legend.classes.map((c) => (
 						<li key={c.index} className="flex items-center gap-2">
-							<Swatch fill={c.color} stroke={dataTokens.map.areaBoundary.stroke} />
+							<Swatch
+								fill={c.color}
+								stroke={dataTokens.map.areaBoundary.stroke}
+							/>
 							<span>
 								{c.lower === c.upper
 									? fmt(c.lower)
@@ -125,13 +172,18 @@ export function GeoLegend(props: {
 											},
 											{ lower: fmt(c.lower), upper: fmt(c.upper) },
 										)}{" "}
-								<span className="text-brand-text-muted">({areas(c.areas)})</span>
+								<span className="text-brand-text-muted">
+									({areas(c.areas)})
+								</span>
 							</span>
 						</li>
 					))}
 				{legend.mode === "single_tone" && legend.singleTone && (
 					<li className="flex items-center gap-2">
-						<Swatch fill={legend.singleTone.color} stroke={dataTokens.map.areaBoundary.stroke} />
+						<Swatch
+							fill={legend.singleTone.color}
+							stroke={dataTokens.map.areaBoundary.stroke}
+						/>
 						<span>
 							{t({ code: "geoportal.legend.reported", msg: "Reported" })}{" "}
 							<span className="text-brand-text-muted">
@@ -152,7 +204,9 @@ export function GeoLegend(props: {
 							/>
 							<span>
 								{enc.label}{" "}
-								<span className="text-brand-text-muted">({areas(s.areas)})</span>
+								<span className="text-brand-text-muted">
+									({areas(s.areas)})
+								</span>
 							</span>
 						</li>
 					);

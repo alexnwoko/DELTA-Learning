@@ -43,3 +43,17 @@ export const NO_RECORDS_STYLE = {
 	strokeWidth: 0.8,
 	label: "Nothing in scope",
 } as const;
+
+/**
+ * RV-5 density: value per 1,000 km2 of the division's true area, rounded for
+ * reading (whole numbers from 100, one decimal from 1, two significant digits
+ * below). No area gives null, never zero.
+ */
+export function densityPer1000Km2(value: number, km2: number): number | null {
+	if (!(km2 > 0)) return null;
+	const d = (value / km2) * 1000;
+	if (d === 0) return 0;
+	if (Math.abs(d) >= 100) return Math.round(d);
+	if (Math.abs(d) >= 1) return Math.round(d * 10) / 10;
+	return Number(d.toPrecision(2));
+}

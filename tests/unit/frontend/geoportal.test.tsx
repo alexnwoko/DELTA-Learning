@@ -112,7 +112,9 @@ describe("GeoLegend", () => {
 		expect(html).toContain(
 			'Zero, confirmed <span class="text-brand-text-muted">(1 area)',
 		);
-		expect(html).toContain('No data <span class="text-brand-text-muted">(1 area)');
+		expect(html).toContain(
+			'No data <span class="text-brand-text-muted">(1 area)',
+		);
 		expect(html).toContain(
 			'Insufficient reporting <span class="text-brand-text-muted">(1 area)',
 		);
@@ -354,7 +356,9 @@ describe("place dossier (review R06)", () => {
 				hazardTypeNames={{ "1": "Meteorological" }}
 			/>,
 		);
-		expect(html).toContain("Disaster impacts <span class=\"text-brand-text-muted\">[count]");
+		expect(html).toContain(
+			'Disaster impacts <span class="text-brand-text-muted">[count]',
+		);
 		expect(html).toContain("1,212");
 		expect(html).toContain("2,574");
 		expect(html).toContain("[people]");
@@ -490,5 +494,76 @@ describe("shared measure table (review R12)", () => {
 			expect(info.label.code).toMatch(/^geoportal\.measure\./);
 			expect(`${info.label.msg} ${info.unit.msg}`).not.toMatch(/record/i);
 		}
+	});
+});
+
+import { spikeStyle } from "~/frontend/geoportal/GeoMap";
+import {
+	PLAUSIBILITY_MARKER,
+	SPIKE_MAX_HEIGHT_PX,
+	SPIKE_MIN_HEIGHT_PX,
+} from "~/utils/mapState";
+import type RegularShape from "ol/style/RegularShape";
+
+describe("spike maps (RV-5)", () => {
+	const spikeState = () =>
+		resolveMapState(cells.map(toMapCell), {
+			symbol: "spike",
+			family: measureFamily("deaths"),
+			scope: { tenant: null, audience: "signed-in" },
+		});
+
+	it("gives spikes only to reported areas; missing figures get none", () => {
+		const s = spikeState();
+		const byId = new Map(s.areas.map((a) => [a.areaId, a]));
+		expect(byId.get("a")?.spike?.ratio).toBe(1);
+		expect(byId.get("c")?.spike).toBeNull(); // not reported
+		expect(byId.get("b")?.spike).toBeNull(); // confirmed zero
+		expect(s.legend.mode).toBe("spikes");
+	});
+
+	it("never draws a reported spike shorter than the minimum, and outlines flagged ones", () => {
+		const tiny = spikeStyle(
+			0.0001,
+			"#123456",
+			false,
+		).getImage() as RegularShape;
+		const full = spikeStyle(1, "#123456", true).getImage() as RegularShape;
+		const sy = (img: RegularShape) => (img.getScale() as number[])[1];
+		expect(sy(tiny) * 1.5 * 6).toBeCloseTo(SPIKE_MIN_HEIGHT_PX, 5);
+		expect(sy(full) * 1.5 * 6).toBeCloseTo(SPIKE_MAX_HEIGHT_PX, 5);
+		expect(full.getStroke()?.getColor()).toBe(PLAUSIBILITY_MARKER.stroke);
+	});
+
+	it("shows reference spikes in the legend", () => {
+		const html = renderToString(
+			<GeoLegend
+				legend={spikeState().legend}
+				title="Deaths"
+				noRecordsAreas={0}
+			/>,
+		);
+		expect(html).toContain("Spike height is proportional to the value");
+		expect(html).toContain("<polygon");
+		expect(html).toContain("12");
+	});
+});
+
+import { densityPer1000Km2 } from "~/frontend/geoportal/geoCells";
+import { spikeReferenceValue } from "~/frontend/geoportal/GeoLegend";
+
+describe("RV-5 rounding for reading", () => {
+	it("rounds density per 1,000 km2 and keeps no-area as null", () => {
+		expect(densityPer1000Km2(103894, 75389.123)).toBe(1378);
+		expect(densityPer1000Km2(1500, 129410)).toBe(11.6);
+		expect(densityPer1000Km2(3, 129410)).toBe(0.023);
+		expect(densityPer1000Km2(0, 129410)).toBe(0);
+		expect(densityPer1000Km2(5, 0)).toBeNull();
+	});
+
+	it("shows spike references as whole numbers once large enough", () => {
+		expect(spikeReferenceValue(25973.5)).toBe(25974);
+		expect(spikeReferenceValue(0.25)).toBe(0.25);
+		expect(spikeReferenceValue(2.5)).toBe(2.5);
 	});
 });

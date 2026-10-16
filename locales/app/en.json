@@ -5300,6 +5300,36 @@
     "description": "File: app/routes/$lang+/settings+/geography+/edit.$id.tsx:634"
   },
   {
+    "id": "geoportal.legend.max_flagged",
+    "translation": "Largest spike includes figures flagged for review",
+    "description": "File: app/frontend/geoportal/GeoLegend.tsx"
+  },
+  {
+    "id": "geoportal.legend.method_spikes",
+    "translation": "Spike height is proportional to the value",
+    "description": "File: app/frontend/geoportal/GeoLegend.tsx"
+  },
+  {
+    "id": "geoportal.map.density",
+    "translation": "Density",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
+  },
+  {
+    "id": "geoportal.map.spikes",
+    "translation": "Spikes",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
+  },
+  {
+    "id": "geoportal.map.symbol",
+    "translation": "Map style",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
+  },
+  {
+    "id": "geoportal.unit.per_1000km2",
+    "translation": "per 1,000 km²",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
+  },
+  {
     "id": "go_back",
     "translation": "Go Back",
     "description": "File: app/routes/$.tsx:43"

@@ -13,7 +13,10 @@ import XYZ from "ol/source/XYZ";
 import { defaults as defaultControls, ScaleLine } from "ol/control";
 import VectorSource from "ol/source/Vector";
 import GeoJSON from "ol/format/GeoJSON";
-import { Fill, Stroke, Style } from "ol/style";
+import { Fill, RegularShape, Stroke, Style } from "ol/style";
+import Feature from "ol/Feature";
+import Point from "ol/geom/Point";
+import { fromLonLat } from "ol/proj";
 import {
 	defaults as defaultInteractions,
 	MouseWheelZoom,
@@ -24,6 +27,9 @@ import type { FeatureLike } from "ol/Feature";
 
 import {
 	PLAUSIBILITY_MARKER,
+	SPIKE_MAX_HEIGHT_PX,
+	SPIKE_MIN_HEIGHT_PX,
+	type MapSymbol,
 	STATE_ENCODING,
 	type MapArea,
 	type MapPattern,
@@ -65,6 +71,10 @@ export interface GeoMapProps {
 	onBasemapStatus?: (status: "ok" | "unavailable") => void;
 	/** Each change of this number fits the map back to all areas. */
 	homeSignal?: number;
+	/** RV-5: "spike" draws a sized symbol per division; "choropleth" shades areas. */
+	symbol?: MapSymbol;
+	/** Spike colour from the legend (the family ramp's darkest step). */
+	spikeColor?: string;
 	/** Accessible name; the table alternative carries the figures. */
 	label: string;
 	describedBy?: string;
@@ -160,6 +170,41 @@ function styleFor(area: MapArea | undefined, selected: boolean): Style {
 	return styles;
 }
 
+const SPIKE_RADIUS = 6; // triangle base about 10 px wide, height 9 px at scale 1
+
+/**
+ * A spike (RV-5): an upright triangle whose base sits on the division's
+ * label point and whose height is the linear ratio of the largest spike,
+ * never below SPIKE_MIN_HEIGHT_PX for a reported value above 0.
+ */
+export function spikeStyle(
+	ratio: number,
+	color: string,
+	flagged: boolean,
+): Style {
+	const height = Math.max(ratio * SPIKE_MAX_HEIGHT_PX, SPIKE_MIN_HEIGHT_PX);
+	const sy = height / (1.5 * SPIKE_RADIUS);
+	return new Style({
+		image: new RegularShape({
+			points: 3,
+			radius: SPIKE_RADIUS,
+			angle: 0,
+			fill: new Fill({ color }),
+			stroke: flagged
+				? new Stroke({
+						color: PLAUSIBILITY_MARKER.stroke,
+						width: PLAUSIBILITY_MARKER.strokeWidth,
+					})
+				: new Stroke({ color: "rgba(255,255,255,0.9)", width: 0.75 }),
+			scale: [1, sy],
+			// The circumcentre sits half a radius above the base: lift it so the
+			// base rests on the point.
+			displacement: [0, (SPIKE_RADIUS / 2) * sy],
+		}),
+		zIndex: Math.round(1000 - ratio * 999),
+	});
+}
+
 export function GeoMap({
 	boundaries,
 	areas,
@@ -172,6 +217,8 @@ export function GeoMap({
 	basemapId = null,
 	onBasemapStatus,
 	homeSignal = 0,
+	symbol = "choropleth",
+	spikeColor = "#1d548f",
 	label,
 	describedBy,
 }: GeoMapProps) {
@@ -186,6 +233,7 @@ export function GeoMap({
 	onStatusRef.current = onBasemapStatus;
 	const baseRef = useRef(new Map<BasemapLayerId, TileLayer<XYZ>>());
 	const shownRef = useRef<BasemapLayerId | null>(null);
+	const spikeLayerRef = useRef<VectorLayer<VectorSource> | null>(null);
 
 	const byId = useMemo(() => new Map(areas.map((a) => [a.areaId, a])), [areas]);
 
@@ -229,9 +277,11 @@ export function GeoMap({
 			bases.set(b.id, tl);
 		}
 		layer.setZIndex(1);
+		const spikes = new VectorLayer({ source: new VectorSource(), zIndex: 2 });
+		spikeLayerRef.current = spikes;
 		const map = new OlMap({
 			target: target.current,
-			layers: [...bases.values(), layer],
+			layers: [...bases.values(), layer, spikes],
 			controls: defaultControls().extend([new ScaleLine({ units: "metric" })]),
 			// The wheel scrolls the page; Ctrl or Cmd plus the wheel zooms the map.
 			interactions: defaultInteractions({ mouseWheelZoom: false }).extend([
@@ -363,6 +413,17 @@ export function GeoMap({
 			featureProjection: "EPSG:3857",
 		});
 		source.addFeatures(features);
+		const spikeSource = spikeLayerRef.current?.getSource();
+		spikeSource?.clear();
+		for (const f of boundaries.features as {
+			properties?: { divisionId?: string; labelPoint?: [number, number] };
+		}[]) {
+			const pt = f.properties?.labelPoint;
+			if (!pt || !f.properties?.divisionId) continue;
+			const sf = new Feature({ geometry: new Point(fromLonLat(pt)) });
+			sf.set("divisionId", f.properties.divisionId);
+			spikeSource?.addFeature(sf);
+		}
 		const extent = source.getExtent();
 		if (features.length && extent && extent.every(Number.isFinite)) {
 			map.getView().fit(extent, { padding: [16, 16, 16, 16], maxZoom: 9 });
@@ -396,6 +457,21 @@ export function GeoMap({
 			});
 		}
 	}, [focusId]);
+
+	useEffect(() => {
+		const spikes = spikeLayerRef.current;
+		if (!spikes) return;
+		spikes.setVisible(symbol === "spike");
+		spikes.setStyle((feature: FeatureLike) => {
+			const area = byId.get(feature.get("divisionId") as string);
+			if (!area?.spike) return undefined;
+			return spikeStyle(
+				area.spike.ratio,
+				spikeColor,
+				Boolean(area.quality.plausibility),
+			);
+		});
+	}, [byId, symbol, spikeColor]);
 
 	useEffect(() => {
 		const layer = layerRef.current;
