@@ -191,7 +191,7 @@
 				}
 			},
 			"area-boundary": {
-				"$description": "Line between shaded areas.",
+				"$description": "Line between shaded areas on both maps (Alex, 2026-10-16: one map look).",
 				"stroke": {
 					"$type": "color",
 					"$value": "#ffffff"
@@ -223,17 +223,6 @@
 					"$value": 2.5
 				}
 			},
-			"shaded-outline": {
-				"$description": "Outline of shaded areas on the analytics dashboard map (MapChart). The geoportal draws data.map.area-boundary instead; converging the two is a design decision, not made here.",
-				"stroke": {
-					"$type": "color",
-					"$value": "#374151"
-				},
-				"stroke-width": {
-					"$type": "number",
-					"$value": 1.2
-				}
-			},
 			"not-applied-note": {
 				"$description": "Note that a filter could not be applied to the map. Shares its border colour with data.map.plausibility-marker but means something else: never merge the two.",
 				"border": {
@@ -250,7 +239,7 @@
 				}
 			},
 			"canvas": {
-				"$description": "Background behind the analytics dashboard map (MapChart). The geoportal map uses brand.surface; converging the two is a design decision, not made here.",
+				"$description": "Background behind both maps, the analytics dashboard (MapChart) and the geoportal (GeoMap): one map look, grey canvas with the white data.map.area-boundary between shaded areas (Alex, 2026-10-16). Gives the country context before the basemap loads.",
 				"background": {
 					"$type": "color",
 					"$value": "#f3f4f6"
