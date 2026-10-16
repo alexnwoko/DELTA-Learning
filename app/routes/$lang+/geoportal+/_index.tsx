@@ -22,6 +22,7 @@ import {
 	Tab,
 	TabList,
 	TabPanel,
+	TabPanels,
 	Tabs,
 } from "react-aria-components";
 import { sql } from "drizzle-orm";
@@ -61,6 +62,7 @@ import { serializeDeltaQuery, type DeltaQuery } from "~/utils/deltaQuery";
 import { resolveMapState } from "~/utils/mapState";
 import { GEO_DIMENSION_LABELS, geoMeasureInfo } from "~/utils/geoMeasures";
 import { htmlTitle } from "~/utils/htmlmeta";
+import { PrintButton } from "~/frontend/print/PrintButton";
 import { basemapConfig } from "~/utils/basemap.server";
 
 // OpenLayers loads with the map, not with the page (NFR-130).
@@ -234,6 +236,8 @@ export default function GeoportalPage() {
 		"ok",
 	);
 	const [homeSignal, setHomeSignal] = useState(0);
+	const [printUrl, setPrintUrl] = useState("");
+	useEffect(() => setPrintUrl(window.location.href), [data.query, data.level]);
 
 	const query = data.query as DeltaQuery;
 	const choropleth = data.choropleth;
@@ -382,7 +386,7 @@ export default function GeoportalPage() {
 			<div className="geo-page py-2">
 				<div className="flex flex-wrap items-center justify-between gap-2">
 					<h1 className="text-xl font-semibold">{title}</h1>
-					<div className="flex items-center gap-2">
+					<div className="flex items-center gap-2" data-print="hide">
 						<span role="status" className="text-xs text-brand-text-muted">
 							{copied}
 						</span>
@@ -392,11 +396,29 @@ export default function GeoportalPage() {
 						>
 							{t({ code: "geoportal.copy", msg: "Copy link" })}
 						</Button>
+						<PrintButton ctx={ctx} />
 					</div>
 				</div>
 
-				<div className="hidden md:block">{bar}</div>
-				<div className="md:hidden py-2">
+				<p className="hidden print:block text-sm my-1">
+					{measureTitle} ·{" "}
+					{t(
+						{ code: "geoportal.dossier.level", msg: "Admin level {n}" },
+						{ n: data.level },
+					)}{" "}
+					· {periodText(query, t)}
+					<br />
+					<span className="text-xs text-brand-text-muted">
+						{t(
+							{ code: "geoportal.print.source", msg: "Printed from {url}" },
+							{ url: printUrl },
+						)}
+					</span>
+				</p>
+				<div className="hidden md:block" data-print="hide">
+					{bar}
+				</div>
+				<div className="md:hidden py-2" data-print="hide">
 					<DialogTrigger>
 						<Button className="border border-brand-border-control rounded px-3 py-1 text-sm bg-brand-surface">
 							{t(
@@ -501,7 +523,7 @@ export default function GeoportalPage() {
 							</div>
 						)}
 
-						<div className="grid gap-3 my-2 lg:grid-cols-[minmax(0,1fr)_380px]">
+						<div className="grid gap-3 my-2 lg:grid-cols-[minmax(0,1fr)_380px] print:!block">
 							<div className="relative min-w-0">
 								<ClientOnly
 									fallback={
@@ -509,7 +531,7 @@ export default function GeoportalPage() {
 									}
 								>
 									{() => (
-										<div className="h-[60vh] lg:h-[calc(100vh-22rem)] min-h-[420px]">
+										<div className="h-[60vh] lg:h-[calc(100vh-22rem)] min-h-[420px] print:!h-[150mm]">
 											<Suspense
 												fallback={
 													<div className="h-full bg-data-map-canvas-background" />
@@ -534,7 +556,10 @@ export default function GeoportalPage() {
 										</div>
 									)}
 								</ClientOnly>
-								<div className="absolute right-2 bottom-8 z-10 flex flex-col items-end gap-1">
+								<div
+									className="absolute right-2 bottom-8 z-10 flex flex-col items-end gap-1"
+									data-print="hide"
+								>
 									<Button
 										onPress={() => setHomeSignal((n) => n + 1)}
 										className="border border-brand-border-control rounded px-2 py-1 text-xs bg-brand-surface shadow-sm data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
@@ -590,7 +615,10 @@ export default function GeoportalPage() {
 									/>
 								</div>
 								{readoutId && (
-									<div className="hidden md:block absolute right-2 top-2 z-10 pointer-events-none">
+									<div
+										className="hidden md:block absolute right-2 top-2 z-10 pointer-events-none"
+										data-print="hide"
+									>
 										<GeoReadout
 											name={nameOf.get(readoutId) ?? ""}
 											area={readoutArea}
@@ -603,9 +631,10 @@ export default function GeoportalPage() {
 								)}
 							</div>
 
-							<aside className="min-w-0 lg:h-[calc(100vh-22rem)] lg:min-h-[420px] lg:overflow-auto border border-brand-border rounded p-2">
+							<aside className="min-w-0 lg:h-[calc(100vh-22rem)] lg:min-h-[420px] lg:overflow-auto print:!h-auto print:!overflow-visible border border-brand-border rounded p-2">
 								<Tabs defaultSelectedKey="place">
 									<TabList
+										data-print="hide"
 										aria-label={t({ code: "geoportal.panel", msg: "Panel" })}
 										className="flex gap-1 border-b mb-2"
 									>
@@ -628,73 +657,75 @@ export default function GeoportalPage() {
 											{t({ code: "geoportal.tab.legend", msg: "Legend" })}
 										</Tab>
 									</TabList>
-									<TabPanel
-										id="place"
-										shouldForceMount
-										className="data-[inert]:hidden"
-									>
-										{dossier ? (
-											<GeoDossier
-												data={dossier}
-												hazardTypeNames={hazardTypeNames}
-												autoNote={
-													autoChosen
+									<TabPanels>
+										<TabPanel
+											id="place"
+											shouldForceMount
+											className="data-[inert]:hidden print:!block"
+										>
+											{dossier ? (
+												<GeoDossier
+													data={dossier}
+													hazardTypeNames={hazardTypeNames}
+													autoNote={
+														autoChosen
+															? t({
+																	code: "geoportal.dossier.auto",
+																	msg: "Showing the area with the highest value. Select another area on the map or in the list.",
+																})
+															: null
+													}
+													t={t}
+												/>
+											) : (
+												<p className="text-sm text-brand-text-muted">
+													{shownId
 														? t({
-																code: "geoportal.dossier.auto",
-																msg: "Showing the area with the highest value. Select another area on the map or in the list.",
+																code: "geoportal.dossier.loading",
+																msg: "Loading place details",
 															})
-														: null
-												}
+														: t({
+																code: "geoportal.dossier.prompt",
+																msg: "Select an area on the map or in the Areas list.",
+															})}
+												</p>
+											)}
+										</TabPanel>
+										<TabPanel
+											id="areas"
+											shouldForceMount
+											className="data-[inert]:hidden print:!block"
+										>
+											<GeoTable
+												id={tableId}
+												label={`${measureTitle}: ${t({ code: "geoportal.table", msg: "table" })}`}
+												rows={rows}
+												selectedId={shownId}
+												onSelect={selectFromList}
+												unit={t(info.unit)}
 												t={t}
 											/>
-										) : (
-											<p className="text-sm text-brand-text-muted">
-												{shownId
-													? t({
-															code: "geoportal.dossier.loading",
-															msg: "Loading place details",
-														})
-													: t({
-															code: "geoportal.dossier.prompt",
-															msg: "Select an area on the map or in the Areas list.",
-														})}
+											<p className="text-xs text-brand-text-muted mt-2">
+												{t({
+													code: "geoportal.table.no_total",
+													msg: "Area values are not added up: one disaster impact or event can count in more than one area.",
+												})}
 											</p>
-										)}
-									</TabPanel>
-									<TabPanel
-										id="areas"
-										shouldForceMount
-										className="data-[inert]:hidden"
-									>
-										<GeoTable
-											id={tableId}
-											label={`${measureTitle}: ${t({ code: "geoportal.table", msg: "table" })}`}
-											rows={rows}
-											selectedId={shownId}
-											onSelect={selectFromList}
-											unit={t(info.unit)}
-											t={t}
-										/>
-										<p className="text-xs text-brand-text-muted mt-2">
-											{t({
-												code: "geoportal.table.no_total",
-												msg: "Area values are not added up: one disaster impact or event can count in more than one area.",
-											})}
-										</p>
-									</TabPanel>
-									<TabPanel id="legend" className="md:hidden">
-										<GeoLegend
-											legend={mapState.legend}
-											title={measureTitle}
-											subtitle={periodText(query, t)}
-											noRecordsAreas={noRecordsAreas}
-											provenance={{
-												boundaryVersion: choropleth.meta.boundaryVersion,
-												refreshedAt: choropleth.meta.readModelRefreshedAt,
-											}}
-											t={t}
-										/>
-									</TabPanel>
+										</TabPanel>
+										<TabPanel id="legend" className="md:hidden">
+											<GeoLegend
+												legend={mapState.legend}
+												title={measureTitle}
+												subtitle={periodText(query, t)}
+												noRecordsAreas={noRecordsAreas}
+												provenance={{
+													boundaryVersion: choropleth.meta.boundaryVersion,
+													refreshedAt: choropleth.meta.readModelRefreshedAt,
+												}}
+												t={t}
+											/>
+										</TabPanel>
+									</TabPanels>
 								</Tabs>
 							</aside>
 						</div>
