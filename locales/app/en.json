@@ -8153,6 +8153,46 @@
     "description": "File: app/routes/$lang+/geoportal+/_index.tsx:241"
   },
   {
+    "id": "geoportal.basemap.street",
+    "translation": "Street map",
+    "description": "File: app/utils/basemap.server.ts"
+  },
+  {
+    "id": "geoportal.basemap.satellite",
+    "translation": "Satellite (ESA 2021)",
+    "description": "File: app/utils/basemap.server.ts"
+  },
+  {
+    "id": "geoportal.basemap.google",
+    "translation": "Google street map",
+    "description": "File: app/utils/basemap.server.ts"
+  },
+  {
+    "id": "geoportal.basemap.mapbox",
+    "translation": "Mapbox street map",
+    "description": "File: app/utils/basemap.server.ts"
+  },
+  {
+    "id": "geoportal.basemap.note_google",
+    "translation": "Map views are sent to Google",
+    "description": "File: app/utils/basemap.server.ts"
+  },
+  {
+    "id": "geoportal.basemap.note_mapbox",
+    "translation": "Map views are sent to Mapbox",
+    "description": "File: app/utils/basemap.server.ts"
+  },
+  {
+    "id": "geoportal.basemap.none",
+    "translation": "None",
+    "description": "File: app/utils/basemap.server.ts"
+  },
+  {
+    "id": "geoportal.basemap.logo",
+    "translation": "Map provider logo",
+    "description": "File: app/utils/basemap.server.ts"
+  },
+  {
     "id": "geoportal.measure.evacuated",
     "translation": "Evacuated",
     "description": "File: app/utils/geoMeasures.ts"
