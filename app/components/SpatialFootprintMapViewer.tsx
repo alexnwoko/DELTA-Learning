@@ -1,7 +1,12 @@
 import React from "react";
 import { ViewContext } from "~/frontend/context";
 import { inlineBasemapScript } from "~/utils/leafletBasemap";
-import { escapeHtml, jsonForInlineScript } from "~/utils/inlineScript";
+import {
+	escapeHtml,
+	jsonDataBlock,
+	jsonForInlineScript,
+	readJsonDataBlock,
+} from "~/utils/inlineScript";
 import { absoluteAssetUrl, LEAFLET_CSS, LEAFLET_JS, MAP_MARKER_ICON, MAP_MARKER_ICON_ANCHOR } from "~/utils/leafletAssets";
 
 type SpatialFootprintMapViewerProps = {
@@ -74,6 +79,7 @@ export function buildFootprintPreviewHtml(
             </style>
           </head>
           <body>
+            ${jsonDataBlock({ items: JSON.parse(itemsJson) })}
             <div id="map"></div>
             <div id="legend">
               <h4>${escapeHtml(filterCaption)}</h4>
@@ -133,7 +139,7 @@ export function buildFootprintPreviewHtml(
                 const map = L.map("map"); //.setView([11.3233, 124.9200], 6);
                 ${inlineBasemapScript("map")}
     
-                const items = JSON.parse(${jsonForInlineScript(itemsJson)});
+                const items = ${readJsonDataBlock()}.items;
                 
                 // ✅ Layer Groups
                 const layers = {

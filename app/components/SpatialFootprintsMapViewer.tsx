@@ -7,7 +7,12 @@ import {
 	MAP_MARKER_ICON_ANCHOR,
 } from "~/utils/leafletAssets";
 import { inlineBasemapScript } from "~/utils/leafletBasemap";
-import { escapeHtml, jsonForInlineScript } from "~/utils/inlineScript";
+import {
+	escapeHtml,
+	jsonDataBlock,
+	jsonForInlineScript,
+	readJsonDataBlock,
+} from "~/utils/inlineScript";
 
 type SpatialFootprintsMapViewerProps = {
 	dataSource: { id: string }[]; // Define a stricter type for dataSource
@@ -115,6 +120,7 @@ export function buildFootprintsPreviewHtml({
         </style>
       </head>
       <body>
+        ${jsonDataBlock({ items, defaultKeys, missing, coords, urlLang, recordIds: legendData.map((rec) => rec.id) })}
         <div id="map"></div>
         <div id="legend">
             <h4 id="legend-header">${escapeHtml(filterCaption || "Map Layers")}</h4>
@@ -146,6 +152,7 @@ export function buildFootprintsPreviewHtml({
         </div>
 
         <script>
+          const previewData = ${readJsonDataBlock()};
             const hasValidGeometry = (g) =>
             g?.type === "Feature" && g.geometry && Object.keys(g.geometry).length ||
             g?.type === "FeatureCollection" && g.features?.some((f) => f.geometry && Object.keys(f.geometry).length);
@@ -179,7 +186,7 @@ export function buildFootprintsPreviewHtml({
                 }
               }
             } else {
-                map.setView(${jsonForInlineScript(coords)}, 6); 
+                map.setView(previewData.coords, 6); 
             }
           };
 
@@ -187,9 +194,9 @@ export function buildFootprintsPreviewHtml({
             const map = L.map("map");
             ${inlineBasemapScript("map")}
 
-            const items = ${jsonForInlineScript(items)};
-            const defaultKeys = ${jsonForInlineScript(defaultKeys)};
-            const missing = ${jsonForInlineScript(missing)};
+            const items = previewData.items;
+            const defaultKeys = previewData.defaultKeys;
+            const missing = previewData.missing;
             const layers = {};
 
             const getColor = (type) => ({
@@ -284,7 +291,7 @@ export function buildFootprintsPreviewHtml({
 
                 console.log("📦 Fetching geometry for key:", key);
 
-                fetch("/" + encodeURIComponent(${jsonForInlineScript(urlLang)}) + "/api/spatial-footprint-geojson?division_id=" + encodeURIComponent(division_id) + "&record_id=" + encodeURIComponent(record_id))
+                fetch("/" + encodeURIComponent(previewData.urlLang) + "/api/spatial-footprint-geojson?division_id=" + encodeURIComponent(division_id) + "&record_id=" + encodeURIComponent(record_id))
                 .then((res) => res.json())
                 .then((geo) => {
                     if (!geo || !geo.geometry) {
@@ -324,9 +331,9 @@ export function buildFootprintsPreviewHtml({
 
             ${legendData
 							.map(
-								(rec) => `
+								(_rec, recIndex) => `
                   (() => {
-                    const base = ${jsonForInlineScript(rec.id)};
+                    const base = previewData.recordIds[${recIndex}];
               
                     // Disaster record's main footprint layer toggle
                     const groupCb = document.getElementById("layer-" + base);

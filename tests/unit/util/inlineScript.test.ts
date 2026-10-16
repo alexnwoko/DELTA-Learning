@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { escapeHtml, jsonForInlineScript } from "~/utils/inlineScript";
+import {
+	escapeHtml,
+	jsonDataBlock,
+	jsonForInlineScript,
+	PREVIEW_DATA_ID,
+	readJsonDataBlock,
+} from "~/utils/inlineScript";
 import { buildFootprintPreviewHtml } from "~/components/SpatialFootprintMapViewer";
 import {
 	previewGeoJSON,
@@ -22,11 +28,13 @@ const FOOTPRINTS = [
 	},
 ];
 
-/** Evaluate the expression assigned on the first line matching `pattern`. */
-function evaluateAssignedExpression(html: string, pattern: RegExp): unknown {
-	const match = html.match(pattern);
-	if (!match) throw new Error(`no line matches ${pattern}`);
-	return new Function(`return ${match[1]};`)();
+/** The preview data, read the way the page reads it (SEC-30 JSON block). */
+function readPreviewData(html: string): any {
+	const match = html.match(
+		new RegExp(`<script type="application/json" id="${PREVIEW_DATA_ID}">(.*?)</script>`, "s"),
+	);
+	if (!match) throw new Error("no preview data block");
+	return JSON.parse(match[1]);
 }
 
 function scriptCloseCount(html: string) {
@@ -51,6 +59,19 @@ describe("jsonForInlineScript", () => {
 	});
 });
 
+describe("jsonDataBlock", () => {
+	it("writes a non-executable, escaped JSON block that the page reads back", () => {
+		const value = { a: "</script><script>x()</script>", b: [1, null] };
+		const block = jsonDataBlock(value);
+		expect(block.startsWith('<script type="application/json" id="delta-preview-data">')).toBe(true);
+		expect(block.split("</script>").length - 1).toBe(1);
+		expect(readPreviewData(block)).toEqual(value);
+		expect(readJsonDataBlock()).toBe(
+			'JSON.parse(document.getElementById("delta-preview-data").textContent)',
+		);
+	});
+});
+
 describe("escapeHtml", () => {
 	it("escapes markup and quotes", () => {
 		expect(escapeHtml(`<img src=x onerror="a('b')">&`)).toBe(
@@ -65,11 +86,8 @@ describe("SpatialFootprintMapViewer preview page", () => {
 		const itemsJson = JSON.stringify(FOOTPRINTS);
 		const html = buildFootprintPreviewHtml(itemsJson, "Footprints");
 
-		const parsed = evaluateAssignedExpression(
-			html,
-			/const items = JSON\.parse\((.*)\);/,
-		);
-		expect(JSON.parse(parsed as string)).toEqual(FOOTPRINTS);
+		expect(readPreviewData(html).items).toEqual(FOOTPRINTS);
+		expect(html).toContain("const items = " + readJsonDataBlock() + ".items;");
 		expect((globalThis as any).__deltaPwned).toBeUndefined();
 		// Only the page's own script elements close; the data adds none.
 		expect(scriptCloseCount(html)).toBe(
@@ -105,8 +123,8 @@ describe("ContentRepeater mapper preview pages", () => {
 		previewMap(JSON.stringify(FOOTPRINTS));
 		const html = written.join("");
 
-		const items = evaluateAssignedExpression(html, /const items = (.*);/);
-		expect(JSON.parse(items as string)).toEqual(FOOTPRINTS);
+		expect(JSON.parse(readPreviewData(html))).toEqual(FOOTPRINTS);
+		expect(html).toContain("const items = " + readJsonDataBlock() + ";");
 		expect((globalThis as any).__deltaPwned).toBeUndefined();
 		expect(html).not.toContain("bindPopup(feature.properties.description)");
 	});
@@ -144,10 +162,13 @@ describe("SpatialFootprintsMapViewer preview page", () => {
 			filterCaption: "<b>caption</b>",
 		});
 
-		const items = evaluateAssignedExpression(html, /const items = (.*);/);
-		expect(items).toEqual(FOOTPRINTS);
-		const missing = evaluateAssignedExpression(html, /const missing = (.*);/);
-		expect(missing).toEqual([HOSTILE_TITLE]);
+		const data = readPreviewData(html);
+		expect(data.items).toEqual(FOOTPRINTS);
+		expect(data.missing).toEqual([HOSTILE_TITLE]);
+		expect(data.urlLang).toBe('"+(globalThis.__deltaPwned=6)+"');
+		expect(data.recordIds).toEqual(['"</script><script>globalThis.__deltaPwned=4</script>']);
+		// SEC-30: the record id is read from the block, not written into code.
+		expect(html).toContain("const base = previewData.recordIds[0];");
 		expect((globalThis as any).__deltaPwned).toBeUndefined();
 
 		expect(scriptCloseCount(html)).toBe(

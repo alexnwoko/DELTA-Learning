@@ -28,3 +28,19 @@ export function escapeHtml(value: unknown): string {
 		.replace(/"/g, "&quot;")
 		.replace(/'/g, "&#39;");
 }
+
+export const PREVIEW_DATA_ID = "delta-preview-data";
+
+/**
+ * Data for a preview page as a non-executable JSON block (SEC-30). The value
+ * is still escaped, so it cannot close the element. Read it back in the page
+ * with the expression from readJsonDataBlock.
+ */
+export function jsonDataBlock(value: unknown, id: string = PREVIEW_DATA_ID): string {
+	return `<script type="application/json" id="${escapeHtml(id)}">${jsonForInlineScript(value)}</script>`;
+}
+
+/** Page-side expression that parses the block written by jsonDataBlock. */
+export function readJsonDataBlock(id: string = PREVIEW_DATA_ID): string {
+	return `JSON.parse(document.getElementById(${JSON.stringify(id)}).textContent)`;
+}

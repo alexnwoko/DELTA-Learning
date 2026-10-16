@@ -8,7 +8,12 @@ import {
 } from "~/utils/spatialUtils";
 import { ViewContext } from "~/frontend/context";
 import { inlineBasemapScript } from "~/utils/leafletBasemap";
-import { escapeHtml, jsonForInlineScript } from "~/utils/inlineScript";
+import {
+	escapeHtml,
+	jsonDataBlock,
+	jsonForInlineScript,
+	readJsonDataBlock,
+} from "~/utils/inlineScript";
 import { absoluteAssetUrl, LEAFLET_CSS, LEAFLET_JS, MAP_MARKER_ICON, MAP_MARKER_ICON_ANCHOR } from "~/utils/leafletAssets";
 
 declare namespace L {
@@ -894,6 +899,7 @@ export const previewMap = (items: any) => {
         </style>
       </head>
       <body>
+        ${jsonDataBlock(String(items))}
         <div id="map"></div>
         <script src="${absoluteAssetUrl(LEAFLET_JS)}"></script>
         <script>
@@ -939,7 +945,7 @@ export const previewMap = (items: any) => {
 
 			${inlineBasemapScript("map")}
 
-            const items = ${jsonForInlineScript(String(items))};
+            const items = ${readJsonDataBlock()};
             const boundsArray = [];
             const centers = [];
 
