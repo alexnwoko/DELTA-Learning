@@ -115,7 +115,7 @@
 		"border": {
 			"$type": "color",
 			"$value": "#cacdd0",
-			"$description": "Control and table borders",
+			"$description": "Table rules and dividers. Decorative: for the edge of a control use border-control.",
 			"$extensions": {
 				"org.undrr.delta": {
 					"mangrove": {
@@ -183,6 +183,48 @@
 					"mangrove": {
 						"release": "v2.1.0",
 						"path": "color.focus-ring",
+						"brand": "mangrove base"
+					}
+				}
+			}
+		},
+		"border-control": {
+			"$type": "color",
+			"$value": "#7e8082",
+			"$description": "Border that shows where a control is: buttons, inputs, selects (WCAG 1.4.11, 3:1)",
+			"$extensions": {
+				"org.undrr.delta": {
+					"mangrove": {
+						"release": "v2.1.0",
+						"path": "form-input.border-color",
+						"brand": "mangrove base"
+					}
+				}
+			}
+		},
+		"danger": {
+			"$type": "color",
+			"$value": "#c10920",
+			"$description": "Errors and invalid fields",
+			"$extensions": {
+				"org.undrr.delta": {
+					"mangrove": {
+						"release": "v2.1.0",
+						"path": "color.red-900",
+						"brand": "mangrove base"
+					}
+				}
+			}
+		},
+		"text-on-interactive": {
+			"$type": "color",
+			"$value": "#ffffff",
+			"$description": "Text on an interactive-coloured background, such as a selected toggle",
+			"$extensions": {
+				"org.undrr.delta": {
+					"mangrove": {
+						"release": "v2.1.0",
+						"path": "color.text-button",
 						"brand": "mangrove base"
 					}
 				}

@@ -54,4 +54,7 @@
 	--color-brand-border: var(--delta-brand-border);
 	--color-brand-text-muted: var(--delta-brand-text-muted);
 	--color-brand-focus-ring: var(--delta-brand-focus-ring);
+	--color-brand-border-control: var(--delta-brand-border-control);
+	--color-brand-danger: var(--delta-brand-danger);
+	--color-brand-text-on-interactive: var(--delta-brand-text-on-interactive);
 }

@@ -11,11 +11,14 @@
   --delta-brand-surface: #ffffff; /** Page and map canvas background */
   --delta-brand-surface-subtle: #f0f3f6; /** Inputs and subtle panels */
   --delta-brand-surface-card: #ffffff; /** Cards */
-  --delta-brand-border: #cacdd0; /** Control and table borders */
+  --delta-brand-border: #cacdd0; /** Table rules and dividers. Decorative: for the edge of a control use border-control. */
   --delta-brand-focus-ring-width: 2px; /** Focus ring width (WCAG 2.4.7) */
   --delta-brand-focus-ring-offset: 2px; /** Focus ring offset */
   --delta-brand-text-muted: #4d4d4d; /** Secondary text and notes */
   --delta-brand-focus-ring: #866200; /** Focus ring colour (WCAG 2.4.7) */
+  --delta-brand-border-control: #7e8082; /** Border that shows where a control is: buttons, inputs, selects (WCAG 1.4.11, 3:1) */
+  --delta-brand-danger: #c10920; /** Errors and invalid fields */
+  --delta-brand-text-on-interactive: #ffffff; /** Text on an interactive-coloured background, such as a selected toggle */
 }
 
 /**
@@ -31,9 +34,12 @@
   --delta-brand-surface: #ffffff; /** Page and map canvas background */
   --delta-brand-surface-subtle: #f0f3f6; /** Inputs and subtle panels */
   --delta-brand-surface-card: #f2f2f2; /** Cards */
-  --delta-brand-border: #cacdd0; /** Control and table borders */
+  --delta-brand-border: #cacdd0; /** Table rules and dividers. Decorative: for the edge of a control use border-control. */
   --delta-brand-focus-ring-width: 2px; /** Focus ring width (WCAG 2.4.7) */
   --delta-brand-focus-ring-offset: 2px; /** Focus ring offset */
   --delta-brand-text-muted: #4d4d4d; /** Secondary text and notes */
   --delta-brand-focus-ring: #866200; /** Focus ring colour (WCAG 2.4.7) */
+  --delta-brand-border-control: #7e8082; /** Border that shows where a control is: buttons, inputs, selects (WCAG 1.4.11, 3:1) */
+  --delta-brand-danger: #c10920; /** Errors and invalid fields */
+  --delta-brand-text-on-interactive: #ffffff; /** Text on an interactive-coloured background, such as a selected toggle */
 }

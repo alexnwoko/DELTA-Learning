@@ -103,3 +103,37 @@ describe("brand-layer tokens (Mangrove v2.1.0)", () => {
 		expect(css).toMatch(/\[data-brand="delta"\] \{[^}]*--delta-brand-interactive: #004f91;/s);
 	});
 });
+
+describe("brand contrast (WCAG 2.2 AA)", () => {
+	const luminance = (hex: string) => {
+		const [r, g, b] = [1, 3, 5]
+			.map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+			.map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+		return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+	};
+	const ratio = (a: string, b: string) => {
+		const [x, y] = [luminance(a), luminance(b)].sort((p, q) => q - p);
+		return (x + 0.05) / (y + 0.05);
+	};
+	// [foreground, background, minimum, rule]
+	const PAIRS: [string, string, number, string][] = [
+		["text", "surface", 4.5, "1.4.3 text"],
+		["text", "surface-subtle", 4.5, "1.4.3 text"],
+		["text-muted", "surface", 4.5, "1.4.3 text"],
+		["text-muted", "surface-subtle", 4.5, "1.4.3 text"],
+		["interactive", "surface", 4.5, "1.4.3 link text"],
+		["danger", "surface", 4.5, "1.4.3 error text"],
+		["text-on-interactive", "interactive", 4.5, "1.4.3 text on a selected control"],
+		["border-control", "surface", 3, "1.4.11 control boundary"],
+		["border-control", "surface-subtle", 3, "1.4.11 control boundary"],
+		["focus-ring", "surface", 3, "1.4.11 / 2.4.13 focus indicator"],
+		["focus-ring", "surface-subtle", 3, "1.4.11 / 2.4.13 focus indicator"],
+	];
+	it.each(["neutral", "delta"])("%s brand meets the thresholds", (brand) => {
+		const tokens = readJson(`design-tokens/brand/${brand}.json`).brand;
+		for (const [fg, bg, min, rule] of PAIRS) {
+			const r = ratio(tokens[fg].$value, tokens[bg].$value);
+			expect(r, `${brand}: ${fg} on ${bg} is ${r.toFixed(2)}:1, needs ${min}:1 (${rule})`).toBeGreaterThanOrEqual(min);
+		}
+	});
+});
