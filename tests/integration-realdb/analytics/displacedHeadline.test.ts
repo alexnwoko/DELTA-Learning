@@ -9,6 +9,10 @@ import {
 } from "../test-helpers";
 import { getAffectedPeopleByHazardFilters } from "~/backend.server/models/analytics/hazard-analysis";
 import { getAffectedByDisasterRecord } from "~/backend.server/models/analytics/affected-people-by-disaster-record";
+import {
+	evacuatedSql,
+	relocatedSql,
+} from "~/backend.server/models/analytics/displacedHeadline";
 
 // Contract O-2 (Alex, 2026-10-16): displaced_total holds evacuated plus
 // relocated, because the platform keeps one population split by timing and
@@ -134,5 +138,24 @@ describe("displaced figure leaves out people relocated after the event", () => {
 		expect(res.measures.displaced.recordsReported).toBe(4);
 		expect(res.measures.displaced.recordsZeroConfirmed).toBe(1);
 		expect(res.measures.displaced.recordsNotReported).toBe(1);
+	});
+
+	it("evacuated and relocated read the typed rows, null when absent", async () => {
+		const read = async (id: string) => {
+			const res = await dr.execute(sql`
+				SELECT ${evacuatedSql("hcp")} AS evacuated, ${relocatedSql("hcp")} AS relocated
+				FROM human_category_presence hcp WHERE hcp.record_id = ${id}
+			`);
+			const row = res.rows[0] as Record<string, unknown>;
+			const n = (v: unknown) => (v === null ? null : Number(v));
+			return [n(row.evacuated), n(row.relocated)];
+		};
+		expect(await read(rec.disjoint)).toEqual([109, 2000]);
+		expect(await read(rec.identical)).toEqual([27, 27]);
+		expect(await read(rec.totalOnly)).toEqual([null, null]);
+		// The sex-split row of 12 is another group: relocated stays 30.
+		expect(await read(rec.crossTab)).toEqual([null, 30]);
+		expect(await read(rec.relocatedOnly)).toEqual([null, 15]);
+		expect(await read(rec.zeroEvacuated)).toEqual([0, 60]);
 	});
 });
