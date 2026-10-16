@@ -229,6 +229,34 @@
 					}
 				}
 			}
+		},
+		"warning-border": {
+			"$type": "color",
+			"$value": "#fec124",
+			"$description": "Edge of a general warning note, such as a refusal or an unavailable basemap",
+			"$extensions": {
+				"org.undrr.delta": {
+					"mangrove": {
+						"release": "v2.1.0",
+						"path": "color.accent-500",
+						"brand": "mangrove base"
+					}
+				}
+			}
+		},
+		"warning-background": {
+			"$type": "color",
+			"$value": "#fdf6d9",
+			"$description": "Background of a general warning note",
+			"$extensions": {
+				"org.undrr.delta": {
+					"mangrove": {
+						"release": "v2.1.0",
+						"path": "color.accent-300",
+						"brand": "mangrove base"
+					}
+				}
+			}
 		}
 	}
 }

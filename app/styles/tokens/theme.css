@@ -44,6 +44,8 @@
 	--color-data-flag-review-chip-background: var(--delta-data-flag-review-chip-background);
 	--color-data-flag-review-chip-text: var(--delta-data-flag-review-chip-text);
 	--color-data-chart-axis: var(--delta-data-chart-axis);
+	--color-data-notice-provisional-border: var(--delta-data-notice-provisional-border);
+	--color-data-notice-provisional-background: var(--delta-data-notice-provisional-background);
 	--color-brand-interactive: var(--delta-brand-interactive);
 	--color-brand-interactive-active: var(--delta-brand-interactive-active);
 	--color-brand-secondary: var(--delta-brand-secondary);
@@ -58,4 +60,6 @@
 	--color-brand-border-control: var(--delta-brand-border-control);
 	--color-brand-danger: var(--delta-brand-danger);
 	--color-brand-text-on-interactive: var(--delta-brand-text-on-interactive);
+	--color-brand-warning-border: var(--delta-brand-warning-border);
+	--color-brand-warning-background: var(--delta-brand-warning-background);
 }

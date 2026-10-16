@@ -46,6 +46,10 @@ describe("data-layer tokens (FE-Tokens-01)", () => {
 		expect(dataTokens.map.canvas).toEqual({ background: "#f3f4f6" });
 	});
 
+	it("carry the provisional-basis banner (AB-01), readable with body text", () => {
+		expect(dataTokens.notice.provisional).toEqual({ border: "#d97706", background: "#fffbeb" });
+	});
+
 	it("carry the neutral chart axis", () => {
 		expect(dataTokens.chart.axis).toBe("#6b7280");
 	});
@@ -132,6 +136,7 @@ describe("brand contrast (WCAG 2.2 AA)", () => {
 		["border-control", "surface-subtle", 3, "1.4.11 control boundary"],
 		["focus-ring", "surface", 3, "1.4.11 / 2.4.13 focus indicator"],
 		["focus-ring", "surface-subtle", 3, "1.4.11 / 2.4.13 focus indicator"],
+		["text", "warning-background", 4.5, "1.4.3 text in a warning note"],
 	];
 	it.each(["neutral", "delta"])("%s brand meets the thresholds", (brand) => {
 		const tokens = readJson(`design-tokens/brand/${brand}.json`).brand;

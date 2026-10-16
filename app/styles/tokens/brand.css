@@ -19,6 +19,8 @@
   --delta-brand-border-control: #7e8082; /** Border that shows where a control is: buttons, inputs, selects (WCAG 1.4.11, 3:1) */
   --delta-brand-danger: #c10920; /** Errors and invalid fields */
   --delta-brand-text-on-interactive: #ffffff; /** Text on an interactive-coloured background, such as a selected toggle */
+  --delta-brand-warning-border: #fec124; /** Edge of a general warning note, such as a refusal or an unavailable basemap */
+  --delta-brand-warning-background: #fdf6d9; /** Background of a general warning note */
 }
 
 /**
@@ -42,4 +44,6 @@
   --delta-brand-border-control: #7e8082; /** Border that shows where a control is: buttons, inputs, selects (WCAG 1.4.11, 3:1) */
   --delta-brand-danger: #c10920; /** Errors and invalid fields */
   --delta-brand-text-on-interactive: #ffffff; /** Text on an interactive-coloured background, such as a selected toggle */
+  --delta-brand-warning-border: #fec124; /** Edge of a general warning note, such as a refusal or an unavailable basemap */
+  --delta-brand-warning-background: #fdf6d9; /** Background of a general warning note */
 }
