@@ -238,10 +238,15 @@ export default function GeoportalPage() {
 					{choropleth.cells.length === 0 &&
 						choropleth.unattributed.records === 0 && (
 							<p className="text-sm border-l-4 border-gray-400 bg-gray-50 px-2 py-1 my-1">
-								{ctx.t({
-									code: "geoportal.empty",
-									msg: "No records on this approval basis. Migrated records stay drafts until they are published.",
-								})}
+								{query.scope.basis === "provisional"
+									? ctx.t({
+											code: "geoportal.empty.scope",
+											msg: "Nothing in scope for this dimension and these filters.",
+										})
+									: ctx.t({
+											code: "geoportal.empty",
+											msg: "No records on this approval basis. Migrated records stay drafts until they are published.",
+										})}
 							</p>
 						)}
 

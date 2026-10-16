@@ -169,4 +169,49 @@ describe("GeoFilterBar", () => {
 			renderToString(<GeoFilterBar {...props} canReview={true} />),
 		).toContain("Provisional");
 	});
+
+	it("shows the provisional box as ticked when the basis is provisional", () => {
+		const on = renderToString(
+			<GeoFilterBar
+				{...props}
+				query={{
+					...props.query,
+					scope: { ...props.query.scope, basis: "provisional" },
+				}}
+				canReview={true}
+			/>,
+		);
+		const off = renderToString(<GeoFilterBar {...props} canReview={true} />);
+		expect(on).toContain("✓");
+		expect(off).not.toContain("✓");
+	});
+});
+
+describe("GeoTable number formatting", () => {
+	it("formats record counts and grades with separators", () => {
+		const big = cell("n", {
+			value: 1212,
+			value_state: "reported",
+			records_reported: 1212,
+			records_not_reported: 0,
+			records_total: 1212,
+			coverage: 1,
+			gradeDistribution: { A: 0, B: 1212, C: 0, D: 0 },
+		});
+		const s = resolveMapState([toMapCell(big)], {
+			family: measureFamily("records"),
+			scope: { tenant: null, audience: "signed-in" },
+		});
+		const html = renderToString(
+			<GeoTable
+				id="t"
+				label="x"
+				rows={[{ id: "n", name: "Nampula", area: s.areas[0] }]}
+				selectedId={null}
+				onSelect={() => {}}
+			/>,
+		);
+		expect(html).toContain("1,212 of 1,212");
+		expect(html).toContain("B 1,212");
+	});
 });

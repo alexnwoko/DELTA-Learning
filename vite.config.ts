@@ -87,6 +87,8 @@ export default defineConfig({
 			"otpauth",
 			"pino",
 			"reflect-metadata",
+			// Pre-bundled with React so a late discovery never splits React in dev.
+			"react-aria-components",
 		],
 		// nestjs-i18n's optional-peer require()s (graphql/hbs) break the scanner even though
 		// it's server-only — see vite.config.ts git history for details.

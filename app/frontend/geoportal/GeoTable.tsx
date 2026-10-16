@@ -45,7 +45,7 @@ export function GeoTable(props: {
 				selectionBehavior="replace"
 				selectedKeys={props.selectedId ? [props.selectedId] : []}
 				onSelectionChange={onSelectionChange}
-				className="geo-table w-full text-sm"
+				className="geo-table w-full text-sm [&_th]:px-2 [&_th]:py-1 [&_th]:border-b [&_td]:px-2 [&_td]:py-1 [&_td]:border-b [&_td]:border-gray-100"
 			>
 				<TableHeader>
 					<Column isRowHeader className="text-left">
@@ -59,6 +59,7 @@ export function GeoTable(props: {
 				<TableBody items={props.rows}>
 					{(row) => {
 						const t = row.area?.tooltip;
+						const n = (v: number) => v.toLocaleString();
 						return (
 							<Row
 								id={row.id}
@@ -77,11 +78,11 @@ export function GeoTable(props: {
 										: ""}
 								</Cell>
 								<Cell className="text-right">
-									{t ? `${t.reportedBy.n} of ${t.reportedBy.of}` : ""}
+									{t ? `${n(t.reportedBy.n)} of ${n(t.reportedBy.of)}` : ""}
 								</Cell>
 								<Cell>
 									{t?.gradeDistribution
-										?.map((g) => `${g.grade} ${g.records}`)
+										?.map((g) => `${g.grade} ${n(g.records)}`)
 										.join(", ") ?? ""}
 								</Cell>
 							</Row>
