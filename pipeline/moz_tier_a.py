@@ -192,19 +192,15 @@ def point_counts(gdf_pts: gpd.GeoDataFrame, column: str) -> pd.DataFrame:
 
 def facilities():
     res = hdx_resources("mozambique-health-facilities")
-    print("health resources:", [(x.get("name"), x.get("format")) for x in res], flush=True)
-    r = next(x for x in res if (x.get("format") or "").lower() in ("xlsx", "xls", "csv") or (x.get("url") or "").lower().split("?")[0].endswith((".xlsx", ".csv")))
+    r = next(x for x in res if (x.get("format") or "").upper() == "SHP")
     url = r.get("download_url") or r["url"]
-    ext = "." + (r.get("format") or "xlsx").lower()
-    path = fetch(url, "moz_health_facilities" + ext)
-    tbl = pd.read_excel(path) if path.suffix in (".xlsx", ".xls") else pd.read_csv(path)
-    print("health columns:", list(tbl.columns), flush=True)
-    lat = next(c for c in tbl.columns if re.search(r"lat", str(c), re.I))
-    lon = next(c for c in tbl.columns if re.search(r"lon|lng", str(c), re.I))
-    tbl = tbl.dropna(subset=[lat, lon])
-    pts = gpd.GeoDataFrame(tbl, geometry=gpd.points_from_xy(tbl[lon], tbl[lat]), crs=4326)
+    path = fetch(url, "moz_health_facilities_shp.zip")
+    with zipfile.ZipFile(path) as z:
+        inner = next(n for n in z.namelist() if n.lower().endswith(".shp"))
+    pts = gpd.read_file(f"/vsizip/{path}/{inner}")
+    pts = pts[pts.geometry.notna()]
     point_counts(pts, "health_facilities").to_csv(OUT / "exposure_health_facilities_count.csv", index=False)
-    record("Mozambique Master Health Facility List (HDX)", url, "CC0", path, "ok", f"{len(pts)} geolocated facilities counted per district (list dated 2017)")
+    record("Mozambique health facilities (HDX, shapefile)", url, "CC0", path, "ok", f"{len(pts)} facilities counted per district (list dated 2017)")
 
 
 def schools():
@@ -233,9 +229,9 @@ def schools():
 
 
 def mapspam():
-    record("MapSPAM 2020 v2r2", "https://doi.org/10.7910/DVN/SWPENT", "CC BY 4.0 with IFPRI terms of use", None, "skipped", "Dataverse requires accepting IFPRI terms before download (HTTP 400 when anonymous); waiting for Alex")
+    record("MapSPAM 2020 v2r2", "https://doi.org/10.7910/DVN/SWPENT", "CC BY 4.0 with IFPRI terms of use", None, "skipped", "Dataverse requires a guestbook response (guestbook 380) before download; Alex accepted the IFPRI terms 2026-10-16; files to be fetched by Alex in a browser")
     return
-    files = {"production": 13827040, "harvested_area": 13827043}
+    files = {"production": 13827043, "harvested_area": 13827040}
     for kind, fid in files.items():
         url = f"https://dataverse.harvard.edu/api/access/datafile/{fid}"
         path = fetch(url, f"spam2020_{kind}.zip")
