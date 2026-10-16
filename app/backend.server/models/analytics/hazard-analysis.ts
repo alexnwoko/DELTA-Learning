@@ -1,4 +1,5 @@
 import { and, eq, gte, lte, SQL, sql } from "drizzle-orm";
+import { displacedHeadlineSql } from "~/backend.server/models/analytics/displacedHeadline";
 import { divisionAndDescendantsSql } from "~/backend.server/utils/geographicFilters";
 import {
 	measureValue,
@@ -255,7 +256,11 @@ function plausibilityFlagged(
 function humanEffectMeasuresSelect(): SQL {
 	const parts = HUMAN_EFFECT_MEASURES.map((m) => {
 		const flag = sql.raw(`hcp."${m}"`);
-		const total = sql.raw(`hcp."${m}_total"`);
+		// Displaced leaves out people relocated after the event (contract O-2).
+		const total =
+			m === "displaced"
+				? displacedHeadlineSql("hcp")
+				: sql.raw(`hcp."${m}_total"`);
 		return sql`
 			SUM(${total}) FILTER (WHERE ${total} > 0) AS ${sql.raw(`"${m}_sum"`)},
 			COUNT(*) FILTER (WHERE ${total} > 0) AS ${sql.raw(`"${m}_reported"`)},
@@ -1781,15 +1786,15 @@ export async function getTotalAffectedPeopleByDivision(
 		  NULLIF(
 			CASE WHEN hcp."injured_total" > 0 THEN hcp."injured_total" ELSE 0 END +
 			CASE WHEN hcp."missing_total" > 0 THEN hcp."missing_total" ELSE 0 END +
-			CASE WHEN hcp."displaced_total" > 0 THEN hcp."displaced_total" ELSE 0 END +
+			CASE WHEN ${displacedHeadlineSql("hcp")} > 0 THEN ${displacedHeadlineSql("hcp")} ELSE 0 END +
 			CASE WHEN hcp."affected_direct_total" > 0 THEN hcp."affected_direct_total" ELSE 0 END,
 			0
 		  ) AS v,
-		  COALESCE(hcp."injured_total" > 0 OR hcp."missing_total" > 0 OR hcp."displaced_total" > 0 OR hcp."affected_direct_total" > 0, false) AS is_reported,
+		  COALESCE(hcp."injured_total" > 0 OR hcp."missing_total" > 0 OR ${displacedHeadlineSql("hcp")} > 0 OR hcp."affected_direct_total" > 0, false) AS is_reported,
 		  COALESCE(
 			(hcp."injured_total" = 0 AND hcp."injured" IS TRUE) OR (hcp."injured" IS FALSE AND COALESCE(hcp."injured_total", 0) = 0) OR
 			(hcp."missing_total" = 0 AND hcp."missing" IS TRUE) OR (hcp."missing" IS FALSE AND COALESCE(hcp."missing_total", 0) = 0) OR
-			(hcp."displaced_total" = 0 AND hcp."displaced" IS TRUE) OR (hcp."displaced" IS FALSE AND COALESCE(hcp."displaced_total", 0) = 0) OR
+			(${displacedHeadlineSql("hcp")} = 0 AND hcp."displaced" IS TRUE) OR (hcp."displaced" IS FALSE AND COALESCE(${displacedHeadlineSql("hcp")}, 0) = 0) OR
 			(hcp."affected_direct_total" = 0 AND hcp."affected_direct" IS TRUE) OR (hcp."affected_direct" IS FALSE AND COALESCE(hcp."affected_direct_total", 0) = 0),
 			false
 		  ) AS is_zero
@@ -2277,11 +2282,11 @@ export async function getDisasterSummary(
            SUM(
              CASE WHEN hcp."injured_total" > 0 THEN hcp."injured_total" ELSE 0 END +
              CASE WHEN hcp."missing_total" > 0 THEN hcp."missing_total" ELSE 0 END +
-             CASE WHEN hcp."displaced_total" > 0 THEN hcp."displaced_total" ELSE 0 END +
+             CASE WHEN ${displacedHeadlineSql("hcp")} > 0 THEN ${displacedHeadlineSql("hcp")} ELSE 0 END +
              CASE WHEN hcp."affected_direct_total" > 0 THEN hcp."affected_direct_total" ELSE 0 END
            ) FILTER (
              WHERE hcp."injured_total" > 0 OR hcp."missing_total" > 0
-               OR hcp."displaced_total" > 0 OR hcp."affected_direct_total" > 0
+               OR ${displacedHeadlineSql("hcp")} > 0 OR hcp."affected_direct_total" > 0
            ) AS total_affected
     FROM "disaster_records" dr
     LEFT JOIN "human_category_presence" hcp ON hcp."record_id" = dr."id"
