@@ -1,4 +1,5 @@
 import { ActionFunctionArgs, MetaFunction } from "react-router";
+import { divisionLabelPoints } from "~/backend.server/models/analytics/divisionLabelPoints";
 import { useEffect, useMemo, useState } from "react";
 import { useActionData, useLoaderData } from "react-router";
 import { authLoaderPublicOrWithPerm } from "~/utils/auth";
@@ -60,6 +61,8 @@ interface interfaceMap {
 	description: string;
 	colorPercentage: number;
 	geojson: any;
+	/** Point inside the division, [lng, lat], for map spikes (RV-5). */
+	labelPoint?: [number, number] | null;
 	/** Map state; a division with no record in scope is not_reported. */
 	valueState?: ValueState;
 	/** Envelope counts for the map-state resolver (~/utils/mapState). */
@@ -137,9 +140,12 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 		toDate,
 	};
 
-	
-	
 	const geographicLevel1 = await getDivisionByLevel(1, countryAccountsId);
+	// Where each map spike stands (ruling RV-5).
+	const labelPoints = await divisionLabelPoints(
+		geographicLevel1.map((d) => d.id),
+		countryAccountsId,
+	);
 
 	const disasterCount = await getDisasterEventCount(filters);
 	const yearlyDisasterCounts = await getDisasterEventCountByYear(filters);
@@ -189,6 +195,7 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 			description: `Total damages: ${formatNumberWithoutDecimals(total)} ${currency}`,
 			colorPercentage: total / maxDamages,
 			geojson: division.geojson || {},
+			labelPoint: labelPoints.get(String(division.id)) ?? null,
 		};
 	});
 
@@ -205,6 +212,7 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 			description: `Total losses: ${formatNumberWithoutDecimals(total)} ${currency}`,
 			colorPercentage: total / maxLosses,
 			geojson: division.geojson || {},
+			labelPoint: labelPoints.get(String(division.id)) ?? null,
 		};
 	});
 
@@ -252,6 +260,7 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 				description: `${label}: ${shown}${shared}`,
 				colorPercentage: (value ?? 0) / maxValue,
 				geojson: division.geojson || {},
+				labelPoint: labelPoints.get(String(division.id)) ?? null,
 				valueState,
 				recordsReported: row?.measure.recordsReported ?? 0,
 				recordsZeroConfirmed: row?.measure.recordsZeroConfirmed ?? 0,
@@ -284,6 +293,7 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 				description: `Disaster events: ${formatNumberWithoutDecimals(total)}`,
 				colorPercentage: total / maxEvents,
 				geojson: division.geojson || {},
+				labelPoint: labelPoints.get(String(division.id)) ?? null,
 			};
 		},
 	);
