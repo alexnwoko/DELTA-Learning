@@ -7,6 +7,7 @@
 // measures are refused while the money conventions are open (PD-05).
 
 import type { QueryDimension } from "~/utils/deltaQuery";
+import type { MeasureFamily } from "~/utils/mapState";
 
 export const GEO_HUMAN_MEASURES = [
 	"deaths",
@@ -57,6 +58,120 @@ export function isGeoMeasure(
 	dimension: QueryDimension = "disaster_impact",
 ): value is GeoMeasure {
 	return (geoMeasuresFor(dimension) as readonly string[]).includes(value);
+}
+
+/** A translatable label: a locale key and its English text. */
+export interface GeoLabel {
+	code: string;
+	msg: string;
+}
+
+/** User-facing names of the three dimensions (Alex ruling 2026-10-16). */
+export const GEO_DIMENSION_LABELS: Record<QueryDimension, GeoLabel> = {
+	hazardous_event: {
+		code: "geoportal.dim.hazardous_event",
+		msg: "Hazardous events",
+	},
+	disaster_event: {
+		code: "geoportal.dim.disaster_event",
+		msg: "Disaster events",
+	},
+	disaster_impact: {
+		code: "geoportal.dim.disaster_impact",
+		msg: "Disaster impact",
+	},
+};
+
+export interface GeoMeasureInfo {
+	label: GeoLabel;
+	/** Unit shown with every value, plural form. */
+	unit: GeoLabel;
+	/** Ramp family (V-2: one ramp per family). */
+	family: MeasureFamily;
+}
+
+const PEOPLE: GeoLabel = { code: "geoportal.unit.people", msg: "people" };
+
+/**
+ * One table for labels, units and ramp families, read by the page, the
+ * legend, the table and the dossier, so no screen keeps its own copy. The
+ * count measure says "disaster impacts", never "records" (ruling
+ * 2026-10-16); the measure id stays `records` (D8 option a).
+ */
+export const GEO_MEASURE_INFO: Record<GeoMeasure, GeoMeasureInfo> = {
+	records: {
+		label: {
+			code: "geoportal.measure.records",
+			msg: "Disaster impacts (count)",
+		},
+		unit: { code: "geoportal.unit.disaster_impacts", msg: "disaster impacts" },
+		family: "events",
+	},
+	deaths: {
+		label: { code: "geoportal.measure.deaths", msg: "Deaths" },
+		unit: PEOPLE,
+		family: "people",
+	},
+	injured: {
+		label: { code: "geoportal.measure.injured", msg: "Injured" },
+		unit: PEOPLE,
+		family: "people",
+	},
+	missing: {
+		label: { code: "geoportal.measure.missing", msg: "Missing" },
+		unit: PEOPLE,
+		family: "people",
+	},
+	affected_direct: {
+		label: {
+			code: "geoportal.measure.affected_direct",
+			msg: "Directly affected",
+		},
+		unit: PEOPLE,
+		family: "people",
+	},
+	affected_indirect: {
+		label: {
+			code: "geoportal.measure.affected_indirect",
+			msg: "Indirectly affected",
+		},
+		unit: PEOPLE,
+		family: "people",
+	},
+	displaced: {
+		label: { code: "geoportal.measure.displaced", msg: "Displaced" },
+		unit: PEOPLE,
+		family: "people",
+	},
+	houses_destroyed: {
+		label: {
+			code: "geoportal.measure.houses_destroyed",
+			msg: "Houses destroyed",
+		},
+		unit: { code: "geoportal.unit.houses", msg: "houses" },
+		family: "housing",
+	},
+	houses_damaged: {
+		label: { code: "geoportal.measure.houses_damaged", msg: "Houses damaged" },
+		unit: { code: "geoportal.unit.houses", msg: "houses" },
+		family: "housing",
+	},
+	events: {
+		label: { code: "geoportal.measure.events", msg: "Events" },
+		unit: { code: "geoportal.unit.events", msg: "events" },
+		family: "events",
+	},
+};
+
+/** Info for a measure id; unknown ids fall back to a plain label. */
+export function geoMeasureInfo(measure: string): GeoMeasureInfo {
+	return (
+		(GEO_MEASURE_INFO as Record<string, GeoMeasureInfo>)[measure] ?? {
+			label: { code: `geoportal.measure.${measure}`, msg: measure },
+			unit: { code: "geoportal.unit.none", msg: "" },
+			family: "people",
+		}
+	);
 }
 
 /**

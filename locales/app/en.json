@@ -8153,6 +8153,606 @@
     "description": "File: app/routes/$lang+/geoportal+/_index.tsx:241"
   },
   {
+    "id": "geoportal.basis.provisional",
+    "translation": "Include data not yet published (Provisional)",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:407"
+  },
+  {
+    "id": "geoportal.copy",
+    "translation": "Copy link",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:382"
+  },
+  {
+    "id": "geoportal.copy.done",
+    "translation": "Link copied",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:324"
+  },
+  {
+    "id": "geoportal.dim.disaster_event",
+    "translation": "Disaster events",
+    "description": "File: app/utils/geoMeasures.ts:76"
+  },
+  {
+    "id": "geoportal.dim.disaster_impact",
+    "translation": "Disaster impact",
+    "description": "File: app/utils/geoMeasures.ts:80"
+  },
+  {
+    "id": "geoportal.dim.hazardous_event",
+    "translation": "Hazardous events",
+    "description": "File: app/utils/geoMeasures.ts:72"
+  },
+  {
+    "id": "geoportal.dossier.auto",
+    "translation": "Showing the area with the highest value. Select another area on the map or in the list.",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:582"
+  },
+  {
+    "id": "geoportal.dossier.hazards",
+    "translation": "Hazard types",
+    "description": "File: app/frontend/geoportal/GeoDossier.tsx:286"
+  },
+  {
+    "id": "geoportal.dossier.in",
+    "translation": "in",
+    "description": "File: app/frontend/geoportal/GeoDossier.tsx:184"
+  },
+  {
+    "id": "geoportal.dossier.level",
+    "translation": "Admin level {n}",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:272"
+  },
+  {
+    "id": "geoportal.dossier.loading",
+    "translation": "Loading place details",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:593"
+  },
+  {
+    "id": "geoportal.dossier.no_dates",
+    "translation": "No dated disaster impacts.",
+    "description": "File: app/frontend/geoportal/GeoDossier.tsx:268"
+  },
+  {
+    "id": "geoportal.dossier.no_reporting",
+    "translation": "No reporting: {periods}",
+    "description": "File: app/frontend/geoportal/GeoDossier.tsx:159"
+  },
+  {
+    "id": "geoportal.dossier.prompt",
+    "translation": "Select an area on the map or in the Areas list.",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:597"
+  },
+  {
+    "id": "geoportal.dossier.recurrence",
+    "translation": "Over time",
+    "description": "File: app/frontend/geoportal/GeoDossier.tsx:236"
+  },
+  {
+    "id": "geoportal.dossier.span",
+    "translation": "{first} to {last}",
+    "description": "File: app/frontend/geoportal/GeoDossier.tsx:242"
+  },
+  {
+    "id": "geoportal.dossier.strip_label",
+    "translation": "Disaster impacts by year, {first} to {last}",
+    "description": "File: app/frontend/geoportal/GeoDossier.tsx:253"
+  },
+  {
+    "id": "geoportal.dossier.unclassified",
+    "translation": "No hazard recorded",
+    "description": "File: app/frontend/geoportal/GeoDossier.tsx:298"
+  },
+  {
+    "id": "geoportal.dossier.undated",
+    "translation": "{n} without a date",
+    "description": "File: app/frontend/geoportal/GeoDossier.tsx:276"
+  },
+  {
+    "id": "geoportal.dossier.zero_confirmed",
+    "translation": "0 (confirmed)",
+    "description": "File: app/frontend/geoportal/GeoDossier.tsx:51"
+  },
+  {
+    "id": "geoportal.empty.show_provisional",
+    "translation": "Show data not yet published",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:483"
+  },
+  {
+    "id": "geoportal.filters",
+    "translation": "Filters ({n})",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:392"
+  },
+  {
+    "id": "geoportal.filters.done",
+    "translation": "Done",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:415"
+  },
+  {
+    "id": "geoportal.filters.title",
+    "translation": "Filters",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:407"
+  },
+  {
+    "id": "geoportal.group.basis",
+    "translation": "Basis",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:385"
+  },
+  {
+    "id": "geoportal.group.dimension",
+    "translation": "Dimension",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:228"
+  },
+  {
+    "id": "geoportal.group.hazard",
+    "translation": "Hazard",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:314"
+  },
+  {
+    "id": "geoportal.group.level",
+    "translation": "Map level",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:267"
+  },
+  {
+    "id": "geoportal.group.measure",
+    "translation": "Measure",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:255"
+  },
+  {
+    "id": "geoportal.group.what",
+    "translation": "What",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:225"
+  },
+  {
+    "id": "geoportal.group.when",
+    "translation": "When",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:280"
+  },
+  {
+    "id": "geoportal.group.where",
+    "translation": "Where",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:265"
+  },
+  {
+    "id": "geoportal.hazard.all",
+    "translation": "All hazards",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:321"
+  },
+  {
+    "id": "geoportal.hazard.all_in_cluster",
+    "translation": "All in this cluster",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:364"
+  },
+  {
+    "id": "geoportal.hazard.all_in_type",
+    "translation": "All in this type",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:339"
+  },
+  {
+    "id": "geoportal.hazard.cluster",
+    "translation": "Cluster",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:333"
+  },
+  {
+    "id": "geoportal.hazard.hazard",
+    "translation": "Hazard",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:358"
+  },
+  {
+    "id": "geoportal.hazard.type",
+    "translation": "Hazard type",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:316"
+  },
+  {
+    "id": "geoportal.legend.as_of",
+    "translation": "Figures as of {date}",
+    "description": "File: app/frontend/geoportal/GeoLegend.tsx:196"
+  },
+  {
+    "id": "geoportal.legend.boundaries",
+    "translation": "Boundaries: {version}",
+    "description": "File: app/frontend/geoportal/GeoLegend.tsx:187"
+  },
+  {
+    "id": "geoportal.legend.method_quantile",
+    "translation": "Quantile classes, {n}",
+    "description": "File: app/frontend/geoportal/GeoLegend.tsx:86"
+  },
+  {
+    "id": "geoportal.legend.method_single",
+    "translation": "One colour: too few areas for classes",
+    "description": "File: app/frontend/geoportal/GeoLegend.tsx:93"
+  },
+  {
+    "id": "geoportal.legend.n_areas",
+    "translation": "{n} areas",
+    "description": "File: app/frontend/geoportal/GeoLegend.tsx:79"
+  },
+  {
+    "id": "geoportal.legend.nothing",
+    "translation": "Nothing in scope",
+    "description": "File: app/frontend/geoportal/GeoLegend.tsx"
+  },
+  {
+    "id": "geoportal.legend.one_area",
+    "translation": "1 area",
+    "description": "File: app/frontend/geoportal/GeoLegend.tsx:77"
+  },
+  {
+    "id": "geoportal.legend.range",
+    "translation": "{lower} to {upper}",
+    "description": "File: app/frontend/geoportal/GeoLegend.tsx:117"
+  },
+  {
+    "id": "geoportal.legend.reported",
+    "translation": "Reported",
+    "description": "File: app/frontend/geoportal/GeoLegend.tsx:130"
+  },
+  {
+    "id": "geoportal.map",
+    "translation": "map",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:511"
+  },
+  {
+    "id": "geoportal.measure.affected_direct",
+    "translation": "Directly affected",
+    "description": "File: app/utils/geoMeasures.ts:127"
+  },
+  {
+    "id": "geoportal.measure.affected_indirect",
+    "translation": "Indirectly affected",
+    "description": "File: app/utils/geoMeasures.ts:135"
+  },
+  {
+    "id": "geoportal.measure.deaths",
+    "translation": "Deaths",
+    "description": "File: app/utils/geoMeasures.ts:111"
+  },
+  {
+    "id": "geoportal.measure.displaced",
+    "translation": "Displaced",
+    "description": "File: app/utils/geoMeasures.ts:142"
+  },
+  {
+    "id": "geoportal.measure.events",
+    "translation": "Events",
+    "description": "File: app/utils/geoMeasures.ts:160"
+  },
+  {
+    "id": "geoportal.measure.houses_damaged",
+    "translation": "Houses damaged",
+    "description": "File: app/utils/geoMeasures.ts:155"
+  },
+  {
+    "id": "geoportal.measure.houses_destroyed",
+    "translation": "Houses destroyed",
+    "description": "File: app/utils/geoMeasures.ts:148"
+  },
+  {
+    "id": "geoportal.measure.injured",
+    "translation": "Injured",
+    "description": "File: app/utils/geoMeasures.ts:116"
+  },
+  {
+    "id": "geoportal.measure.missing",
+    "translation": "Missing",
+    "description": "File: app/utils/geoMeasures.ts:121"
+  },
+  {
+    "id": "geoportal.measure.records",
+    "translation": "Disaster impacts (count)",
+    "description": "File: app/utils/geoMeasures.ts:104"
+  },
+  {
+    "id": "geoportal.panel",
+    "translation": "Panel",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:548"
+  },
+  {
+    "id": "geoportal.period.all",
+    "translation": "all dates",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:163"
+  },
+  {
+    "id": "geoportal.period.from",
+    "translation": "from {from}",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:161"
+  },
+  {
+    "id": "geoportal.period.range",
+    "translation": "{from} to {to}",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:157"
+  },
+  {
+    "id": "geoportal.period.to",
+    "translation": "up to {to}",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:162"
+  },
+  {
+    "id": "geoportal.readout.grades",
+    "translation": "Attribution grades",
+    "description": "File: app/frontend/geoportal/GeoReadout.tsx:52"
+  },
+  {
+    "id": "geoportal.readout.precision",
+    "translation": "Location precision",
+    "description": "File: app/frontend/geoportal/GeoReadout.tsx:61"
+  },
+  {
+    "id": "geoportal.readout.reported_by",
+    "translation": "Reported by {n} of {m} {noun}",
+    "description": "File: app/frontend/geoportal/GeoReadout.tsx:39"
+  },
+  {
+    "id": "geoportal.readout.select",
+    "translation": "Select for place details",
+    "description": "File: app/frontend/geoportal/GeoReadout.tsx:70"
+  },
+  {
+    "id": "geoportal.refusal.attd.next",
+    "translation": "Use grade C or better.",
+    "description": "File: app/frontend/geoportal/refusals.ts:57"
+  },
+  {
+    "id": "geoportal.refusal.attd.title",
+    "translation": "Figures with the weakest location evidence (grade D) are not used in official maps.",
+    "description": "File: app/frontend/geoportal/refusals.ts:53"
+  },
+  {
+    "id": "geoportal.refusal.malformed.title",
+    "translation": "The filters in the address are not valid.",
+    "description": "File: app/frontend/geoportal/refusals.ts:108"
+  },
+  {
+    "id": "geoportal.refusal.measure.next",
+    "translation": "Choose another measure from the list.",
+    "description": "File: app/frontend/geoportal/refusals.ts:35"
+  },
+  {
+    "id": "geoportal.refusal.measure.title",
+    "translation": "This measure is not available for this dimension.",
+    "description": "File: app/frontend/geoportal/refusals.ts:31"
+  },
+  {
+    "id": "geoportal.refusal.money.next",
+    "translation": "Choose a human-effects or house measure. Money values wait for the currency and inflation rules.",
+    "description": "File: app/frontend/geoportal/refusals.ts:24"
+  },
+  {
+    "id": "geoportal.refusal.money.title",
+    "translation": "Losses in money cannot be mapped yet.",
+    "description": "File: app/frontend/geoportal/refusals.ts:20"
+  },
+  {
+    "id": "geoportal.refusal.multi.next",
+    "translation": "Choose a single measure.",
+    "description": "File: app/frontend/geoportal/refusals.ts:46"
+  },
+  {
+    "id": "geoportal.refusal.multi.title",
+    "translation": "A map shows one measure at a time.",
+    "description": "File: app/frontend/geoportal/refusals.ts:42"
+  },
+  {
+    "id": "geoportal.refusal.precision.next",
+    "translation": "Choose a higher admin level.",
+    "description": "File: app/frontend/geoportal/refusals.ts:68"
+  },
+  {
+    "id": "geoportal.refusal.precision.title",
+    "translation": "The data is not precise enough for this map level.",
+    "description": "File: app/frontend/geoportal/refusals.ts:64"
+  },
+  {
+    "id": "geoportal.refusal.rate.next",
+    "translation": "Choose a count measure.",
+    "description": "File: app/frontend/geoportal/refusals.ts:101"
+  },
+  {
+    "id": "geoportal.refusal.rate.title",
+    "translation": "Rates and averages cannot be added across areas.",
+    "description": "File: app/frontend/geoportal/refusals.ts:97"
+  },
+  {
+    "id": "geoportal.refusal.size.next",
+    "translation": "Choose a higher admin level or a smaller area.",
+    "description": "File: app/frontend/geoportal/refusals.ts:90"
+  },
+  {
+    "id": "geoportal.refusal.size.title",
+    "translation": "This view has too many areas to draw.",
+    "description": "File: app/frontend/geoportal/refusals.ts:86"
+  },
+  {
+    "id": "geoportal.refusal.vintage.next",
+    "translation": "Narrow the period to one boundary version.",
+    "description": "File: app/frontend/geoportal/refusals.ts:79"
+  },
+  {
+    "id": "geoportal.refusal.vintage.title",
+    "translation": "These figures use different boundary versions and cannot be added up.",
+    "description": "File: app/frontend/geoportal/refusals.ts:75"
+  },
+  {
+    "id": "geoportal.state.reported",
+    "translation": "Reported",
+    "description": "File: app/frontend/geoportal/GeoTable.tsx:34"
+  },
+  {
+    "id": "geoportal.tab.areas",
+    "translation": "Areas",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:561"
+  },
+  {
+    "id": "geoportal.tab.legend",
+    "translation": "Legend",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:567"
+  },
+  {
+    "id": "geoportal.tab.place",
+    "translation": "Place",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:555"
+  },
+  {
+    "id": "geoportal.table",
+    "translation": "table",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:610"
+  },
+  {
+    "id": "geoportal.table.area",
+    "translation": "Area",
+    "description": "File: app/frontend/geoportal/GeoTable.tsx:133"
+  },
+  {
+    "id": "geoportal.table.flagged",
+    "translation": "(flagged for review)",
+    "description": "File: app/frontend/geoportal/GeoTable.tsx:186"
+  },
+  {
+    "id": "geoportal.table.grades",
+    "translation": "Attribution grades",
+    "description": "File: app/frontend/geoportal/GeoTable.tsx:150"
+  },
+  {
+    "id": "geoportal.table.n_of_m",
+    "translation": "{n} of {m}",
+    "description": "File: app/frontend/geoportal/GeoTable.tsx:192"
+  },
+  {
+    "id": "geoportal.table.no_total",
+    "translation": "Area values are not added up: one disaster impact or event can count in more than one area.",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:619"
+  },
+  {
+    "id": "geoportal.table.rank",
+    "translation": "Rank",
+    "description": "File: app/frontend/geoportal/GeoTable.tsx:125"
+  },
+  {
+    "id": "geoportal.table.reported",
+    "translation": "Reported of total",
+    "description": "File: app/frontend/geoportal/GeoTable.tsx:147"
+  },
+  {
+    "id": "geoportal.table.state",
+    "translation": "State",
+    "description": "File: app/frontend/geoportal/GeoTable.tsx:144"
+  },
+  {
+    "id": "geoportal.table.value",
+    "translation": "Value",
+    "description": "File: app/frontend/geoportal/GeoTable.tsx:141"
+  },
+  {
+    "id": "geoportal.table.value_unit",
+    "translation": "Value ({unit})",
+    "description": "File: app/frontend/geoportal/GeoTable.tsx:138"
+  },
+  {
+    "id": "geoportal.unattributed.count",
+    "translation": "{n} {noun} are listed here and never shared out to areas:",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:653"
+  },
+  {
+    "id": "geoportal.unit.count",
+    "translation": "count",
+    "description": "File: app/frontend/geoportal/GeoDossier.tsx:213"
+  },
+  {
+    "id": "geoportal.unit.disaster_impacts",
+    "translation": "disaster impacts",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:234"
+  },
+  {
+    "id": "geoportal.unit.events",
+    "translation": "events",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:233"
+  },
+  {
+    "id": "geoportal.unit.houses",
+    "translation": "houses",
+    "description": "File: app/utils/geoMeasures.ts:151"
+  },
+  {
+    "id": "geoportal.unit.none",
+    "translation": "",
+    "description": "File: app/utils/geoMeasures.ts:171"
+  },
+  {
+    "id": "geoportal.unit.people",
+    "translation": "people",
+    "description": "File: app/utils/geoMeasures.ts:93"
+  },
+  {
+    "id": "geoportal.unplaced.members",
+    "translation": "its disaster impacts have no area",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:208"
+  },
+  {
+    "id": "geoportal.unplaced.no_division_geometry",
+    "translation": "area has no boundary",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:196"
+  },
+  {
+    "id": "geoportal.unplaced.no_division_row",
+    "translation": "no area recorded",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:192"
+  },
+  {
+    "id": "geoportal.unplaced.outside",
+    "translation": "location outside every area",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:204"
+  },
+  {
+    "id": "geoportal.unplaced.spans",
+    "translation": "location spans several areas",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx:200"
+  },
+  {
+    "id": "geoportal.when.all",
+    "translation": "All years",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:180"
+  },
+  {
+    "id": "geoportal.when.custom",
+    "translation": "Custom",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:290"
+  },
+  {
+    "id": "geoportal.when.from",
+    "translation": "From",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:300"
+  },
+  {
+    "id": "geoportal.when.invalid",
+    "translation": "Use YYYY, YYYY-MM or YYYY-MM-DD",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:133"
+  },
+  {
+    "id": "geoportal.when.last10",
+    "translation": "Last 10 years",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:186"
+  },
+  {
+    "id": "geoportal.when.last5",
+    "translation": "Last 5 years",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:192"
+  },
+  {
+    "id": "geoportal.when.period",
+    "translation": "Period",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:282"
+  },
+  {
+    "id": "geoportal.when.to",
+    "translation": "To",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:306"
+  },
+  {
+    "id": "nav.geoportal",
+    "translation": "Geoportal",
+    "description": "File: app/components/RegularMenuBar.tsx:313"
+  },
+  {
     "id": "geoportal.provisional",
     "translation": "Provisional: these figures include data that is not yet published.",
     "description": "File: app/routes/$lang+/geoportal+/_index.tsx:232"

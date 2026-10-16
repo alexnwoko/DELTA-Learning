@@ -25,14 +25,10 @@ import {
 	type MapArea,
 	type MapPattern,
 } from "~/utils/mapState";
+import { NO_RECORDS_STYLE } from "~/frontend/geoportal/geoCells";
+import { dataTokens } from "~/utils/designTokens.generated";
 
-/** Areas with no record in scope: not a value state, so drawn on its own. */
-export const NO_RECORDS_STYLE = {
-	fill: "#f9fafb",
-	stroke: "#d1d5db",
-	strokeWidth: 0.8,
-	label: "Nothing in scope",
-} as const;
+export { NO_RECORDS_STYLE };
 
 export interface GeoMapProps {
 	/** GeoJSON FeatureCollection from G1 boundaries. */
@@ -40,6 +36,15 @@ export interface GeoMapProps {
 	areas: readonly MapArea[];
 	selectedId: string | null;
 	onSelect: (divisionId: string | null) => void;
+	/** Pointer hover; null when the pointer leaves every area. */
+	onHover?: (divisionId: string | null) => void;
+	/**
+	 * Area to bring into view. Set when an area is chosen from the list, so
+	 * the map follows the keyboard path (TR-176).
+	 */
+	focusId?: string | null;
+	/** Map height; the page sets it to fill the viewport. */
+	height?: string;
 	/** Accessible name; the table alternative carries the figures. */
 	label: string;
 	describedBy?: string;
@@ -102,8 +107,8 @@ function styleFor(area: MapArea | undefined, selected: boolean): Style {
 		width = NO_RECORDS_STYLE.strokeWidth;
 	} else if (area.state === "shaded") {
 		fill = area.color ?? NO_RECORDS_STYLE.fill;
-		stroke = "#ffffff";
-		width = 0.8;
+		stroke = dataTokens.map.areaBoundary.stroke;
+		width = dataTokens.map.areaBoundary.strokeWidth;
 	} else {
 		const enc = STATE_ENCODING[area.state];
 		fill = patternFill(enc.pattern, enc.fill, enc.stroke);
@@ -137,6 +142,9 @@ export function GeoMap({
 	areas,
 	selectedId,
 	onSelect,
+	onHover,
+	focusId,
+	height = "480px",
 	label,
 	describedBy,
 }: GeoMapProps) {
@@ -145,6 +153,8 @@ export function GeoMap({
 	const layerRef = useRef<VectorLayer<VectorSource> | null>(null);
 	const onSelectRef = useRef(onSelect);
 	onSelectRef.current = onSelect;
+	const onHoverRef = useRef(onHover);
+	onHoverRef.current = onHover;
 
 	const byId = useMemo(() => new Map(areas.map((a) => [a.areaId, a])), [areas]);
 
@@ -164,6 +174,21 @@ export function GeoMap({
 			const hit = map.forEachFeatureAtPixel(e.pixel, (f) => f);
 			const id = hit ? (hit.get("divisionId") as string) : null;
 			onSelectRef.current(id);
+		});
+		let hovered: string | null = null;
+		map.on("pointermove", (e) => {
+			if (e.dragging) return;
+			const hit = map.forEachFeatureAtPixel(e.pixel, (f) => f);
+			const id = hit ? (hit.get("divisionId") as string) : null;
+			map.getTargetElement().style.cursor = id ? "pointer" : "";
+			if (id !== hovered) {
+				hovered = id;
+				onHoverRef.current?.(id);
+			}
+		});
+		map.getViewport().addEventListener("pointerleave", () => {
+			hovered = null;
+			onHoverRef.current?.(null);
 		});
 		mapRef.current = map;
 		layerRef.current = layer;
@@ -193,6 +218,23 @@ export function GeoMap({
 	}, [boundaries]);
 
 	useEffect(() => {
+		const map = mapRef.current;
+		const source = layerRef.current?.getSource();
+		if (!map || !source || !focusId) return;
+		const feature = source
+			.getFeatures()
+			.find((f) => f.get("divisionId") === focusId);
+		const extent = feature?.getGeometry()?.getExtent();
+		if (extent && extent.every(Number.isFinite)) {
+			map.getView().fit(extent, {
+				padding: [48, 48, 48, 48],
+				maxZoom: 9,
+				duration: 250,
+			});
+		}
+	}, [focusId]);
+
+	useEffect(() => {
 		const layer = layerRef.current;
 		if (!layer) return;
 		layer.setStyle((feature: FeatureLike) => {
@@ -208,7 +250,11 @@ export function GeoMap({
 			aria-label={label}
 			aria-describedby={describedBy}
 			className="geo-map"
-			style={{ width: "100%", height: "480px", background: "#ffffff" }}
+			style={{
+				width: "100%",
+				height,
+				background: dataTokens.map.canvas.background,
+			}}
 		/>
 	);
 }

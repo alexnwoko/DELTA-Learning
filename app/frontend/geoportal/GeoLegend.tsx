@@ -6,7 +6,13 @@ import {
 	STATE_ENCODING,
 	type MapLegend,
 } from "~/utils/mapState";
-import { NO_RECORDS_STYLE } from "~/frontend/geoportal/GeoMap";
+import { NO_RECORDS_STYLE } from "~/frontend/geoportal/geoCells";
+import {
+	boundaryText,
+	fmt,
+	plainT,
+	type GeoT,
+} from "~/frontend/geoportal/i18n";
 
 function Swatch(props: {
 	fill: string;
@@ -47,24 +53,78 @@ function Swatch(props: {
 	);
 }
 
-const fmt = (n: number) => n.toLocaleString();
+export interface GeoLegendProvenance {
+	/** Read-model refresh time (ISO), or null when never refreshed. */
+	refreshedAt: string | null;
+	/** Boundary version (vintage) of the areas drawn (TR-168, GP-6). */
+	boundaryVersion: string;
+}
 
+/**
+ * The legend as the map's layer card (review R03): what is shown, for which
+ * period and level, how classes were made, every state on the map with its
+ * encoding (TR-169), areas with nothing in scope, flagged areas, and where
+ * the figures come from. Counts in brackets are written out as areas.
+ */
 export function GeoLegend(props: {
 	legend: MapLegend;
 	title: string;
+	/** "Admin level 1 · all dates" style line. */
+	subtitle?: string;
 	noRecordsAreas: number;
+	provenance?: GeoLegendProvenance;
+	t?: GeoT;
 }) {
 	const { legend } = props;
+	const t = props.t ?? plainT;
+	const areas = (n: number) =>
+		n === 1
+			? t({ code: "geoportal.legend.one_area", msg: "1 area" })
+			: t(
+					{ code: "geoportal.legend.n_areas", msg: "{n} areas" },
+					{ n: fmt(n) },
+				);
+	const method =
+		legend.mode === "classes"
+			? t(
+					{
+						code: "geoportal.legend.method_quantile",
+						msg: "Quantile classes, {n}",
+					},
+					{ n: legend.classes.length },
+				)
+			: legend.mode === "single_tone"
+				? t({
+						code: "geoportal.legend.method_single",
+						msg: "One colour: too few areas for classes",
+					})
+				: null;
 	return (
-		<section aria-label={props.title} className="geo-legend text-sm">
-			<h3 className="font-semibold mb-1">{props.title}</h3>
+		<section
+			aria-label={props.title}
+			className="geo-legend text-sm bg-white/95 border border-gray-300 rounded shadow-sm p-2 max-w-[17rem]"
+		>
+			<h2 className="text-sm font-semibold leading-tight">{props.title}</h2>
+			{props.subtitle && (
+				<p className="text-xs text-gray-700">{props.subtitle}</p>
+			)}
+			{method && <p className="text-xs text-gray-700 mb-1">{method}</p>}
 			<ul className="space-y-1">
 				{legend.mode === "classes" &&
 					legend.classes.map((c) => (
 						<li key={c.index} className="flex items-center gap-2">
 							<Swatch fill={c.color} stroke="#ffffff" />
 							<span>
-								{fmt(c.lower)} to {fmt(c.upper)} ({c.areas})
+								{c.lower === c.upper
+									? fmt(c.lower)
+									: t(
+											{
+												code: "geoportal.legend.range",
+												msg: "{lower} to {upper}",
+											},
+											{ lower: fmt(c.lower), upper: fmt(c.upper) },
+										)}{" "}
+								<span className="text-gray-600">({areas(c.areas)})</span>
 							</span>
 						</li>
 					))}
@@ -72,8 +132,10 @@ export function GeoLegend(props: {
 					<li className="flex items-center gap-2">
 						<Swatch fill={legend.singleTone.color} stroke="#ffffff" />
 						<span>
-							Reported ({legend.singleTone.areasShaded}); too few areas for
-							classes
+							{t({ code: "geoportal.legend.reported", msg: "Reported" })}{" "}
+							<span className="text-gray-600">
+								({areas(legend.singleTone.areasShaded)})
+							</span>
 						</span>
 					</li>
 				)}
@@ -88,7 +150,8 @@ export function GeoLegend(props: {
 								pattern={enc.pattern}
 							/>
 							<span>
-								{enc.label} ({s.areas})
+								{enc.label}{" "}
+								<span className="text-gray-600">({areas(s.areas)})</span>
 							</span>
 						</li>
 					);
@@ -100,7 +163,13 @@ export function GeoLegend(props: {
 							stroke={NO_RECORDS_STYLE.stroke}
 						/>
 						<span>
-							{NO_RECORDS_STYLE.label} ({props.noRecordsAreas})
+							{t({
+								code: "geoportal.legend.nothing",
+								msg: NO_RECORDS_STYLE.label,
+							})}{" "}
+							<span className="text-gray-600">
+								({areas(props.noRecordsAreas)})
+							</span>
 						</span>
 					</li>
 				)}
@@ -108,11 +177,32 @@ export function GeoLegend(props: {
 					<li className="flex items-center gap-2">
 						<Swatch fill="#ffffff" stroke={PLAUSIBILITY_MARKER.stroke} />
 						<span>
-							{PLAUSIBILITY_MARKER.label} ({legend.flaggedAreas})
+							{PLAUSIBILITY_MARKER.label}{" "}
+							<span className="text-gray-600">
+								({areas(legend.flaggedAreas)})
+							</span>
 						</span>
 					</li>
 				)}
 			</ul>
+			{props.provenance && (
+				<p className="text-xs text-gray-600 border-t mt-2 pt-1">
+					{boundaryText(props.provenance.boundaryVersion, t)}
+					{props.provenance.refreshedAt && (
+						<>
+							<br />
+							{t(
+								{ code: "geoportal.legend.as_of", msg: "Figures as of {date}" },
+								{
+									date: new Date(props.provenance.refreshedAt)
+										.toISOString()
+										.slice(0, 10),
+								},
+							)}
+						</>
+					)}
+				</p>
+			)}
 		</section>
 	);
 }

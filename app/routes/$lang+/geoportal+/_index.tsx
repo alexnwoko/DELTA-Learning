@@ -1,24 +1,49 @@
-// Geoportal map page (increment I-2): the three dimensions as filters, one
-// measure per map, the table alternative, and the place dossier for the
-// selected area. The loader resolves the request exactly as the geo API does
-// (resolveGeoRequest), so the page and the API never disagree. Signed-in
-// only until the public routes (TR-181, TR-236) land in R1.
-import { useEffect, useMemo, useState } from "react";
-import { useLoaderData, useNavigate, useParams } from "react-router";
+// Geoportal map page (increment I-2, design review 2026-10-16). The map is
+// the page: a question bar on top, a full-height map with its legend card
+// and readout, and a side panel with the place dossier and the ranked area
+// list (TR-182, TR-176). The loader resolves the request exactly as the geo
+// API does (resolveGeoRequest), so the page and the API never disagree.
+// Signed-in only until the public routes (TR-181, TR-236) land in R1.
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
+import {
+	useLoaderData,
+	useNavigate,
+	useParams,
+	type MetaFunction,
+} from "react-router";
+import {
+	Button,
+	Dialog,
+	DialogTrigger,
+	Heading,
+	Modal,
+	ModalOverlay,
+	Tab,
+	TabList,
+	TabPanel,
+	Tabs,
+} from "react-aria-components";
 import { sql } from "drizzle-orm";
 
 import { dr } from "~/db.server";
 import { MainContainer } from "~/frontend/container";
 import { ViewContext } from "~/frontend/context";
 import { ClientOnly } from "~/frontend/analytics/sectors/sections/ClientOnly";
-import { GeoMap } from "~/frontend/geoportal/GeoMap";
 import { GeoLegend } from "~/frontend/geoportal/GeoLegend";
-import { GeoTable, type GeoTableRow } from "~/frontend/geoportal/GeoTable";
+import {
+	GeoTable,
+	rankRows,
+	type GeoTableRow,
+} from "~/frontend/geoportal/GeoTable";
 import {
 	GeoFilterBar,
-	MEASURE_LABELS,
+	type HazardTree,
 } from "~/frontend/geoportal/GeoFilterBar";
+import { GeoReadout } from "~/frontend/geoportal/GeoReadout";
+import { GeoDossier, type DossierData } from "~/frontend/geoportal/GeoDossier";
 import { measureFamily, toMapCell } from "~/frontend/geoportal/geoCells";
+import { refusalText } from "~/frontend/geoportal/refusals";
+import type { GeoT } from "~/frontend/geoportal/i18n";
 import {
 	GeoRefusalWithMeta,
 	resolveGeoRequest,
@@ -26,12 +51,20 @@ import {
 import {
 	getBoundaries,
 	getChoropleth,
+	getHazardTree,
 	refusalBody,
 } from "~/backend.server/models/geo/queries";
 import { authLoaderWithPerm, hasPermission } from "~/utils/auth";
 import { getCountryAccountsIdFromSession } from "~/utils/session";
 import { serializeDeltaQuery, type DeltaQuery } from "~/utils/deltaQuery";
 import { resolveMapState } from "~/utils/mapState";
+import { GEO_DIMENSION_LABELS, geoMeasureInfo } from "~/utils/geoMeasures";
+import { htmlTitle } from "~/utils/htmlmeta";
+
+// OpenLayers loads with the map, not with the page (NFR-130).
+const GeoMap = lazy(() =>
+	import("~/frontend/geoportal/GeoMap").then((m) => ({ default: m.GeoMap })),
+);
 
 async function adminLevels(countryAccountsId: string): Promise<number[]> {
 	const res = await dr.execute(sql`
@@ -62,25 +95,30 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 		url.searchParams.set("measure", "records");
 	}
 	const canReview = await hasPermission(args.request, "ValidateData");
+	const ctx = {
+		countryAccountsId,
+		lang,
+		url,
+		request: args.request,
+		viaApiKey: false,
+	};
 
 	try {
-		const req = await resolveGeoRequest(
-			{
-				countryAccountsId,
-				lang,
-				url,
-				request: args.request,
-				viaApiKey: false,
-			},
-			{ requireMeasure: true, requireLevel: true, eventDimensions: true },
-		);
-		const [choropleth, boundaries] = await Promise.all([
+		const req = await resolveGeoRequest(ctx, {
+			requireMeasure: true,
+			requireLevel: true,
+			eventDimensions: true,
+		});
+		const [choropleth, boundaries, tree] = await Promise.all([
 			getChoropleth(countryAccountsId, req),
 			getBoundaries(countryAccountsId, {
 				level: req.level as number,
 				z: 8,
 				lang,
 			}),
+			getHazardTree(countryAccountsId, { ...req, notApplied: [] }, lang).catch(
+				() => null,
+			),
 		]);
 		return {
 			query: req.query,
@@ -91,6 +129,7 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 			boundaries: boundaries as {
 				features: { properties: { divisionId: string; name: string } }[];
 			},
+			hazardTree: tree as HazardTree | null,
 			refusal: null,
 		};
 	} catch (err) {
@@ -102,6 +141,7 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 				canReview,
 				choropleth: null,
 				boundaries: null,
+				hazardTree: null,
 				refusal: refusalBody(err.refusal, err.meta),
 			};
 		}
@@ -109,39 +149,89 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 	}
 });
 
-/** Plain wording for the unplaced reasons the read model records. */
-const UNPLACED_REASONS: Record<string, string> = {
-	no_division_row: "no area recorded",
-	no_division_geometry: "area has no boundary",
-	geometry_spans_divisions: "location spans several areas",
-	geometry_outside_divisions: "location outside every area",
-	members_unplaced: "its disaster impacts have no area",
+function periodText(q: DeltaQuery, t: GeoT): string {
+	const from = q.where.time?.from;
+	const to = q.where.time?.to;
+	if (from && to)
+		return t(
+			{ code: "geoportal.period.range", msg: "{from} to {to}" },
+			{ from, to },
+		);
+	if (from)
+		return t({ code: "geoportal.period.from", msg: "from {from}" }, { from });
+	if (to) return t({ code: "geoportal.period.to", msg: "up to {to}" }, { to });
+	return t({ code: "geoportal.period.all", msg: "all dates" });
+}
+
+export const meta: MetaFunction<typeof loader> = ({
+	params,
+	loaderData: data,
+}) => {
+	const ctx = new ViewContext({ lang: params.lang || "en" });
+	const t: GeoT = (l, r) => ctx.t(l, r);
+	const page = t({ code: "geoportal.title", msg: "Geoportal" });
+	if (!data || !("query" in data) || !data.query) {
+		return [{ title: htmlTitle(ctx, page) }];
+	}
+	const q = data.query as DeltaQuery;
+	const parts = [
+		t(geoMeasureInfo(q.measure ?? "records").label),
+		t(
+			{ code: "geoportal.dossier.level", msg: "Admin level {n}" },
+			{ n: data.level },
+		),
+		periodText(q, t),
+		page,
+	];
+	return [{ title: htmlTitle(ctx, parts.join(" · ")) }];
 };
 
-interface DossierSummary {
-	division: { name: string | null };
-	recurrence: {
-		recordCount: number;
-		firstYear: number | null;
-		lastYear: number | null;
-		periodsWithNoReporting: string[];
-		note: string;
-	};
-	cumulative: Record<string, { value: number | null; value_state: string }>;
-}
+/** Plain wording for the unplaced reasons the read model records. */
+const UNPLACED_REASONS: Record<string, { code: string; msg: string }> = {
+	no_division_row: {
+		code: "geoportal.unplaced.no_division_row",
+		msg: "no area recorded",
+	},
+	no_division_geometry: {
+		code: "geoportal.unplaced.no_division_geometry",
+		msg: "area has no boundary",
+	},
+	geometry_spans_divisions: {
+		code: "geoportal.unplaced.spans",
+		msg: "location spans several areas",
+	},
+	geometry_outside_divisions: {
+		code: "geoportal.unplaced.outside",
+		msg: "location outside every area",
+	},
+	members_unplaced: {
+		code: "geoportal.unplaced.members",
+		msg: "its disaster impacts have no area",
+	},
+};
 
 export default function GeoportalPage() {
 	const data = useLoaderData<typeof loader>();
 	const ctx = new ViewContext();
+	const t: GeoT = (l, r) => ctx.t(l, r);
 	const navigate = useNavigate();
 	const params = useParams();
 	const lang = params.lang || "en";
 	const [selectedId, setSelectedId] = useState<string | null>(null);
-	const [dossier, setDossier] = useState<DossierSummary | null>(null);
+	const [userCleared, setUserCleared] = useState(false);
+	const [focusId, setFocusId] = useState<string | null>(null);
+	const [hoverId, setHoverId] = useState<string | null>(null);
+	const [dossier, setDossier] = useState<DossierData | null>(null);
+	const [copied, setCopied] = useState<string | null>(null);
 
 	const query = data.query as DeltaQuery;
 	const choropleth = data.choropleth;
 	const measure = query.measure ?? "records";
+	const info = geoMeasureInfo(measure);
+	const isEventDim = query.dimension !== "disaster_impact";
+	const reportedNoun = isEventDim
+		? t({ code: "geoportal.unit.events", msg: "events" })
+		: t({ code: "geoportal.unit.disaster_impacts", msg: "disaster impacts" });
 
 	const mapState = useMemo(() => {
 		if (!choropleth) return null;
@@ -165,16 +255,34 @@ export default function GeoportalPage() {
 	const rows: GeoTableRow[] = useMemo(() => {
 		if (!data.boundaries || !mapState) return [];
 		const byId = new Map(mapState.areas.map((a) => [a.areaId, a]));
-		return data.boundaries.features
-			.map((f) => ({
-				id: f.properties.divisionId,
-				name: f.properties.name,
-				area: byId.get(f.properties.divisionId),
-			}))
-			.sort((a, b) => a.name.localeCompare(b.name));
+		return data.boundaries.features.map((f) => ({
+			id: f.properties.divisionId,
+			name: f.properties.name,
+			area: byId.get(f.properties.divisionId),
+		}));
 	}, [data.boundaries, mapState]);
-
+	const nameOf = useMemo(
+		() => new Map(rows.map((r) => [r.id, r.name])),
+		[rows],
+	);
 	const noRecordsAreas = rows.filter((r) => !r.area).length;
+
+	// The dossier is the default view (TR-182): with no area chosen yet, the
+	// page opens the area with the highest value and says so.
+	const topId = useMemo(() => {
+		const first = rankRows(rows, {
+			column: "value",
+			direction: "descending",
+		})[0];
+		return first && first.rank !== null ? first.row.id : null;
+	}, [rows]);
+	const shownId = selectedId ?? (userCleared ? null : topId);
+	const autoChosen = selectedId === null && shownId !== null;
+
+	useEffect(() => {
+		setSelectedId(null);
+		setUserCleared(false);
+	}, [data.query, data.level]);
 
 	const search = useMemo(() => {
 		const p = serializeDeltaQuery(query);
@@ -184,173 +292,390 @@ export default function GeoportalPage() {
 
 	useEffect(() => {
 		setDossier(null);
-		if (!selectedId) return;
+		if (!shownId) return;
 		let live = true;
-		fetch(`/${lang}/api/geo/place/${selectedId}/dossier?${search}`)
+		fetch(`/${lang}/api/geo/place/${shownId}/dossier?${search}`)
 			.then((r) => (r.ok ? r.json() : null))
 			.then((d) => live && setDossier(d))
 			.catch(() => live && setDossier(null));
 		return () => {
 			live = false;
 		};
-	}, [selectedId, search, lang]);
+	}, [shownId, search, lang]);
 
 	const onFilters = (next: { query: DeltaQuery; level: number }) => {
 		const p = serializeDeltaQuery(next.query);
 		p.set("level", String(next.level));
-		setSelectedId(null);
 		navigate(`?${p.toString()}`);
 	};
+	const selectFromMap = (id: string | null) => {
+		setSelectedId(id);
+		setUserCleared(id === null);
+	};
+	const selectFromList = (id: string | null) => {
+		setSelectedId(id);
+		setUserCleared(id === null);
+		setFocusId(id);
+	};
+	const copyLink = async () => {
+		const href = window.location.href;
+		try {
+			await navigator.clipboard.writeText(href);
+			setCopied(t({ code: "geoportal.copy.done", msg: "Link copied" }));
+		} catch {
+			setCopied(href);
+		}
+	};
 
-	const title = ctx.t({ code: "geoportal.title", msg: "Geoportal" });
+	const hazardTypeNames = useMemo(
+		() =>
+			Object.fromEntries(
+				(data.hazardTree?.types ?? []).map((h) => [h.id, h.name]),
+			),
+		[data.hazardTree],
+	);
+
+	const title = t({ code: "geoportal.title", msg: "Geoportal" });
 	const tableId = "geoportal-table";
+	const measureTitle = `${t(GEO_DIMENSION_LABELS[query.dimension])} · ${t(info.label)}`;
+	const activeFilters =
+		(query.where.time ? 1 : 0) +
+		(query.where.hazard ? 1 : 0) +
+		(query.scope.basis === "provisional" ? 1 : 0);
+	const readoutId = hoverId ?? shownId;
+	const readoutArea = readoutId
+		? mapState?.areas.find((a) => a.areaId === readoutId)
+		: undefined;
+	const refusal = data.refusal
+		? refusalText(data.refusal.error.code, data.refusal.error, t)
+		: null;
+	const emptyPublished =
+		choropleth &&
+		choropleth.cells.length === 0 &&
+		choropleth.unattributed.records === 0;
+
+	const bar = (
+		<GeoFilterBar
+			query={query}
+			level={data.level}
+			levels={data.levels}
+			canReview={data.canReview}
+			onChange={onFilters}
+			hazardTree={data.hazardTree}
+			t={t}
+		/>
+	);
 
 	return (
-		<MainContainer title={title}>
-			<GeoFilterBar
-				query={query}
-				level={data.level}
-				levels={data.levels}
-				canReview={data.canReview}
-				onChange={onFilters}
-			/>
-
-			{data.refusal && (
-				<div
-					role="alert"
-					className="border-l-4 border-amber-600 bg-amber-50 p-3 my-2"
-				>
-					<p className="font-semibold">{data.refusal.error.message}</p>
-					<p className="text-sm">{data.refusal.error.resolution}</p>
-				</div>
-			)}
-
-			{choropleth && mapState && (
-				<>
-					<p className="text-sm text-gray-700 my-1">{mapState.scope.text}</p>
-					{mapState.notApplied.map((n) => (
-						<p
-							key={n.filter}
-							className="text-sm border-l-4 border-gray-400 bg-gray-50 px-2 py-1 my-1"
+		<MainContainer title={title} showHeader={false}>
+			<div className="geo-page py-2">
+				<div className="flex flex-wrap items-center justify-between gap-2">
+					<h1 className="text-xl font-semibold">{title}</h1>
+					<div className="flex items-center gap-2">
+						<span role="status" className="text-xs text-gray-700">
+							{copied}
+						</span>
+						<Button
+							onPress={copyLink}
+							className="border rounded px-3 py-1 text-sm bg-white data-[focus-visible]:outline data-[focus-visible]:outline-2"
 						>
-							{n.text}
-						</p>
-					))}
-					{choropleth.meta.provisional && (
-						<p className="text-sm border-l-4 border-amber-600 bg-amber-50 px-2 py-1 my-1">
-							{ctx.t({
-								code: "geoportal.provisional",
-								msg: "Provisional: these figures include data that is not yet published.",
-							})}
-						</p>
-					)}
-					{choropleth.cells.length === 0 &&
-						choropleth.unattributed.records === 0 && (
-							<p className="text-sm border-l-4 border-gray-400 bg-gray-50 px-2 py-1 my-1">
-								{query.scope.basis === "provisional"
-									? ctx.t({
-											code: "geoportal.empty.scope",
-											msg: "Nothing in scope for this dimension and these filters.",
-										})
-									: ctx.t({
-											code: "geoportal.empty",
-											msg: "Nothing is published for this view yet. Migrated data stays in draft until it is published.",
-										})}
+							{t({ code: "geoportal.copy", msg: "Copy link" })}
+						</Button>
+					</div>
+				</div>
+
+				<div className="hidden md:block">{bar}</div>
+				<div className="md:hidden py-2">
+					<DialogTrigger>
+						<Button className="border rounded px-3 py-1 text-sm bg-white">
+							{t(
+								{ code: "geoportal.filters", msg: "Filters ({n})" },
+								{ n: activeFilters },
+							)}
+						</Button>
+						<ModalOverlay
+							isDismissable
+							className="fixed inset-0 z-50 bg-black/30"
+						>
+							<Modal className="fixed inset-0 bg-white overflow-auto p-4">
+								<Dialog className="outline-none">
+									{({ close }) => (
+										<>
+											<div className="flex justify-between items-center">
+												<Heading slot="title" className="text-lg font-semibold">
+													{t({
+														code: "geoportal.filters.title",
+														msg: "Filters",
+													})}
+												</Heading>
+												<Button
+													onPress={close}
+													className="border rounded px-3 py-1 text-sm"
+												>
+													{t({ code: "geoportal.filters.done", msg: "Done" })}
+												</Button>
+											</div>
+											{bar}
+										</>
+									)}
+								</Dialog>
+							</Modal>
+						</ModalOverlay>
+					</DialogTrigger>
+				</div>
+
+				{refusal && (
+					<div
+						role="alert"
+						className="border-l-4 border-amber-600 bg-amber-50 p-3 my-2"
+					>
+						<p className="font-semibold">{refusal.title}</p>
+						<p className="text-sm">{refusal.next}</p>
+					</div>
+				)}
+
+				{choropleth && mapState && (
+					<>
+						<p className="text-sm text-gray-700 my-1">{mapState.scope.text}</p>
+						{mapState.notApplied.map((n) => (
+							<p
+								key={n.filter}
+								className="text-sm border-l-4 border-gray-400 bg-gray-50 px-2 py-1 my-1"
+							>
+								{n.text}
+							</p>
+						))}
+						{choropleth.meta.provisional && (
+							<p className="text-sm border-l-4 border-amber-600 bg-amber-50 px-2 py-1 my-1">
+								{t({
+									code: "geoportal.provisional",
+									msg: "Provisional: these figures include data that is not yet published.",
+								})}
 							</p>
 						)}
-
-					<div className="flex flex-wrap gap-4 my-3">
-						<div className="flex-1 min-w-[320px]">
-							<ClientOnly fallback={<div style={{ height: 480 }} />}>
-								{() => (
-									<GeoMap
-										boundaries={data.boundaries ?? { features: [] }}
-										areas={mapState.areas}
-										selectedId={selectedId}
-										onSelect={setSelectedId}
-										label={`${MEASURE_LABELS[measure] ?? measure}: map`}
-										describedBy={tableId}
-									/>
+						{emptyPublished && (
+							<div className="text-sm border-l-4 border-gray-400 bg-gray-50 px-2 py-1 my-1 flex flex-wrap items-center gap-2">
+								<span>
+									{query.scope.basis === "provisional"
+										? t({
+												code: "geoportal.empty.scope",
+												msg: "Nothing in scope for this dimension and these filters.",
+											})
+										: t({
+												code: "geoportal.empty",
+												msg: "Nothing is published for this view yet. Migrated data stays in draft until it is published.",
+											})}
+								</span>
+								{data.canReview && query.scope.basis !== "provisional" && (
+									<Button
+										onPress={() =>
+											onFilters({
+												query: {
+													...query,
+													scope: { ...query.scope, basis: "provisional" },
+												},
+												level: data.level,
+											})
+										}
+										className="border rounded px-2 py-0.5 bg-white data-[focus-visible]:outline data-[focus-visible]:outline-2"
+									>
+										{t({
+											code: "geoportal.empty.show_provisional",
+											msg: "Show data not yet published",
+										})}
+									</Button>
 								)}
-							</ClientOnly>
-							<p className="text-xs text-gray-600 mt-1">{choropleth.caption}</p>
-						</div>
-						<aside className="w-72 space-y-4">
-							<GeoLegend
-								legend={mapState.legend}
-								title={MEASURE_LABELS[measure] ?? measure}
-								noRecordsAreas={noRecordsAreas}
-							/>
-							{choropleth.unattributed.records > 0 && (
-								<section className="text-sm">
-									<h3 className="font-semibold">
-										{ctx.t({
-											code: "geoportal.unattributed",
-											msg: "Not placed on the map",
-										})}
-									</h3>
-									<p>
-										{choropleth.unattributed.records}{" "}
-										{ctx.t({
-											code: "geoportal.unattributed.note",
-											msg: "shown here, never redistributed:",
-										})}
-									</p>
-									<ul>
-										{Object.entries(choropleth.unattributed.reasons).map(
-											([reason, n]) => (
-												<li key={reason}>
-													{UNPLACED_REASONS[reason] ??
-														reason.replaceAll("_", " ")}
-													: {n}
-												</li>
-											),
-										)}
-									</ul>
-								</section>
-							)}
-							{dossier && (
-								<section aria-live="polite" className="text-sm border-t pt-2">
-									<h3 className="font-semibold">{dossier.division.name}</h3>
-									<p>
-										{dossier.recurrence.recordCount.toLocaleString()} disaster impacts
-										{dossier.recurrence.firstYear
-											? `, ${dossier.recurrence.firstYear} to ${dossier.recurrence.lastYear}`
-											: ""}
-									</p>
-									{dossier.recurrence.periodsWithNoReporting.length > 0 && (
-										<p>
-											No reporting:{" "}
-											{dossier.recurrence.periodsWithNoReporting.join(", ")}
-										</p>
-									)}
-									<ul>
-										{Object.entries(dossier.cumulative).map(([m, c]) => (
-											<li key={m}>
-												{MEASURE_LABELS[m] ?? m}:{" "}
-												{c.value === null
-													? c.value_state.replaceAll("_", " ")
-													: c.value.toLocaleString()}
-											</li>
-										))}
-									</ul>
-									<p className="text-xs text-gray-600">
-										{dossier.recurrence.note}
-									</p>
-								</section>
-							)}
-						</aside>
-					</div>
+							</div>
+						)}
 
-					<GeoTable
-						id={tableId}
-						label={`${MEASURE_LABELS[measure] ?? measure}: table`}
-						rows={rows}
-						selectedId={selectedId}
-						onSelect={setSelectedId}
-					/>
-				</>
-			)}
+						<div className="grid gap-3 my-2 lg:grid-cols-[minmax(0,1fr)_380px]">
+							<div className="relative min-w-0">
+								<ClientOnly
+									fallback={
+										<div className="h-[60vh] lg:h-[calc(100vh-19rem)] min-h-[420px] bg-gray-50" />
+									}
+								>
+									{() => (
+										<div className="h-[60vh] lg:h-[calc(100vh-19rem)] min-h-[420px]">
+											<Suspense
+												fallback={<div className="h-full bg-gray-50" />}
+											>
+												<GeoMap
+													boundaries={data.boundaries ?? { features: [] }}
+													areas={mapState.areas}
+													selectedId={shownId}
+													onSelect={selectFromMap}
+													onHover={setHoverId}
+													focusId={focusId}
+													height="100%"
+													label={`${measureTitle}: ${t({ code: "geoportal.map", msg: "map" })}`}
+													describedBy={tableId}
+												/>
+											</Suspense>
+										</div>
+									)}
+								</ClientOnly>
+								<div className="hidden md:block absolute left-2 bottom-2 z-10">
+									<GeoLegend
+										legend={mapState.legend}
+										title={measureTitle}
+										subtitle={`${t({ code: "geoportal.dossier.level", msg: "Admin level {n}" }, { n: data.level })} · ${periodText(query, t)}`}
+										noRecordsAreas={noRecordsAreas}
+										provenance={{
+											boundaryVersion: choropleth.meta.boundaryVersion,
+											refreshedAt: choropleth.meta.readModelRefreshedAt,
+										}}
+										t={t}
+									/>
+								</div>
+								{readoutId && (
+									<div className="hidden md:block absolute right-2 top-2 z-10 pointer-events-none">
+										<GeoReadout
+											name={nameOf.get(readoutId) ?? ""}
+											area={readoutArea}
+											unit={t(info.unit)}
+											reportedNoun={reportedNoun}
+											selected={readoutId === shownId && hoverId === null}
+											t={t}
+										/>
+									</div>
+								)}
+							</div>
+
+							<aside className="min-w-0 lg:h-[calc(100vh-19rem)] lg:min-h-[420px] lg:overflow-auto border rounded p-2">
+								<Tabs defaultSelectedKey="place">
+									<TabList
+										aria-label={t({ code: "geoportal.panel", msg: "Panel" })}
+										className="flex gap-1 border-b mb-2"
+									>
+										<Tab
+											id="place"
+											className="px-3 py-1 cursor-pointer data-[selected]:border-b-2 data-[selected]:border-blue-700 data-[selected]:font-semibold data-[focus-visible]:outline data-[focus-visible]:outline-2"
+										>
+											{t({ code: "geoportal.tab.place", msg: "Place" })}
+										</Tab>
+										<Tab
+											id="areas"
+											className="px-3 py-1 cursor-pointer data-[selected]:border-b-2 data-[selected]:border-blue-700 data-[selected]:font-semibold data-[focus-visible]:outline data-[focus-visible]:outline-2"
+										>
+											{t({ code: "geoportal.tab.areas", msg: "Areas" })}
+										</Tab>
+										<Tab
+											id="legend"
+											className="md:hidden px-3 py-1 cursor-pointer data-[selected]:border-b-2 data-[selected]:border-blue-700 data-[selected]:font-semibold"
+										>
+											{t({ code: "geoportal.tab.legend", msg: "Legend" })}
+										</Tab>
+									</TabList>
+									<TabPanel
+										id="place"
+										shouldForceMount
+										className="data-[inert]:hidden"
+									>
+										{dossier ? (
+											<GeoDossier
+												data={dossier}
+												hazardTypeNames={hazardTypeNames}
+												autoNote={
+													autoChosen
+														? t({
+																code: "geoportal.dossier.auto",
+																msg: "Showing the area with the highest value. Select another area on the map or in the list.",
+															})
+														: null
+												}
+												t={t}
+											/>
+										) : (
+											<p className="text-sm text-gray-700">
+												{shownId
+													? t({
+															code: "geoportal.dossier.loading",
+															msg: "Loading place details",
+														})
+													: t({
+															code: "geoportal.dossier.prompt",
+															msg: "Select an area on the map or in the Areas list.",
+														})}
+											</p>
+										)}
+									</TabPanel>
+									<TabPanel
+										id="areas"
+										shouldForceMount
+										className="data-[inert]:hidden"
+									>
+										<GeoTable
+											id={tableId}
+											label={`${measureTitle}: ${t({ code: "geoportal.table", msg: "table" })}`}
+											rows={rows}
+											selectedId={shownId}
+											onSelect={selectFromList}
+											unit={t(info.unit)}
+											t={t}
+										/>
+										<p className="text-xs text-gray-600 mt-2">
+											{t({
+												code: "geoportal.table.no_total",
+												msg: "Area values are not added up: one disaster impact or event can count in more than one area.",
+											})}
+										</p>
+									</TabPanel>
+									<TabPanel id="legend" className="md:hidden">
+										<GeoLegend
+											legend={mapState.legend}
+											title={measureTitle}
+											subtitle={periodText(query, t)}
+											noRecordsAreas={noRecordsAreas}
+											provenance={{
+												boundaryVersion: choropleth.meta.boundaryVersion,
+												refreshedAt: choropleth.meta.readModelRefreshedAt,
+											}}
+											t={t}
+										/>
+									</TabPanel>
+								</Tabs>
+							</aside>
+						</div>
+
+						<p className="text-xs text-gray-600">{choropleth.caption}</p>
+						{choropleth.unattributed.records > 0 && (
+							<section className="text-sm mt-2">
+								<h2 className="font-semibold">
+									{t({
+										code: "geoportal.unattributed",
+										msg: "Not placed on the map",
+									})}
+								</h2>
+								<p>
+									{t(
+										{
+											code: "geoportal.unattributed.count",
+											msg: "{n} {noun} are listed here and never shared out to areas:",
+										},
+										{
+											n: choropleth.unattributed.records.toLocaleString(),
+											noun: reportedNoun,
+										},
+									)}
+								</p>
+								<ul className="list-disc ml-5">
+									{Object.entries(choropleth.unattributed.reasons).map(
+										([reason, n]) => (
+											<li key={reason}>
+												{UNPLACED_REASONS[reason]
+													? t(UNPLACED_REASONS[reason])
+													: reason.replaceAll("_", " ")}
+												: {Number(n).toLocaleString()}
+											</li>
+										),
+									)}
+								</ul>
+							</section>
+						)}
+					</>
+				)}
+			</div>
 		</MainContainer>
 	);
 }

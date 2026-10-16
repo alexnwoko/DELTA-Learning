@@ -4,12 +4,11 @@
 
 import type { GeoCell } from "~/backend.server/models/geo/queries";
 import type { MapCell, MeasureFamily } from "~/utils/mapState";
+import { geoMeasureInfo } from "~/utils/geoMeasures";
 
 /** Measure family for the ramp (V-2: one ramp per family). */
 export function measureFamily(measure: string): MeasureFamily {
-	if (measure.startsWith("houses_")) return "housing";
-	if (measure === "records" || measure === "events") return "events";
-	return "people";
+	return geoMeasureInfo(measure).family;
 }
 
 /**
@@ -35,3 +34,11 @@ export function toMapCell(cell: GeoCell): MapCell {
 		geoPrecision: precision || null,
 	};
 }
+
+/** Areas with no record in scope: not a value state, so drawn on its own. */
+export const NO_RECORDS_STYLE = {
+	fill: "#f9fafb",
+	stroke: "#d1d5db",
+	strokeWidth: 0.8,
+	label: "Nothing in scope",
+} as const;
