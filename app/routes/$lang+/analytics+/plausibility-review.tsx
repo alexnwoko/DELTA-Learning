@@ -407,7 +407,7 @@ function FilterSelect(props: {
 					{(o) => (
 						<ListBoxItem
 							id={o.id}
-							className="cursor-pointer px-2 py-1 data-[focused]:bg-brand-surface-subtle data-[selected]:font-semibold"
+							className="cursor-pointer px-2 py-1 data-[focused]:bg-brand-surface-subtle data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:-outline-offset-2 data-[focus-visible]:outline-brand-focus-ring data-[selected]:font-semibold"
 						>
 							{o.label}
 						</ListBoxItem>
