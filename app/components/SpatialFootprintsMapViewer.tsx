@@ -1,4 +1,11 @@
 import React from "react";
+import {
+	absoluteAssetUrl,
+	LEAFLET_CSS,
+	LEAFLET_JS,
+	MAP_MARKER_ICON,
+	MAP_MARKER_ICON_ANCHOR,
+} from "~/utils/leafletAssets";
 
 type SpatialFootprintsMapViewerProps = {
 	dataSource: { id: string }[]; // Define a stricter type for dataSource
@@ -6,8 +13,6 @@ type SpatialFootprintsMapViewerProps = {
 	ctryIso3?: string;
 };
 
-const glbMapperJS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-const glbMapperCSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
 const glbColors = {
 	polygon: "#0074D9",
 	line: "#FF851B",
@@ -17,9 +22,9 @@ const glbColors = {
 	geographic_level: "#fc9003",
 };
 const glbMarkerIcon = {
-	iconUrl: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
+	iconUrl: MAP_MARKER_ICON,
 	iconSize: [20, 20],
-	iconAnchor: [5, 20],
+	iconAnchor: MAP_MARKER_ICON_ANCHOR,
 	popupAnchor: [0, -20],
 	shadowUrl: null,
 	className: "custom-leaflet-marker",
@@ -115,8 +120,8 @@ const SpatialFootprintsMapViewer: React.FC<SpatialFootprintsMapViewerProps> = ({
       <html lang="en">
       <head>
         <title>Map preview</title>
-        <link rel="stylesheet" href="${glbMapperCSS}" />
-        <script src="${glbMapperJS}"></script>
+        <link rel="stylesheet" href="${absoluteAssetUrl(LEAFLET_CSS)}" />
+        <script src="${absoluteAssetUrl(LEAFLET_JS)}"></script>
         <style>
             body { font-family: Arial, sans-serif; }
 
@@ -276,7 +281,7 @@ const SpatialFootprintsMapViewer: React.FC<SpatialFootprintsMapViewerProps> = ({
                     },
                     pointToLayer: function (feature, latlng) {
                         const marker = L.marker(latlng, {
-                            icon: L.icon(${JSON.stringify(glbMarkerIcon)})
+                            icon: L.icon(${JSON.stringify({ ...glbMarkerIcon, iconUrl: absoluteAssetUrl(MAP_MARKER_ICON) })})
                         });
 
                         // Bind popup only for markers with a description

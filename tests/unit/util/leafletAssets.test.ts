@@ -14,13 +14,14 @@ import { previewMap } from "~/components/ContentRepeater/controls/mapper";
 const ROOT = process.cwd();
 const THIRD_PARTY = /unpkg\.com|cdnjs\.cloudflare\.com|maps\.google\.com/;
 
-// Leaflet maps owned by the frontend lane. MapChart.tsx (Analytics) and
-// SpatialFootprintsMapViewer.tsx (ownership pending) switch separately.
+// Leaflet maps whose asset loading the frontend lane owns. MapChart.tsx
+// (Analytics) is checked by its own tests.
 const OWNED_MAP_FILES = [
 	"app/components/SpatialFootprintMapViewer.tsx",
 	"app/components/ContentRepeater/index.tsx",
 	"app/components/ContentRepeater/controls/mapper/index.tsx",
 	"app/frontend/disaster-event/DisasterEventReviewStep.tsx",
+	"app/components/SpatialFootprintsMapViewer.tsx",
 ];
 
 afterEach(() => {
