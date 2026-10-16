@@ -1,0 +1,44 @@
+name: Mozambique Tier A data pilot
+
+# Runs on GitHub's runner so no raw data lands on a laptop. Raw inputs stay
+# in the runner's temporary disk and are discarded; only small per-district
+# outputs and the manifest are committed back to this branch.
+on:
+  push:
+    branches: [data/pilot-moz-tier-a]
+    paths: [pipeline/**, .github/workflows/moz-tier-a.yml]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: moz-tier-a
+  cancel-in-progress: false
+
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install open-source tools
+        run: pip install -r pipeline/requirements.txt
+      - name: Run the pilot
+        env:
+          RAW_DIR: /tmp/raw
+          OUT_DIR: outputs/moz
+        run: python pipeline/moz_tier_a.py
+      - name: Disk used by raw inputs (discarded)
+        if: always()
+        run: du -sh /tmp/raw || true
+      - name: Commit outputs
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add outputs
+          git diff --cached --quiet || git commit -m "Pilot outputs: Mozambique Tier A ($(date -u +%Y-%m-%dT%H:%MZ))"
+          git push
