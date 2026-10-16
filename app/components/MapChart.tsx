@@ -657,7 +657,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 									/>
 									{ctx.t({
 										code: "analysis.map_flagged_marker",
-										msg: "Includes records flagged for review",
+										msg: "Includes disaster impacts flagged for review",
 									})}
 								</li>
 							)}
@@ -752,8 +752,8 @@ function popupHtml(
 				ctx.t(
 					{
 						code: "analysis.map_flagged_records",
-						desc: "Map tooltip caveat. {n} is the number of records flagged for review.",
-						msg: "Caveat: includes {n} record(s) flagged for review",
+						desc: "Map tooltip caveat. {n} is the number of disaster impacts flagged for review.",
+						msg: "Caveat: includes {n} disaster impact(s) flagged for review",
 					},
 					{ n: area.quality.plausibility.flaggedRecords },
 				),

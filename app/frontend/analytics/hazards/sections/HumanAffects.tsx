@@ -142,7 +142,7 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 				{ctx.t(
 					{
 						code: "analysis.records_flagged_for_review",
-						msg: "({n} record(s) flagged for review)",
+						msg: "({n} disaster impact(s) flagged for review)",
 					},
 					{ n },
 				)}

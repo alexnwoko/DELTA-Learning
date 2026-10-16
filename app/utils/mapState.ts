@@ -170,7 +170,7 @@ export const STATE_ENCODING: Record<
 export const PLAUSIBILITY_MARKER = {
 	stroke: "#b45309",
 	strokeWidth: 2.5,
-	label: "Includes records flagged for review",
+	label: "Includes disaster impacts flagged for review",
 } as const;
 
 // ---------------------------------------------------------------------------

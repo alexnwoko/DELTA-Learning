@@ -175,7 +175,7 @@ export default function PlausibilityReviewPage() {
 				<p className="mb-4 max-w-3xl">
 					{ctx.t({
 						code: "plausibility.intro",
-						msg: "These records carry source values that look implausible, for example the same large number in two unrelated fields. The values have not been changed. Figures that include them are marked 'flagged for review'. Check each record against its source and correct it through the record screens where needed.",
+						msg: "These disaster impacts carry source values that look implausible, for example the same large number in two unrelated fields. The values have not been changed. Figures that include them are marked 'flagged for review'. Check each record against its source and correct it through the disaster impact screens where needed.",
 					})}
 				</p>
 
