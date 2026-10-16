@@ -30,7 +30,12 @@ import {
 } from "~/utils/mapState";
 import { NO_RECORDS_STYLE } from "~/frontend/geoportal/geoCells";
 import { dataTokens } from "~/utils/designTokens.generated";
-import type { BasemapConfig } from "~/utils/basemap";
+import {
+	printableBasemap,
+	type BasemapLayer,
+	type BasemapLayerId,
+} from "~/utils/basemap";
+import { transformExtent } from "ol/proj";
 
 export { NO_RECORDS_STYLE };
 
@@ -50,11 +55,12 @@ export interface GeoMapProps {
 	/** Map height; the page sets it to fill the viewport. */
 	height?: string;
 	/**
-	 * Self-hosted basemap (I-3, TR-166). Drawn only when `basemapOn`; off by
-	 * default. Null when the server has no basemap installed.
+	 * Basemap layers the reader may pick (I-3 switcher). None is drawn until
+	 * the reader picks one (TR-166).
 	 */
-	basemap?: BasemapConfig;
-	basemapOn?: boolean;
+	basemaps?: readonly BasemapLayer[];
+	/** The layer the reader picked; null draws no basemap. */
+	basemapId?: BasemapLayerId | null;
 	/** Reports "unavailable" when basemap tiles fail to load (NFR-042). */
 	onBasemapStatus?: (status: "ok" | "unavailable") => void;
 	/** Each change of this number fits the map back to all areas. */
@@ -162,8 +168,8 @@ export function GeoMap({
 	onHover,
 	focusId,
 	height = "480px",
-	basemap = null,
-	basemapOn = false,
+	basemaps = [],
+	basemapId = null,
 	onBasemapStatus,
 	homeSignal = 0,
 	label,
@@ -178,42 +184,54 @@ export function GeoMap({
 	onHoverRef.current = onHover;
 	const onStatusRef = useRef(onBasemapStatus);
 	onStatusRef.current = onBasemapStatus;
-	const baseRef = useRef<TileLayer<XYZ> | null>(null);
+	const baseRef = useRef(new Map<BasemapLayerId, TileLayer<XYZ>>());
+	const shownRef = useRef<BasemapLayerId | null>(null);
 
 	const byId = useMemo(() => new Map(areas.map((a) => [a.areaId, a])), [areas]);
+
+	/** Reports "unavailable" when a basemap's tiles fail before any loads. */
+	function watchTiles(source: XYZ) {
+		let loaded = 0;
+		source.on("tileloadend", () => {
+			loaded++;
+			onStatusRef.current?.("ok");
+		});
+		source.on("tileloaderror", () => {
+			if (loaded === 0) onStatusRef.current?.("unavailable");
+		});
+	}
 
 	useEffect(() => {
 		if (!target.current) return;
 		const layer = new VectorLayer({ source: new VectorSource() });
-		const base = basemap
-			? new TileLayer({
-					source: new XYZ({
-						url: basemap.url,
-						attributions: basemap.attribution,
+		const bases = new Map<BasemapLayerId, TileLayer<XYZ>>();
+		for (const b of basemaps) {
+			// Google's URL needs a session; its source is set when first picked.
+			const source = b.google
+				? null
+				: new XYZ({
+						url: b.url,
+						attributions: b.attribution,
 						attributionsCollapsible: false,
-						minZoom: basemap.minZoom,
-						maxZoom: basemap.maxZoom,
-						crossOrigin: "anonymous",
-					}),
-					visible: false,
-					zIndex: 0,
-				})
-			: null;
-		if (base) {
-			let loaded = 0;
-			const source = base.getSource();
-			source?.on("tileloadend", () => {
-				loaded++;
-				onStatusRef.current?.("ok");
+						minZoom: b.minZoom,
+						maxZoom: b.maxZoom,
+						tileSize: b.tileSize,
+						// Self-hosted tiles stay CORS-clean for export; third-party
+						// tiles never print or export.
+						crossOrigin: b.thirdParty ? undefined : "anonymous",
+					});
+			const tl = new TileLayer<XYZ>({
+				source: source ?? undefined,
+				visible: false,
+				zIndex: 0,
 			});
-			source?.on("tileloaderror", () => {
-				if (loaded === 0) onStatusRef.current?.("unavailable");
-			});
+			if (source) watchTiles(source);
+			bases.set(b.id, tl);
 		}
 		layer.setZIndex(1);
 		const map = new OlMap({
 			target: target.current,
-			layers: base ? [base, layer] : [layer],
+			layers: [...bases.values(), layer],
 			controls: defaultControls().extend([new ScaleLine({ units: "metric" })]),
 			// The wheel scrolls the page; Ctrl or Cmd plus the wheel zooms the map.
 			interactions: defaultInteractions({ mouseWheelZoom: false }).extend([
@@ -242,27 +260,96 @@ export function GeoMap({
 			onHoverRef.current?.(null);
 		});
 		// Paper is another size: redraw the canvas before and after printing.
-		const resize = () => map.updateSize();
-		window.addEventListener("beforeprint", resize);
-		window.addEventListener("afterprint", resize);
+		// Third-party tiles never print: the first self-hosted layer stands
+		// in while printing, and the reader's choice comes back after.
+		const beforePrint = () => {
+			const onPaper = printableBasemap(basemaps, shownRef.current);
+			for (const [id, tl] of bases) tl.setVisible(id === onPaper);
+			map.updateSize();
+		};
+		const afterPrint = () => {
+			for (const [id, tl] of bases) tl.setVisible(id === shownRef.current);
+			map.updateSize();
+		};
+		window.addEventListener("beforeprint", beforePrint);
+		window.addEventListener("afterprint", afterPrint);
 		mapRef.current = map;
 		layerRef.current = layer;
-		baseRef.current = base;
+		baseRef.current = bases;
 		return () => {
-			window.removeEventListener("beforeprint", resize);
-			window.removeEventListener("afterprint", resize);
+			window.removeEventListener("beforeprint", beforePrint);
+			window.removeEventListener("afterprint", afterPrint);
 			map.setTarget(undefined);
 			mapRef.current = null;
 			layerRef.current = null;
-			baseRef.current = null;
+			baseRef.current = new Map();
 		};
 		// The map is built once; the basemap URL comes from server config.
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	useEffect(() => {
-		baseRef.current?.setVisible(basemapOn);
-	}, [basemapOn]);
+		shownRef.current = basemapId;
+		for (const [id, tl] of baseRef.current) tl.setVisible(id === basemapId);
+		const picked = basemaps.find((b) => b.id === basemapId);
+		const tl = basemapId ? baseRef.current.get(basemapId) : undefined;
+		const map = mapRef.current;
+		if (!picked?.google || !tl || !map || tl.getSource()) return;
+		// Google: one session per page view, created only when the reader
+		// picks Google; the copyright line follows the view (Map Tiles API).
+		const g = picked.google;
+		let live = true;
+		fetch(g.createSessionUrl, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				mapType: "roadmap",
+				language: g.language,
+				region: g.region,
+			}),
+		})
+			.then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+			.then((res: { session: string }) => {
+				if (!live) return;
+				const source = new XYZ({
+					url: picked.url.replace("{session}", encodeURIComponent(res.session)),
+					attributions: picked.attribution,
+					attributionsCollapsible: false,
+					minZoom: picked.minZoom,
+					maxZoom: picked.maxZoom,
+					tileSize: picked.tileSize,
+				});
+				watchTiles(source);
+				tl.setSource(source);
+				const copyright = () => {
+					const [w, s, e, n] = transformExtent(
+						map.getView().calculateExtent(map.getSize()),
+						"EPSG:3857",
+						"EPSG:4326",
+					);
+					const z = Math.round(map.getView().getZoom() ?? 0);
+					const q = `&session=${encodeURIComponent(res.session)}&zoom=${z}&north=${n}&south=${s}&east=${e}&west=${w}`;
+					fetch(g.viewportUrl + q)
+						.then((r) => (r.ok ? r.json() : null))
+						.then((v: { copyright?: string } | null) =>
+							source.setAttributions(
+								v?.copyright
+									? `${picked.attribution} ${v.copyright}`
+									: picked.attribution,
+							),
+						)
+						.catch(() => {});
+				};
+				map.on("moveend", copyright);
+				copyright();
+			})
+			.catch(() => live && onStatusRef.current?.("unavailable"));
+		return () => {
+			live = false;
+		};
+		// basemaps come from server config and do not change on the page.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [basemapId]);
 
 	useEffect(() => {
 		const layer = layerRef.current;

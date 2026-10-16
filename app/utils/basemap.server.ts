@@ -8,6 +8,9 @@ import { promises as fs } from "node:fs";
 
 import {
 	BASEMAP_ATTRIBUTION,
+	THIRD_PARTY_TILE_HOSTS,
+	isAllowedThirdPartyUrl,
+	type BasemapLayer,
 	BASEMAP_DEFAULT_TILE_PATH,
 	BASEMAP_MAX_ZOOM,
 	BASEMAP_MIN_ZOOM,
@@ -92,4 +95,120 @@ export function basemapConfig(origin: string | undefined): BasemapConfig {
 		minZoom: BASEMAP_MIN_ZOOM,
 		maxZoom: BASEMAP_MAX_ZOOM,
 	};
+}
+
+/** Satellite tile directory (ESA WorldCover 2021 composite), or null. */
+export function satelliteTileDir(): string | null {
+	const dir = process.env.BASEMAP_SATELLITE_TILE_DIR?.trim();
+	return dir ? path.resolve(dir) : null;
+}
+
+const SATELLITE_FORMAT = () =>
+	(["png", "jpg", "webp"] as const).find(
+		(f) => f === process.env.BASEMAP_SATELLITE_FORMAT?.trim(),
+	) ?? "jpg";
+
+const ESA_ATTRIBUTION =
+	'&copy; <a href="https://esa-worldcover.org/">ESA WorldCover project</a> 2021 / Contains modified Copernicus Sentinel data (2021) processed by ESA WorldCover consortium';
+
+const MAPBOX_ATTRIBUTION =
+	'&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> <a href="https://apps.mapbox.com/feedback/">Improve this map</a>';
+
+/**
+ * The basemap layers this deployment may offer, in switcher order. The
+ * self-hosted street map comes first. Google and Mapbox appear only when
+ * the operator configured their key (and, for Mapbox, the self-hosted logo
+ * its terms require); their URLs are built here on the allow-listed host,
+ * never read from configuration.
+ */
+export function basemapLayers(
+	origin: string | undefined,
+	lang = "en",
+): BasemapLayer[] {
+	const layers: BasemapLayer[] = [];
+	const street = basemapConfig(origin);
+	const common = { minZoom: BASEMAP_MIN_ZOOM, maxZoom: BASEMAP_MAX_ZOOM };
+	if (street) {
+		layers.push({
+			id: "street",
+			label: { code: "geoportal.basemap.street", msg: "Street map" },
+			url: street.url,
+			attribution: street.attribution,
+			...common,
+			tileSize: 256,
+			thirdParty: false,
+			note: null,
+			logo: null,
+			google: null,
+		});
+	}
+	if (satelliteTileDir()) {
+		layers.push({
+			id: "satellite",
+			label: {
+				code: "geoportal.basemap.satellite",
+				msg: "Satellite (ESA 2021)",
+			},
+			url: `/tiles/satellite/{z}/{x}/{y}.${SATELLITE_FORMAT()}`,
+			attribution: ESA_ATTRIBUTION,
+			...common,
+			tileSize: 256,
+			thirdParty: false,
+			note: null,
+			logo: null,
+			google: null,
+		});
+	}
+	const googleKey = process.env.BASEMAP_GOOGLE_KEY?.trim();
+	const region = process.env.BASEMAP_GOOGLE_REGION?.trim().toUpperCase();
+	if (googleKey && region && /^[A-Z]{2}$/.test(region)) {
+		const host = THIRD_PARTY_TILE_HOSTS.google;
+		const key = encodeURIComponent(googleKey);
+		const url = `https://${host}/v1/2dtiles/{z}/{x}/{y}?session={session}&key=${key}`;
+		if (isAllowedThirdPartyUrl("google", url)) {
+			layers.push({
+				id: "google",
+				label: { code: "geoportal.basemap.google", msg: "Google street map" },
+				url,
+				attribution: "Google",
+				...common,
+				tileSize: 256,
+				thirdParty: true,
+				note: {
+					code: "geoportal.basemap.note_google",
+					msg: "Map views are sent to Google",
+				},
+				logo: null,
+				google: {
+					createSessionUrl: `https://${host}/v1/createSession?key=${key}`,
+					viewportUrl: `https://${host}/tile/v1/viewport?key=${key}`,
+					region,
+					language: lang,
+				},
+			});
+		}
+	}
+	const mapboxToken = process.env.BASEMAP_MAPBOX_TOKEN?.trim();
+	const mapboxLogo = process.env.BASEMAP_MAPBOX_LOGO?.trim();
+	if (mapboxToken && mapboxLogo && isSelfHostedTileUrl(mapboxLogo, origin)) {
+		const url = `https://${THIRD_PARTY_TILE_HOSTS.mapbox}/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}?access_token=${encodeURIComponent(mapboxToken)}`;
+		if (isAllowedThirdPartyUrl("mapbox", url)) {
+			layers.push({
+				id: "mapbox",
+				label: { code: "geoportal.basemap.mapbox", msg: "Mapbox street map" },
+				url,
+				attribution: MAPBOX_ATTRIBUTION,
+				...common,
+				tileSize: 256,
+				thirdParty: true,
+				note: {
+					code: "geoportal.basemap.note_mapbox",
+					msg: "Map views are sent to Mapbox",
+				},
+				logo: mapboxLogo,
+				google: null,
+			});
+		}
+	}
+	return layers;
 }

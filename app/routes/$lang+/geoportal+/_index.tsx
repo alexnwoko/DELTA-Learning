@@ -18,7 +18,11 @@ import {
 	Heading,
 	Modal,
 	ModalOverlay,
-	Switch,
+	Select,
+	SelectValue,
+	Popover,
+	ListBox,
+	ListBoxItem,
 	Tab,
 	TabList,
 	TabPanel,
@@ -63,7 +67,8 @@ import { resolveMapState } from "~/utils/mapState";
 import { GEO_DIMENSION_LABELS, geoMeasureInfo } from "~/utils/geoMeasures";
 import { htmlTitle } from "~/utils/htmlmeta";
 import { PrintButton } from "~/frontend/print/PrintButton";
-import { basemapConfig } from "~/utils/basemap.server";
+import { basemapLayers } from "~/utils/basemap.server";
+import { selectableBasemaps, type BasemapLayerId } from "~/utils/basemap";
 
 // OpenLayers loads with the map, not with the page (NFR-130).
 const GeoMap = lazy(() =>
@@ -99,7 +104,11 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 		url.searchParams.set("measure", "records");
 	}
 	const canReview = await hasPermission(args.request, "ValidateData");
-	const basemap = basemapConfig(url.origin);
+	// Signed-in page: every configured layer (Alex: the reader chooses).
+	const basemaps = selectableBasemaps(
+		basemapLayers(url.origin, lang),
+		"signed-in",
+	);
 	const ctx = {
 		countryAccountsId,
 		lang,
@@ -135,7 +144,7 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 				features: { properties: { divisionId: string; name: string } }[];
 			},
 			hazardTree: tree as HazardTree | null,
-			basemap,
+			basemaps,
 			refusal: null,
 		};
 	} catch (err) {
@@ -148,7 +157,7 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 				choropleth: null,
 				boundaries: null,
 				hazardTree: null,
-				basemap,
+				basemaps,
 				refusal: refusalBody(err.refusal, err.meta),
 			};
 		}
@@ -231,7 +240,7 @@ export default function GeoportalPage() {
 	const [dossier, setDossier] = useState<DossierData | null>(null);
 	const [copied, setCopied] = useState<string | null>(null);
 	// Basemap off by default (TR-166); the switch is the reader's choice.
-	const [basemapOn, setBasemapOn] = useState(false);
+	const [basemapId, setBasemapId] = useState<BasemapLayerId | null>(null);
 	const [basemapStatus, setBasemapStatus] = useState<"ok" | "unavailable">(
 		"ok",
 	);
@@ -544,8 +553,8 @@ export default function GeoportalPage() {
 													onSelect={selectFromMap}
 													onHover={setHoverId}
 													focusId={focusId}
-													basemap={data.basemap}
-													basemapOn={basemapOn}
+													basemaps={data.basemaps}
+													basemapId={basemapId}
 													onBasemapStatus={setBasemapStatus}
 													homeSignal={homeSignal}
 													height="100%"
@@ -566,41 +575,94 @@ export default function GeoportalPage() {
 									>
 										{t({ code: "geoportal.map.home", msg: "Full extent" })}
 									</Button>
-									{data.basemap && (
-										<Switch
-											isSelected={basemapOn}
-											onChange={setBasemapOn}
-											className="flex items-center gap-2 text-xs bg-brand-surface border border-brand-border-control rounded px-2 py-1 shadow-sm data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
+									{data.basemaps.length > 0 && (
+										<Select
+											aria-label={t({
+												code: "geoportal.map.basemap",
+												msg: "Basemap",
+											})}
+											selectedKey={basemapId ?? "none"}
+											onSelectionChange={(k) => {
+												setBasemapStatus("ok");
+												setBasemapId(
+													k === "none" ? null : (k as BasemapLayerId),
+												);
+											}}
+											className="flex flex-col items-end gap-1"
 										>
-											{({ isSelected }) => (
-												<>
-													<span
-														aria-hidden="true"
-														className={`inline-block w-7 h-4 rounded-full relative ${isSelected ? "bg-brand-interactive" : "bg-brand-border-control"}`}
+											<Button className="flex items-center gap-2 text-xs bg-brand-surface border border-brand-border-control rounded px-2 py-1 shadow-sm data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring">
+												{t({ code: "geoportal.map.basemap", msg: "Basemap" })}:{" "}
+												<SelectValue />
+											</Button>
+											<Popover className="bg-brand-surface border border-brand-border-control rounded shadow text-xs">
+												<ListBox className="max-h-72 overflow-auto">
+													<ListBoxItem
+														id="none"
+														textValue={t({
+															code: "geoportal.basemap.none",
+															msg: "None",
+														})}
+														className="px-2 py-1 cursor-pointer data-[focused]:bg-brand-surface-subtle data-[selected]:font-semibold"
 													>
-														<span
-															className={`absolute top-0.5 w-3 h-3 rounded-full bg-brand-surface transition-all ${isSelected ? "left-3.5" : "left-0.5"}`}
-														/>
-													</span>
-													{t({ code: "geoportal.map.basemap", msg: "Basemap" })}
-												</>
-											)}
-										</Switch>
+														{t({ code: "geoportal.basemap.none", msg: "None" })}
+													</ListBoxItem>
+													{data.basemaps.map((b) => (
+														<ListBoxItem
+															key={b.id}
+															id={b.id}
+															textValue={t(b.label)}
+															className="px-2 py-1 cursor-pointer data-[focused]:bg-brand-surface-subtle data-[selected]:font-semibold"
+														>
+															{t(b.label)}
+															{b.note && (
+																<span className="block text-brand-text-muted">
+																	{t(b.note)}
+																</span>
+															)}
+														</ListBoxItem>
+													))}
+												</ListBox>
+											</Popover>
+										</Select>
 									)}
-									{data.basemap &&
-										basemapOn &&
-										basemapStatus === "unavailable" && (
-											<p
-												role="status"
-												className="text-xs bg-brand-warning-background border border-brand-warning-border rounded px-2 py-1"
-											>
-												{t({
-													code: "geoportal.map.basemap_unavailable",
-													msg: "Basemap unavailable; boundaries and figures are still shown.",
-												})}
+									{(() => {
+										const picked = data.basemaps.find(
+											(b) => b.id === basemapId,
+										);
+										return picked?.note ? (
+											<p className="text-xs bg-brand-surface border border-brand-border-control rounded px-2 py-1">
+												{t(picked.note)}
 											</p>
-										)}
+										) : null;
+									})()}
+									{basemapId !== null && basemapStatus === "unavailable" && (
+										<p
+											role="status"
+											className="text-xs bg-brand-warning-background border border-brand-warning-border rounded px-2 py-1"
+										>
+											{t({
+												code: "geoportal.map.basemap_unavailable",
+												msg: "Basemap unavailable; boundaries and figures are still shown.",
+											})}
+										</p>
+									)}
 								</div>
+								{(() => {
+									const logo = data.basemaps.find(
+										(b) => b.id === basemapId,
+									)?.logo;
+									return logo ? (
+										<img
+											src={logo}
+											alt={t({
+												code: "geoportal.basemap.logo",
+												msg: "Map provider logo",
+											})}
+											className="absolute left-10 top-2 z-10 h-5"
+											data-print="hide"
+										/>
+									) : null;
+								})()}
 								<div className="hidden md:block absolute left-2 bottom-9 z-10">
 									<GeoLegend
 										legend={mapState.legend}
