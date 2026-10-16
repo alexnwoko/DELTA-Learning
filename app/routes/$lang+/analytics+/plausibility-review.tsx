@@ -89,6 +89,16 @@ export default function PlausibilityReviewPage() {
 					code: "plausibility.measure.displaced",
 					msg: "Displaced",
 				});
+			case "evacuated":
+				return ctx.t({
+					code: "plausibility.measure.evacuated",
+					msg: "Evacuated",
+				});
+			case "relocated":
+				return ctx.t({
+					code: "plausibility.measure.relocated",
+					msg: "Relocated",
+				});
 			case "affected_direct":
 				return ctx.t({
 					code: "plausibility.measure.affected_direct",

@@ -82,7 +82,7 @@ const SpatialFootprintMapViewer: React.FC<SpatialFootprintMapViewerProps> = ({
               <h4>${filterCaption}</h4>
               <div class="legend-item">
                 <input type="checkbox" id="toggleDisaster" checked />
-                <label for="toggleDisaster">Disaster Record</label>
+                <label for="toggleDisaster">Disaster impact</label>
               </div>
               <div class="legend-item">
                 <input type="checkbox" id="toggleDamages" checked />

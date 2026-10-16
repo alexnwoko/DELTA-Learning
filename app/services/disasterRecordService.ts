@@ -109,7 +109,7 @@ export async function updateDisasterRecordStatusService({
 				ok: false,
 				message: ctx.t({
 					code: "common_err_msg.record_requires_linked_event",
-					msg: "This is the only published or validated disaster record linked to a validated or published disaster event. It cannot be returned for edit.",
+					msg: "This is the only published or validated disaster impact linked to a validated or published disaster event. It cannot be returned for edit.",
 				}),
 			};
 		}

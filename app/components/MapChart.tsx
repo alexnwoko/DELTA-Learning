@@ -7,6 +7,7 @@ import {
 	useCallback,
 } from "react";
 import type { ValueState } from "~/utils/valueState";
+import { BASEMAP_ATTRIBUTION, isSelfHostedTileUrl } from "~/utils/basemap";
 import { LEAFLET_CSS, LEAFLET_JS } from "~/utils/leafletAssets";
 import { ViewContext } from "~/frontend/context";
 import { formatNumberWithoutDecimals } from "~/utils/currency";
@@ -70,10 +71,12 @@ type MapChartProps = {
 	/**
 	 * Raster tile URL for an optional basemap. None by default: the
 	 * divisions carry the map, and no external tile service is called
-	 * (geoportal requirements VIS-F01, no API keys in the client). Set this
-	 * only to a self-hosted tile service.
+	 * (TR-166, VIS-F01, no API keys in the client). Only a self-hosted
+	 * URL on the DELTA origin is used (SEC-20); any other is ignored.
 	 */
 	basemapUrl?: string;
+	/** Attribution shown whenever a basemap is drawn (TR-166). */
+	basemapAttribution?: string;
 };
 
 type DataSourceType = MapChartArea[];
@@ -294,6 +297,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 			legendMaxColor = "#333333",
 			legendTitle = "Legend",
 			basemapUrl,
+			basemapAttribution = BASEMAP_ATTRIBUTION,
 			measureFamily,
 			scope,
 			notApplied,
@@ -425,9 +429,29 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 					if (!mapRef.current) {
 						console.log("Creating new Leaflet map...");
 						// SVG renderer: the state patterns are SVG fills.
-						mapRef.current = L.map(componentId, { preferCanvas: false });
-						if (basemapUrl) {
-							L.tileLayer(basemapUrl, { maxZoom: 20 }).addTo(mapRef.current);
+						const tiles = isSelfHostedTileUrl(
+							basemapUrl,
+							window.location?.origin,
+						)
+							? basemapUrl
+							: undefined;
+						if (basemapUrl && !tiles) {
+							console.warn(
+								"MapChart: basemap ignored, not on the DELTA origin (SEC-20)",
+							);
+						}
+						// The attribution control is shown exactly when a basemap is
+						// drawn, and it keeps the data credit (TR-166).
+						mapRef.current = L.map(componentId, {
+							preferCanvas: false,
+							attributionControl: !!tiles,
+						});
+						if (tiles) {
+							mapRef.current.attributionControl?.setPrefix(false);
+							L.tileLayer(tiles, {
+								maxZoom: 20,
+								attribution: basemapAttribution,
+							}).addTo(mapRef.current);
 						}
 					} else {
 						console.log("Clearing previous layers...");
@@ -478,13 +502,6 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 						setTimeout(() => {
 							makeLegendDraggable();
 						}, 1000);
-
-						const attributionElement = document.querySelector(
-							".leaflet-control-attribution.leaflet-control a",
-						);
-						if (attributionElement) {
-							attributionElement.remove();
-						}
 					}, 500);
 				}, 500);
 			},
@@ -494,6 +511,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 				currentLegendMaxColor,
 				currentFamily,
 				basemapUrl,
+				basemapAttribution,
 				componentId,
 				scope,
 				notApplied,

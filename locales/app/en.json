@@ -431,7 +431,7 @@
   },
   {
     "id": "analysis.disaster_record_id",
-    "translation": "Disaster record ID",
+    "translation": "Disaster impact ID",
     "description": "File: app/routes/$lang+/analytics+/disaster-events.sector.tsx:376"
   },
   {
@@ -522,7 +522,7 @@
   {
     "id": "analysis.end",
     "translation": "End",
-    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:825"
+    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:824"
   },
   {
     "id": "analysis.error_loading_sectors",
@@ -732,7 +732,7 @@
   {
     "id": "analysis.insufficient_reporting",
     "translation": "Insufficient reporting",
-    "description": "File: app/components/MapChart.tsx:674"
+    "description": "File: app/components/MapChart.tsx:690"
   },
   {
     "id": "analysis.internally_displaced_icon",
@@ -787,22 +787,22 @@
   {
     "id": "analysis.map_flagged_marker",
     "translation": "Includes records flagged for review",
-    "description": "File: app/components/MapChart.tsx:642"
+    "description": "File: app/components/MapChart.tsx:658"
   },
   {
     "id": "analysis.map_flagged_records",
     "translation": "Caveat: includes {n} record(s) flagged for review",
-    "description": "Map tooltip caveat. {n} is the number of records flagged for review. File: app/components/MapChart.tsx:736"
+    "description": "Map tooltip caveat. {n} is the number of records flagged for review. File: app/components/MapChart.tsx:752"
   },
   {
     "id": "analysis.map_single_tone_few_areas",
     "translation": "One tone: only {n} areas reported a value ({min} needed for classes)",
-    "description": "Legend note when too few areas report a value to draw classes. {n} is the number of areas with a value, {min} the number needed. File: app/components/MapChart.tsx:603"
+    "description": "Legend note when too few areas report a value to draw classes. {n} is the number of areas with a value, {min} the number needed. File: app/components/MapChart.tsx:619"
   },
   {
     "id": "analysis.map_single_tone_one_value",
     "translation": "One tone: every reporting area has the same value",
-    "description": "File: app/components/MapChart.tsx:614"
+    "description": "File: app/components/MapChart.tsx:630"
   },
   {
     "id": "analysis.men_and_women_affected",
@@ -957,7 +957,7 @@
   {
     "id": "analysis.not_applicable",
     "translation": "Not applicable",
-    "description": "File: app/components/MapChart.tsx:679"
+    "description": "File: app/components/MapChart.tsx:695"
   },
   {
     "id": "analysis.not_reported",
@@ -1037,7 +1037,7 @@
   {
     "id": "analysis.provisional_not_for_citation",
     "translation": "Provisional",
-    "description": "File: app/components/MapChart.tsx:650"
+    "description": "File: app/components/MapChart.tsx:666"
   },
   {
     "id": "analysis.public_cost",
@@ -1092,7 +1092,7 @@
   {
     "id": "analysis.reported_by_n_of_n",
     "translation": "Reported by {n} of {total} records",
-    "description": "Map tooltip. {n} records reported the measure out of {total} in scope. File: app/components/MapChart.tsx:722"
+    "description": "Map tooltip. {n} records reported the measure out of {total} in scope. File: app/components/MapChart.tsx:738"
   },
   {
     "id": "analysis.response_cost",
@@ -1102,7 +1102,7 @@
   {
     "id": "analysis.rests_on_too_little_reporting",
     "translation": "Rests on too little reporting",
-    "description": "File: app/components/MapChart.tsx:711"
+    "description": "File: app/components/MapChart.tsx:727"
   },
   {
     "id": "analysis.search_by_geographic_level_placeholder",
@@ -1212,7 +1212,7 @@
   {
     "id": "analysis.start",
     "translation": "Start",
-    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:821"
+    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:820"
   },
   {
     "id": "analysis.sub_sector",
@@ -1222,12 +1222,12 @@
   {
     "id": "analysis.suppressed",
     "translation": "Suppressed",
-    "description": "File: app/components/MapChart.tsx:684"
+    "description": "File: app/components/MapChart.tsx:700"
   },
   {
     "id": "analysis.too_few_confirm_zero",
     "translation": "Too few records confirm zero",
-    "description": "File: app/components/MapChart.tsx:707"
+    "description": "File: app/components/MapChart.tsx:723"
   },
   {
     "id": "analysis.total_affected",
@@ -1402,7 +1402,7 @@
   {
     "id": "analysis.zero_confirmed",
     "translation": "Zero, confirmed",
-    "description": "File: app/components/MapChart.tsx:670"
+    "description": "File: app/components/MapChart.tsx:686"
   },
   {
     "id": "analysis.zero_impact_confirmed",
@@ -1681,7 +1681,7 @@
   },
   {
     "id": "common_err_msg.event_requires_linked_record",
-    "translation": "A validated or published disaster event must have at least one associated published or validated disaster record.",
+    "translation": "A validated or published disaster event must have at least one associated published or validated disaster impact.",
     "description": "File: app/services/disasterEventService.ts:78"
   },
   {
@@ -1696,7 +1696,7 @@
   },
   {
     "id": "common_err_msg.record_requires_linked_event",
-    "translation": "This is the only published or validated disaster record linked to a validated or published disaster event. It cannot be returned for edit.",
+    "translation": "This is the only published or validated disaster impact linked to a validated or published disaster event. It cannot be returned for edit.",
     "description": "File: app/services/disasterRecordService.ts:110"
   },
   {
@@ -1737,7 +1737,7 @@
   {
     "id": "common.add_new_item",
     "translation": "Add new item",
-    "description": "File: app/components/ContentRepeater/index.tsx:1825"
+    "description": "File: app/components/ContentRepeater/index.tsx:1822"
   },
   {
     "id": "common.add_new_record",
@@ -1752,7 +1752,7 @@
   {
     "id": "common.all",
     "translation": "All",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:184"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:194"
   },
   {
     "id": "common.apply",
@@ -1786,13 +1786,13 @@
   },
   {
     "id": "common.back_to_disaster_record",
-    "translation": "Back to disaster record",
+    "translation": "Back to disaster impact",
     "description": "File: app/routes/$lang+/disaster-record+/edit-sec.$disRecId+/_index.tsx:240"
   },
   {
     "id": "common.cancel",
     "translation": "Cancel",
-    "description": "File: app/components/ContentRepeater/index.tsx:2895"
+    "description": "File: app/components/ContentRepeater/index.tsx:2892"
   },
   {
     "id": "common.cannot_save_record",
@@ -1822,7 +1822,7 @@
   {
     "id": "common.choose_file",
     "translation": "Choose file",
-    "description": "File: app/components/ContentRepeater/index.tsx:2795"
+    "description": "File: app/components/ContentRepeater/index.tsx:2792"
   },
   {
     "id": "common.clear",
@@ -2002,7 +2002,7 @@
   {
     "id": "common.do_you_want_to_continue",
     "translation": "Do you want to continue?",
-    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:577"
+    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:576"
   },
   {
     "id": "common.edit",
@@ -2012,7 +2012,7 @@
   {
     "id": "common.edit_item",
     "translation": "Edit item",
-    "description": "File: app/components/ContentRepeater/index.tsx:1821"
+    "description": "File: app/components/ContentRepeater/index.tsx:1818"
   },
   {
     "id": "common.email",
@@ -2247,7 +2247,7 @@
   {
     "id": "common.missing_required_fields",
     "translation": "Please fill out the following required fields: {fields}",
-    "description": "Error message when required fields are not filled. {fields} is a comma-separated list of field names. File: app/components/ContentRepeater/index.tsx:1467"
+    "description": "Error message when required fields are not filled. {fields} is a comma-separated list of field names. File: app/components/ContentRepeater/index.tsx:1464"
   },
   {
     "id": "common.modified_at",
@@ -2782,7 +2782,7 @@
   {
     "id": "common.submit_for_validation",
     "translation": "Submit for validation",
-    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:1221"
+    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:1220"
   },
   {
     "id": "common.success",
@@ -2912,7 +2912,7 @@
   {
     "id": "common.uploading_please_wait",
     "translation": "Uploading, please wait...",
-    "description": "Message shown while file is uploading File: app/components/ContentRepeater/index.tsx:2747"
+    "description": "Message shown while file is uploading File: app/components/ContentRepeater/index.tsx:2744"
   },
   {
     "id": "common.user",
@@ -3012,17 +3012,17 @@
   {
     "id": "content_repeater.btn_clear",
     "translation": "Clear",
-    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:347"
+    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:346"
   },
   {
     "id": "content_repeater.btn_save_coordinates",
     "translation": "Save Coordinates",
-    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:847"
+    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:846"
   },
   {
     "id": "content_repeater.btn_undo",
     "translation": "Undo",
-    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:442"
+    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:441"
   },
   {
     "id": "content_repeater.file_upload_error",
@@ -3037,12 +3037,12 @@
   {
     "id": "content_repeater.location_search_placeholder",
     "translation": "Type location and enter to search",
-    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:195"
+    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:194"
   },
   {
     "id": "content_repeater.mapper_dialog_title",
     "translation": "Mapper",
-    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:81"
+    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:80"
   },
   {
     "id": "copied",
@@ -3151,7 +3151,7 @@
   },
   {
     "id": "disaster_event.disaster_record",
-    "translation": "Disaster record",
+    "translation": "Disaster impact",
     "description": "File: app/backend.server/services/emailValidationWorkflowService.ts:93"
   },
   {
@@ -3386,7 +3386,7 @@
   },
   {
     "id": "disaster_event.form.linked_disaster_records_description",
-    "translation": "Link this disaster event to related disaster records.",
+    "translation": "Link this disaster event to related disaster impacts.",
     "description": "File: app/frontend/disaster-event/DisasterEventForm.tsx:4629"
   },
   {
@@ -3416,7 +3416,7 @@
   },
   {
     "id": "disaster_event.form.linked_records_search_description",
-    "translation": "Search and select disaster records to link this disaster event.",
+    "translation": "Search and select disaster impacts to link this disaster event.",
     "description": "File: app/routes/$lang+/disaster-event+/edit.$id.linked-disaster-records-modal.tsx:257"
   },
   {
@@ -3446,7 +3446,7 @@
   },
   {
     "id": "disaster_event.form.loading_linked_disaster_records_selector",
-    "translation": "Loading linked disaster records selector",
+    "translation": "Loading linked disaster impacts selector",
     "description": "File: app/frontend/disaster-event/DisasterEventForm.tsx:4653"
   },
   {
@@ -3486,7 +3486,7 @@
   },
   {
     "id": "disaster_event.form.manage_linked_disaster_records",
-    "translation": "Manage linked disaster records",
+    "translation": "Manage linked disaster impacts",
     "description": "File: app/frontend/disaster-event/DisasterEventForm.tsx:4640"
   },
   {
@@ -3822,7 +3822,7 @@
   {
     "id": "disaster_event.global_regional_name",
     "translation": "Global/regional name",
-    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:753"
+    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:752"
   },
   {
     "id": "disaster_event.global_regional_name_description",
@@ -4017,7 +4017,7 @@
   {
     "id": "disaster_event.review.hazard_details",
     "translation": "Hazard details",
-    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:799"
+    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:798"
   },
   {
     "id": "disaster_event.review.issuing_organization",
@@ -4026,7 +4026,7 @@
   },
   {
     "id": "disaster_event.review.linked_disaster_records",
-    "translation": "Linked disaster records",
+    "translation": "Linked disaster impacts",
     "description": "File: app/frontend/disaster-event/DisasterEventForm.tsx:4623"
   },
   {
@@ -4042,12 +4042,12 @@
   {
     "id": "disaster_event.review.location",
     "translation": "Location",
-    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:833"
+    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:832"
   },
   {
     "id": "disaster_event.review.map",
     "translation": "Map",
-    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:391"
+    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:390"
   },
   {
     "id": "disaster_event.review.no_assessments",
@@ -4057,7 +4057,7 @@
   {
     "id": "disaster_event.review.no_attachments_selected",
     "translation": "No attachments selected",
-    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:948"
+    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:947"
   },
   {
     "id": "disaster_event.review.no_declarations",
@@ -4067,17 +4067,17 @@
   {
     "id": "disaster_event.review.no_geographic_levels",
     "translation": "No geographic levels selected",
-    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:863"
+    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:862"
   },
   {
     "id": "disaster_event.review.no_linked_disaster_records",
-    "translation": "No disaster records linked yet",
-    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:1112"
+    "translation": "No disaster impacts linked yet",
+    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:1111"
   },
   {
     "id": "disaster_event.review.no_linked_events",
     "translation": "No linked hazardous or disaster events selected yet",
-    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:1010"
+    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:1009"
   },
   {
     "id": "disaster_event.review.no_linked_records",
@@ -4087,12 +4087,12 @@
   {
     "id": "disaster_event.review.no_links_selected",
     "translation": "No links selected",
-    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:906"
+    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:905"
   },
   {
     "id": "disaster_event.review.no_location_details",
     "translation": "No location details available",
-    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:838"
+    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:837"
   },
   {
     "id": "disaster_event.review.no_responses",
@@ -4102,7 +4102,7 @@
   {
     "id": "disaster_event.review.no_spatial_data",
     "translation": "No spatial data defined",
-    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:886"
+    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:885"
   },
   {
     "id": "disaster_event.review.no_triggered_disaster_events",
@@ -4177,7 +4177,7 @@
   {
     "id": "disaster_event.review.verify_before_saving",
     "translation": "Verify the information before saving.",
-    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:722"
+    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:721"
   },
   {
     "id": "disaster_event.search_by_name_id_glide_placeholder",
@@ -4231,12 +4231,12 @@
   },
   {
     "id": "disaster_record",
-    "translation": "Disaster record",
+    "translation": "Disaster impact",
     "description": "File: app/components/AuditLogHistory.tsx:36"
   },
   {
     "id": "disaster_record.add_new",
-    "translation": "Add new disaster record",
+    "translation": "Add new disaster impact",
     "description": "File: app/routes/$lang+/disaster-record+/_index.tsx:134"
   },
   {
@@ -4251,7 +4251,7 @@
   },
   {
     "id": "disaster_record.back",
-    "translation": "Back to disaster record",
+    "translation": "Back to disaster impact",
     "description": "File: app/routes/$lang+/disaster-record+/non-economic-losses.$id+/_index.tsx:175"
   },
   {
@@ -4261,8 +4261,8 @@
   },
   {
     "id": "disaster_record.count_header",
-    "translation": "{total_items} disaster records in {instance_name}",
-    "description": "Header text showing total number of disaster records and instance name. {total_items} is the number of records, {instance_name} is the name of the current instance. File: app/routes/$lang+/disaster-record+/_index.tsx:123"
+    "translation": "{total_items} disaster impacts in {instance_name}",
+    "description": "Header text showing total number of disaster impacts and instance name. {total_items} is the number of records, {instance_name} is the name of the current instance. File: app/routes/$lang+/disaster-record+/_index.tsx:123"
   },
   {
     "id": "disaster_record.damage_cost",
@@ -4416,7 +4416,7 @@
   },
   {
     "id": "disaster_record.disaster_records_non_economic_losses",
-    "translation": "Disaster records: non-economic losses",
+    "translation": "Disaster impacts: non-economic losses",
     "description": "File: app/routes/$lang+/disaster-record+/non-economic-losses.$id+/_index.tsx:165"
   },
   {
@@ -4536,17 +4536,17 @@
   },
   {
     "id": "disaster_records",
-    "translation": "Disaster records",
+    "translation": "Disaster impacts",
     "description": "File: app/frontend/disaster-record/form-non-economic-losses.tsx:96"
   },
   {
     "id": "disaster_records.add",
-    "translation": "Add disaster record",
+    "translation": "Add disaster impact",
     "description": "File: app/frontend/disaster-record/form-non-economic-losses.tsx:101"
   },
   {
     "id": "disaster_records.back_to_disaster_record",
-    "translation": "Back to disaster record",
+    "translation": "Back to disaster impact",
     "description": "File: app/routes/$lang+/disaster-record+/edit-sub.$disRecId+/damages+/_index.tsx:126"
   },
   {
@@ -4566,12 +4566,12 @@
   },
   {
     "id": "disaster_records.disaster_record_id",
-    "translation": "Disaster record ID",
+    "translation": "Disaster impact ID",
     "description": "File: app/routes/$lang+/disaster-record+/edit-sub.$disRecId+/disruptions+/_index.tsx:140"
   },
   {
     "id": "disaster_records.disaster_records_sectors",
-    "translation": "Disaster records: Sectors",
+    "translation": "Disaster impacts: Sectors",
     "description": "File: app/routes/$lang+/disaster-record+/edit-sec.$disRecId+/_index.tsx:230"
   },
   {
@@ -4686,12 +4686,12 @@
   },
   {
     "id": "disaster_records.edit",
-    "translation": "Edit disaster record",
+    "translation": "Edit disaster impact",
     "description": "File: app/frontend/disaster-record/form-non-economic-losses.tsx:97"
   },
   {
     "id": "disaster_records.id",
-    "translation": "Disaster record ID",
+    "translation": "Disaster impact ID",
     "description": "File: app/frontend/damages.tsx:482"
   },
   {
@@ -4911,8 +4911,8 @@
   },
   {
     "id": "disaster_records.showing_filtered_of_total",
-    "translation": "Showing {filtered} of {total} disaster record(s)",
-    "description": "Shows how many disaster events are displayed. {filtered} is the number of matching events, {total} is the total number of events. File: app/routes/$lang+/disaster-record+/_index.tsx:165"
+    "translation": "Showing {filtered} of {total} disaster impact(s)",
+    "description": "Shows how many disaster impacts are displayed. {filtered} is the number of matching disaster impacts, {total} is the total number of disaster impacts. File: app/routes/$lang+/disaster-record+/_index.tsx:165"
   },
   {
     "id": "disruption.duration_days",
@@ -5092,47 +5092,47 @@
   {
     "id": "geodata.circle",
     "translation": "Circle",
-    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:316"
+    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:315"
   },
   {
     "id": "geodata.do_you_want_to_continue",
     "translation": "Do you want to continue?",
-    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:518"
+    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:517"
   },
   {
     "id": "geodata.enter_location_to_search",
     "translation": "Please enter a location to search.",
-    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:134"
+    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:133"
   },
   {
     "id": "geodata.line_s",
     "translation": "Line(s)",
-    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:310"
+    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:309"
   },
   {
     "id": "geodata.marker_s",
     "translation": "Marker(s)",
-    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:319"
+    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:318"
   },
   {
     "id": "geodata.move_map",
     "translation": "Move map",
-    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:304"
+    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:303"
   },
   {
     "id": "geodata.polygon",
     "translation": "Polygon",
-    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:307"
+    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:306"
   },
   {
     "id": "geodata.rectangle",
     "translation": "Rectangle",
-    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:313"
+    "description": "File: app/components/ContentRepeater/controls/mapper/index.tsx:312"
   },
   {
     "id": "geodata.switch_drawing_mode_confirmation",
     "translation": "Switching from \"{lastMode}\" to \"{newMode}\" will clear the current drawing. Do you want to proceed?",
-    "description": "Confirmation message when switching drawing mode. {lastMode} is the previous mode, {newMode} is the current mode. Clears current drawing. File: app/components/ContentRepeater/controls/mapper/index.tsx:233"
+    "description": "Confirmation message when switching drawing mode. {lastMode} is the previous mode, {newMode} is the current mode. Clears current drawing. File: app/components/ContentRepeater/controls/mapper/index.tsx:232"
   },
   {
     "id": "geographies.add_division",
@@ -5582,7 +5582,7 @@
   {
     "id": "hip.hazard_cluster",
     "translation": "Hazard cluster",
-    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:811"
+    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:810"
   },
   {
     "id": "hip.hazard_short",
@@ -5592,7 +5592,7 @@
   {
     "id": "hip.hazard_type",
     "translation": "Hazard type",
-    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:807"
+    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:806"
   },
   {
     "id": "hip.hip_cluster_required",
@@ -5627,7 +5627,7 @@
   {
     "id": "hip.specific_hazard",
     "translation": "Specific hazard",
-    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:815"
+    "description": "File: app/frontend/disaster-event/DisasterEventReviewStep.tsx:814"
   },
   {
     "id": "hip.type_short",
@@ -6266,7 +6266,7 @@
   },
   {
     "id": "meta.non_economic_losses_disaster_records",
-    "translation": "Non-economic losses - Disaster records",
+    "translation": "Non-economic losses - Disaster impacts",
     "description": "File: app/routes/$lang+/disaster-record+/non-economic-losses.$id+/_index.tsx:38"
   },
   {
@@ -6281,7 +6281,7 @@
   },
   {
     "id": "meta.sectors_disaster_records",
-    "translation": "Sectors - Disaster records",
+    "translation": "Sectors - Disaster impacts",
     "description": "File: app/routes/$lang+/disaster-record+/edit-sec.$disRecId+/_index.tsx:39"
   },
   {
@@ -6396,7 +6396,7 @@
   },
   {
     "id": "nav.disaster_records",
-    "translation": "Disaster records",
+    "translation": "Disaster impacts",
     "description": "File: app/components/RegularMenuBar.tsx:256"
   },
   {
@@ -6577,67 +6577,67 @@
   {
     "id": "plausibility.col.date",
     "translation": "Date",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:233"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:243"
   },
   {
     "id": "plausibility.col.figures",
     "translation": "Figures affected",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:248"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:258"
   },
   {
     "id": "plausibility.col.flags",
     "translation": "Flags",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:245"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:255"
   },
   {
     "id": "plausibility.col.location",
     "translation": "Location",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:236"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:246"
   },
   {
     "id": "plausibility.col.record",
     "translation": "Record",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:230"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:240"
   },
   {
     "id": "plausibility.col.status",
     "translation": "Status",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:242"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:252"
   },
   {
     "id": "plausibility.count",
     "translation": "{shown} of {total} flagged records",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:210"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:220"
   },
   {
     "id": "plausibility.empty",
     "translation": "No record in this instance carries a plausibility flag.",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:257"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:267"
   },
   {
     "id": "plausibility.filter.figure",
     "translation": "Figure affected",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:192"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:202"
   },
   {
     "id": "plausibility.filter.flag",
     "translation": "Flag type",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:174"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:184"
   },
   {
     "id": "plausibility.intro",
     "translation": "These records carry source values that look implausible, for example the same large number in two unrelated fields. The values have not been changed. Figures that include them are marked 'flagged for review'. Check each record against its source and correct it through the record screens where needed.",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:166"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:176"
   },
   {
     "id": "plausibility.measure.affected_direct",
     "translation": "Affected (direct)",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:93"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:103"
   },
   {
     "id": "plausibility.measure.affected_indirect",
     "translation": "Affected (indirect)",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:98"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:108"
   },
   {
     "id": "plausibility.measure.deaths",
@@ -6650,14 +6650,19 @@
     "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:88"
   },
   {
+    "id": "plausibility.measure.evacuated",
+    "translation": "Evacuated",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:93"
+  },
+  {
     "id": "plausibility.measure.houses_damaged",
     "translation": "Houses damaged",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:108"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:118"
   },
   {
     "id": "plausibility.measure.houses_destroyed",
     "translation": "Houses destroyed",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:103"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:113"
   },
   {
     "id": "plausibility.measure.injured",
@@ -6670,29 +6675,34 @@
     "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:86"
   },
   {
+    "id": "plausibility.measure.relocated",
+    "translation": "Relocated",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:98"
+  },
+  {
     "id": "plausibility.no_people_figure",
     "translation": "No people or housing figure",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:310"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:320"
   },
   {
     "id": "plausibility.page_of",
     "translation": "Page {page} of {pages}",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:338"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:348"
   },
   {
     "id": "plausibility.pages",
     "translation": "Pages",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:325"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:335"
   },
   {
     "id": "plausibility.rows_per_page",
     "translation": "Rows per page",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:354"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:364"
   },
   {
     "id": "plausibility.title",
     "translation": "Data quality review",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:159"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:169"
   },
   {
     "id": "profile.first_name_required",
@@ -7150,7 +7160,7 @@
   {
     "id": "spatial_footprint.latitude",
     "translation": "Lat",
-    "description": "Label for latitude value (short) File: app/components/ContentRepeater/index.tsx:2558"
+    "description": "Label for latitude value (short) File: app/components/ContentRepeater/index.tsx:2555"
   },
   {
     "id": "spatial_footprint.loading_map_data",
@@ -7160,7 +7170,7 @@
   {
     "id": "spatial_footprint.longitude",
     "translation": "Lng",
-    "description": "Label for longitude value (short) File: app/components/ContentRepeater/index.tsx:2564"
+    "description": "Label for longitude value (short) File: app/components/ContentRepeater/index.tsx:2561"
   },
   {
     "id": "spatial_footprint.map_coordinates",
@@ -7170,17 +7180,17 @@
   {
     "id": "spatial_footprint.map_preview",
     "translation": "Map preview",
-    "description": "File: app/components/SpatialFootprintMapViewer.tsx:294"
+    "description": "File: app/components/SpatialFootprintMapViewer.tsx:293"
   },
   {
     "id": "spatial_footprint.open_map",
     "translation": "Open map",
-    "description": "File: app/components/ContentRepeater/index.tsx:2194"
+    "description": "File: app/components/ContentRepeater/index.tsx:2191"
   },
   {
     "id": "spatial_footprint.preview_map",
     "translation": "Preview map",
-    "description": "Label for preview map button File: app/components/ContentRepeater/index.tsx:1771"
+    "description": "Label for preview map button File: app/components/ContentRepeater/index.tsx:1768"
   },
   {
     "id": "spatial_footprint.select_geographic_level",

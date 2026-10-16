@@ -541,7 +541,7 @@ export async function lossesUpdateByIdAndCountryAccountsId(
 		return {
 			ok: false,
 			errors: {
-				general: ["No matching disaster record found or you don't have access"],
+				general: ["No matching disaster impact found or you don't have access"],
 			},
 		};
 	}

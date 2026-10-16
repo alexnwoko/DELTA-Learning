@@ -125,7 +125,7 @@ export default function Data() {
 			<LangLink lang={ctx.lang} to={"/disaster-record/edit/" + ld.recordId}>
 				{ctx.t({
 					code: "disaster_records.back_to_disaster_record",
-					msg: "Back to disaster record",
+					msg: "Back to disaster impact",
 				})}
 			</LangLink>
 		),

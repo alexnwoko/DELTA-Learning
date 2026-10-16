@@ -375,12 +375,12 @@ export default function DetailSectorEffectScreen() {
 														role="columnheader"
 														aria-label={ctx.t({
 															code: "analysis.disaster_record_id",
-															msg: "Disaster record ID",
+															msg: "Disaster impact ID",
 														})}
 													>
 														{ctx.t({
 															code: "analysis.disaster_record_id",
-															msg: "Disaster record ID",
+															msg: "Disaster impact ID",
 														})}
 													</th>
 													<th
@@ -529,12 +529,12 @@ export default function DetailSectorEffectScreen() {
 														role="columnheader"
 														aria-label={ctx.t({
 															code: "analysis.disaster_record_id",
-															msg: "Disaster record ID",
+															msg: "Disaster impact ID",
 														})}
 													>
 														{ctx.t({
 															code: "analysis.disaster_record_id",
-															msg: "Disaster record ID",
+															msg: "Disaster impact ID",
 														})}
 													</th>
 													<th
@@ -663,12 +663,12 @@ export default function DetailSectorEffectScreen() {
 														role="columnheader"
 														aria-label={ctx.t({
 															code: "analysis.disaster_record_id",
-															msg: "Disaster record ID",
+															msg: "Disaster impact ID",
 														})}
 													>
 														{ctx.t({
 															code: "analysis.disaster_record_id",
-															msg: "Disaster record ID",
+															msg: "Disaster impact ID",
 														})}
 													</th>
 													<th
