@@ -23,6 +23,7 @@ import {
 import "./assets/content-repeater.css";
 import "./assets/mapper.css";
 import { ViewContext } from "~/frontend/context";
+import { LEAFLET_CSS, LEAFLET_DRAW_CSS, LEAFLET_DRAW_JS, LEAFLET_JS, MAP_MARKER_ICON, MAP_MARKER_ICON_ANCHOR } from "~/utils/leafletAssets";
 
 declare namespace L {
 	export const map: any;
@@ -47,8 +48,6 @@ declare namespace L {
 }
 
 //Mapper
-const glbMapperJS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-const glbMapperCSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
 const glbColors = {
 	polygon: "#0074D9",
 	line: "#FF851B",
@@ -58,9 +57,9 @@ const glbColors = {
 	geographic_level: "#fc9003",
 };
 const glbMarkerIcon = {
-	iconUrl: "https://maps.google.com/mapfiles/ms/icons/red-dot.png", // Replace with your marker icon if necessary
+	iconUrl: MAP_MARKER_ICON,
 	iconSize: [20, 20],
-	iconAnchor: [5, 20],
+	iconAnchor: MAP_MARKER_ICON_ANCHOR,
 	popupAnchor: [0, -20],
 	shadowUrl: null, // Remove shadow
 	className: "custom-leaflet-marker", // Add a custom class
@@ -139,22 +138,20 @@ const loadLeaflet = (() => {
 		if (!isLoaded) {
 			const leafletCSS = document.createElement("link");
 			leafletCSS.rel = "stylesheet";
-			leafletCSS.href = glbMapperCSS;
+			leafletCSS.href = LEAFLET_CSS;
 			document.head.appendChild(leafletCSS);
 
 			const leafletJS = document.createElement("script");
-			leafletJS.src = glbMapperJS;
+			leafletJS.src = LEAFLET_JS;
 			leafletJS.async = true;
 			leafletJS.onload = () => {
 				const leafletDrawCSS = document.createElement("link");
 				leafletDrawCSS.rel = "stylesheet";
-				leafletDrawCSS.href =
-					"https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css";
+				leafletDrawCSS.href = LEAFLET_DRAW_CSS;
 				document.head.appendChild(leafletDrawCSS);
 
 				const leafletDrawJS = document.createElement("script");
-				leafletDrawJS.src =
-					"https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js";
+				leafletDrawJS.src = LEAFLET_DRAW_JS;
 				leafletDrawJS.async = true;
 				leafletDrawJS.onload = () => {
 					console.log("Leaflet and Leaflet.draw loaded successfully.");

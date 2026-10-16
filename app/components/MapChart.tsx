@@ -7,6 +7,7 @@ import {
 	useCallback,
 } from "react";
 import type { ValueState } from "~/utils/valueState";
+import { LEAFLET_CSS, LEAFLET_JS } from "~/utils/leafletAssets";
 import { ViewContext } from "~/frontend/context";
 import { formatNumberWithoutDecimals } from "~/utils/currency";
 import {
@@ -242,19 +243,16 @@ function escapeHtml(s: string): string {
 		.replace(/"/g, "&quot;");
 }
 
-const glbMapperJS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-const glbMapperCSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-
 const loadLeaflet = (setLeafletLoaded: (loaded: boolean) => void) => {
 	if (typeof window === "undefined") return;
 	if (!(window as any).L) {
 		const leafletCSS = document.createElement("link");
 		leafletCSS.rel = "stylesheet";
-		leafletCSS.href = glbMapperCSS;
+		leafletCSS.href = LEAFLET_CSS;
 		document.head.appendChild(leafletCSS);
 
 		const leafletJS = document.createElement("script");
-		leafletJS.src = glbMapperJS;
+		leafletJS.src = LEAFLET_JS;
 		leafletJS.async = true;
 		leafletJS.onload = () => {
 			console.log("Leaflet loaded successfully.");

@@ -1752,7 +1752,7 @@
   {
     "id": "common.all",
     "translation": "All",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:172"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:184"
   },
   {
     "id": "common.apply",
@@ -1962,12 +1962,12 @@
   {
     "id": "common.date_from",
     "translation": "From",
-    "description": "Date from File: app/frontend/events/hazardevent-filters.tsx:369"
+    "description": "Date from File: app/frontend/events/hazardevent-filters.tsx:370"
   },
   {
     "id": "common.date_to",
     "translation": "To",
-    "description": "Date to File: app/frontend/events/hazardevent-filters.tsx:389"
+    "description": "Date to File: app/frontend/events/hazardevent-filters.tsx:390"
   },
   {
     "id": "common.delete",
@@ -5327,7 +5327,7 @@
   {
     "id": "hazardous_event.all_record_statuses",
     "translation": "All record statuses",
-    "description": "File: app/frontend/events/hazardevent-filters.tsx:478"
+    "description": "File: app/frontend/events/hazardevent-filters.tsx:479"
   },
   {
     "id": "hazardous_event.cannot_delete_linked_to_disaster",
@@ -5367,12 +5367,12 @@
   {
     "id": "hazardous_event.filter.all_event_statuses",
     "translation": "All event statuses",
-    "description": "File: app/frontend/events/hazardevent-filters.tsx:448"
+    "description": "File: app/frontend/events/hazardevent-filters.tsx:449"
   },
   {
     "id": "hazardous_event.filter.hazardous_event_status",
     "translation": "Hazardous event status",
-    "description": "File: app/frontend/events/hazardevent-filters.tsx:436"
+    "description": "File: app/frontend/events/hazardevent-filters.tsx:437"
   },
   {
     "id": "hazardous_event.magnitude",
@@ -5402,42 +5402,42 @@
   {
     "id": "hazardous_event.record_status",
     "translation": "Record status",
-    "description": "File: app/frontend/events/hazardevent-filters.tsx:466"
+    "description": "File: app/frontend/events/hazardevent-filters.tsx:467"
   },
   {
     "id": "hazardous_event.record_status.draft",
     "translation": "Draft",
-    "description": "Label for draft record status File: app/frontend/events/hazardevent-filters.tsx:68"
+    "description": "Label for draft record status File: app/frontend/events/hazardevent-filters.tsx:69"
   },
   {
     "id": "hazardous_event.record_status.needs_revision",
     "translation": "Needs revision",
-    "description": "Label for needs revision record status File: app/frontend/events/hazardevent-filters.tsx:84"
+    "description": "Label for needs revision record status File: app/frontend/events/hazardevent-filters.tsx:85"
   },
   {
     "id": "hazardous_event.record_status.published",
     "translation": "Published",
-    "description": "Label for published record status File: app/frontend/events/hazardevent-filters.tsx:100"
+    "description": "Label for published record status File: app/frontend/events/hazardevent-filters.tsx:101"
   },
   {
     "id": "hazardous_event.record_status.validated",
     "translation": "Validated",
-    "description": "Label for validated record status File: app/frontend/events/hazardevent-filters.tsx:92"
+    "description": "Label for validated record status File: app/frontend/events/hazardevent-filters.tsx:93"
   },
   {
     "id": "hazardous_event.record_status.waiting_for_validation",
     "translation": "Waiting for validation",
-    "description": "Label for waiting for validation record status File: app/frontend/events/hazardevent-filters.tsx:76"
+    "description": "Label for waiting for validation record status File: app/frontend/events/hazardevent-filters.tsx:77"
   },
   {
     "id": "hazardous_event.recording_organization",
     "translation": "Recording organization",
-    "description": "File: app/frontend/events/hazardevent-filters.tsx:409"
+    "description": "File: app/frontend/events/hazardevent-filters.tsx:410"
   },
   {
     "id": "hazardous_event.search_organization",
     "translation": "Search organization...",
-    "description": "Placeholder for searching organizations in filter File: app/frontend/events/hazardevent-filters.tsx:420"
+    "description": "Placeholder for searching organizations in filter File: app/frontend/events/hazardevent-filters.tsx:421"
   },
   {
     "id": "hazardous_event.select_parent_for_event",
@@ -5452,17 +5452,17 @@
   {
     "id": "hazardous_event.status.forecasted",
     "translation": "Forecasted",
-    "description": "Label for forecasted hazardous event status File: app/frontend/events/hazardevent-filters.tsx:39"
+    "description": "Label for forecasted hazardous event status File: app/frontend/events/hazardevent-filters.tsx:40"
   },
   {
     "id": "hazardous_event.status.ongoing",
     "translation": "Ongoing",
-    "description": "Label for ongoing hazardous event status File: app/frontend/events/hazardevent-filters.tsx:47"
+    "description": "Label for ongoing hazardous event status File: app/frontend/events/hazardevent-filters.tsx:48"
   },
   {
     "id": "hazardous_event.status.passed",
     "translation": "Passed",
-    "description": "Label for passed hazardous event status File: app/frontend/events/hazardevent-filters.tsx:55"
+    "description": "Label for passed hazardous event status File: app/frontend/events/hazardevent-filters.tsx:56"
   },
   {
     "id": "hazardous_event.uuid",
@@ -5507,7 +5507,7 @@
   {
     "id": "hip.all_hazard_types",
     "translation": "All hazard types",
-    "description": "File: app/frontend/events/hazardevent-filters.tsx:224"
+    "description": "File: app/frontend/events/hazardevent-filters.tsx:225"
   },
   {
     "id": "hip.all_hazards",
@@ -5517,7 +5517,7 @@
   {
     "id": "hip.cluster",
     "translation": "Cluster",
-    "description": "File: app/frontend/events/hazardevent-filters.tsx:243"
+    "description": "File: app/frontend/events/hazardevent-filters.tsx:244"
   },
   {
     "id": "hip.cluster_short",
@@ -5527,7 +5527,7 @@
   {
     "id": "hip.enter_hazard_name_or_hips_id",
     "translation": "Enter hazard name or HIPS ID ...",
-    "description": "Placeholder text for hazard search input File: app/frontend/events/hazardevent-filters.tsx:300"
+    "description": "Placeholder text for hazard search input File: app/frontend/events/hazardevent-filters.tsx:301"
   },
   {
     "id": "hip.error_processing_hazard_clusters",
@@ -6557,127 +6557,142 @@
   {
     "id": "plausibility.code.hazard_effect_mismatch",
     "translation": "Effect implausible for the hazard",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:54"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:65"
   },
   {
     "id": "plausibility.code.identical_across_fields",
     "translation": "Same value in unrelated fields",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:49"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:60"
   },
   {
     "id": "plausibility.code.implausible_magnitude",
     "translation": "Value above a plausible magnitude",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:44"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:55"
   },
   {
     "id": "plausibility.code.sentinel_magnitude",
     "translation": "Placeholder or sentinel value",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:59"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:70"
   },
   {
     "id": "plausibility.col.date",
     "translation": "Date",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:247"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:233"
   },
   {
     "id": "plausibility.col.figures",
     "translation": "Figures affected",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:291"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:248"
   },
   {
     "id": "plausibility.col.flags",
     "translation": "Flags",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:268"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:245"
   },
   {
     "id": "plausibility.col.location",
     "translation": "Location",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:253"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:236"
   },
   {
     "id": "plausibility.col.record",
     "translation": "Record",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:234"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:230"
   },
   {
     "id": "plausibility.col.status",
     "translation": "Status",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:262"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:242"
   },
   {
     "id": "plausibility.count",
     "translation": "{shown} of {total} flagged records",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:212"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:210"
   },
   {
     "id": "plausibility.empty",
     "translation": "No record in this instance carries a plausibility flag.",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:228"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:257"
   },
   {
     "id": "plausibility.filter.figure",
     "translation": "Figure affected",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:187"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:192"
   },
   {
     "id": "plausibility.filter.flag",
     "translation": "Flag type",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:161"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:174"
   },
   {
     "id": "plausibility.intro",
     "translation": "These records carry source values that look implausible, for example the same large number in two unrelated fields. The values have not been changed. Figures that include them are marked 'flagged for review'. Check each record against its source and correct it through the record screens where needed.",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:152"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:166"
   },
   {
     "id": "plausibility.measure.affected_direct",
     "translation": "Affected (direct)",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:82"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:93"
   },
   {
     "id": "plausibility.measure.affected_indirect",
     "translation": "Affected (indirect)",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:87"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:98"
   },
   {
     "id": "plausibility.measure.deaths",
     "translation": "Deaths",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:71"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:82"
   },
   {
     "id": "plausibility.measure.displaced",
     "translation": "Displaced",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:77"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:88"
   },
   {
     "id": "plausibility.measure.houses_damaged",
     "translation": "Houses damaged",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:97"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:108"
   },
   {
     "id": "plausibility.measure.houses_destroyed",
     "translation": "Houses destroyed",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:92"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:103"
   },
   {
     "id": "plausibility.measure.injured",
     "translation": "Injured",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:73"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:84"
   },
   {
     "id": "plausibility.measure.missing",
     "translation": "Missing",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:75"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:86"
   },
   {
     "id": "plausibility.no_people_figure",
     "translation": "No people or housing figure",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:304"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:310"
+  },
+  {
+    "id": "plausibility.page_of",
+    "translation": "Page {page} of {pages}",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:338"
+  },
+  {
+    "id": "plausibility.pages",
+    "translation": "Pages",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:325"
+  },
+  {
+    "id": "plausibility.rows_per_page",
+    "translation": "Rows per page",
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:354"
   },
   {
     "id": "plausibility.title",
     "translation": "Data quality review",
-    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:145"
+    "description": "File: app/routes/$lang+/analytics+/plausibility-review.tsx:159"
   },
   {
     "id": "profile.first_name_required",
