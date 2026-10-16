@@ -4,7 +4,10 @@ import { describe, expect, it } from "vitest";
 
 // Screens moved onto design tokens (ADR-19, TR-250). They use token
 // utilities (brand-*, data-*) only: no Tailwind palette colour and no hex.
-const RETROFITTED = ["app/routes/$lang+/analytics+/plausibility-review.tsx"];
+const RETROFITTED = [
+	"app/routes/$lang+/analytics+/plausibility-review.tsx",
+	"app/frontend/charts/ChartFrame.tsx",
+];
 
 const PALETTE =
 	/\b(?:bg|text|border|outline|ring|fill|stroke|divide|placeholder|from|to|via)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|white|black)(?:-\d{2,3})?\b/g;
