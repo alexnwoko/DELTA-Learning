@@ -1,7 +1,11 @@
 import { sql } from "drizzle-orm";
 import { dr, type Dr } from "~/db.server";
 import { GEO_HUMAN_MEASURES, GEO_METHOD_VERSION } from "~/utils/geoMeasures";
-import { displacedHeadlineSql } from "~/backend.server/models/analytics/displacedHeadline";
+import {
+	displacedHeadlineSql,
+	evacuatedSql,
+	relocatedSql,
+} from "~/backend.server/models/analytics/displacedHeadline";
 import { notRetired } from "~/utils/approvalBasis";
 import { HOUSING_SECTOR_ID } from "~/utils/geoMeasures";
 import { plausibilitySourceFields } from "~/utils/plausibility";
@@ -116,8 +120,18 @@ export async function refreshGeoReadModel(
 				const total =
 					m === "displaced"
 						? displacedHeadlineSql("hcp")
-						: sql`hcp.${sql.raw(`"${m}_total"`)}`;
-				return sql`(${m}::text, hcp.${sql.raw(`"${m}"`)}, (${total})::numeric, ${fieldArray})`;
+						: m === "evacuated"
+							? evacuatedSql("hcp")
+							: m === "relocated"
+								? relocatedSql("hcp")
+								: sql`hcp.${sql.raw(`"${m}_total"`)}`;
+				// Evacuated and relocated have no presence flag of their own;
+				// they are parts of displaced.
+				const flag =
+					m === "evacuated" || m === "relocated"
+						? sql`hcp."displaced"`
+						: sql`hcp.${sql.raw(`"${m}"`)}`;
+				return sql`(${m}::text, ${flag}, (${total})::numeric, ${fieldArray})`;
 			}),
 			sql`, `,
 		);

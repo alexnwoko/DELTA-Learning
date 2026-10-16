@@ -685,7 +685,7 @@ describe("geoportal read model (G1)", () => {
 					"measure=deaths&level=1&minAttGrade=D",
 					"ATT_D_EXCLUDED_FROM_OFFICIAL",
 				],
-				["measure=relocated&level=1", "MEASURE_NOT_AVAILABLE"],
+				["measure=records_per_event&level=1", "MEASURE_NOT_AVAILABLE"],
 			] as const) {
 				const e = (await refusalOf(resolve(a(), q))) as GeoRefusalError;
 				expect(e.code).toBe(code);
@@ -828,7 +828,7 @@ describe("geoportal read model (G1)", () => {
 			for (const q of [
 				"dim=disaster_event&measure=deaths&level=1",
 				"measure=events&level=1",
-				"measure=evacuated&level=1",
+				"measure=records_per_event&level=1",
 			]) {
 				const e = (await refusalOf(
 					resolve(ids.countryAccountId, q),
