@@ -340,6 +340,20 @@
 				"$type": "color",
 				"$value": "#6b7280"
 			}
+		},
+		"notice": {
+			"$description": "Notes that carry a data meaning.",
+			"provisional": {
+				"$description": "Banner for figures on the reviewer provisional basis: includes unpublished records, never public (AB-01). Not the same as a general warning (brand.warning-*) or a filter not applied (data.map.not-applied-note).",
+				"border": {
+					"$type": "color",
+					"$value": "#d97706"
+				},
+				"background": {
+					"$type": "color",
+					"$value": "#fffbeb"
+				}
+			}
 		}
 	}
 }

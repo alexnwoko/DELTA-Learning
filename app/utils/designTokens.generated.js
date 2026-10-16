@@ -111,5 +111,11 @@ export const dataTokens = {
 	},
 	"chart": {
 		"axis": "#6b7280"
+	},
+	"notice": {
+		"provisional": {
+			"border": "#d97706",
+			"background": "#fffbeb"
+		}
 	}
 };
