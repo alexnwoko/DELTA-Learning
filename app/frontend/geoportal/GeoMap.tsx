@@ -31,7 +31,7 @@ export const NO_RECORDS_STYLE = {
 	fill: "#f9fafb",
 	stroke: "#d1d5db",
 	strokeWidth: 0.8,
-	label: "No records in scope",
+	label: "Nothing in scope",
 } as const;
 
 export interface GeoMapProps {

@@ -231,7 +231,7 @@ async function resolveParsed(
 
 	const isEventDim = query.dimension !== "disaster_impact";
 	if (isEventDim && !opts.eventDimensions) {
-		notApplied.push(`dim: this view counts disaster records`);
+		notApplied.push(`dim: this view shows disaster impacts`);
 		query.dimension = "disaster_impact";
 	}
 	if (!query.measure && query.dimension !== "disaster_impact") {
@@ -243,7 +243,7 @@ async function resolveParsed(
 				QUERY_REFUSALS.monetaryPending,
 				"Monetary figures are not totalled until the money conventions are confirmed.",
 				"TR-167; PD-05 refusal table",
-				"Show human effects or record counts, or wait for the currency and deflator ruling.",
+				"Show human effects or disaster impact counts, or wait for the currency and deflator ruling.",
 			);
 		}
 		if (!isGeoMeasure(query.measure, query.dimension)) {

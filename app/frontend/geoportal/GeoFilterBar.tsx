@@ -28,7 +28,7 @@ export const DIMENSION_LABELS: Record<QueryDimension, string> = {
 };
 
 export const MEASURE_LABELS: Record<string, string> = {
-	records: "Disaster records",
+	records: "Disaster impacts (count)",
 	deaths: "Deaths",
 	injured: "Injured",
 	missing: "Missing",

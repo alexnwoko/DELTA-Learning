@@ -500,20 +500,20 @@ export async function getChoropleth(
 
 	const dimension = req.query.dimension;
 	const isEvent = dimension !== "disaster_impact";
-	const unit = isEvent ? "events" : "records";
+	const unit = isEvent ? "events" : "disaster impacts";
 	const captions = [
 		isEvent
 			? `Counts of ${dimension === "disaster_event" ? "disaster" : "hazardous"} events.`
 			: measure === "records"
-				? "Counts of disaster records."
+				? "Number of disaster impacts reported in each area. One disaster event can have several."
 				: measure.startsWith("houses_")
-					? "House counts from Housing damage records. Records that did not report the measure are counted, not treated as zero."
-					: "Human effects from record totals. Records that did not report the measure are counted, not treated as zero.",
+					? "House counts from Housing damage. Disaster impacts that did not report the measure are counted, not treated as zero."
+					: "Human effects from disaster impact totals. Disaster impacts that did not report the measure are counted, not treated as zero.",
 		"Reporting completeness is not modelled.",
 	];
 	if (isEvent && (agg.derivations.from_records ?? 0) > 0) {
 		captions.push(
-			`${agg.derivations.from_records} events have no area of their own and are placed where their records are.`,
+			`${agg.derivations.from_records} events have no area of their own and are placed where their disaster impacts are.`,
 		);
 	}
 	if (agg.multiDivisionRecords > 0) {
@@ -522,7 +522,7 @@ export async function getChoropleth(
 		);
 	}
 	if (meta.provisional) {
-		captions.push("Provisional: includes records not yet published.");
+		captions.push("Provisional: includes data not yet published.");
 	}
 
 	return {
@@ -771,7 +771,7 @@ export async function getPlaceDossier(
 			undatedRecordCount: Number(yr.undated),
 			periodsWithNoReporting,
 			gradeDistribution: grades,
-			note: "Periods with no records are shown as no reporting, never as zero. Completeness is not modelled.",
+			note: "Periods with nothing reported are shown as no reporting, never as zero. Completeness is not modelled.",
 		},
 		hazardMix: yr.hazard_mix,
 		byYear: yr.by_year,
@@ -799,7 +799,9 @@ export async function getHazardTree(
 		["minAttGrade", Boolean(req.query.minAttGrade)],
 	] as const) {
 		if (set)
-			meta.notApplied.push(`${name}: the hazard tree counts all records`);
+			meta.notApplied.push(
+				`${name}: the hazard tree counts all disaster impacts`,
+			);
 	}
 	const res = await dr.execute(sql`
 		WITH recs AS (

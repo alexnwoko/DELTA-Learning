@@ -112,7 +112,7 @@ describe("GeoLegend", () => {
 		expect(html).toContain("Zero, confirmed (1)");
 		expect(html).toContain("No data (1)");
 		expect(html).toContain("Insufficient reporting (1)");
-		expect(html).toContain("No records in scope (3)");
+		expect(html).toContain("Nothing in scope (3)");
 		expect(html).toContain("Includes records flagged for review (1)");
 	});
 });
@@ -139,7 +139,7 @@ describe("GeoTable", () => {
 		expect(html).toContain("5 of 6");
 		expect(html).toContain("A 1, B 4, C 1");
 		expect(html).toContain("No data");
-		expect(html).toContain("No records in scope");
+		expect(html).toContain("Nothing in scope");
 	});
 });
 
@@ -213,5 +213,36 @@ describe("GeoTable number formatting", () => {
 		);
 		expect(html).toContain("1,212 of 1,212");
 		expect(html).toContain("B 1,212");
+	});
+});
+
+describe("geoportal vocabulary (Alex ruling 2026-10-16: Disaster impact only)", () => {
+	it("never shows 'Disaster record' or 'impact record' in the controls, legend or table", () => {
+		const s = state();
+		const html = [
+			renderToString(
+				<GeoFilterBar
+					query={{ ...DEFAULT_QUERY, measure: "records" as const }}
+					level={1}
+					levels={[1]}
+					canReview={true}
+					onChange={() => {}}
+				/>,
+			),
+			renderToString(
+				<GeoLegend legend={s.legend} title="x" noRecordsAreas={1} />,
+			),
+			renderToString(
+				<GeoTable
+					id="t"
+					label="x"
+					rows={[{ id: "a", name: "A", area: s.areas[0] }]}
+					selectedId={null}
+					onSelect={() => {}}
+				/>,
+			),
+		].join(" ");
+		expect(html).not.toMatch(/disaster records?|impact records?/i);
+		expect(html).toContain("Disaster impacts (count)");
 	});
 });

@@ -53,7 +53,7 @@ export function GeoTable(props: {
 					</Column>
 					<Column className="text-right">Value</Column>
 					<Column className="text-left">State</Column>
-					<Column className="text-right">Reported of records</Column>
+					<Column className="text-right">Reported of total</Column>
 					<Column className="text-left">Attribution grades</Column>
 				</TableHeader>
 				<TableBody items={props.rows}>

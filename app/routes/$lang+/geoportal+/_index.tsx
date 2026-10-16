@@ -109,6 +109,15 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 	}
 });
 
+/** Plain wording for the unplaced reasons the read model records. */
+const UNPLACED_REASONS: Record<string, string> = {
+	no_division_row: "no area recorded",
+	no_division_geometry: "area has no boundary",
+	geometry_spans_divisions: "location spans several areas",
+	geometry_outside_divisions: "location outside every area",
+	members_unplaced: "its disaster impacts have no area",
+};
+
 interface DossierSummary {
 	division: { name: string | null };
 	recurrence: {
@@ -231,7 +240,7 @@ export default function GeoportalPage() {
 						<p className="text-sm border-l-4 border-amber-600 bg-amber-50 px-2 py-1 my-1">
 							{ctx.t({
 								code: "geoportal.provisional",
-								msg: "Provisional: these figures include records that are not yet published.",
+								msg: "Provisional: these figures include data that is not yet published.",
 							})}
 						</p>
 					)}
@@ -245,7 +254,7 @@ export default function GeoportalPage() {
 										})
 									: ctx.t({
 											code: "geoportal.empty",
-											msg: "No records on this approval basis. Migrated records stay drafts until they are published.",
+											msg: "Nothing is published for this view yet. Migrated data stays in draft until it is published.",
 										})}
 							</p>
 						)}
@@ -291,7 +300,9 @@ export default function GeoportalPage() {
 										{Object.entries(choropleth.unattributed.reasons).map(
 											([reason, n]) => (
 												<li key={reason}>
-													{reason.replaceAll("_", " ")}: {n}
+													{UNPLACED_REASONS[reason] ??
+														reason.replaceAll("_", " ")}
+													: {n}
 												</li>
 											),
 										)}
@@ -302,7 +313,7 @@ export default function GeoportalPage() {
 								<section aria-live="polite" className="text-sm border-t pt-2">
 									<h3 className="font-semibold">{dossier.division.name}</h3>
 									<p>
-										{dossier.recurrence.recordCount} records
+										{dossier.recurrence.recordCount} disaster impacts
 										{dossier.recurrence.firstYear
 											? `, ${dossier.recurrence.firstYear} to ${dossier.recurrence.lastYear}`
 											: ""}

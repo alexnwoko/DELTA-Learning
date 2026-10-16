@@ -8149,12 +8149,12 @@
   },
   {
     "id": "geoportal.empty",
-    "translation": "No records on this approval basis. Migrated records stay drafts until they are published.",
+    "translation": "Nothing is published for this view yet. Migrated data stays in draft until it is published.",
     "description": "File: app/routes/$lang+/geoportal+/_index.tsx:241"
   },
   {
     "id": "geoportal.provisional",
-    "translation": "Provisional: these figures include records that are not yet published.",
+    "translation": "Provisional: these figures include data that is not yet published.",
     "description": "File: app/routes/$lang+/geoportal+/_index.tsx:232"
   },
   {
