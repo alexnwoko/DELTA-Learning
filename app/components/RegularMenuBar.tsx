@@ -255,7 +255,7 @@ export default function RegularMenuBar({
 							{
 								label: ctx.t({
 									code: "nav.disaster_records",
-									msg: "Disaster records",
+									msg: "Disaster impacts",
 								}),
 								icon: "pi pi-database",
 								description: "Complete disaster documenations",

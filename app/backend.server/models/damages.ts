@@ -435,7 +435,7 @@ export async function fieldsDef(
 	return [
 		{
 			key: "recordId",
-			label: "Disaster Record ID",
+			label: "Disaster impact ID",
 			type: "uuid",
 			mcpDescription:
 				"ID of the disaster record this damage belongs to. Use disaster-record_list to get available IDs.",
@@ -677,7 +677,7 @@ export async function damagesUpdateByIdAndCountryAccountsId(
 		return {
 			ok: false,
 			errors: {
-				general: ["No matching disaster record found or you don't have access"],
+				general: ["No matching disaster impact found or you don't have access"],
 			},
 		};
 	}

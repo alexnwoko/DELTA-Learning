@@ -182,7 +182,7 @@ const SpatialFootprintsMapViewer: React.FC<SpatialFootprintsMapViewerProps> = ({
                 <input type="checkbox" id="layer-event" ${defaultKeys.includes("event") ? "checked" : ""} />
                 <label for="layer-event">Disaster event - ${eventId}</label>
                 </div>
-                ${legendData.length > 0 ? '<div for="layer-record" style="margin-top: 0.5rem; padding-left: 0.2rem">Disaster records</div>' : ""}
+                ${legendData.length > 0 ? '<div for="layer-record" style="margin-top: 0.5rem; padding-left: 0.2rem">Disaster impacts</div>' : ""}
                 ${legendData
 									.map(
 										(rec) => `

@@ -113,7 +113,7 @@ describe("approval-status guard rules", () => {
 
 		expect(result.ok).toBe(false);
 		expect(result.message).toContain(
-			"at least one associated published or validated disaster record",
+			"at least one associated published or validated disaster impact",
 		);
 		expect(
 			disasterEventUpdateApprovalStatusValidateMock,
@@ -144,7 +144,7 @@ describe("approval-status guard rules", () => {
 
 		expect(result.ok).toBe(false);
 		expect(result.message).toContain(
-			"only published or validated disaster record linked to a validated or published disaster event",
+			"only published or validated disaster impact linked to a validated or published disaster event",
 		);
 		expect(
 			disasterRecordsUpdateApprovalStatusNeedRevisionMock,
@@ -191,7 +191,7 @@ describe("approval-status guard rules", () => {
 				},
 			),
 		).rejects.toThrow(
-			"A validated or published disaster event must have at least one associated published or validated disaster record.",
+			"A validated or published disaster event must have at least one associated published or validated disaster impact.",
 		);
 	});
 
@@ -210,7 +210,7 @@ describe("approval-status guard rules", () => {
 			fieldsDef: [],
 			save: async () => {
 				throw new Error(
-					"A validated or published disaster event must have at least one associated published or validated disaster record.",
+					"A validated or published disaster event must have at least one associated published or validated disaster impact.",
 				);
 			},
 			redirectTo: (id: string) => `/disaster-event/${id}`,
@@ -220,7 +220,7 @@ describe("approval-status guard rules", () => {
 			ok: false,
 			errors: {
 				form: [
-					"A validated or published disaster event must have at least one associated published or validated disaster record.",
+					"A validated or published disaster event must have at least one associated published or validated disaster impact.",
 				],
 			},
 		});

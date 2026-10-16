@@ -1105,12 +1105,12 @@ export default function DisasterEventReviewStep({
 				{renderStep4SectionCard(
 					ctx.t({
 						code: "disaster_event.review.linked_disaster_records",
-						msg: "Linked disaster records",
+						msg: "Linked disaster impacts",
 					}),
 					"pi pi-file text-blue-600",
 					ctx.t({
 						code: "disaster_event.review.no_linked_disaster_records",
-						msg: "No disaster records linked yet",
+						msg: "No disaster impacts linked yet",
 					}),
 					<DataView
 						className="linked-disaster-records-grid"
