@@ -9,6 +9,7 @@ import {
 	MAP_MARKER_ICON,
 	absoluteAssetUrl,
 } from "~/utils/leafletAssets";
+import { buildFootprintPreviewHtml } from "~/components/SpatialFootprintMapViewer";
 import { previewMap } from "~/components/ContentRepeater/controls/mapper";
 
 const ROOT = process.cwd();
@@ -54,6 +55,11 @@ describe("self-hosted Leaflet assets", () => {
 	it("gives the preview tabs absolute URLs on DELTA's origin", () => {
 		(globalThis as any).window = { location: { origin: "https://delta.example.org" } };
 		expect(absoluteAssetUrl(LEAFLET_JS)).toBe(`https://delta.example.org${LEAFLET_JS}`);
+
+		const viewer = buildFootprintPreviewHtml("[]", "");
+		expect(viewer).toContain(`src="https://delta.example.org${LEAFLET_JS}"`);
+		expect(viewer).toContain(`href="https://delta.example.org${LEAFLET_CSS}"`);
+		expect(viewer).not.toMatch(THIRD_PARTY);
 
 		const written: string[] = [];
 		(globalThis as any).window.open = () => ({

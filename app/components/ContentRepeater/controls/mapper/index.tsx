@@ -8,6 +8,7 @@ import {
 } from "~/utils/spatialUtils";
 import { ViewContext } from "~/frontend/context";
 import { inlineBasemapScript } from "~/utils/leafletBasemap";
+import { escapeHtml, jsonForInlineScript } from "~/utils/inlineScript";
 import { absoluteAssetUrl, LEAFLET_CSS, LEAFLET_JS, MAP_MARKER_ICON, MAP_MARKER_ICON_ANCHOR } from "~/utils/leafletAssets";
 
 declare namespace L {
@@ -938,7 +939,7 @@ export const previewMap = (items: any) => {
 
 			${inlineBasemapScript("map")}
 
-            const items = \`${items}\`;
+            const items = ${jsonForInlineScript(String(items))};
             const boundsArray = [];
             const centers = [];
 
@@ -965,12 +966,14 @@ export const previewMap = (items: any) => {
                         pointToLayer: (feature, latlng) => {
                             if (feature.geometry.type === "Point") {
                               const marker = L.marker(latlng, {
-                                icon: L.icon(${JSON.stringify({ ...glbMarkerIcon, iconUrl: absoluteAssetUrl(MAP_MARKER_ICON) })}),
+                                icon: L.icon(${jsonForInlineScript({ ...glbMarkerIcon, iconUrl: absoluteAssetUrl(MAP_MARKER_ICON) })}),
                               });
 
                               // Bind popup only for markers
                               if (feature?.properties?.description) {
-                                marker.bindPopup(feature.properties.description);
+                                const popup = document.createElement("div");
+                                popup.textContent = String(feature.properties.description ?? "");
+                                marker.bindPopup(popup);
                               }
 
                               return marker;
@@ -1014,7 +1017,7 @@ export const previewGeoJSON = (items: any) => {
 	const newWindow = window.open();
 	if (newWindow) {
 		newWindow.document.write(
-			`<pre style="white-space: pre-wrap; word-break: break-word">${items}</pre>`,
+			`<pre style="white-space: pre-wrap; word-break: break-word">${escapeHtml(items)}</pre>`,
 		);
 		newWindow.document.close();
 	}

@@ -1,6 +1,7 @@
 import React from "react";
 import { ViewContext } from "~/frontend/context";
 import { inlineBasemapScript } from "~/utils/leafletBasemap";
+import { escapeHtml, jsonForInlineScript } from "~/utils/inlineScript";
 import { absoluteAssetUrl, LEAFLET_CSS, LEAFLET_JS, MAP_MARKER_ICON, MAP_MARKER_ICON_ANCHOR } from "~/utils/leafletAssets";
 
 type SpatialFootprintMapViewerProps = {
@@ -26,20 +27,15 @@ const glbMarkerIcon = {
 	className: "custom-leaflet-marker",
 };
 
-const SpatialFootprintMapViewer: React.FC<SpatialFootprintMapViewerProps> = ({
-	ctx,
-	dataSource = [],
-	filterCaption = "",
-}) => {
-	const previewMap = (items: any) => {
-		const newTab = window.open("", "_blank");
-
-		if (!newTab) {
-			alert("Popup blocker is preventing the map from opening.");
-			return;
-		}
-
-		newTab.document.write(`
+/**
+ * The page the map preview writes into a new tab. The tab shares DELTA's
+ * origin, so the footprint data and the caption are escaped (inlineScript.ts).
+ */
+export function buildFootprintPreviewHtml(
+	itemsJson: string,
+	filterCaption: string,
+): string {
+	return `
           <!DOCTYPE html>
           <html lang="en">
           <head>
@@ -80,7 +76,7 @@ const SpatialFootprintMapViewer: React.FC<SpatialFootprintMapViewerProps> = ({
           <body>
             <div id="map"></div>
             <div id="legend">
-              <h4>${filterCaption}</h4>
+              <h4>${escapeHtml(filterCaption)}</h4>
               <div class="legend-item">
                 <input type="checkbox" id="toggleDisaster" checked />
                 <label for="toggleDisaster">Disaster impact</label>
@@ -137,7 +133,7 @@ const SpatialFootprintMapViewer: React.FC<SpatialFootprintMapViewerProps> = ({
                 const map = L.map("map"); //.setView([11.3233, 124.9200], 6);
                 ${inlineBasemapScript("map")}
     
-                const items = JSON.parse(\`${items}\`);
+                const items = JSON.parse(${jsonForInlineScript(itemsJson)});
                 
                 // ✅ Layer Groups
                 const layers = {
@@ -170,12 +166,14 @@ const SpatialFootprintMapViewer: React.FC<SpatialFootprintMapViewerProps> = ({
                       pointToLayer: (feature, latlng) => {
                         if (feature.geometry.type === "Point") {
                           const marker = L.marker(latlng, {
-                            icon: L.icon(${JSON.stringify({ ...glbMarkerIcon, iconUrl: absoluteAssetUrl(MAP_MARKER_ICON) })}),
+                            icon: L.icon(${jsonForInlineScript({ ...glbMarkerIcon, iconUrl: absoluteAssetUrl(MAP_MARKER_ICON) })}),
                           });
 
                           // Bind popup only for markers
                           if (feature?.properties?.description) {
-                            marker.bindPopup(feature.properties.description);
+                            const popup = document.createElement("div");
+                            popup.textContent = String(feature.properties.description ?? "");
+                            marker.bindPopup(popup);
                           }
 
                           return marker;
@@ -228,7 +226,23 @@ const SpatialFootprintMapViewer: React.FC<SpatialFootprintMapViewerProps> = ({
             </script>
           </body>
           </html>
-        `);
+        `;
+}
+
+const SpatialFootprintMapViewer: React.FC<SpatialFootprintMapViewerProps> = ({
+	ctx,
+	dataSource = [],
+	filterCaption = "",
+}) => {
+	const previewMap = (items: any) => {
+		const newTab = window.open("", "_blank");
+
+		if (!newTab) {
+			alert("Popup blocker is preventing the map from opening.");
+			return;
+		}
+
+		newTab.document.write(buildFootprintPreviewHtml(items, filterCaption));
 
 		newTab.document.close();
 	};
