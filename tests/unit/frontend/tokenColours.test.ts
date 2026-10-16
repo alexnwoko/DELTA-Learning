@@ -7,6 +7,8 @@ import { describe, expect, it } from "vitest";
 const RETROFITTED = [
 	"app/routes/$lang+/analytics+/plausibility-review.tsx",
 	"app/frontend/charts/ChartFrame.tsx",
+	"app/frontend/print/PrintButton.tsx",
+	"app/frontend/print/PrintReport.tsx",
 ];
 
 const PALETTE =
