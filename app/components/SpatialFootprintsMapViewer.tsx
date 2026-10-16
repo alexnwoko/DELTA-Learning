@@ -6,6 +6,7 @@ import {
 	MAP_MARKER_ICON,
 	MAP_MARKER_ICON_ANCHOR,
 } from "~/utils/leafletAssets";
+import { inlineBasemapScript } from "~/utils/leafletBasemap";
 
 type SpatialFootprintsMapViewerProps = {
 	dataSource: { id: string }[]; // Define a stricter type for dataSource
@@ -244,7 +245,7 @@ const SpatialFootprintsMapViewer: React.FC<SpatialFootprintsMapViewerProps> = ({
 
           window.onload = () => {
             const map = L.map("map");
-            L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", { attribution: "" }).addTo(map);
+            ${inlineBasemapScript("map")}
 
             const items = ${JSON.stringify(items)};
             const defaultKeys = ${JSON.stringify(defaultKeys)};

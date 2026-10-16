@@ -5,6 +5,7 @@ import { DataView } from "primereact/dataview";
 import LinkedHazardousEventCard from "~/frontend/disaster-event/LinkedHazardousEventCard";
 import LinkedDisasterRecordCard from "~/frontend/disaster-event/LinkedDisasterRecordCard";
 import { ViewContext } from "~/frontend/context";
+import { dataEntryBasemap } from "~/utils/leafletBasemap";
 import { LEAFLET_CSS, LEAFLET_JS } from "~/utils/leafletAssets";
 
 type LinkedEventOption = {
@@ -328,12 +329,14 @@ function ReviewLocationMap({
 			const map = L.map(mapContainerRef.current, { preferCanvas: true });
 			mapRef.current = map;
 
-			L.tileLayer(
-				"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-				{
-					attribution: "",
-				},
-			).addTo(map);
+			// Self-hosted basemap only, with attribution (SEC-20, TR-166).
+			const basemap = dataEntryBasemap();
+			if (basemap) {
+				L.tileLayer(basemap.url, {
+					attribution: basemap.attribution,
+					maxZoom: basemap.maxZoom,
+				}).addTo(map);
+			}
 
 			const bounds = L.latLngBounds([]);
 
