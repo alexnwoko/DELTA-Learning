@@ -383,12 +383,12 @@ export default function GeoportalPage() {
 				<div className="flex flex-wrap items-center justify-between gap-2">
 					<h1 className="text-xl font-semibold">{title}</h1>
 					<div className="flex items-center gap-2">
-						<span role="status" className="text-xs text-gray-700">
+						<span role="status" className="text-xs text-brand-text-muted">
 							{copied}
 						</span>
 						<Button
 							onPress={copyLink}
-							className="border rounded px-3 py-1 text-sm bg-white data-[focus-visible]:outline data-[focus-visible]:outline-2"
+							className="border border-brand-border-control rounded px-3 py-1 text-sm bg-brand-surface data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
 						>
 							{t({ code: "geoportal.copy", msg: "Copy link" })}
 						</Button>
@@ -398,7 +398,7 @@ export default function GeoportalPage() {
 				<div className="hidden md:block">{bar}</div>
 				<div className="md:hidden py-2">
 					<DialogTrigger>
-						<Button className="border rounded px-3 py-1 text-sm bg-white">
+						<Button className="border border-brand-border-control rounded px-3 py-1 text-sm bg-brand-surface">
 							{t(
 								{ code: "geoportal.filters", msg: "Filters ({n})" },
 								{ n: activeFilters },
@@ -406,9 +406,9 @@ export default function GeoportalPage() {
 						</Button>
 						<ModalOverlay
 							isDismissable
-							className="fixed inset-0 z-50 bg-black/30"
+							className="fixed inset-0 z-50 bg-brand-text/30"
 						>
-							<Modal className="fixed inset-0 bg-white overflow-auto p-4">
+							<Modal className="fixed inset-0 bg-brand-surface overflow-auto p-4">
 								<Dialog className="outline-none">
 									{({ close }) => (
 										<>
@@ -421,7 +421,7 @@ export default function GeoportalPage() {
 												</Heading>
 												<Button
 													onPress={close}
-													className="border rounded px-3 py-1 text-sm"
+													className="border border-brand-border-control rounded px-3 py-1 text-sm bg-brand-surface"
 												>
 													{t({ code: "geoportal.filters.done", msg: "Done" })}
 												</Button>
@@ -438,7 +438,7 @@ export default function GeoportalPage() {
 				{refusal && (
 					<div
 						role="alert"
-						className="border-l-4 border-amber-600 bg-amber-50 p-3 my-2"
+						className="border-l-4 border-brand-warning-border bg-brand-warning-background p-3 my-2"
 					>
 						<p className="font-semibold">{refusal.title}</p>
 						<p className="text-sm">{refusal.next}</p>
@@ -447,17 +447,19 @@ export default function GeoportalPage() {
 
 				{choropleth && mapState && (
 					<>
-						<p className="text-sm text-gray-700 my-1">{mapState.scope.text}</p>
+						<p className="text-sm text-brand-text-muted my-1">
+							{mapState.scope.text}
+						</p>
 						{mapState.notApplied.map((n) => (
 							<p
 								key={n.filter}
-								className="text-sm border-l-4 border-gray-400 bg-gray-50 px-2 py-1 my-1"
+								className="text-sm border-l-4 border-data-map-not-applied-note-border bg-data-map-not-applied-note-background px-2 py-1 my-1"
 							>
 								{n.text}
 							</p>
 						))}
 						{choropleth.meta.provisional && (
-							<p className="text-sm border-l-4 border-amber-600 bg-amber-50 px-2 py-1 my-1">
+							<p className="text-sm border-l-4 border-data-notice-provisional-border bg-data-notice-provisional-background px-2 py-1 my-1">
 								{t({
 									code: "geoportal.provisional",
 									msg: "Provisional: these figures include data that is not yet published.",
@@ -465,7 +467,7 @@ export default function GeoportalPage() {
 							</p>
 						)}
 						{emptyPublished && (
-							<div className="text-sm border-l-4 border-gray-400 bg-gray-50 px-2 py-1 my-1 flex flex-wrap items-center gap-2">
+							<div className="text-sm border-l-4 border-brand-border-control bg-brand-surface-subtle px-2 py-1 my-1 flex flex-wrap items-center gap-2">
 								<span>
 									{query.scope.basis === "provisional"
 										? t({
@@ -488,7 +490,7 @@ export default function GeoportalPage() {
 												level: data.level,
 											})
 										}
-										className="border rounded px-2 py-0.5 bg-white data-[focus-visible]:outline data-[focus-visible]:outline-2"
+										className="border border-brand-border-control rounded px-2 py-0.5 bg-brand-surface data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
 									>
 										{t({
 											code: "geoportal.empty.show_provisional",
@@ -503,13 +505,15 @@ export default function GeoportalPage() {
 							<div className="relative min-w-0">
 								<ClientOnly
 									fallback={
-										<div className="h-[60vh] lg:h-[calc(100vh-22rem)] min-h-[420px] bg-gray-50" />
+										<div className="h-[60vh] lg:h-[calc(100vh-22rem)] min-h-[420px] bg-data-map-canvas-background" />
 									}
 								>
 									{() => (
 										<div className="h-[60vh] lg:h-[calc(100vh-22rem)] min-h-[420px]">
 											<Suspense
-												fallback={<div className="h-full bg-gray-50" />}
+												fallback={
+													<div className="h-full bg-data-map-canvas-background" />
+												}
 											>
 												<GeoMap
 													boundaries={data.boundaries ?? { features: [] }}
@@ -533,7 +537,7 @@ export default function GeoportalPage() {
 								<div className="absolute right-2 bottom-8 z-10 flex flex-col items-end gap-1">
 									<Button
 										onPress={() => setHomeSignal((n) => n + 1)}
-										className="border rounded px-2 py-1 text-xs bg-white shadow-sm data-[focus-visible]:outline data-[focus-visible]:outline-2"
+										className="border border-brand-border-control rounded px-2 py-1 text-xs bg-brand-surface shadow-sm data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
 									>
 										{t({ code: "geoportal.map.home", msg: "Full extent" })}
 									</Button>
@@ -541,16 +545,16 @@ export default function GeoportalPage() {
 										<Switch
 											isSelected={basemapOn}
 											onChange={setBasemapOn}
-											className="flex items-center gap-2 text-xs bg-white border rounded px-2 py-1 shadow-sm data-[focus-visible]:outline data-[focus-visible]:outline-2"
+											className="flex items-center gap-2 text-xs bg-brand-surface border border-brand-border-control rounded px-2 py-1 shadow-sm data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
 										>
 											{({ isSelected }) => (
 												<>
 													<span
 														aria-hidden="true"
-														className={`inline-block w-7 h-4 rounded-full relative ${isSelected ? "bg-blue-700" : "bg-gray-300"}`}
+														className={`inline-block w-7 h-4 rounded-full relative ${isSelected ? "bg-brand-interactive" : "bg-brand-border-control"}`}
 													>
 														<span
-															className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${isSelected ? "left-3.5" : "left-0.5"}`}
+															className={`absolute top-0.5 w-3 h-3 rounded-full bg-brand-surface transition-all ${isSelected ? "left-3.5" : "left-0.5"}`}
 														/>
 													</span>
 													{t({ code: "geoportal.map.basemap", msg: "Basemap" })}
@@ -563,7 +567,7 @@ export default function GeoportalPage() {
 										basemapStatus === "unavailable" && (
 											<p
 												role="status"
-												className="text-xs bg-amber-50 border border-amber-600 rounded px-2 py-1"
+												className="text-xs bg-brand-warning-background border border-brand-warning-border rounded px-2 py-1"
 											>
 												{t({
 													code: "geoportal.map.basemap_unavailable",
@@ -599,7 +603,7 @@ export default function GeoportalPage() {
 								)}
 							</div>
 
-							<aside className="min-w-0 lg:h-[calc(100vh-22rem)] lg:min-h-[420px] lg:overflow-auto border rounded p-2">
+							<aside className="min-w-0 lg:h-[calc(100vh-22rem)] lg:min-h-[420px] lg:overflow-auto border border-brand-border rounded p-2">
 								<Tabs defaultSelectedKey="place">
 									<TabList
 										aria-label={t({ code: "geoportal.panel", msg: "Panel" })}
@@ -607,19 +611,19 @@ export default function GeoportalPage() {
 									>
 										<Tab
 											id="place"
-											className="px-3 py-1 cursor-pointer data-[selected]:border-b-2 data-[selected]:border-blue-700 data-[selected]:font-semibold data-[focus-visible]:outline data-[focus-visible]:outline-2"
+											className="px-3 py-1 cursor-pointer data-[selected]:border-b-2 data-[selected]:border-brand-interactive data-[selected]:font-semibold data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
 										>
 											{t({ code: "geoportal.tab.place", msg: "Place" })}
 										</Tab>
 										<Tab
 											id="areas"
-											className="px-3 py-1 cursor-pointer data-[selected]:border-b-2 data-[selected]:border-blue-700 data-[selected]:font-semibold data-[focus-visible]:outline data-[focus-visible]:outline-2"
+											className="px-3 py-1 cursor-pointer data-[selected]:border-b-2 data-[selected]:border-brand-interactive data-[selected]:font-semibold data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
 										>
 											{t({ code: "geoportal.tab.areas", msg: "Areas" })}
 										</Tab>
 										<Tab
 											id="legend"
-											className="md:hidden px-3 py-1 cursor-pointer data-[selected]:border-b-2 data-[selected]:border-blue-700 data-[selected]:font-semibold"
+											className="md:hidden px-3 py-1 cursor-pointer data-[selected]:border-b-2 data-[selected]:border-brand-interactive data-[selected]:font-semibold"
 										>
 											{t({ code: "geoportal.tab.legend", msg: "Legend" })}
 										</Tab>
@@ -644,7 +648,7 @@ export default function GeoportalPage() {
 												t={t}
 											/>
 										) : (
-											<p className="text-sm text-gray-700">
+											<p className="text-sm text-brand-text-muted">
 												{shownId
 													? t({
 															code: "geoportal.dossier.loading",
@@ -671,7 +675,7 @@ export default function GeoportalPage() {
 											unit={t(info.unit)}
 											t={t}
 										/>
-										<p className="text-xs text-gray-600 mt-2">
+										<p className="text-xs text-brand-text-muted mt-2">
 											{t({
 												code: "geoportal.table.no_total",
 												msg: "Area values are not added up: one disaster impact or event can count in more than one area.",
@@ -695,7 +699,9 @@ export default function GeoportalPage() {
 							</aside>
 						</div>
 
-						<p className="text-xs text-gray-600">{choropleth.caption}</p>
+						<p className="text-xs text-brand-text-muted">
+							{choropleth.caption}
+						</p>
 						{choropleth.unattributed.records > 0 && (
 							<section className="text-sm mt-2">
 								<h2 className="font-semibold">

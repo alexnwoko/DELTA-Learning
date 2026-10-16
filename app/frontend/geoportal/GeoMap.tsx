@@ -144,7 +144,10 @@ function styleFor(area: MapArea | undefined, selected: boolean): Style {
 		// D-3D-1: a raised outline on the selected area; depth carries no data.
 		return new Style({
 			fill: styles.getFill() ?? undefined,
-			stroke: new Stroke({ color: "#111827", width: 2.5 }),
+			stroke: new Stroke({
+				color: dataTokens.map.selectedOutline.stroke,
+				width: dataTokens.map.selectedOutline.strokeWidth,
+			}),
 			zIndex: 3,
 		});
 	}
