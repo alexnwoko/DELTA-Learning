@@ -110,17 +110,17 @@ describe("GeoLegend", () => {
 			<GeoLegend legend={state().legend} title="Deaths" noRecordsAreas={3} />,
 		);
 		expect(html).toContain(
-			'Zero, confirmed <span class="text-gray-600">(1 area)',
+			'Zero, confirmed <span class="text-brand-text-muted">(1 area)',
 		);
-		expect(html).toContain('No data <span class="text-gray-600">(1 area)');
+		expect(html).toContain('No data <span class="text-brand-text-muted">(1 area)');
 		expect(html).toContain(
-			'Insufficient reporting <span class="text-gray-600">(1 area)',
-		);
-		expect(html).toContain(
-			'Nothing in scope <span class="text-gray-600">(3 areas)',
+			'Insufficient reporting <span class="text-brand-text-muted">(1 area)',
 		);
 		expect(html).toContain(
-			'flagged for review <span class="text-gray-600">(1 area)',
+			'Nothing in scope <span class="text-brand-text-muted">(3 areas)',
+		);
+		expect(html).toContain(
+			'flagged for review <span class="text-brand-text-muted">(1 area)',
 		);
 	});
 });
@@ -354,7 +354,7 @@ describe("place dossier (review R06)", () => {
 				hazardTypeNames={{ "1": "Meteorological" }}
 			/>,
 		);
-		expect(html).toContain("Disaster impacts <span class=\"text-gray-500\">[count]");
+		expect(html).toContain("Disaster impacts <span class=\"text-brand-text-muted\">[count]");
 		expect(html).toContain("1,212");
 		expect(html).toContain("2,574");
 		expect(html).toContain("[people]");

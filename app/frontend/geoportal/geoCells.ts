@@ -5,6 +5,7 @@
 import type { GeoCell } from "~/backend.server/models/geo/queries";
 import type { MapCell, MeasureFamily } from "~/utils/mapState";
 import { geoMeasureInfo } from "~/utils/geoMeasures";
+import { dataTokens } from "~/utils/designTokens.generated";
 
 /** Measure family for the ramp (V-2: one ramp per family). */
 export function measureFamily(measure: string): MeasureFamily {
@@ -37,8 +38,8 @@ export function toMapCell(cell: GeoCell): MapCell {
 
 /** Areas with no record in scope: not a value state, so drawn on its own. */
 export const NO_RECORDS_STYLE = {
-	fill: "#f9fafb",
-	stroke: "#d1d5db",
+	fill: dataTokens.map.noRecords.fill,
+	stroke: dataTokens.map.noRecords.stroke,
 	strokeWidth: 0.8,
 	label: "Nothing in scope",
 } as const;

@@ -84,15 +84,15 @@ function SelectField(props: {
 			className="flex flex-col gap-1 min-w-0"
 		>
 			<Label className="text-xs font-semibold">{props.label}</Label>
-			<Button className="border rounded px-2 py-1 text-left min-w-36 max-w-64 truncate bg-white data-[focus-visible]:outline data-[focus-visible]:outline-2">
+			<Button className="border border-brand-border-control rounded px-2 py-1 text-left min-w-36 max-w-64 truncate bg-brand-surface data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring">
 				<SelectValue />
 			</Button>
-			<Popover className="bg-white border rounded shadow">
+			<Popover className="bg-brand-surface border border-brand-border-control rounded shadow">
 				<ListBox items={props.options} className="max-h-72 overflow-auto">
 					{(o) => (
 						<ListBoxItem
 							id={o.id}
-							className="px-2 py-1 cursor-pointer data-[focused]:bg-blue-50 data-[selected]:font-semibold data-[disabled]:text-gray-400 data-[disabled]:cursor-default"
+							className="px-2 py-1 cursor-pointer data-[focused]:bg-brand-surface-subtle data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:-outline-offset-2 data-[focus-visible]:outline-brand-focus-ring data-[selected]:font-semibold data-[disabled]:text-brand-text-muted data-[disabled]:opacity-60 data-[disabled]:cursor-default"
 						>
 							{o.label}
 						</ListBoxItem>
@@ -126,9 +126,9 @@ function DateField(props: {
 			<Label className="text-xs font-semibold">{props.label}</Label>
 			<Input
 				placeholder="YYYY"
-				className="border rounded px-2 py-1 w-28 data-[invalid]:border-red-700"
+				className="border border-brand-border-control rounded px-2 py-1 w-28 data-[invalid]:border-brand-danger"
 			/>
-			<FieldError className="text-xs text-red-800">
+			<FieldError className="text-xs text-brand-danger">
 				{props.t({
 					code: "geoportal.when.invalid",
 					msg: "Use YYYY, YYYY-MM or YYYY-MM-DD",
@@ -236,14 +236,14 @@ export function GeoFilterBar(props: GeoFilterBarProps) {
 							const [first] = Array.from(keys);
 							if (first) setDimension(first as QueryDimension);
 						}}
-						className="flex rounded border overflow-hidden"
+						className="flex rounded border border-brand-border-control overflow-hidden"
 					>
 						{(Object.keys(GEO_DIMENSION_LABELS) as QueryDimension[]).map(
 							(d) => (
 								<ToggleButton
 									key={d}
 									id={d}
-									className="px-3 py-1 bg-white data-[selected]:bg-blue-700 data-[selected]:text-white data-[focus-visible]:outline data-[focus-visible]:outline-2"
+									className="px-3 py-1 bg-brand-surface data-[selected]:bg-brand-interactive data-[selected]:text-brand-text-on-interactive data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:-outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
 								>
 									{t(GEO_DIMENSION_LABELS[d])}
 								</ToggleButton>
@@ -399,7 +399,7 @@ export function GeoFilterBar(props: GeoFilterBarProps) {
 							<>
 								<span
 									aria-hidden="true"
-									className={`inline-flex items-center justify-center w-4 h-4 border rounded text-xs leading-none ${isSelected ? "bg-blue-700 border-blue-700 text-white" : "bg-white"}`}
+									className={`inline-flex items-center justify-center w-4 h-4 border rounded text-xs leading-none ${isSelected ? "bg-brand-interactive border-brand-interactive text-brand-text-on-interactive" : "bg-brand-surface border-brand-border-control"}`}
 								>
 									{isSelected ? "✓" : ""}
 								</span>

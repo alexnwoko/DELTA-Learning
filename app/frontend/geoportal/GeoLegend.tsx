@@ -7,6 +7,7 @@ import {
 	type MapLegend,
 } from "~/utils/mapState";
 import { NO_RECORDS_STYLE } from "~/frontend/geoportal/geoCells";
+import { dataTokens } from "~/utils/designTokens.generated";
 import {
 	boundaryText,
 	fmt,
@@ -102,18 +103,18 @@ export function GeoLegend(props: {
 	return (
 		<section
 			aria-label={props.title}
-			className="geo-legend text-sm bg-white/95 border border-gray-300 rounded shadow-sm p-2 max-w-[17rem]"
+			className="geo-legend text-sm bg-brand-surface/95 border border-brand-border rounded shadow-sm p-2 max-w-[17rem]"
 		>
 			<h2 className="text-sm font-semibold leading-tight">{props.title}</h2>
 			{props.subtitle && (
-				<p className="text-xs text-gray-700">{props.subtitle}</p>
+				<p className="text-xs text-brand-text-muted">{props.subtitle}</p>
 			)}
-			{method && <p className="text-xs text-gray-700 mb-1">{method}</p>}
+			{method && <p className="text-xs text-brand-text-muted mb-1">{method}</p>}
 			<ul className="space-y-1">
 				{legend.mode === "classes" &&
 					legend.classes.map((c) => (
 						<li key={c.index} className="flex items-center gap-2">
-							<Swatch fill={c.color} stroke="#ffffff" />
+							<Swatch fill={c.color} stroke={dataTokens.map.areaBoundary.stroke} />
 							<span>
 								{c.lower === c.upper
 									? fmt(c.lower)
@@ -124,16 +125,16 @@ export function GeoLegend(props: {
 											},
 											{ lower: fmt(c.lower), upper: fmt(c.upper) },
 										)}{" "}
-								<span className="text-gray-600">({areas(c.areas)})</span>
+								<span className="text-brand-text-muted">({areas(c.areas)})</span>
 							</span>
 						</li>
 					))}
 				{legend.mode === "single_tone" && legend.singleTone && (
 					<li className="flex items-center gap-2">
-						<Swatch fill={legend.singleTone.color} stroke="#ffffff" />
+						<Swatch fill={legend.singleTone.color} stroke={dataTokens.map.areaBoundary.stroke} />
 						<span>
 							{t({ code: "geoportal.legend.reported", msg: "Reported" })}{" "}
-							<span className="text-gray-600">
+							<span className="text-brand-text-muted">
 								({areas(legend.singleTone.areasShaded)})
 							</span>
 						</span>
@@ -151,7 +152,7 @@ export function GeoLegend(props: {
 							/>
 							<span>
 								{enc.label}{" "}
-								<span className="text-gray-600">({areas(s.areas)})</span>
+								<span className="text-brand-text-muted">({areas(s.areas)})</span>
 							</span>
 						</li>
 					);
@@ -167,7 +168,7 @@ export function GeoLegend(props: {
 								code: "geoportal.legend.nothing",
 								msg: NO_RECORDS_STYLE.label,
 							})}{" "}
-							<span className="text-gray-600">
+							<span className="text-brand-text-muted">
 								({areas(props.noRecordsAreas)})
 							</span>
 						</span>
@@ -175,10 +176,10 @@ export function GeoLegend(props: {
 				)}
 				{legend.flaggedAreas > 0 && (
 					<li className="flex items-center gap-2">
-						<Swatch fill="#ffffff" stroke={PLAUSIBILITY_MARKER.stroke} />
+						<Swatch fill="none" stroke={PLAUSIBILITY_MARKER.stroke} />
 						<span>
 							{PLAUSIBILITY_MARKER.label}{" "}
-							<span className="text-gray-600">
+							<span className="text-brand-text-muted">
 								({areas(legend.flaggedAreas)})
 							</span>
 						</span>
@@ -186,7 +187,7 @@ export function GeoLegend(props: {
 				)}
 			</ul>
 			{props.provenance && (
-				<p className="text-xs text-gray-600 border-t mt-2 pt-1">
+				<p className="text-xs text-brand-text-muted border-t border-brand-border mt-2 pt-1">
 					{boundaryText(props.provenance.boundaryVersion, t)}
 					{props.provenance.refreshedAt && (
 						<>

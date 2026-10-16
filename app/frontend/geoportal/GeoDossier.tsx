@@ -3,6 +3,7 @@
 // hazard mix and attribution grades. A figure no disaster impact reported
 // shows its state name, never 0 (TR-076).
 import { STATE_ENCODING } from "~/utils/mapState";
+import { dataTokens } from "~/utils/designTokens.generated";
 import { GEO_MEASURE_INFO, type GeoHumanMeasure } from "~/utils/geoMeasures";
 import {
 	boundaryText,
@@ -90,7 +91,7 @@ export function YearStrip(props: {
 					height="4"
 					patternUnits="userSpaceOnUse"
 				>
-					<path d="M0,4 L4,0" stroke="#9ca3af" strokeWidth="1" />
+					<path d="M0,4 L4,0" stroke={dataTokens.state.notReported.stroke} strokeWidth="1" />
 				</pattern>
 			</defs>
 			{years.map((y, i) => {
@@ -117,7 +118,7 @@ export function YearStrip(props: {
 						y={h - bh}
 						width={w - 1}
 						height={bh}
-						fill="#3d7cb4"
+						fill={dataTokens.ramp.events[3]}
 					>
 						<title>{`${y}: ${fmt(n)}`}</title>
 					</rect>
@@ -128,7 +129,7 @@ export function YearStrip(props: {
 				x2={years.length * w}
 				y1={h + 1}
 				y2={h + 1}
-				stroke="#6b7280"
+				stroke={dataTokens.chart.axis}
 			/>
 		</svg>
 	);
@@ -146,9 +147,9 @@ export function GeoDossier(props: {
 	const t = props.t ?? plainT;
 	const { division, recurrence, cumulative } = props.data;
 	const tile = (label: string, unit: string, text: string) => (
-		<div className="border border-gray-200 rounded p-2 min-w-0">
-			<p className="text-xs text-gray-700">
-				{label} <span className="text-gray-500">[{unit}]</span>
+		<div className="border border-brand-border rounded p-2 min-w-0">
+			<p className="text-xs text-brand-text-muted">
+				{label} <span className="text-brand-text-muted">[{unit}]</span>
 			</p>
 			<p className="text-lg font-semibold tabular-nums leading-tight">{text}</p>
 		</div>
@@ -175,10 +176,10 @@ export function GeoDossier(props: {
 		>
 			<header>
 				{props.autoNote && (
-					<p className="text-xs text-gray-600">{props.autoNote}</p>
+					<p className="text-xs text-brand-text-muted">{props.autoNote}</p>
 				)}
 				<h2 className="text-lg font-semibold leading-tight">{division.name}</h2>
-				<p className="text-xs text-gray-700">
+				<p className="text-xs text-brand-text-muted">
 					{t(
 						{ code: "geoportal.dossier.level", msg: "Admin level {n}" },
 						{ n: division.level },
@@ -190,7 +191,7 @@ export function GeoDossier(props: {
 							{props.onSelectParent ? (
 								<button
 									type="button"
-									className="underline text-blue-800"
+									className="underline text-brand-interactive"
 									onClick={() => props.onSelectParent?.(division.parent!.id)}
 								>
 									{division.parent.name}
@@ -201,7 +202,7 @@ export function GeoDossier(props: {
 						</>
 					)}
 				</p>
-				<p className="text-xs text-gray-600">
+				<p className="text-xs text-brand-text-muted">
 					{boundaryText(props.data.meta.boundaryVersion, t)}
 				</p>
 			</header>
@@ -222,7 +223,7 @@ export function GeoDossier(props: {
 					</div>
 				))}
 			</div>
-			<ul className="text-xs text-gray-800">
+			<ul className="text-xs text-brand-text">
 				{MORE.map((m) => (
 					<li key={m}>
 						{t(GEO_MEASURE_INFO[m].label)}: {cellText(cumulative[m], t)}
@@ -236,7 +237,7 @@ export function GeoDossier(props: {
 				</h3>
 				{recurrence.firstYear !== null && recurrence.lastYear !== null ? (
 					<>
-						<p className="text-xs text-gray-700">
+						<p className="text-xs text-brand-text-muted">
 							{t(
 								{ code: "geoportal.dossier.span", msg: "{first} to {last}" },
 								{ first: recurrence.firstYear, last: recurrence.lastYear },
@@ -259,10 +260,10 @@ export function GeoDossier(props: {
 								.filter(Boolean)
 								.join(". ")}
 						/>
-						{gapText && <p className="text-xs text-gray-700">{gapText}</p>}
+						{gapText && <p className="text-xs text-brand-text-muted">{gapText}</p>}
 					</>
 				) : (
-					<p className="text-xs text-gray-700">
+					<p className="text-xs text-brand-text-muted">
 						{t({
 							code: "geoportal.dossier.no_dates",
 							msg: "No dated disaster impacts.",
@@ -270,7 +271,7 @@ export function GeoDossier(props: {
 					</p>
 				)}
 				{recurrence.undatedRecordCount > 0 && (
-					<p className="text-xs text-gray-700">
+					<p className="text-xs text-brand-text-muted">
 						{t(
 							{ code: "geoportal.dossier.undated", msg: "{n} without a date" },
 							{ n: fmt(recurrence.undatedRecordCount) },
@@ -306,12 +307,12 @@ export function GeoDossier(props: {
 			)}
 
 			{grades && (
-				<p className="text-xs text-gray-700">
+				<p className="text-xs text-brand-text-muted">
 					{t({ code: "geoportal.readout.grades", msg: "Attribution grades" })}:{" "}
 					{grades}
 				</p>
 			)}
-			<p className="text-xs text-gray-600">{recurrence.note}</p>
+			<p className="text-xs text-brand-text-muted">{recurrence.note}</p>
 		</section>
 	);
 }
