@@ -92,3 +92,38 @@ export const displacedHeadlineCol: SQL = displacedFigure(
 	sql`"human_category_presence"."displaced_total"`,
 	sql`"human_category_presence"."record_id"`,
 );
+
+// Evacuated and relocated, read from the typed displaced rows (contract
+// O-2). Evacuated (Sendai G-6 source) is the pre-emptive rows; relocated is
+// every permanent row, before or after the event. Each is null when the
+// record has no such row: not reported, never 0 (TR-076). They are never
+// added to each other or to displaced.
+
+function typedSubtotal(recordId: SQL, rowFilter: SQL): SQL {
+	return sql`(
+		SELECT SUM(dsp_r."displaced")
+		FROM "human_dsg" hd_r
+		JOIN "displaced" dsp_r ON dsp_r."dsg_id" = hd_r."id"
+		WHERE hd_r."record_id" = ${recordId}
+			AND ${rowFilter}
+			AND ${onlyTimingAndDuration()}
+	)`;
+}
+
+/** People evacuated before the event, for raw SQL with the given alias. */
+export function evacuatedSql(hcpAlias: string): SQL {
+	const a = sql.raw(`"${hcpAlias}"`);
+	return typedSubtotal(
+		sql`${a}."record_id"`,
+		sql`dsp_r."timing" = 'pre-emptive'`,
+	);
+}
+
+/** People relocated permanently, for raw SQL with the given alias. */
+export function relocatedSql(hcpAlias: string): SQL {
+	const a = sql.raw(`"${hcpAlias}"`);
+	return typedSubtotal(
+		sql`${a}."record_id"`,
+		sql`dsp_r."duration" = 'permanent'`,
+	);
+}
