@@ -8159,7 +8159,7 @@
   },
   {
     "id": "geoportal.basemap.satellite",
-    "translation": "Satellite (ESA 2021)",
+    "translation": "Sentinel-2 true-colour 2021 (ESA WorldCover composite)",
     "description": "File: app/utils/basemap.server.ts"
   },
   {
