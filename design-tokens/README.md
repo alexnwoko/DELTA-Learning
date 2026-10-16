@@ -40,6 +40,6 @@ that "The UNDRR look and feel is proprietary"):
 Mangrove's files borrow DTCG vocabulary but, by their own header, are not
 DTCG, so Style Dictionary does not read them. Each brand token in
 `brand/*.json` names its Mangrove path in `$extensions`. A unit test resolves
-that path in the vendored files (`build/mangroveResolve.mjs`) and fails if the
+that path in the vendored files (`scripts/mangroveResolve.mjs`) and fails if the
 values differ. To upgrade Mangrove: add a new release folder, point the test
 at it, and fix the values the test reports.

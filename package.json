@@ -33,7 +33,7 @@
 		"i18n:extract:new": "i18next-cli extract",
 		"i18n:check-missing-keys": "tsx scripts/check-i18n-missing-keys.ts",
 		"build:css": "sass source/scss:public/assets/css",
-		"build:tokens": "node design-tokens/build/build.mjs"
+		"build:tokens": "node design-tokens/scripts/build.mjs"
 	},
 	"keywords": [],
 	"author": "",

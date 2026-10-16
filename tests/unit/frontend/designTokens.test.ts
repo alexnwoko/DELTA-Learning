@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { dataTokens } from "~/utils/designTokens.generated";
 import { FAMILY_RAMPS, PLAUSIBILITY_MARKER, STATE_ENCODING } from "~/utils/mapState";
-import { loadMangrove, resolveMangrove } from "../../../design-tokens/build/mangroveResolve.mjs";
+import { loadMangrove, resolveMangrove } from "../../../design-tokens/scripts/mangroveResolve.mjs";
 
 const ROOT = process.cwd();
 const readJson = (p: string) => JSON.parse(readFileSync(join(ROOT, p), "utf8"));
