@@ -117,7 +117,8 @@ def districts():
     layers = gpd.list_layers(path) if hasattr(gpd, "list_layers") else None
     layer = None
     if layers is not None:
-        names = [n for n in layers["name"] if "adm2" in n.lower()]
+        print(f"COD-AB layers: {list(layers['name'])}", flush=True)
+        names = [n for n in layers["name"] if re.search(r"adm(in)?_?2", n, re.I)]
         layer = names[0] if names else None
     gdf = gpd.read_file(path, layer=layer) if layer else gpd.read_file(path)
     gdf = gdf.to_crs(4326)
@@ -191,10 +192,13 @@ def point_counts(gdf_pts: gpd.GeoDataFrame, column: str) -> pd.DataFrame:
 
 def facilities():
     res = hdx_resources("mozambique-health-facilities")
-    r = next(x for x in res if (x.get("url") or "").lower().split("?")[0].endswith((".xlsx", ".csv")))
+    print("health resources:", [(x.get("name"), x.get("format")) for x in res], flush=True)
+    r = next(x for x in res if (x.get("format") or "").lower() in ("xlsx", "xls", "csv") or (x.get("url") or "").lower().split("?")[0].endswith((".xlsx", ".csv")))
     url = r.get("download_url") or r["url"]
-    path = fetch(url, "moz_health_facilities" + Path(url.split("?")[0]).suffix)
-    tbl = pd.read_excel(path) if path.suffix == ".xlsx" else pd.read_csv(path)
+    ext = "." + (r.get("format") or "xlsx").lower()
+    path = fetch(url, "moz_health_facilities" + ext)
+    tbl = pd.read_excel(path) if path.suffix in (".xlsx", ".xls") else pd.read_csv(path)
+    print("health columns:", list(tbl.columns), flush=True)
     lat = next(c for c in tbl.columns if re.search(r"lat", str(c), re.I))
     lon = next(c for c in tbl.columns if re.search(r"lon|lng", str(c), re.I))
     tbl = tbl.dropna(subset=[lat, lon])
@@ -208,12 +212,29 @@ def schools():
     r = next(x for x in res if (x.get("url") or "").lower().split("?")[0].endswith((".zip", ".csv", ".geojson")))
     url = r.get("download_url") or r["url"]
     path = fetch(url, "moz_schools" + Path(url.split("?")[0]).suffix)
-    pts = gpd.read_file(f"zip://{path}") if path.suffix == ".zip" else gpd.read_file(path)
+    if path.suffix == ".zip":
+        with zipfile.ZipFile(path) as z:
+            names = z.namelist()
+        print("schools zip:", names[:20], flush=True)
+        inner = next(n for n in names if n.lower().endswith((".shp", ".geojson", ".gpkg", ".csv", ".xlsx")))
+        if inner.lower().endswith((".csv", ".xlsx")):
+            with zipfile.ZipFile(path) as z, z.open(inner) as fh:
+                tbl = pd.read_excel(fh) if inner.lower().endswith(".xlsx") else pd.read_csv(fh)
+            lat = next(c for c in tbl.columns if re.search(r"lat", str(c), re.I))
+            lon = next(c for c in tbl.columns if re.search(r"lon|lng", str(c), re.I))
+            tbl = tbl.dropna(subset=[lat, lon])
+            pts = gpd.GeoDataFrame(tbl, geometry=gpd.points_from_xy(tbl[lon], tbl[lat]), crs=4326)
+        else:
+            pts = gpd.read_file(f"/vsizip/{path}/{inner}")
+    else:
+        pts = gpd.read_file(path)
     point_counts(pts, "schools").to_csv(OUT / "exposure_schools_count.csv", index=False)
     record("Mozambique school facilities (OCHA, HDX)", url, "CC BY", path, "ok", f"{len(pts)} schools counted per district (2022)")
 
 
 def mapspam():
+    record("MapSPAM 2020 v2r2", "https://doi.org/10.7910/DVN/SWPENT", "CC BY 4.0 with IFPRI terms of use", None, "skipped", "Dataverse requires accepting IFPRI terms before download (HTTP 400 when anonymous); waiting for Alex")
+    return
     files = {"production": 13827040, "harvested_area": 13827043}
     for kind, fid in files.items():
         url = f"https://dataverse.harvard.edu/api/access/datafile/{fid}"
@@ -308,7 +329,7 @@ def gdo(folder: str, prefix: str, out: str, source: str):
     tif = RAW / f"{prefix}latest.tif"
     lats, lons = da[lat].values, da[lon].values
     res_y, res_x = abs(lats[1] - lats[0]), abs(lons[1] - lons[0])
-    arr = da.values.astype("float32")
+    arr = np.squeeze(da.values).astype("float32")
     if lats[0] < lats[-1]:
         arr = arr[::-1]
     transform = rasterio.transform.from_origin(lons.min() - res_x / 2, lats.max() + res_y / 2, res_x, res_y)
