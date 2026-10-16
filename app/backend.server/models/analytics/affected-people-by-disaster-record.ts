@@ -50,5 +50,9 @@ async function queryValueIfPresent(
 	if (!res.present) {
 		return false;
 	}
+	// Reported, but no figure: not a confirmed 0 (TR-076).
+	if (res.value === null || res.value === undefined) {
+		return true;
+	}
 	return Number(res.value);
 }
