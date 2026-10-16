@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { dr } from "~/db.server";
 import {
-	PLAUSIBILITY_FIELD_MEASURE,
+	plausibilityMeasuresForField,
 	type PlausibilityMeasure,
 } from "~/utils/plausibility";
 
@@ -56,8 +56,7 @@ export async function getPlausibilityReviewQueue(
 			...new Set(
 				flags
 					.flatMap((f) => f.fields)
-					.map((field) => PLAUSIBILITY_FIELD_MEASURE[field])
-					.filter((m): m is PlausibilityMeasure => Boolean(m)),
+					.flatMap((field) => plausibilityMeasuresForField(field)),
 			),
 		];
 		return {
