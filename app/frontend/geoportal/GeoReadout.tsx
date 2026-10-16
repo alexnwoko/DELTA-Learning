@@ -24,16 +24,16 @@ export function GeoReadout(props: {
 			: stateLabel(area, t);
 	return (
 		<div
-			className="geo-readout bg-white/95 border border-gray-300 rounded shadow-sm p-2 text-sm max-w-[16rem]"
+			className="geo-readout bg-brand-surface/95 border border-brand-border rounded shadow-sm p-2 text-sm max-w-[16rem]"
 			aria-hidden="true"
 		>
 			<p className="font-semibold leading-tight">{props.name}</p>
 			<p className="text-base">{value}</p>
 			{tip && tip.stateDetail && (
-				<p className="text-xs text-gray-700">{tip.stateDetail}</p>
+				<p className="text-xs text-brand-text-muted">{tip.stateDetail}</p>
 			)}
 			{tip && (
-				<p className="text-xs text-gray-700">
+				<p className="text-xs text-brand-text-muted">
 					{t(
 						{
 							code: "geoportal.readout.reported_by",
@@ -48,7 +48,7 @@ export function GeoReadout(props: {
 				</p>
 			)}
 			{tip?.gradeDistribution && tip.gradeDistribution.length > 0 && (
-				<p className="text-xs text-gray-700">
+				<p className="text-xs text-brand-text-muted">
 					{t({ code: "geoportal.readout.grades", msg: "Attribution grades" })}:{" "}
 					{tip.gradeDistribution
 						.map((g) => `${g.grade} ${fmt(g.records)}`)
@@ -56,7 +56,7 @@ export function GeoReadout(props: {
 				</p>
 			)}
 			{tip?.precision && (
-				<p className="text-xs text-gray-700">
+				<p className="text-xs text-brand-text-muted">
 					{t({
 						code: "geoportal.readout.precision",
 						msg: "Location precision",
@@ -65,7 +65,7 @@ export function GeoReadout(props: {
 				</p>
 			)}
 			{!props.selected && (
-				<p className="text-xs text-blue-800 mt-1">
+				<p className="text-xs text-brand-interactive mt-1">
 					{t({
 						code: "geoportal.readout.select",
 						msg: "Select for place details",

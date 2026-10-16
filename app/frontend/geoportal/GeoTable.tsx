@@ -16,6 +16,7 @@ import {
 
 import { STATE_ENCODING, type MapArea } from "~/utils/mapState";
 import { NO_RECORDS_STYLE } from "~/frontend/geoportal/geoCells";
+import { dataTokens } from "~/utils/designTokens.generated";
 import { fmt, plainT, type GeoT } from "~/frontend/geoportal/i18n";
 
 export interface GeoTableRow {
@@ -106,8 +107,8 @@ export function GeoTable(props: {
 		const [first] = Array.from(keys);
 		props.onSelect(first === undefined ? null : String(first));
 	};
-	const th = "px-2 py-1 border-b border-gray-300 font-semibold";
-	const td = "px-2 py-1 border-b border-gray-100 align-middle";
+	const th = "px-2 py-1 border-b border-brand-border font-semibold";
+	const td = "px-2 py-1 border-b border-brand-border align-middle";
 	return (
 		<div id={props.id} className="overflow-x-auto">
 			<Table
@@ -157,9 +158,9 @@ export function GeoTable(props: {
 						return (
 							<Row
 								id={row.id}
-								className="cursor-pointer data-[selected]:bg-blue-50 data-[hovered]:bg-gray-50 data-[focus-visible]:outline data-[focus-visible]:outline-2"
+								className="cursor-pointer data-[selected]:bg-brand-surface-subtle data-[hovered]:bg-brand-surface-subtle data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:-outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
 							>
-								<Cell className={`${td} text-right tabular-nums text-gray-600`}>
+								<Cell className={`${td} text-right tabular-nums text-brand-text-muted`}>
 									{rank ?? ""}
 								</Cell>
 								<Cell className={td}>{row.name}</Cell>
@@ -173,7 +174,7 @@ export function GeoTable(props: {
 												className="inline-block h-2 rounded-sm"
 												style={{
 													width: `${max > 0 ? Math.max(2, (v / max) * 64) : 0}px`,
-													background: row.area?.color ?? "#9ca3af",
+													background: row.area?.color ?? dataTokens.chart.axis,
 												}}
 											/>
 											{fmt(v)}
