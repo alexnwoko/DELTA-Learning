@@ -31,6 +31,8 @@ export interface ChartExportMeta {
 	method?: string;
 	grade?: string;
 	basis: ExportBasis;
+	/** Further notes the screen shows, for example coverage ("12 of 40 records carry a sex breakdown"). */
+	notes?: string[];
 	generatedAt: Date;
 }
 
@@ -51,6 +53,7 @@ export function exportNotes(meta: ChartExportMeta, rows: ChartExportRow[]): stri
 				.join("; "),
 		);
 	}
+	notes.push(...(meta.notes ?? []));
 	if (flagged > 0) {
 		notes.push(`${flagged} record(s) behind these figures are flagged for review`);
 	}
@@ -87,6 +90,7 @@ export function chartCsv(rows: ChartExportRow[], meta: ChartExportMeta): string 
 		"basis",
 		"source",
 		"scope",
+		"notes",
 		"title",
 		"generated",
 	];
@@ -98,12 +102,14 @@ export function chartCsv(rows: ChartExportRow[], meta: ChartExportMeta): string 
 			r.value,
 			r.valueState,
 			r.unit ?? "",
-			r.recordsFlagged ?? 0,
+			// Unknown is not zero (TR-076): an empty cell, never 0.
+			r.recordsFlagged ?? null,
 			meta.method ?? "",
 			meta.grade ?? "",
 			BASIS_TEXT[meta.basis],
 			meta.source,
 			meta.scope ?? "",
+			(meta.notes ?? []).join("; "),
 			meta.title,
 			date,
 		]
