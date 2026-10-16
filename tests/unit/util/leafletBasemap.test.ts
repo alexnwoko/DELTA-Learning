@@ -33,6 +33,17 @@ describe("dataEntryBasemap (SEC-20, TR-166)", () => {
 });
 
 describe("inlineBasemapScript", () => {
+	it("keeps the {z}/{x}/{y} placeholders of a root-relative template", () => {
+		(globalThis as any).window = { location: { origin: ORIGIN } };
+		try {
+			const script = inlineBasemapScript("map", dataEntryBasemap("/tiles/basemap/{z}/{x}/{y}.png", ORIGIN));
+			expect(script).toContain('L.tileLayer("https://delta.example.org/tiles/basemap/{z}/{x}/{y}.png"');
+			expect(script).not.toContain("%7B");
+		} finally {
+			delete (globalThis as any).window;
+		}
+	});
+
 	it("writes nothing without a basemap", () => {
 		expect(inlineBasemapScript("map", null)).toBe("");
 	});
