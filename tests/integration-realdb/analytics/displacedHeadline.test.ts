@@ -29,6 +29,8 @@ const rec = {
 	crossTab: randomUUID(),
 	// Only people relocated after the event, 15: displaced not reported.
 	relocatedOnly: randomUUID(),
+	// Evacuated reported as 0, plus 60 relocated: a confirmed 0.
+	zeroEvacuated: randomUUID(),
 };
 
 const filters = () => ({
@@ -68,6 +70,7 @@ describe("displaced figure leaves out people relocated after the event", () => {
 			[rec.totalOnly, 50],
 			[rec.crossTab, 40],
 			[rec.relocatedOnly, 15],
+			[rec.zeroEvacuated, 60],
 		];
 		for (const [id, total] of totals) {
 			await dr.execute(sql`
@@ -90,6 +93,9 @@ describe("displaced figure leaves out people relocated after the event", () => {
 		await displacedRow(rec.crossTab, 12, "reactive", "permanent", "m");
 		await displacedRow(rec.relocatedOnly, 15, null, null);
 		await displacedRow(rec.relocatedOnly, 15, "reactive", "permanent");
+		await displacedRow(rec.zeroEvacuated, 60, null, null);
+		await displacedRow(rec.zeroEvacuated, 0, "pre-emptive", null);
+		await displacedRow(rec.zeroEvacuated, 60, "reactive", "permanent");
 	});
 
 	afterAll(async () => {
@@ -118,6 +124,7 @@ describe("displaced figure leaves out people relocated after the event", () => {
 		expect(await value(rec.crossTab)).toBe(10);
 		// Reported as present, but no displaced figure: not a confirmed 0.
 		expect(await value(rec.relocatedOnly)).toBe(true);
+		expect(await value(rec.zeroEvacuated)).toBe(0);
 	});
 
 	it("headline: never adds relocated people to displaced", async () => {
@@ -125,7 +132,7 @@ describe("displaced figure leaves out people relocated after the event", () => {
 		expect(res.totalDisplaced).toBe(109 + 27 + 50 + 10);
 		// The relocated-only record is neither reported nor a confirmed zero.
 		expect(res.measures.displaced.recordsReported).toBe(4);
-		expect(res.measures.displaced.recordsZeroConfirmed).toBe(0);
+		expect(res.measures.displaced.recordsZeroConfirmed).toBe(1);
 		expect(res.measures.displaced.recordsNotReported).toBe(1);
 	});
 });

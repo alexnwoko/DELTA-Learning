@@ -16,19 +16,14 @@
 // A null total stays null (TR-076). A record that reports nothing but people
 // relocated after the event (total equal to that subtotal) is not reported
 // for displaced, never a confirmed 0; the relocated measure still counts it.
+// A record that reports evacuation explicitly as 0 (a pre-emptive row of 0)
+// stays a confirmed 0.
 
 import { SQL, sql } from "drizzle-orm";
 
-/** The relocated-after-the-event subtotal for one record. */
-function relocatedSubtotal(recordId: SQL): SQL {
-	return sql`COALESCE((
-		SELECT SUM(dsp_r."displaced")
-		FROM "human_dsg" hd_r
-		JOIN "displaced" dsp_r ON dsp_r."dsg_id" = hd_r."id"
-		WHERE hd_r."record_id" = ${recordId}
-			AND dsp_r."timing" = 'reactive'
-			AND dsp_r."duration" = 'permanent'
-			AND dsp_r."assisted" IS NULL
+/** Rows split by timing and duration alone: no other dimension is set. */
+function onlyTimingAndDuration(): SQL {
+	return sql`dsp_r."assisted" IS NULL
 			AND hd_r."sex" IS NULL
 			AND hd_r."age" IS NULL
 			AND hd_r."disability" IS NULL
@@ -42,8 +37,33 @@ function relocatedSubtotal(recordId: SQL): SQL {
 					FROM jsonb_each(hd_r."custom")
 					WHERE jsonb_typeof(value) != 'null'
 				) = 0
-			)
+			)`;
+}
+
+/** The relocated-after-the-event subtotal for one record. */
+function relocatedSubtotal(recordId: SQL): SQL {
+	return sql`COALESCE((
+		SELECT SUM(dsp_r."displaced")
+		FROM "human_dsg" hd_r
+		JOIN "displaced" dsp_r ON dsp_r."dsg_id" = hd_r."id"
+		WHERE hd_r."record_id" = ${recordId}
+			AND dsp_r."timing" = 'reactive'
+			AND dsp_r."duration" = 'permanent'
+			AND ${onlyTimingAndDuration()}
 	), 0)`;
+}
+
+/** Whether the record reports evacuation before the event, even as 0. */
+function reportsEvacuation(recordId: SQL): SQL {
+	return sql`EXISTS (
+		SELECT 1
+		FROM "human_dsg" hd_r
+		JOIN "displaced" dsp_r ON dsp_r."dsg_id" = hd_r."id"
+		WHERE hd_r."record_id" = ${recordId}
+			AND dsp_r."timing" = 'pre-emptive'
+			AND dsp_r."displaced" IS NOT NULL
+			AND ${onlyTimingAndDuration()}
+	)`;
 }
 
 /**
@@ -53,7 +73,8 @@ function relocatedSubtotal(recordId: SQL): SQL {
 function displacedFigure(total: SQL, recordId: SQL): SQL {
 	const sub = relocatedSubtotal(recordId);
 	return sql`(CASE
-		WHEN ${sub} > 0 AND ${total} = ${sub} THEN NULL
+		WHEN ${sub} > 0 AND ${total} = ${sub} AND NOT ${reportsEvacuation(recordId)}
+			THEN NULL
 		ELSE ${total} - ${sub}
 	END)`;
 }
