@@ -121,13 +121,33 @@ def districts():
         layer = names[0] if names else None
     gdf = gpd.read_file(path, layer=layer) if layer else gpd.read_file(path)
     gdf = gdf.to_crs(4326)
-    pcode = next(c for c in gdf.columns if c.upper() == "ADM2_PCODE")
-    name = next((c for c in gdf.columns if c.upper() in ("ADM2_PT", "ADM2_EN", "ADM2_NAME")), pcode)
-    p1 = next((c for c in gdf.columns if c.upper() == "ADM1_PCODE"), None)
+    cols = list(gdf.columns)
+    print(f"COD-AB layer {layer}; columns: {cols}", flush=True)
+    pick = lambda pat: next((c for c in cols if re.fullmatch(pat, str(c), re.I)), None)
+    pcode = pick(r"adm2_?p_?code") or pick(r".*adm2.*p.?code.*")
+    name = pick(r"adm2_(pt|en|name|ref)") or pick(r"adm2_?name.*") or pcode
+    p1 = pick(r"adm1_?p_?code") or pick(r".*adm1.*p.?code.*")
+    if not pcode:
+        raise RuntimeError(f"no admin 2 p-code column in {cols}")
     DISTRICTS = gdf.rename(columns={pcode: "adm2_pcode", name: "adm2_name"})
     DISTRICTS["adm1_pcode"] = gdf[p1] if p1 else ""
     DISTRICTS = DISTRICTS[["adm2_pcode", "adm2_name", "adm1_pcode", "geometry"]]
     record("COD-AB Mozambique admin 2", url, "CC BY-IGO (humanitarian-use caveat open)", path, "ok", f"{len(DISTRICTS)} districts, layer {layer}")
+
+
+def districts_geoboundaries():
+    """Fallback: geoBoundaries gbOpen MOZ ADM2 (CC BY 3.0 IGO). Joins only; never written."""
+    global DISTRICTS
+    if DISTRICTS is not None:
+        return
+    meta = requests.get("https://www.geoboundaries.org/api/current/gbOpen/MOZ/ADM2/", headers=UA, timeout=120).json()
+    url = meta["simplifiedGeometryGeoJSON"]
+    path = fetch(url, "geoBoundaries-MOZ-ADM2.geojson")
+    gdf = gpd.read_file(path).to_crs(4326)
+    DISTRICTS = gdf.rename(columns={"shapeID": "adm2_pcode", "shapeName": "adm2_name"})
+    DISTRICTS["adm1_pcode"] = ""
+    DISTRICTS = DISTRICTS[["adm2_pcode", "adm2_name", "adm1_pcode", "geometry"]]
+    record("geoBoundaries MOZ ADM2 (fallback)", url, "CC BY 3.0 IGO", path, "ok", f"{len(DISTRICTS)} districts; keys are geoBoundaries shape ids, not COD p-codes")
 
 
 def zonal(raster: Path | str, ops: list[str], prefix: str) -> pd.DataFrame:
@@ -364,6 +384,7 @@ def needs():
 
 def main():
     run(districts)
+    run(districts_geoboundaries)
     if DISTRICTS is None:
         print("No districts; stopping")
     else:
