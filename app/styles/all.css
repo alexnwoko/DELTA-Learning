@@ -3,3 +3,6 @@
 @import "~/frontend/human_effects/styles.css";
 @import "react-json-view-lite/dist/index.css";
 @import "tailwindcss";
+@import "./tokens/brand.css";
+@import "./tokens/data.css";
+@import "./tokens/theme.css";

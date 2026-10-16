@@ -1,0 +1,35 @@
+/**
+ * Do not edit directly, this file was auto-generated.
+ */
+
+:root {
+  --delta-brand-interactive: #1a1a1a; /** Links, buttons, tabs and selected states */
+  --delta-brand-interactive-active: #333333; /** Hover and active partner of interactive */
+  --delta-brand-secondary: #333333; /** Secondary action colour */
+  --delta-brand-secondary-active: #4d4d4d; /** Hover partner of secondary */
+  --delta-brand-text: #1a1a1a; /** Body text */
+  --delta-brand-surface: #ffffff; /** Page and map canvas background */
+  --delta-brand-surface-subtle: #f0f3f6; /** Inputs and subtle panels */
+  --delta-brand-surface-card: #ffffff; /** Cards */
+  --delta-brand-border: #cacdd0; /** Control and table borders */
+  --delta-brand-focus-ring-width: 2px; /** Focus ring width (WCAG 2.4.7) */
+  --delta-brand-focus-ring-offset: 2px; /** Focus ring offset */
+}
+
+/**
+ * Do not edit directly, this file was auto-generated.
+ */
+
+[data-brand="delta"] {
+  --delta-brand-interactive: #004f91; /** Links, buttons, tabs and selected states */
+  --delta-brand-interactive-active: #106cb8; /** Hover and active partner of interactive */
+  --delta-brand-secondary: #007b7a; /** Secondary action colour */
+  --delta-brand-secondary-active: #006968; /** Hover partner of secondary */
+  --delta-brand-text: #1a1a1a; /** Body text */
+  --delta-brand-surface: #ffffff; /** Page and map canvas background */
+  --delta-brand-surface-subtle: #f0f3f6; /** Inputs and subtle panels */
+  --delta-brand-surface-card: #f2f2f2; /** Cards */
+  --delta-brand-border: #cacdd0; /** Control and table borders */
+  --delta-brand-focus-ring-width: 2px; /** Focus ring width (WCAG 2.4.7) */
+  --delta-brand-focus-ring-offset: 2px; /** Focus ring offset */
+}

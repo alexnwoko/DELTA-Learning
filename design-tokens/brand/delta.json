@@ -1,0 +1,164 @@
+{
+	"brand": {
+		"interactive": {
+			"$type": "color",
+			"$value": "#004f91",
+			"$description": "Links, buttons, tabs and selected states",
+			"$extensions": {
+				"org.undrr.delta": {
+					"mangrove": {
+						"release": "v2.1.0",
+						"path": "color.interactive",
+						"brand": "delta (over undrr, mangrove)"
+					}
+				}
+			}
+		},
+		"interactive-active": {
+			"$type": "color",
+			"$value": "#106cb8",
+			"$description": "Hover and active partner of interactive",
+			"$extensions": {
+				"org.undrr.delta": {
+					"mangrove": {
+						"release": "v2.1.0",
+						"path": "color.interactive-active",
+						"brand": "delta (over undrr, mangrove)"
+					}
+				}
+			}
+		},
+		"secondary": {
+			"$type": "color",
+			"$value": "#007b7a",
+			"$description": "Secondary action colour",
+			"$extensions": {
+				"org.undrr.delta": {
+					"mangrove": {
+						"release": "v2.1.0",
+						"path": "color.button-secondary-background",
+						"brand": "delta (over undrr, mangrove)"
+					}
+				}
+			}
+		},
+		"secondary-active": {
+			"$type": "color",
+			"$value": "#006968",
+			"$description": "Hover partner of secondary",
+			"$extensions": {
+				"org.undrr.delta": {
+					"mangrove": {
+						"release": "v2.1.0",
+						"path": "color.button-secondary-background--hover",
+						"brand": "delta (over undrr, mangrove)"
+					}
+				}
+			}
+		},
+		"text": {
+			"$type": "color",
+			"$value": "#1a1a1a",
+			"$description": "Body text",
+			"$extensions": {
+				"org.undrr.delta": {
+					"mangrove": {
+						"release": "v2.1.0",
+						"path": "color.text",
+						"brand": "delta (over undrr, mangrove)"
+					}
+				}
+			}
+		},
+		"surface": {
+			"$type": "color",
+			"$value": "#ffffff",
+			"$description": "Page and map canvas background",
+			"$extensions": {
+				"org.undrr.delta": {
+					"mangrove": {
+						"release": "v2.1.0",
+						"path": "color.neutral-0",
+						"brand": "delta (over undrr, mangrove)"
+					}
+				}
+			}
+		},
+		"surface-subtle": {
+			"$type": "color",
+			"$value": "#f0f3f6",
+			"$description": "Inputs and subtle panels",
+			"$extensions": {
+				"org.undrr.delta": {
+					"mangrove": {
+						"release": "v2.1.0",
+						"path": "color.neutral-25",
+						"brand": "delta (over undrr, mangrove)"
+					}
+				}
+			}
+		},
+		"surface-card": {
+			"$type": "color",
+			"$value": "#f2f2f2",
+			"$description": "Cards",
+			"$extensions": {
+				"org.undrr.delta": {
+					"mangrove": {
+						"release": "v2.1.0",
+						"path": "card.background",
+						"brand": "delta (over undrr, mangrove)"
+					}
+				}
+			}
+		},
+		"border": {
+			"$type": "color",
+			"$value": "#cacdd0",
+			"$description": "Control and table borders",
+			"$extensions": {
+				"org.undrr.delta": {
+					"mangrove": {
+						"release": "v2.1.0",
+						"path": "color.neutral-100",
+						"brand": "delta (over undrr, mangrove)"
+					}
+				}
+			}
+		},
+		"focus-ring-width": {
+			"$type": "dimension",
+			"$value": {
+				"value": 2,
+				"unit": "px"
+			},
+			"$description": "Focus ring width (WCAG 2.4.7)",
+			"$extensions": {
+				"org.undrr.delta": {
+					"mangrove": {
+						"release": "v2.1.0",
+						"path": "focus-ring.width",
+						"brand": "delta (over undrr, mangrove)"
+					}
+				}
+			}
+		},
+		"focus-ring-offset": {
+			"$type": "dimension",
+			"$value": {
+				"value": 2,
+				"unit": "px"
+			},
+			"$description": "Focus ring offset",
+			"$extensions": {
+				"org.undrr.delta": {
+					"mangrove": {
+						"release": "v2.1.0",
+						"path": "focus-ring.offset",
+						"brand": "delta (over undrr, mangrove)"
+					}
+				}
+			}
+		}
+	}
+}
