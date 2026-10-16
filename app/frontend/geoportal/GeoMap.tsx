@@ -8,6 +8,9 @@ import { useEffect, useMemo, useRef } from "react";
 import OlMap from "ol/Map";
 import View from "ol/View";
 import VectorLayer from "ol/layer/Vector";
+import TileLayer from "ol/layer/Tile";
+import XYZ from "ol/source/XYZ";
+import { defaults as defaultControls, ScaleLine } from "ol/control";
 import VectorSource from "ol/source/Vector";
 import GeoJSON from "ol/format/GeoJSON";
 import { Fill, Stroke, Style } from "ol/style";
@@ -27,6 +30,7 @@ import {
 } from "~/utils/mapState";
 import { NO_RECORDS_STYLE } from "~/frontend/geoportal/geoCells";
 import { dataTokens } from "~/utils/designTokens.generated";
+import type { BasemapConfig } from "~/utils/basemap";
 
 export { NO_RECORDS_STYLE };
 
@@ -45,6 +49,16 @@ export interface GeoMapProps {
 	focusId?: string | null;
 	/** Map height; the page sets it to fill the viewport. */
 	height?: string;
+	/**
+	 * Self-hosted basemap (I-3, TR-166). Drawn only when `basemapOn`; off by
+	 * default. Null when the server has no basemap installed.
+	 */
+	basemap?: BasemapConfig;
+	basemapOn?: boolean;
+	/** Reports "unavailable" when basemap tiles fail to load (NFR-042). */
+	onBasemapStatus?: (status: "ok" | "unavailable") => void;
+	/** Each change of this number fits the map back to all areas. */
+	homeSignal?: number;
 	/** Accessible name; the table alternative carries the figures. */
 	label: string;
 	describedBy?: string;
@@ -145,6 +159,10 @@ export function GeoMap({
 	onHover,
 	focusId,
 	height = "480px",
+	basemap = null,
+	basemapOn = false,
+	onBasemapStatus,
+	homeSignal = 0,
 	label,
 	describedBy,
 }: GeoMapProps) {
@@ -155,15 +173,45 @@ export function GeoMap({
 	onSelectRef.current = onSelect;
 	const onHoverRef = useRef(onHover);
 	onHoverRef.current = onHover;
+	const onStatusRef = useRef(onBasemapStatus);
+	onStatusRef.current = onBasemapStatus;
+	const baseRef = useRef<TileLayer<XYZ> | null>(null);
 
 	const byId = useMemo(() => new Map(areas.map((a) => [a.areaId, a])), [areas]);
 
 	useEffect(() => {
 		if (!target.current) return;
 		const layer = new VectorLayer({ source: new VectorSource() });
+		const base = basemap
+			? new TileLayer({
+					source: new XYZ({
+						url: basemap.url,
+						attributions: basemap.attribution,
+						attributionsCollapsible: false,
+						minZoom: basemap.minZoom,
+						maxZoom: basemap.maxZoom,
+						crossOrigin: "anonymous",
+					}),
+					visible: false,
+					zIndex: 0,
+				})
+			: null;
+		if (base) {
+			let loaded = 0;
+			const source = base.getSource();
+			source?.on("tileloadend", () => {
+				loaded++;
+				onStatusRef.current?.("ok");
+			});
+			source?.on("tileloaderror", () => {
+				if (loaded === 0) onStatusRef.current?.("unavailable");
+			});
+		}
+		layer.setZIndex(1);
 		const map = new OlMap({
 			target: target.current,
-			layers: [layer],
+			layers: base ? [base, layer] : [layer],
+			controls: defaultControls().extend([new ScaleLine({ units: "metric" })]),
 			// The wheel scrolls the page; Ctrl or Cmd plus the wheel zooms the map.
 			interactions: defaultInteractions({ mouseWheelZoom: false }).extend([
 				new MouseWheelZoom({ condition: platformModifierKeyOnly }),
@@ -192,12 +240,20 @@ export function GeoMap({
 		});
 		mapRef.current = map;
 		layerRef.current = layer;
+		baseRef.current = base;
 		return () => {
 			map.setTarget(undefined);
 			mapRef.current = null;
 			layerRef.current = null;
+			baseRef.current = null;
 		};
+		// The map is built once; the basemap URL comes from server config.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
+
+	useEffect(() => {
+		baseRef.current?.setVisible(basemapOn);
+	}, [basemapOn]);
 
 	useEffect(() => {
 		const layer = layerRef.current;
@@ -216,6 +272,17 @@ export function GeoMap({
 			map.getView().fit(extent, { padding: [16, 16, 16, 16], maxZoom: 9 });
 		}
 	}, [boundaries]);
+
+	useEffect(() => {
+		if (!homeSignal) return;
+		const map = mapRef.current;
+		const extent = layerRef.current?.getSource()?.getExtent();
+		if (map && extent && extent.every(Number.isFinite)) {
+			map
+				.getView()
+				.fit(extent, { padding: [16, 16, 16, 16], maxZoom: 9, duration: 250 });
+		}
+	}, [homeSignal]);
 
 	useEffect(() => {
 		const map = mapRef.current;

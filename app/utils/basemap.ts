@@ -28,3 +28,23 @@ export function isSelfHostedTileUrl(
 		return false;
 	}
 }
+
+/** Route the DELTA server serves basemap tiles from (I-3). */
+export const BASEMAP_DEFAULT_TILE_PATH = "/tiles/basemap/{z}/{x}/{y}.png";
+
+/**
+ * Zoom range of the basemap. Loss and damage maps work at admin-area
+ * scale, not street level, so tiles stop at zoom 12 (I-3; revisit with
+ * the tile pipeline decision).
+ */
+export const BASEMAP_MIN_ZOOM = 0;
+export const BASEMAP_MAX_ZOOM = 12;
+
+/** A basemap a map may offer; null when none is installed. */
+export type BasemapConfig = {
+	url: string;
+	/** HTML attribution, shown whenever the basemap is drawn (TR-166). */
+	attribution: string;
+	minZoom: number;
+	maxZoom: number;
+} | null;
