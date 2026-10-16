@@ -1,0 +1,6 @@
+source,url,licence,retrieved_at,bytes,sha256,status,note
+districts,,,2026-10-16T16:22:17+00:00,,,failed,StopIteration: 
+IPC Mozambique area data (HDX),https://data.humdata.org/dataset/6ec3aca3-7aa0-49b4-83d8-3df88fa7ae0d/resource/8b8193ad-9f61-416d-8c4b-45c64a5820f9/download/ipc_moz_area_long_latest.csv,CC0,2026-10-16T16:22:17+00:00,55351,1c042b4ecbeeb736ea54437f062c36b7fca6ada8922bb599a6167892ab9d8605,ok,"644 rows (areas are IPC analysis areas, not districts)"
+Mozambique humanitarian needs (HDX),https://data.humdata.org/dataset/f0081e1f-05fa-4d84-8541-ef477612fc67/resource/6ad18c3d-f666-4fff-bbd7-d99bea40027d/download/moz_hpc_needs_api_2026.csv,CC0,2026-10-16T16:22:17+00:00,704,b92f2199e12221a80184fbe1327eadb5fa9cdaf3c9cdf0d092c1fe73eb86af68,ok,13 rows
+Mozambique humanitarian needs (HDX),https://data.humdata.org/dataset/f0081e1f-05fa-4d84-8541-ef477612fc67/resource/89872afa-8893-4c2d-bcef-eeffdc99284c/download/moz_hpc_needs_api_2025.csv,CC0,2026-10-16T16:22:17+00:00,233475,38ae113e98581a3d94ca2b14f8159c3f579555d18444e90a937a624987b59286,ok,2623 rows
+Mozambique humanitarian needs (HDX),https://data.humdata.org/dataset/f0081e1f-05fa-4d84-8541-ef477612fc67/resource/290c044b-81a4-4c05-a713-61dd86e8d769/download/moz_hpc_needs_api_2024.csv,CC0,2026-10-16T16:22:17+00:00,687608,fa56e6cf61f4a130058c4a34bca7122394224418d490012298f3cd1c5c93dcae,ok,8564 rows
