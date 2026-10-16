@@ -23,6 +23,7 @@ import {
 import "./assets/content-repeater.css";
 import "./assets/mapper.css";
 import { ViewContext } from "~/frontend/context";
+import { dataEntryBasemap } from "~/utils/leafletBasemap";
 import { LEAFLET_CSS, LEAFLET_DRAW_CSS, LEAFLET_DRAW_JS, LEAFLET_JS, MAP_MARKER_ICON, MAP_MARKER_ICON_ANCHOR } from "~/utils/leafletAssets";
 
 declare namespace L {
@@ -581,13 +582,14 @@ export const ContentRepeater = forwardRef<HTMLDivElement, ContentRepeaterProps>(
 				// Initialize the map
 				const { coords, bounds } = await defaultMapLocation();
 				mapRef.current = L.map(`${id}_mapper_container`, { dragging: true });
-				L.tileLayer(
-					"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-					{
-						attribution:
-							'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
-					},
-				).addTo(mapRef.current);
+				// Self-hosted basemap only, with attribution (SEC-20, TR-166).
+				const basemap = dataEntryBasemap();
+				if (basemap) {
+					L.tileLayer(basemap.url, {
+						attribution: basemap.attribution,
+						maxZoom: basemap.maxZoom,
+					}).addTo(mapRef.current);
+				}
 				if (bounds) {
 					mapRef.current.fitBounds(bounds, { padding: [50, 50] });
 				} else {

@@ -1,5 +1,6 @@
 import React from "react";
 import { ViewContext } from "~/frontend/context";
+import { inlineBasemapScript } from "~/utils/leafletBasemap";
 import { absoluteAssetUrl, LEAFLET_CSS, LEAFLET_JS, MAP_MARKER_ICON, MAP_MARKER_ICON_ANCHOR } from "~/utils/leafletAssets";
 
 type SpatialFootprintMapViewerProps = {
@@ -134,9 +135,7 @@ const SpatialFootprintMapViewer: React.FC<SpatialFootprintMapViewerProps> = ({
     
               window.onload = () => {
                 const map = L.map("map"); //.setView([11.3233, 124.9200], 6);
-                L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-                  attribution: "",
-                }).addTo(map);
+                ${inlineBasemapScript("map")}
     
                 const items = JSON.parse(\`${items}\`);
                 
