@@ -9,6 +9,9 @@ export const PLAUSIBILITY_CODES = [
 	"IDENTICAL_ACROSS_FIELDS",
 	"HAZARD_EFFECT_MISMATCH",
 	"SENTINEL_MAGNITUDE",
+	// A national or multi-year figure recorded against one sub-national unit
+	// (Mozambique, 2026-10-16; Backend Migration rule c30-v1).
+	"AGGREGATE_ON_SUBUNIT",
 ] as const;
 
 export type PlausibilityMeasure =
