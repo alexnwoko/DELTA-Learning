@@ -147,7 +147,7 @@ export function basemapLayers(
 			id: "satellite",
 			label: {
 				code: "geoportal.basemap.satellite",
-				msg: "Satellite (ESA 2021)",
+				msg: "Sentinel-2 true-colour 2021 (ESA WorldCover composite)",
 			},
 			url: `/tiles/satellite/{z}/{x}/{y}.${SATELLITE_FORMAT()}`,
 			attribution: ESA_ATTRIBUTION,
