@@ -1,0 +1,77 @@
+// Readout for the area under the pointer, or the area chosen from the list
+// (review R04). It shows what mapState already resolved: the value with its
+// unit or the state name, how many disaster impacts reported it, grades and
+// precision. Never a number for a state that has none (TR-076).
+import type { MapArea } from "~/utils/mapState";
+import { stateLabel } from "~/frontend/geoportal/GeoTable";
+import { fmt, plainT, type GeoT } from "~/frontend/geoportal/i18n";
+
+export function GeoReadout(props: {
+	name: string;
+	area: MapArea | undefined;
+	unit: string;
+	/** Noun for what reports the value: "disaster impacts" or "events". */
+	reportedNoun: string;
+	selected: boolean;
+	t?: GeoT;
+}) {
+	const t = props.t ?? plainT;
+	const { area } = props;
+	const tip = area?.tooltip;
+	const value =
+		area?.state === "shaded" && typeof area.value === "number"
+			? `${fmt(area.value)} ${props.unit}`.trim()
+			: stateLabel(area, t);
+	return (
+		<div
+			className="geo-readout bg-white/95 border border-gray-300 rounded shadow-sm p-2 text-sm max-w-[16rem]"
+			aria-hidden="true"
+		>
+			<p className="font-semibold leading-tight">{props.name}</p>
+			<p className="text-base">{value}</p>
+			{tip && tip.stateDetail && (
+				<p className="text-xs text-gray-700">{tip.stateDetail}</p>
+			)}
+			{tip && (
+				<p className="text-xs text-gray-700">
+					{t(
+						{
+							code: "geoportal.readout.reported_by",
+							msg: "Reported by {n} of {m} {noun}",
+						},
+						{
+							n: fmt(tip.reportedBy.n),
+							m: fmt(tip.reportedBy.of),
+							noun: props.reportedNoun,
+						},
+					)}
+				</p>
+			)}
+			{tip?.gradeDistribution && tip.gradeDistribution.length > 0 && (
+				<p className="text-xs text-gray-700">
+					{t({ code: "geoportal.readout.grades", msg: "Attribution grades" })}:{" "}
+					{tip.gradeDistribution
+						.map((g) => `${g.grade} ${fmt(g.records)}`)
+						.join(", ")}
+				</p>
+			)}
+			{tip?.precision && (
+				<p className="text-xs text-gray-700">
+					{t({
+						code: "geoportal.readout.precision",
+						msg: "Location precision",
+					})}
+					: {tip.precision}
+				</p>
+			)}
+			{!props.selected && (
+				<p className="text-xs text-blue-800 mt-1">
+					{t({
+						code: "geoportal.readout.select",
+						msg: "Select for place details",
+					})}
+				</p>
+			)}
+		</div>
+	);
+}

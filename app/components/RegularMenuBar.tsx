@@ -309,6 +309,13 @@ export default function RegularMenuBar({
 								command: () =>
 									navigate(ctx.url("/analytics/plausibility-review")),
 							},
+							{
+								label: ctx.t({ code: "nav.geoportal", msg: "Geoportal" }),
+								icon: "pi pi-map",
+								description: "Map disaster impacts and events by area",
+								template: itemRenderer,
+								command: () => navigate(ctx.url("/geoportal")),
+							},
 						],
 					},
 				]
