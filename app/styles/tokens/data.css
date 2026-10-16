@@ -37,8 +37,6 @@
   --delta-data-map-selected-outline-stroke-width: 2.5;
   --delta-data-map-plausibility-marker-stroke: #b45309;
   --delta-data-map-plausibility-marker-stroke-width: 2.5;
-  --delta-data-map-shaded-outline-stroke: #374151;
-  --delta-data-map-shaded-outline-stroke-width: 1.2;
   --delta-data-map-not-applied-note-border: #b45309;
   --delta-data-map-not-applied-note-border-width: 3;
   --delta-data-map-not-applied-note-background: #fff7ed;
@@ -63,4 +61,9 @@
   --delta-data-ramp-events-3: #9e9ac8;
   --delta-data-ramp-events-4: #756bb1;
   --delta-data-ramp-events-5: #54278f;
+  --delta-data-flag-review-chip-background: #fef3c7;
+  --delta-data-flag-review-chip-text: #78350f;
+  --delta-data-chart-axis: #6b7280; /** Axis lines and neutral chart ink; also the fallback bar colour, which should never show. */
+  --delta-data-notice-provisional-border: #d97706;
+  --delta-data-notice-provisional-background: #fffbeb;
 }

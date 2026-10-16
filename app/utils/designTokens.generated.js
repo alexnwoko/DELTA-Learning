@@ -64,10 +64,6 @@ export const dataTokens = {
 			"stroke": "#b45309",
 			"strokeWidth": 2.5
 		},
-		"shadedOutline": {
-			"stroke": "#374151",
-			"strokeWidth": 1.2
-		},
 		"notAppliedNote": {
 			"border": "#b45309",
 			"borderWidth": 3,
@@ -106,5 +102,20 @@ export const dataTokens = {
 			"#756bb1",
 			"#54278f"
 		]
+	},
+	"flag": {
+		"reviewChip": {
+			"background": "#fef3c7",
+			"text": "#78350f"
+		}
+	},
+	"chart": {
+		"axis": "#6b7280"
+	},
+	"notice": {
+		"provisional": {
+			"border": "#d97706",
+			"background": "#fffbeb"
+		}
 	}
 };

@@ -74,7 +74,10 @@ StyleDictionary.registerFormat({
 			"export interface StrokeTokens {\n\tstroke: string;\n\tstrokeWidth: number;\n}\n" +
 			"export declare const dataTokens: {\n" +
 			"\tstate: Record<\"zeroConfirmed\" | \"notReported\" | \"insufficientReporting\" | \"notApplicable\" | \"suppressed\", StateTokens>;\n" +
-			"\tmap: {\n\t\tnoRecords: StrokeTokens & { fill: string };\n\t\tareaBoundary: StrokeTokens;\n\t\tselectedOutline: StrokeTokens;\n\t\tplausibilityMarker: StrokeTokens;\n\t\tshadedOutline: StrokeTokens;\n\t\tnotAppliedNote: { border: string; borderWidth: number; background: string };\n\t\tcanvas: { background: string };\n\t};\n" +
+			"\tmap: {\n\t\tnoRecords: StrokeTokens & { fill: string };\n\t\tareaBoundary: StrokeTokens;\n\t\tselectedOutline: StrokeTokens;\n\t\tplausibilityMarker: StrokeTokens;\n\t\tnotAppliedNote: { border: string; borderWidth: number; background: string };\n\t\tcanvas: { background: string };\n\t};\n" +
+			"\tflag: { reviewChip: { background: string; text: string } };\n" +
+			"\tchart: { axis: string };\n" +
+			"\tnotice: { provisional: { border: string; background: string } };\n" +
 			"\tramp: Record<\"people\" | \"housing\" | \"money\" | \"events\", readonly string[]>;\n" +
 			"};\n"
 		);

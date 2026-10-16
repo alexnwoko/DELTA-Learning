@@ -286,6 +286,14 @@ export async function getTotalDsgTable(
 	let t = tableFromType(tblId);
 	let h = humanDsgTable;
 
+	// The total row has every dimension empty, including the table's own
+	// dimensions (for Displaced: assisted, timing, duration), as in
+	// deleteTotal. Without them a record split only by timing or duration
+	// matched several rows and failed.
+	let tableDimNull = defs
+		.filter((d) => d.role == "dimension" && !d.custom && !d.shared)
+		.map((d) => isNull((t as any)[d.jsName]));
+
 	let rows = await tx
 		.select()
 		.from(t)
@@ -307,6 +315,7 @@ export async function getTotalDsgTable(
 						WHERE jsonb_typeof(value) != 'null'
 					) = 0
 				)`,
+				...tableDimNull,
 			),
 		)
 		.execute();

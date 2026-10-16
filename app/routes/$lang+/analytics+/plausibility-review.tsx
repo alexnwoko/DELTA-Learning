@@ -160,9 +160,9 @@ export default function PlausibilityReviewPage() {
 	const pageCount = Math.max(1, Math.ceil(filtered.length / rows));
 	const pageIndex = Math.floor(first / rows);
 
-	const cellClass = "px-2 py-3 border-b border-gray-200 align-top";
+	const cellClass = "px-2 py-3 border-b border-brand-border align-top";
 	const colClass =
-		"bg-gray-100 px-2 py-3 text-left font-medium border-b border-gray-200";
+		"bg-brand-surface-subtle px-2 py-3 text-left font-medium border-b border-brand-border";
 
 	return (
 		<MainContainer
@@ -289,13 +289,13 @@ export default function PlausibilityReviewPage() {
 												<li key={i} className="mb-1">
 													<strong>{codeLabel(f.code)}</strong>
 													{f.fields.length > 0 && (
-														<span className="text-gray-700">
+														<span className="text-brand-text-muted">
 															{" "}
 															({f.fields.join(", ")})
 														</span>
 													)}
 													{f.note && (
-														<span className="block text-gray-700">
+														<span className="block text-brand-text-muted">
 															{f.note}
 														</span>
 													)}
@@ -309,14 +309,14 @@ export default function PlausibilityReviewPage() {
 												{it.measures.map((m) => (
 													<span
 														key={m}
-														className="rounded bg-amber-100 px-2 py-0.5 text-amber-900"
+														className="rounded bg-data-flag-review-chip-background px-2 py-0.5 text-data-flag-review-chip-text"
 													>
 														{measureLabel(m)}
 													</span>
 												))}
 											</span>
 										) : (
-											<span className="text-gray-700">
+											<span className="text-brand-text-muted">
 												{ctx.t({
 													code: "plausibility.no_people_figure",
 													msg: "No people or housing figure",
@@ -338,7 +338,7 @@ export default function PlausibilityReviewPage() {
 							})}
 						>
 							<Button
-								className="rounded border px-3 py-1 disabled:opacity-40 data-[focus-visible]:outline data-[focus-visible]:outline-2"
+								className="rounded border border-brand-border-control px-3 py-1 disabled:opacity-40 data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
 								isDisabled={pageIndex === 0}
 								onPress={() => setFirst(Math.max(0, first - rows))}
 							>
@@ -354,7 +354,7 @@ export default function PlausibilityReviewPage() {
 								)}
 							</span>
 							<Button
-								className="rounded border px-3 py-1 disabled:opacity-40 data-[focus-visible]:outline data-[focus-visible]:outline-2"
+								className="rounded border border-brand-border-control px-3 py-1 disabled:opacity-40 data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
 								isDisabled={pageIndex >= pageCount - 1}
 								onPress={() => setFirst(first + rows)}
 							>
@@ -399,15 +399,15 @@ function FilterSelect(props: {
 			className="flex flex-col gap-1"
 		>
 			<Label className="text-sm font-medium">{props.label}</Label>
-			<Button className="min-w-40 rounded border px-2 py-1 text-left data-[focus-visible]:outline data-[focus-visible]:outline-2">
+			<Button className="min-w-40 rounded border border-brand-border-control px-2 py-1 text-left data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring">
 				<SelectValue />
 			</Button>
-			<Popover className="rounded border bg-white shadow">
+			<Popover className="rounded border border-brand-border-control bg-brand-surface shadow">
 				<ListBox items={props.options} className="max-h-72 overflow-auto">
 					{(o) => (
 						<ListBoxItem
 							id={o.id}
-							className="cursor-pointer px-2 py-1 data-[focused]:bg-blue-50 data-[selected]:font-semibold"
+							className="cursor-pointer px-2 py-1 data-[focused]:bg-brand-surface-subtle data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:-outline-offset-2 data-[focus-visible]:outline-brand-focus-ring data-[selected]:font-semibold"
 						>
 							{o.label}
 						</ListBoxItem>

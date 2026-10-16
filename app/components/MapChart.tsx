@@ -176,12 +176,12 @@ function areaStyle(
 			color: marker
 				? marker.stroke
 				: family
-					? dataTokens.map.shadedOutline.stroke
+					? dataTokens.map.areaBoundary.stroke
 					: maxColor,
 			fillColor: family ? (area.color as string) : maxColor,
 			weight: marker
 				? marker.strokeWidth
-				: dataTokens.map.shadedOutline.strokeWidth,
+				: dataTokens.map.areaBoundary.strokeWidth,
 			opacity: 1,
 			fillOpacity: family ? 1 : step,
 		};
@@ -570,6 +570,8 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 						height: "500px",
 						width: "100%",
 						zIndex: "0",
+						// One canvas with the geoportal (Alex, 2026-10-16): grey, so the
+						// country has context before the basemap loads (design review R08).
 						backgroundColor: dataTokens.map.canvas.background,
 					}}
 				></div>
@@ -606,7 +608,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 											}
 											stroke={
 												currentFamily
-													? dataTokens.map.shadedOutline.stroke
+													? dataTokens.map.areaBoundary.stroke
 													: currentLegendMaxColor
 											}
 										/>
@@ -626,7 +628,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 										opacity={currentFamily ? 1 : CLASS_OPACITY[3]}
 										stroke={
 											currentFamily
-												? dataTokens.map.shadedOutline.stroke
+												? dataTokens.map.areaBoundary.stroke
 												: currentLegendMaxColor
 										}
 									/>
