@@ -27,6 +27,7 @@ import { loader as choropleth } from "~/routes/$lang+/api+/geo+/choropleth";
 import { loader as dossier } from "~/routes/$lang+/api+/geo+/place.$divisionId.dossier";
 import { loader as boundaries } from "~/routes/$lang+/api+/geo+/boundaries";
 import { loader as tile } from "~/routes/$lang+/api+/geo+/tiles.divisions.$level.$z.$x.$y";
+import { loader as extent } from "~/routes/$lang+/api+/geo+/extent";
 
 const ids = createTestIds();
 ids.userEmail = ids.userEmail.replace("@", "-georoutes@");
@@ -169,6 +170,19 @@ describe("api geo routes", () => {
 			divisionId: divB,
 		});
 		expect(own.status).toBe(200);
+	});
+
+	it("returns each tenant's own map extent (I-3), never another's", async () => {
+		const a = await (await call(extent, ids.countryAccountId, "extent")).json();
+		expect(a.source).toBe("division_geom_cache");
+		expect(a.adminLevel).toBe(1);
+		a.bbox.forEach((v: number, i: number) =>
+			expect(v).toBeCloseTo([0, 0, 10, 10][i], 3),
+		);
+		expect(a.center[0]).toBeCloseTo(5, 3);
+		expect(a.center[1]).toBeCloseTo(5, 3);
+		const b = await (await call(extent, tenantB, "extent")).json();
+		expect(b.bbox[0]).toBeCloseTo(40, 3);
 	});
 
 	it("scopes boundaries to the key's tenant", async () => {

@@ -18,6 +18,7 @@ import {
 	Heading,
 	Modal,
 	ModalOverlay,
+	Switch,
 	Tab,
 	TabList,
 	TabPanel,
@@ -60,6 +61,7 @@ import { serializeDeltaQuery, type DeltaQuery } from "~/utils/deltaQuery";
 import { resolveMapState } from "~/utils/mapState";
 import { GEO_DIMENSION_LABELS, geoMeasureInfo } from "~/utils/geoMeasures";
 import { htmlTitle } from "~/utils/htmlmeta";
+import { basemapConfig } from "~/utils/basemap.server";
 
 // OpenLayers loads with the map, not with the page (NFR-130).
 const GeoMap = lazy(() =>
@@ -95,6 +97,7 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 		url.searchParams.set("measure", "records");
 	}
 	const canReview = await hasPermission(args.request, "ValidateData");
+	const basemap = basemapConfig(url.origin);
 	const ctx = {
 		countryAccountsId,
 		lang,
@@ -130,6 +133,7 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 				features: { properties: { divisionId: string; name: string } }[];
 			},
 			hazardTree: tree as HazardTree | null,
+			basemap,
 			refusal: null,
 		};
 	} catch (err) {
@@ -142,6 +146,7 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 				choropleth: null,
 				boundaries: null,
 				hazardTree: null,
+				basemap,
 				refusal: refusalBody(err.refusal, err.meta),
 			};
 		}
@@ -223,6 +228,12 @@ export default function GeoportalPage() {
 	const [hoverId, setHoverId] = useState<string | null>(null);
 	const [dossier, setDossier] = useState<DossierData | null>(null);
 	const [copied, setCopied] = useState<string | null>(null);
+	// Basemap off by default (TR-166); the switch is the reader's choice.
+	const [basemapOn, setBasemapOn] = useState(false);
+	const [basemapStatus, setBasemapStatus] = useState<"ok" | "unavailable">(
+		"ok",
+	);
+	const [homeSignal, setHomeSignal] = useState(0);
 
 	const query = data.query as DeltaQuery;
 	const choropleth = data.choropleth;
@@ -492,11 +503,11 @@ export default function GeoportalPage() {
 							<div className="relative min-w-0">
 								<ClientOnly
 									fallback={
-										<div className="h-[60vh] lg:h-[calc(100vh-19rem)] min-h-[420px] bg-gray-50" />
+										<div className="h-[60vh] lg:h-[calc(100vh-22rem)] min-h-[420px] bg-gray-50" />
 									}
 								>
 									{() => (
-										<div className="h-[60vh] lg:h-[calc(100vh-19rem)] min-h-[420px]">
+										<div className="h-[60vh] lg:h-[calc(100vh-22rem)] min-h-[420px]">
 											<Suspense
 												fallback={<div className="h-full bg-gray-50" />}
 											>
@@ -507,6 +518,10 @@ export default function GeoportalPage() {
 													onSelect={selectFromMap}
 													onHover={setHoverId}
 													focusId={focusId}
+													basemap={data.basemap}
+													basemapOn={basemapOn}
+													onBasemapStatus={setBasemapStatus}
+													homeSignal={homeSignal}
 													height="100%"
 													label={`${measureTitle}: ${t({ code: "geoportal.map", msg: "map" })}`}
 													describedBy={tableId}
@@ -515,7 +530,49 @@ export default function GeoportalPage() {
 										</div>
 									)}
 								</ClientOnly>
-								<div className="hidden md:block absolute left-2 bottom-2 z-10">
+								<div className="absolute right-2 bottom-8 z-10 flex flex-col items-end gap-1">
+									<Button
+										onPress={() => setHomeSignal((n) => n + 1)}
+										className="border rounded px-2 py-1 text-xs bg-white shadow-sm data-[focus-visible]:outline data-[focus-visible]:outline-2"
+									>
+										{t({ code: "geoportal.map.home", msg: "Full extent" })}
+									</Button>
+									{data.basemap && (
+										<Switch
+											isSelected={basemapOn}
+											onChange={setBasemapOn}
+											className="flex items-center gap-2 text-xs bg-white border rounded px-2 py-1 shadow-sm data-[focus-visible]:outline data-[focus-visible]:outline-2"
+										>
+											{({ isSelected }) => (
+												<>
+													<span
+														aria-hidden="true"
+														className={`inline-block w-7 h-4 rounded-full relative ${isSelected ? "bg-blue-700" : "bg-gray-300"}`}
+													>
+														<span
+															className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${isSelected ? "left-3.5" : "left-0.5"}`}
+														/>
+													</span>
+													{t({ code: "geoportal.map.basemap", msg: "Basemap" })}
+												</>
+											)}
+										</Switch>
+									)}
+									{data.basemap &&
+										basemapOn &&
+										basemapStatus === "unavailable" && (
+											<p
+												role="status"
+												className="text-xs bg-amber-50 border border-amber-600 rounded px-2 py-1"
+											>
+												{t({
+													code: "geoportal.map.basemap_unavailable",
+													msg: "Basemap unavailable; boundaries and figures are still shown.",
+												})}
+											</p>
+										)}
+								</div>
+								<div className="hidden md:block absolute left-2 bottom-9 z-10">
 									<GeoLegend
 										legend={mapState.legend}
 										title={measureTitle}
@@ -542,7 +599,7 @@ export default function GeoportalPage() {
 								)}
 							</div>
 
-							<aside className="min-w-0 lg:h-[calc(100vh-19rem)] lg:min-h-[420px] lg:overflow-auto border rounded p-2">
+							<aside className="min-w-0 lg:h-[calc(100vh-22rem)] lg:min-h-[420px] lg:overflow-auto border rounded p-2">
 								<Tabs defaultSelectedKey="place">
 									<TabList
 										aria-label={t({ code: "geoportal.panel", msg: "Panel" })}
