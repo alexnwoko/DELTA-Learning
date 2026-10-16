@@ -8,6 +8,7 @@ import {
 } from "react";
 import type { ValueState } from "~/utils/valueState";
 import { BASEMAP_ATTRIBUTION, isSelfHostedTileUrl } from "~/utils/basemap";
+import { dataTokens } from "~/utils/designTokens.generated";
 import { LEAFLET_CSS, LEAFLET_JS } from "~/utils/leafletAssets";
 import { ViewContext } from "~/frontend/context";
 import { formatNumberWithoutDecimals } from "~/utils/currency";
@@ -172,9 +173,15 @@ function areaStyle(
 				? CLASS_OPACITY[3]
 				: CLASS_OPACITY[rampIndex(area.classIndex, classCount)];
 		return {
-			color: marker ? marker.stroke : family ? "#374151" : maxColor,
+			color: marker
+				? marker.stroke
+				: family
+					? dataTokens.map.shadedOutline.stroke
+					: maxColor,
 			fillColor: family ? (area.color as string) : maxColor,
-			weight: marker ? marker.strokeWidth : 1.2,
+			weight: marker
+				? marker.strokeWidth
+				: dataTokens.map.shadedOutline.strokeWidth,
 			opacity: 1,
 			fillOpacity: family ? 1 : step,
 		};
@@ -548,8 +555,8 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 								style={{
 									margin: "0 0 4px 0",
 									padding: "4px 8px",
-									borderLeft: "3px solid #b45309",
-									background: "#fff7ed",
+									borderLeft: `${dataTokens.map.notAppliedNote.borderWidth}px solid ${dataTokens.map.notAppliedNote.border}`,
+									background: dataTokens.map.notAppliedNote.background,
 								}}
 							>
 								{strip.text}
@@ -563,7 +570,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 						height: "500px",
 						width: "100%",
 						zIndex: "0",
-						backgroundColor: "#f3f4f6",
+						backgroundColor: dataTokens.map.canvas.background,
 					}}
 				></div>
 
@@ -597,7 +604,11 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 															rampIndex(c.index, legend.classes.length)
 														]
 											}
-											stroke={currentFamily ? "#374151" : currentLegendMaxColor}
+											stroke={
+												currentFamily
+													? dataTokens.map.shadedOutline.stroke
+													: currentLegendMaxColor
+											}
 										/>
 										{c.lower === c.upper
 											? formatNumberWithoutDecimals(c.upper)
@@ -613,7 +624,11 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 												: currentLegendMaxColor
 										}
 										opacity={currentFamily ? 1 : CLASS_OPACITY[3]}
-										stroke={currentFamily ? "#374151" : currentLegendMaxColor}
+										stroke={
+											currentFamily
+												? dataTokens.map.shadedOutline.stroke
+												: currentLegendMaxColor
+										}
 									/>
 									{legend.singleTone.reason === "too_few_areas"
 										? ctx.t(
