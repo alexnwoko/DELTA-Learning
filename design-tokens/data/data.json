@@ -318,6 +318,20 @@
 				},
 				"$description": "Also colours record-count maps today (measureFamily(\"records\") returns \"events\")."
 			}
+		},
+		"flag": {
+			"$description": "Markers for records flagged for review (C30).",
+			"review-chip": {
+				"$description": "Chip naming a plausibility flag in tables and lists. Same meaning as data.map.plausibility-marker on maps.",
+				"background": {
+					"$type": "color",
+					"$value": "#fef3c7"
+				},
+				"text": {
+					"$type": "color",
+					"$value": "#78350f"
+				}
+			}
 		}
 	}
 }

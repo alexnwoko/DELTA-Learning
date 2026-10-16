@@ -46,6 +46,10 @@ describe("data-layer tokens (FE-Tokens-01)", () => {
 		expect(dataTokens.map.canvas).toEqual({ background: "#f3f4f6" });
 	});
 
+	it("carry the review-flag chip (C30)", () => {
+		expect(dataTokens.flag.reviewChip).toEqual({ background: "#fef3c7", text: "#78350f" });
+	});
+
 	it("keep no-records and not-reported as separate tokens (TR-076)", () => {
 		expect(dataTokens.map.noRecords).toBeDefined();
 		expect(dataTokens.state.notReported).toBeDefined();

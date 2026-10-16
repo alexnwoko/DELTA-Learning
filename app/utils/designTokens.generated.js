@@ -102,5 +102,11 @@ export const dataTokens = {
 			"#756bb1",
 			"#54278f"
 		]
+	},
+	"flag": {
+		"reviewChip": {
+			"background": "#fef3c7",
+			"text": "#78350f"
+		}
 	}
 };

@@ -159,6 +159,34 @@
 					}
 				}
 			}
+		},
+		"text-muted": {
+			"$type": "color",
+			"$value": "#4d4d4d",
+			"$description": "Secondary text and notes",
+			"$extensions": {
+				"org.undrr.delta": {
+					"mangrove": {
+						"release": "v2.1.0",
+						"path": "color.neutral-600",
+						"brand": "mangrove base"
+					}
+				}
+			}
+		},
+		"focus-ring": {
+			"$type": "color",
+			"$value": "#866200",
+			"$description": "Focus ring colour (WCAG 2.4.7)",
+			"$extensions": {
+				"org.undrr.delta": {
+					"mangrove": {
+						"release": "v2.1.0",
+						"path": "color.focus-ring",
+						"brand": "mangrove base"
+					}
+				}
+			}
 		}
 	}
 }
