@@ -16,6 +16,10 @@ export const GEO_HUMAN_MEASURES = [
 	"affected_direct",
 	"affected_indirect",
 	"displaced",
+	// From the displaced rows, by the shared rule (contract O-2): never
+	// added to displaced or to each other.
+	"evacuated",
+	"relocated",
 ] as const;
 
 export type GeoHumanMeasure = (typeof GEO_HUMAN_MEASURES)[number];
@@ -140,6 +144,16 @@ export const GEO_MEASURE_INFO: Record<GeoMeasure, GeoMeasureInfo> = {
 	},
 	displaced: {
 		label: { code: "geoportal.measure.displaced", msg: "Displaced" },
+		unit: PEOPLE,
+		family: "people",
+	},
+	evacuated: {
+		label: { code: "geoportal.measure.evacuated", msg: "Evacuated" },
+		unit: PEOPLE,
+		family: "people",
+	},
+	relocated: {
+		label: { code: "geoportal.measure.relocated", msg: "Relocated" },
 		unit: PEOPLE,
 		family: "people",
 	},

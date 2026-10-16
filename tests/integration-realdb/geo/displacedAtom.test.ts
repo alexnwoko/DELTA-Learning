@@ -42,10 +42,10 @@ async function displacedRow(
 	`);
 }
 
-async function atom(recordId: string) {
+async function atom(recordId: string, measure = "displaced") {
 	const res = await dr.execute(sql`
 		SELECT DISTINCT value, value_state FROM geo.impact_atom
-		WHERE disaster_record_id = ${recordId} AND measure = 'displaced'
+		WHERE disaster_record_id = ${recordId} AND measure = ${measure}
 	`);
 	const rows = res.rows as { value: string | null; value_state: string }[];
 	expect(rows).toHaveLength(1);
@@ -133,5 +133,22 @@ describe("geo read model: displaced leaves out people relocated after the event"
 			value: 0,
 			state: "zero_confirmed",
 		});
+	});
+
+	it("reads evacuated and relocated by the shared rule, never added together", async () => {
+		const both = async (r: string) => [
+			(await atom(r, "evacuated")).value,
+			(await atom(r, "relocated")).value,
+		];
+		expect(await both(rec.disjoint)).toEqual([109, 2000]);
+		expect(await both(rec.identical)).toEqual([27, 27]);
+		expect(await both(rec.totalOnly)).toEqual([null, null]);
+		expect(await both(rec.crossTab)).toEqual([null, 30]);
+		expect(await both(rec.relocatedOnly)).toEqual([null, 80]);
+		expect(await both(rec.zeroEvacuated)).toEqual([0, 60]);
+		expect((await atom(rec.zeroEvacuated, "evacuated")).state).toBe(
+			"zero_confirmed",
+		);
+		expect((await atom(rec.totalOnly, "evacuated")).state).toBe("not_reported");
 	});
 });

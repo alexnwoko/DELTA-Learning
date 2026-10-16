@@ -8153,6 +8153,21 @@
     "description": "File: app/routes/$lang+/geoportal+/_index.tsx:241"
   },
   {
+    "id": "geoportal.measure.evacuated",
+    "translation": "Evacuated",
+    "description": "File: app/utils/geoMeasures.ts"
+  },
+  {
+    "id": "geoportal.measure.relocated",
+    "translation": "Relocated",
+    "description": "File: app/utils/geoMeasures.ts"
+  },
+  {
+    "id": "geoportal.print.source",
+    "translation": "Printed from {url}",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
+  },
+  {
     "id": "geoportal.basis.provisional",
     "translation": "Include data not yet published (Provisional)",
     "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:407"
