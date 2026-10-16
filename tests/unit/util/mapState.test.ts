@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
 	FAMILY_RAMPS,
 	MIN_AREAS_FOR_CLASSES,
+	SPIKE_BASE_FILL,
+	defaultSymbolFor,
 	type MapCell,
 	type MapScopeQuery,
 	OFF_RAMP_STATES,
@@ -365,5 +367,62 @@ describe("q2Grade (proposed thresholds)", () => {
 		expect(q2Grade(6320731, 6850128)).toBe("D");
 		expect(q2Grade(5, null)).toBeNull();
 		expect(q2Grade(undefined, 100)).toBeNull();
+	});
+});
+
+describe("spike mode (ruling RV-5)", () => {
+	const spikes = (cells: MapCell[]) =>
+		resolveMapState(cells, {
+			family: "people",
+			scope: signedIn,
+			symbol: "spike",
+		});
+
+	it("defaults counts to spikes and densities to a choropleth", () => {
+		expect(defaultSymbolFor("count")).toBe("spike");
+		expect(defaultSymbolFor("density")).toBe("choropleth");
+		expect(defaultSymbolFor("rate")).toBe("choropleth");
+	});
+
+	it("keeps the choropleth when no symbol is given", () => {
+		const r = resolve([reported("a", 1), reported("b", 2)]);
+		expect(r.legend.symbol).toBe("choropleth");
+		expect(r.legend.spikes).toBeNull();
+		expect(r.areas.every((a) => a.spike === null)).toBe(true);
+	});
+
+	it("sizes spikes linearly to the largest reported value", () => {
+		const r = spikes([reported("a", 100), reported("b", 25), reported("c", 5)]);
+		expect(r.legend.mode).toBe("spikes");
+		expect(byId(r, "a").spike).toEqual({ ratio: 1 });
+		expect(byId(r, "b").spike).toEqual({ ratio: 0.25 });
+		expect(byId(r, "a").color).toBe(SPIKE_BASE_FILL);
+		expect(byId(r, "a").classIndex).toBeNull();
+		expect(r.legend.spikes?.maxValue).toBe(100);
+		expect(r.legend.spikes?.color).toBe(FAMILY_RAMPS.people.at(-1));
+	});
+
+	it("draws no spike for off-ramp states, which keep their own encoding", () => {
+		const r = spikes([
+			reported("a", 10),
+			cell("z", "zero_confirmed", { recordsZeroConfirmed: 2 }),
+			cell("n", "not_reported"),
+		]);
+		expect(byId(r, "z").spike).toBeNull();
+		expect(byId(r, "z").color).toBeNull();
+		expect(byId(r, "n").spike).toBeNull();
+	});
+
+	it("says when the largest spike includes flagged figures", () => {
+		const flagged = spikes([
+			reported("a", 100, { recordsFlagged: 1 }),
+			reported("b", 5),
+		]);
+		expect(flagged.legend.spikes?.maxFlagged).toBe(true);
+		const clean = spikes([
+			reported("a", 100),
+			reported("b", 5, { recordsFlagged: 1 }),
+		]);
+		expect(clean.legend.spikes?.maxFlagged).toBe(false);
 	});
 });

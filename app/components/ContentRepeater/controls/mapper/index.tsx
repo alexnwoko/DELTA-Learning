@@ -7,6 +7,7 @@ import {
 	checkShapeAgainstDivisions,
 } from "~/utils/spatialUtils";
 import { ViewContext } from "~/frontend/context";
+import { inlineBasemapScript } from "~/utils/leafletBasemap";
 import { absoluteAssetUrl, LEAFLET_CSS, LEAFLET_JS, MAP_MARKER_ICON, MAP_MARKER_ICON_ANCHOR } from "~/utils/leafletAssets";
 
 declare namespace L {
@@ -935,9 +936,7 @@ export const previewMap = (items: any) => {
 
             const map = L.map("map", { preferCanvas: true }); //.setView([43.833, 87.616], 2);
 
-			L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-				attribution: "",
-			}).addTo(map);
+			${inlineBasemapScript("map")}
 
             const items = \`${items}\`;
             const boundsArray = [];
