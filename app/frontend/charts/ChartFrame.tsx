@@ -119,6 +119,7 @@ export function ChartFrame({ ctx, title, meta, rows, formatValue, children }: Ch
 				</h3>
 				<MenuTrigger>
 					<Button
+						data-print="hide"
 						aria-label={`${t("charts.download", "Download")}: ${title}`}
 						className="rounded border border-brand-border-control px-2 py-1 text-sm text-brand-interactive data-[hovered]:bg-brand-surface-subtle data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
 					>
@@ -153,9 +154,11 @@ export function ChartFrame({ ctx, title, meta, rows, formatValue, children }: Ch
 					</span>
 				))}
 			</figcaption>
-			<Disclosure>
+			{/* The table prints open (print.css), so the numbers reach paper too. */}
+			<Disclosure data-print="expand">
 				<Button
 					slot="trigger"
+					data-print="hide"
 					className="self-start text-sm text-brand-interactive underline data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
 				>
 					{t("charts.data_table", "Data table")}
