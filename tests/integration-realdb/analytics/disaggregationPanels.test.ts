@@ -21,6 +21,7 @@ const ids = createTestIds();
 ids.userEmail = ids.userEmail.replace("@", "-dsgpanels@");
 const withBreakdown = randomUUID();
 const totalOnly = randomUUID();
+const evacRelocated = randomUUID();
 
 async function row(
 	recordId: string,
@@ -39,6 +40,25 @@ async function row(
 	);
 }
 
+// One sex-split displaced row with a timing or duration (the Displaced table
+// carries them on the value row, not on human_dsg).
+async function displacedRow(
+	recordId: string,
+	sex: string,
+	displaced: number,
+	timing: string | null,
+	duration: string | null,
+) {
+	const id = randomUUID();
+	await dr.execute(sql`
+		INSERT INTO human_dsg (id, record_id, sex) VALUES (${id}, ${recordId}, ${sex})
+	`);
+	await dr.execute(sql`
+		INSERT INTO displaced (dsg_id, displaced, timing, duration)
+		VALUES (${id}, ${displaced}, ${timing}, ${duration})
+	`);
+}
+
 const filters = () => ({
 	countryAccountsId: ids.countryAccountId,
 	audience: "public",
@@ -53,7 +73,7 @@ const filters = () => ({
 describe("disaggregation panels", () => {
 	beforeAll(async () => {
 		await createTestUser(ids);
-		for (const id of [withBreakdown, totalOnly]) {
+		for (const id of [withBreakdown, totalOnly, evacRelocated]) {
 			await dr.execute(sql`
 				INSERT INTO disaster_records (id, country_accounts_id, "approvalStatus")
 				VALUES (${id}, ${ids.countryAccountId}, 'published')
@@ -67,6 +87,9 @@ describe("disaggregation panels", () => {
 		await row(withBreakdown, { sex: "m", age: "0-14" }, 2);
 		await row(withBreakdown, { sex: "f" }, 99, '{"ethnicity":"x"}');
 		await row(totalOnly, {}, 5);
+		// 27 evacuated and the same 27 relocated (the IDENTICAL pattern).
+		await displacedRow(evacRelocated, "m", 27, "pre-emptive", null);
+		await displacedRow(evacRelocated, "m", 27, "reactive", "permanent");
 	});
 
 	afterAll(async () => {
@@ -74,8 +97,12 @@ describe("disaggregation panels", () => {
 			DELETE FROM injured WHERE dsg_id IN (
 				SELECT id FROM human_dsg WHERE record_id IN (${withBreakdown}, ${totalOnly}))
 		`);
+		await dr.execute(sql`
+			DELETE FROM displaced WHERE dsg_id IN (
+				SELECT id FROM human_dsg WHERE record_id = ${evacRelocated})
+		`);
 		await dr.execute(
-			sql`DELETE FROM human_dsg WHERE record_id IN (${withBreakdown}, ${totalOnly})`,
+			sql`DELETE FROM human_dsg WHERE record_id IN (${withBreakdown}, ${totalOnly}, ${evacRelocated})`,
 		);
 		await dr.execute(
 			sql`DELETE FROM disaster_records WHERE country_accounts_id = ${ids.countryAccountId}`,
@@ -85,12 +112,13 @@ describe("disaggregation panels", () => {
 
 	it("sex panel reads sex-only rows, excludes custom rows, reports coverage", async () => {
 		const g = await getGenderTotalsByHazardFilters(filters() as any);
-		expect(g.totalMen).toBe(6);
+		// 6 injured men, plus 27 evacuated men; the 27 relocated are not added.
+		expect(g.totalMen).toBe(6 + 27);
 		expect(g.totalWomen).toBe(4);
 		expect(g.totalNonBinary).toBe(0);
 		expect(g.genderCoverage).toEqual({
-			recordsWithBreakdown: 1,
-			recordsTotal: 2,
+			recordsWithBreakdown: 2,
+			recordsTotal: 3,
 		});
 	});
 
