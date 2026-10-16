@@ -52,6 +52,13 @@ describe("ChartFrame (TR-245)", () => {
 		expect(render("provisional")).toContain("PROVISIONAL: includes unpublished records; not for publication");
 	});
 
+	it("hides its buttons on paper and prints the data table open (TR-246)", () => {
+		const html = render();
+		expect(html).toMatch(/<button[^>]*data-print="hide"[^>]*aria-label="Download: Deaths by hazard"/);
+		expect(html).toMatch(/data-print="expand"/);
+		expect(html).toContain("<td");
+	});
+
 	it("uses token colours only (ADR-19)", () => {
 		expect(render()).not.toMatch(/(bg|text|border)-(gray|blue|white|black|amber)-?\d*/);
 	});
