@@ -35,10 +35,21 @@ export function dataEntryBasemap(
  */
 export function inlineBasemapScript(mapVar: string, basemap: LeafletBasemap | null = dataEntryBasemap()): string {
 	if (!basemap) return "";
+	// Join the origin as text: new URL() would percent-encode {z}/{x}/{y}
+	// and Leaflet would never fill them in (every tile a 404).
+	const origin = typeof window === "undefined" ? undefined : window.location?.origin;
 	const url =
-		basemap.url.startsWith("/") && typeof window !== "undefined" && window.location?.origin
-			? new URL(basemap.url, window.location.origin).href
+		basemap.url.startsWith("/") && !basemap.url.startsWith("//") && origin
+			? `${origin}${basemap.url}`
 			: basemap.url;
-	const safe = (value: unknown) => JSON.stringify(value).replace(/</g, "\\u003c");
+	// Same escaping as inline JSON elsewhere: the value can never close the
+	// script element or end a line in older engines.
+	const safe = (value: unknown) =>
+		JSON.stringify(value)
+			.replace(/</g, "\\u003c")
+			.replace(/>/g, "\\u003e")
+			.replace(/&/g, "\\u0026")
+			.replace(/\u2028/g, "\\u2028")
+			.replace(/\u2029/g, "\\u2029");
 	return `L.tileLayer(${safe(url)}, ${safe({ attribution: basemap.attribution, maxZoom: basemap.maxZoom })}).addTo(${mapVar});`;
 }
