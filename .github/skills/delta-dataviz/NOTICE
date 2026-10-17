@@ -1,0 +1,14 @@
+delta-dataviz (DELTA, Apache-2.0) includes third-party material in third_party/, each under its own licence (LICENSE file in each folder). Copied 2026-10-17. DELTA rules override every third-party rule.
+
+| Folder | Source | Commit | Licence | Changes |
+|---|---|---|---|---|
+| vois-dataviz | https://github.com/ommakes/Skills (vois-dataviz), Om Suthar | e09eafb0c77a8630bedde9b38534359b26267205 | MIT | data/*.json and scripts/{detect,check-spec,lib}.mjs only. Telemetry sentences calling vois_* tools removed (4); "vois_get_tokens" replaced by DELTA design tokens. SKILL.md and references not copied |
+| tufte | https://github.com/aref-vc/tufte-claude-skill | a145acf0c158f822d70ccdc2590164abb83b39cb | MIT | checklist.md and kill-list.md only |
+| tastecheck-data-viz | https://github.com/KyaniteLabs/tastecheck (skills/data-viz) | db39a0e4fef91ecf1a14aefb30d06f7799608f87 | MIT | SKILL.md copied as SOURCE.md (reference) |
+| community-access | https://github.com/Community-Access/accessibility-agents | decf6bac7f086c19afb242797b4974671ceff597 | MIT | Four skills copied as *.SOURCE.md (reference) |
+| cartography-geoviz | https://github.com/muend/geoai-skills (skills/cartography-geoviz) | 19937ce14c7d60d764732cc2688c6a3dd92f6d0e | MIT | SKILL.md copied as SOURCE.md (reference) |
+| dataviz-principles | https://github.com/z3tt/dataviz-skills (dataviz-principles), Cedric Scherer | ae337e323f470dd5444640cdd344e1c1ec8b3145 | MIT | SKILL.md copied as SOURCE.md (reference) |
+| faostat-infographic | https://github.com/berba-q/faostat-skills (skills/infographic) | 932149326e682360b622912d49b2056fa35cc922 | MIT | SKILL.md copied as SOURCE.md (reference) |
+| recharts | https://github.com/TerminalSkills/skills (skills/recharts) | 6edcf94159d9f46b0759d2e1b59dd545cfaca254 | Apache-2.0 | SKILL.md copied as SOURCE.md (reference) |
+
+Cited, not copied: Financial Times Visual Vocabulary (https://github.com/Financial-Times/chart-doctor, MIT, commit befb9cba21849432a4029d0cfdda938819ae733f). OCHA Humanitarian Icons 2026 (https://github.com/UN-OCHA/humanitarian-icons-2026-BDU, CC BY 4.0) are referenced for use, not bundled here.
