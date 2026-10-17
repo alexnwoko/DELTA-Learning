@@ -885,3 +885,54 @@ describe("hazard tree from G6 (nested) to the bar's flat lists", () => {
 		expect(html).toContain("MH0600");
 	});
 });
+
+import { GeoSendai } from "~/frontend/geoportal/GeoSendai";
+
+describe("Sendai Framework block in the place panel (I-5)", () => {
+	const cumulative = {
+		deaths: {
+			value: 103894,
+			value_state: "reported",
+			records_reported: 103,
+			records_total: 917,
+		},
+		missing: {
+			value: null,
+			value_state: "not_reported",
+			records_reported: 0,
+			records_total: 917,
+		},
+		injured: {
+			value: 0,
+			value_state: "zero_confirmed",
+			records_reported: 4,
+			records_total: 917,
+		},
+	};
+	const html = (level: number) =>
+		renderToString(
+			<GeoSendai
+				cumulative={cumulative}
+				level={level}
+				analysisHref="/en/analytics?division=abc"
+			/>,
+		);
+
+	it("keeps each figure in its own state and never shows a missing one as zero", () => {
+		const h = html(1);
+		expect(h).toContain("103,894");
+		expect(h).toContain("(reported by 103 of 917)");
+		expect(h).toContain("No data"); // the shared label for not_reported, never 0
+		expect(h).toContain("0 (confirmed)");
+		expect(h).toContain("Directly affected");
+	});
+
+	it("labels the source, refuses Target C and marks sub-national figures", () => {
+		const h = html(1);
+		expect(h).toContain("not the official Sendai Framework submission");
+		expect(h).toContain("MONETARY_CONVENTIONS_PENDING");
+		expect(h).toContain("Sub-national figures. Not a Sendai indicator value.");
+		expect(html(0)).not.toContain("Sub-national figures");
+		expect(h).toContain('href="/en/analytics?division=abc"');
+	});
+});
