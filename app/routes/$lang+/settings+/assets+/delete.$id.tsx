@@ -49,6 +49,13 @@ export const action = authActionWithPerm("EditData", async (args) => {
 
 	const countryAccountsId = await getCountryAccountsIdFromSession(request);
 	const lang = params.lang as string;
+	const ctx = new BackendContext(args);
+
+	// Same guards as the loader: the action can be posted without it.
+	const item = await AssetRepository.findById(id, countryAccountsId, ctx.lang);
+	if (!item) throw new Response("Asset not found", { status: 404 });
+	if (item.isBuiltIn)
+		throw new Response("Built-in assets cannot be deleted", { status: 403 });
 
 	const result = await AssetRepository.deleteById(id, countryAccountsId);
 

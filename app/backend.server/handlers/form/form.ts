@@ -288,6 +288,10 @@ export async function formSave<T>(
 			}
 		});
 	} catch (error) {
+		// A thrown Response (404, 403) is an HTTP outcome, not a save error.
+		if (error instanceof Response) {
+			throw error;
+		}
 		const message =
 			error instanceof Error && error.message
 				? error.message

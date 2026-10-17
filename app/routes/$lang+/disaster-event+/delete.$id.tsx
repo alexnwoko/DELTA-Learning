@@ -35,14 +35,19 @@ export const loader = authLoaderWithPerm(
 			throw new Response("Unauthorized", { status: 401 });
 		}
 
-		const ctx = new BackendContext(loaderArgs);
-		const item = await disasterEventById(ctx, id);
-		if (!item) {
+		// Another tenant's event answers like a missing one, so the status
+		// does not reveal that the id exists.
+		if (
+			!(await DisasterEventRepository.existsByIdAndCountryAccountsId(
+				id,
+				countryAccountsId,
+			))
+		) {
 			throw new Response("Not Found", { status: 404 });
 		}
-		if (item.countryAccountsId !== countryAccountsId) {
-			throw new Response("Unauthorized", { status: 401 });
-		}
+
+		const ctx = new BackendContext(loaderArgs);
+		const item = await disasterEventById(ctx, id);
 
 		return {
 			item: {
@@ -67,14 +72,18 @@ export const action = authActionWithPerm(
 			throw new Response("Unauthorized", { status: 401 });
 		}
 
-		const ctx = new BackendContext(actionArgs);
-		const item = await disasterEventById(ctx, id);
-		if (!item) {
+		// Another tenant's event answers like a missing one, so the status
+		// does not reveal that the id exists.
+		if (
+			!(await DisasterEventRepository.existsByIdAndCountryAccountsId(
+				id,
+				countryAccountsId,
+			))
+		) {
 			throw new Response("Not Found", { status: 404 });
 		}
-		if (item.countryAccountsId !== countryAccountsId) {
-			throw new Response("Unauthorized", { status: 401 });
-		}
+
+		const ctx = new BackendContext(actionArgs);
 
 		const deletedEvents = await dr.transaction(async (tx) => {
 			await entityValidationAssignmentDeleteByEntityId(
