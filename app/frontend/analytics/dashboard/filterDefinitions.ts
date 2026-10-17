@@ -17,31 +17,6 @@ import { geoMeasureInfo, type GeoLabel } from "~/utils/geoMeasures";
 import { hazardColourVar } from "~/utils/hazardIdentity";
 import type { DashboardView } from "./views";
 
-export type NestedHazardTree = {
-	types: (HazardTree["types"][number] & {
-		clusters: (HazardTree["clusters"][number] & { hazards: HazardTree["hazards"] })[];
-	})[];
-};
-
-/**
- * getHazardTree nests clusters in types and hazards in clusters; the bar
- * reads three flat lists (HazardTree), so the tree is flattened here.
- */
-export function flattenHazardTree(tree: NestedHazardTree): HazardTree {
-	const node = (n: { id: string; name: string; recordCountSubtree: number | string }) => ({
-		id: n.id,
-		name: n.name,
-		recordCountSubtree: Number(n.recordCountSubtree),
-	});
-	return {
-		types: tree.types.map(node),
-		clusters: tree.types.flatMap((ty) => (ty.clusters ?? []).map((c) => ({ ...node(c), typeId: ty.id }))),
-		hazards: tree.types.flatMap((ty) =>
-			(ty.clusters ?? []).flatMap((c) => (c.hazards ?? []).map((h) => ({ ...node(h), clusterId: c.id, code: h.code }))),
-		),
-	};
-}
-
 /** The sub-category buttons of a view. */
 export function chipsFor(
 	view: DashboardView,

@@ -25,7 +25,7 @@ import type { GeoT } from "~/frontend/geoportal/i18n";
 import { BasisSwitch, PublishedBasisNotice, type ApprovalCounts } from "~/frontend/analytics/dashboard/BasisControls";
 import { DashboardDownload } from "~/frontend/analytics/dashboard/DashboardDownload";
 import { DashboardShell, viewLabel } from "~/frontend/analytics/dashboard/DashboardShell";
-import { searchForView, viewFromSearch, type DashboardView } from "~/frontend/analytics/dashboard/views";
+import { searchForView, toggleDivision, viewFromSearch, type DashboardView } from "~/frontend/analytics/dashboard/views";
 import { EventMap } from "~/frontend/analytics/dashboard/panels/events/EventMap";
 import { eventDashboardPanels } from "~/frontend/analytics/dashboard/panels/events/eventPanels";
 import { hazardEventDashboardPanels } from "~/frontend/analytics/dashboard/panels/hazards/hazardEventPanels";
@@ -139,6 +139,9 @@ export default function AnalysisDashboard() {
 
 	// Until the shared filter bar arrives, the line names the place and basis.
 	const geoT = ctx.t as unknown as GeoT;
+	// A map click sets the place filter; clicking the selected area clears it.
+	const selectDivision = (divisionId: string) =>
+		setSearchParams(searchForView(toggleDivision(query, divisionId), view), { preventScrollReset: true });
 	const filterOptions = ld.filterOptions as DashboardFilterOptions;
 	// The same words as the geoportal bar's summary (querySummary).
 	const summary = querySummary(query, { scopeLabel: ld.country || undefined, hazardTree: filterOptions.hazardTree }, geoT);
@@ -221,9 +224,9 @@ export default function AnalysisDashboard() {
 				map={
 					// An empty view shows its one frame, with no map of empty areas.
 					panels.some((p) => p.id.endsWith("-empty")) ? undefined : ld.impactMap ? (
-						<ImpactMap ctx={ctx} map={ld.impactMap as ImpactMapPayload} scope={mapScope} />
+						<ImpactMap ctx={ctx} map={ld.impactMap as ImpactMapPayload} scope={mapScope} onSelectDivision={selectDivision} />
 					) : ld.eventMap ? (
-						<EventMap ctx={ctx} map={ld.eventMap as EventMapPayload} scope={mapScope} />
+						<EventMap ctx={ctx} map={ld.eventMap as EventMapPayload} scope={mapScope} onSelectDivision={selectDivision} />
 					) : undefined
 				}
 				panels={panels}

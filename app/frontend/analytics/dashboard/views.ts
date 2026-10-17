@@ -3,6 +3,7 @@
 // dimensions of delta.query/1 (`dim`); Sectors is a page view (`view`),
 // read from disaster records by sector, as `level` is a geo view parameter.
 // Pure module: the URL is read and written here and nowhere else.
+import { withPlace } from "~/frontend/geoportal/filterBarState";
 import { parseDeltaQuery, serializeDeltaQuery, type DeltaQuery, type QueryDimension } from "~/utils/deltaQuery";
 
 export type DashboardView = "sectors" | QueryDimension;
@@ -52,4 +53,13 @@ export function legacyAnalyticsTarget(page: string, params: URLSearchParams): st
 	const { query } = parseDeltaQuery(params);
 	const search = searchForView(query, view).toString();
 	return search ? `/analytics?${search}` : "/analytics";
+}
+
+/**
+ * A map click on a division: it becomes the place filter for the whole
+ * page (one place facet at a time, so any region is cleared); clicking the
+ * division already selected clears it.
+ */
+export function toggleDivision(query: DeltaQuery, divisionId: string): DeltaQuery {
+	return withPlace(query, query.where.geo?.divisionId === divisionId ? null : { divisionId });
 }
