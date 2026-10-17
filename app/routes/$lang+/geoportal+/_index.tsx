@@ -49,6 +49,8 @@ import {
 	type NestedHazardTree,
 } from "~/frontend/geoportal/GeoFilterBar";
 import { GeoReadout } from "~/frontend/geoportal/GeoReadout";
+import { GeoSendai } from "~/frontend/geoportal/GeoSendai";
+import { withPlace } from "~/frontend/geoportal/filterBarState";
 import { GeoDossier, type DossierData } from "~/frontend/geoportal/GeoDossier";
 import {
 	barCells,
@@ -944,19 +946,33 @@ export default function GeoportalPage() {
 											className="data-[inert]:hidden print:!block"
 										>
 											{dossier ? (
-												<GeoDossier
-													data={dossier}
-													hazardTypeNames={hazardTypeNames}
-													autoNote={
-														autoChosen
-															? t({
-																	code: "geoportal.dossier.auto",
-																	msg: "Showing the area with the highest value. Select another area on the map or in the list.",
-																})
-															: null
-													}
-													t={t}
-												/>
+												<div className="space-y-3">
+													<GeoDossier
+														data={dossier}
+														hazardTypeNames={hazardTypeNames}
+														autoNote={
+															autoChosen
+																? t({
+																		code: "geoportal.dossier.auto",
+																		msg: "Showing the area with the highest value. Select another area on the map or in the list.",
+																	})
+																: null
+														}
+														t={t}
+													/>
+													{query.dimension === "disaster_impact" && (
+														<GeoSendai
+															cumulative={dossier.cumulative}
+															level={dossier.division.level}
+															analysisHref={`/${lang}/analytics?${serializeDeltaQuery(
+																withPlace(query, {
+																	divisionId: dossier.division.id,
+																}),
+															).toString()}`}
+															t={t}
+														/>
+													)}
+												</div>
 											) : (
 												<p className="text-sm text-brand-text-muted">
 													{shownId
