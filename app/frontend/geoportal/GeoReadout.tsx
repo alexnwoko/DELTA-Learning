@@ -28,7 +28,23 @@ export function GeoReadout(props: {
 			aria-hidden="true"
 		>
 			<p className="font-semibold leading-tight">{props.name}</p>
-			<p className="text-base">{value}</p>
+			{area?.symbol?.kind === "bars" ? (
+				<ul className="text-sm">
+					{area.symbol.bars.map((b) => (
+						<li key={b.key}>
+							{b.label}:{" "}
+							{b.valueState === "reported" && typeof b.value === "number"
+								? `${fmt(b.value)} ${props.unit}`.trim()
+								: t({
+										code: "geoportal.readout.part_not_reported",
+										msg: "not reported",
+									})}
+						</li>
+					))}
+				</ul>
+			) : (
+				<p className="text-base">{value}</p>
+			)}
 			{tip && tip.stateDetail && (
 				<p className="text-xs text-brand-text-muted">{tip.stateDetail}</p>
 			)}

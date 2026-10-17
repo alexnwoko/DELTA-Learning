@@ -1,6 +1,7 @@
 // Legend for the geoportal map: ramp classes, then every off-ramp state on
 // the map, each with its own encoding (TR-169), then areas with no records.
 import {
+	bubbleRadiusPx,
 	OFF_RAMP_STATES,
 	PLAUSIBILITY_MARKER,
 	STATE_ENCODING,
@@ -54,7 +55,6 @@ function Swatch(props: {
 	);
 }
 
-
 export interface GeoLegendProvenance {
 	/** Read-model refresh time (ISO), or null when never refreshed. */
 	refreshedAt: string | null;
@@ -87,20 +87,30 @@ export function GeoLegend(props: {
 					{ n: fmt(n) },
 				);
 	const method =
-		legend.mode === "classes"
-				? t(
-						{
-							code: "geoportal.legend.method_quantile",
-							msg: "Quantile classes, {n}",
-						},
-						{ n: legend.classes.length },
-					)
-				: legend.mode === "single_tone"
-					? t({
-							code: "geoportal.legend.method_single",
-							msg: "One colour: too few areas for classes",
-						})
-					: null;
+		legend.mode === "bubbles"
+			? t({
+					code: "geoportal.legend.method_bubbles",
+					msg: "Bubble area is proportional to the value",
+				})
+			: legend.mode === "bars"
+				? t({
+						code: "geoportal.legend.method_bars",
+						msg: "Bar length is proportional to the value; parts are not added",
+					})
+				: legend.mode === "classes"
+					? t(
+							{
+								code: "geoportal.legend.method_quantile",
+								msg: "Quantile classes, {n}",
+							},
+							{ n: legend.classes.length },
+						)
+					: legend.mode === "single_tone"
+						? t({
+								code: "geoportal.legend.method_single",
+								msg: "One colour: too few areas for classes",
+							})
+						: null;
 	return (
 		<section
 			aria-label={props.title}
@@ -112,6 +122,82 @@ export function GeoLegend(props: {
 			)}
 			{method && <p className="text-xs text-brand-text-muted mb-1">{method}</p>}
 			<ul className="space-y-1">
+				{legend.mode === "bubbles" &&
+					legend.symbols?.references.map((r) => {
+						const rad = bubbleRadiusPx(r.ratio, 14);
+						const size = Math.ceil(rad * 2 + 2);
+						return (
+							<li key={`bubble-${r.value}`} className="flex items-center gap-2">
+								<svg width={32} height={size} aria-hidden="true">
+									<circle
+										cx={16}
+										cy={size / 2}
+										r={rad}
+										fill={legend.symbols!.color}
+										fillOpacity={0.75}
+										stroke="#ffffff"
+									/>
+								</svg>
+								<span>{fmt(r.value)}</span>
+							</li>
+						);
+					})}
+				{legend.mode === "bubbles" && legend.symbols && (
+					<li className="text-xs">
+						{t({
+							code: "geoportal.legend.bubble_ring",
+							msg: "Ring: share of records that report this figure",
+						})}
+					</li>
+				)}
+				{legend.mode === "bubbles" &&
+					legend.symbols?.outliers.map((o) => (
+						<li key={`outlier-${o.areaId}`} className="text-xs">
+							{t(
+								{
+									code: "geoportal.legend.bubble_outlier",
+									msg: "Drawn at the cap, above the scale: {value}",
+								},
+								{ value: fmt(o.value) },
+							)}
+							{o.flagged
+								? ` ${t({ code: "geoportal.legend.flagged_short", msg: "(flagged for review)" })}`
+								: ""}
+						</li>
+					))}
+				{legend.mode === "bars" &&
+					legend.symbols?.parts.map((p, i) => (
+						<li key={`part-${p.key}`} className="flex items-center gap-2">
+							<svg width={14} height={14} aria-hidden="true">
+								<path
+									d="M3,13 V5 a4,4 0 0 1 8,0 V13 Z"
+									fill={legend.symbols!.color}
+									fillOpacity={1 - i * 0.3}
+								/>
+							</svg>
+							<span>{p.label}</span>
+						</li>
+					))}
+				{legend.mode === "bars" && legend.symbols && (
+					<li className="text-xs">
+						{t(
+							{
+								code: "geoportal.legend.bars_scale",
+								msg: "Longest bar: {value}. A dashed slot is not reported.",
+							},
+							{ value: fmt(legend.symbols.scaleMax) },
+						)}
+					</li>
+				)}
+				{(legend.mode === "bubbles" || legend.mode === "bars") &&
+					legend.symbols?.maxFlagged && (
+						<li className="text-xs">
+							{t({
+								code: "geoportal.legend.symbol_max_flagged",
+								msg: "Largest symbol includes figures flagged for review",
+							})}
+						</li>
+					)}
 				{legend.mode === "classes" &&
 					legend.classes.map((c) => (
 						<li key={c.index} className="flex items-center gap-2">

@@ -14,6 +14,9 @@ import { defaults as defaultControls, ScaleLine } from "ol/control";
 import VectorSource from "ol/source/Vector";
 import GeoJSON from "ol/format/GeoJSON";
 import { Fill, Stroke, Style } from "ol/style";
+import Feature from "ol/Feature";
+import Point from "ol/geom/Point";
+import { fromLonLat } from "ol/proj";
 import {
 	defaults as defaultInteractions,
 	MouseWheelZoom,
@@ -23,6 +26,9 @@ import "ol/ol.css";
 import type { FeatureLike } from "ol/Feature";
 
 import {
+	BAR_WIDTH_PX,
+	barLengthPx,
+	bubbleRadiusPx,
 	PLAUSIBILITY_MARKER,
 	STATE_ENCODING,
 	type MapArea,
@@ -65,6 +71,8 @@ export interface GeoMapProps {
 	onBasemapStatus?: (status: "ok" | "unavailable") => void;
 	/** Each change of this number fits the map back to all areas. */
 	homeSignal?: number;
+	/** Colour of bubbles and bars (legend.symbols.color); none in shading mode. */
+	symbolColor?: string | null;
 	/** Accessible name; the table alternative carries the figures. */
 	label: string;
 	describedBy?: string;
@@ -160,6 +168,123 @@ function styleFor(area: MapArea | undefined, selected: boolean): Style {
 	return styles;
 }
 
+const RING_GAP_PX = 2;
+const RING_WIDTH_PX = 2;
+const RING_TRACK = "#d1d5db";
+const SLOT_STROKE = "#9ca3af";
+
+/**
+ * Draws one area's symbol on its anchor point (Alex 2026-10-17, map symbol
+ * research s4 and s5): a bubble whose area carries the value, with a thin
+ * ring whose filled arc is the share of records reporting (n of N) and a
+ * break mark when drawn at the cap; or rounded bars on one shared scale,
+ * where a part not reported is an empty dashed slot, never a short bar.
+ * Off-ramp areas have no symbol, so a missing figure never reads as small.
+ */
+export function symbolStyle(area: MapArea, color: string): Style | undefined {
+	const sym = area.symbol;
+	if (!sym) return undefined;
+	const flagged = Boolean(area.quality.plausibility);
+	if (sym.kind === "bubble") {
+		const r = bubbleRadiusPx(sym.areaRatio);
+		return new Style({
+			zIndex: Math.round(1000 - r * 10),
+			renderer: (coords, state) => {
+				const c = state.context;
+				const pr = state.pixelRatio;
+				const [x, y] = coords as number[];
+				c.save();
+				c.beginPath();
+				c.arc(x, y, r * pr, 0, Math.PI * 2);
+				c.globalAlpha = 0.75;
+				c.fillStyle = color;
+				c.fill();
+				c.globalAlpha = 1;
+				c.lineWidth = (flagged ? PLAUSIBILITY_MARKER.strokeWidth : 1) * pr;
+				c.strokeStyle = flagged ? PLAUSIBILITY_MARKER.stroke : "#ffffff";
+				c.stroke();
+				if (sym.ring.of > 0) {
+					const rr = (r + RING_GAP_PX + RING_WIDTH_PX / 2) * pr;
+					c.lineWidth = RING_WIDTH_PX * pr;
+					c.beginPath();
+					c.arc(x, y, rr, 0, Math.PI * 2);
+					c.strokeStyle = RING_TRACK;
+					c.stroke();
+					const share = Math.min(sym.ring.n / sym.ring.of, 1);
+					if (share > 0) {
+						c.beginPath();
+						c.arc(x, y, rr, -Math.PI / 2, -Math.PI / 2 + share * Math.PI * 2);
+						c.strokeStyle = color;
+						c.stroke();
+					}
+				}
+				if (sym.outlier) {
+					c.beginPath();
+					c.moveTo(x - r * 0.5 * pr, y + 3 * pr);
+					c.lineTo(x + r * 0.5 * pr, y - 3 * pr);
+					c.lineWidth = 2 * pr;
+					c.strokeStyle = "#ffffff";
+					c.stroke();
+				}
+				c.restore();
+			},
+		});
+	}
+	const longest = Math.max(
+		0,
+		...sym.bars.map((b) => (b.ratio === null ? 0 : b.ratio)),
+	);
+	return new Style({
+		zIndex: Math.round(1000 - longest * 999),
+		renderer: (coords, state) => {
+			const c = state.context;
+			const pr = state.pixelRatio;
+			const [x, y] = coords as number[];
+			const gap = 2;
+			const w = BAR_WIDTH_PX;
+			const total = sym.bars.length * (w + gap) - gap;
+			c.save();
+			sym.bars.forEach((b, i) => {
+				const left = x + (-total / 2 + i * (w + gap)) * pr;
+				if (b.ratio === null) {
+					const h = 10;
+					c.beginPath();
+					// Rounded at the value end only, on a flat baseline (Alex).
+					c.roundRect(left, y - h * pr, w * pr, h * pr, [
+						(w / 2) * pr,
+						(w / 2) * pr,
+						0,
+						0,
+					]);
+					c.setLineDash([2 * pr, 2 * pr]);
+					c.lineWidth = pr;
+					c.strokeStyle = SLOT_STROKE;
+					c.stroke();
+					c.setLineDash([]);
+					return;
+				}
+				const h = barLengthPx(b.ratio);
+				c.beginPath();
+				// Rounded at the value end only, on a flat baseline (Alex).
+				c.roundRect(left, y - h * pr, w * pr, h * pr, [
+					(w / 2) * pr,
+					(w / 2) * pr,
+					0,
+					0,
+				]);
+				c.globalAlpha = 1 - i * 0.3;
+				c.fillStyle = color;
+				c.fill();
+				c.globalAlpha = 1;
+				c.lineWidth = pr;
+				c.strokeStyle = b.flagged ? PLAUSIBILITY_MARKER.stroke : "#ffffff";
+				c.stroke();
+			});
+			c.restore();
+		},
+	});
+}
+
 export function GeoMap({
 	boundaries,
 	areas,
@@ -172,6 +297,7 @@ export function GeoMap({
 	basemapId = null,
 	onBasemapStatus,
 	homeSignal = 0,
+	symbolColor = null,
 	label,
 	describedBy,
 }: GeoMapProps) {
@@ -186,6 +312,7 @@ export function GeoMap({
 	onStatusRef.current = onBasemapStatus;
 	const baseRef = useRef(new Map<BasemapLayerId, TileLayer<XYZ>>());
 	const shownRef = useRef<BasemapLayerId | null>(null);
+	const symbolLayerRef = useRef<VectorLayer<VectorSource> | null>(null);
 
 	const byId = useMemo(() => new Map(areas.map((a) => [a.areaId, a])), [areas]);
 
@@ -229,9 +356,12 @@ export function GeoMap({
 			bases.set(b.id, tl);
 		}
 		layer.setZIndex(1);
+		// Symbols are never decluttered: hiding a feature would hide data.
+		const symbols = new VectorLayer({ source: new VectorSource(), zIndex: 2 });
+		symbolLayerRef.current = symbols;
 		const map = new OlMap({
 			target: target.current,
-			layers: [...bases.values(), layer],
+			layers: [...bases.values(), layer, symbols],
 			controls: defaultControls().extend([new ScaleLine({ units: "metric" })]),
 			// The wheel scrolls the page; Ctrl or Cmd plus the wheel zooms the map.
 			interactions: defaultInteractions({ mouseWheelZoom: false }).extend([
@@ -363,6 +493,17 @@ export function GeoMap({
 			featureProjection: "EPSG:3857",
 		});
 		source.addFeatures(features);
+		const symbolSource = symbolLayerRef.current?.getSource();
+		symbolSource?.clear();
+		for (const f of boundaries.features as {
+			properties?: { divisionId?: string; labelPoint?: [number, number] };
+		}[]) {
+			const pt = f.properties?.labelPoint;
+			if (!pt || !f.properties?.divisionId) continue;
+			const sf = new Feature({ geometry: new Point(fromLonLat(pt)) });
+			sf.set("divisionId", f.properties.divisionId);
+			symbolSource?.addFeature(sf);
+		}
 		const extent = source.getExtent();
 		if (features.length && extent && extent.every(Number.isFinite)) {
 			map.getView().fit(extent, { padding: [16, 16, 16, 16], maxZoom: 9 });
@@ -396,6 +537,16 @@ export function GeoMap({
 			});
 		}
 	}, [focusId]);
+
+	useEffect(() => {
+		const symbols = symbolLayerRef.current;
+		if (!symbols) return;
+		symbols.setVisible(Boolean(symbolColor));
+		symbols.setStyle((feature: FeatureLike) => {
+			const area = byId.get(feature.get("divisionId") as string);
+			return area && symbolColor ? symbolStyle(area, symbolColor) : undefined;
+		});
+	}, [byId, symbolColor]);
 
 	useEffect(() => {
 		const layer = layerRef.current;
