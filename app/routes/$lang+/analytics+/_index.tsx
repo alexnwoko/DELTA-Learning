@@ -219,7 +219,8 @@ export default function AnalysisDashboard() {
 				}
 				provisional={ld.provisional}
 				map={
-					ld.impactMap ? (
+					// An empty view shows its one frame, with no map of empty areas.
+					panels.some((p) => p.id.endsWith("-empty")) ? undefined : ld.impactMap ? (
 						<ImpactMap ctx={ctx} map={ld.impactMap as ImpactMapPayload} scope={mapScope} />
 					) : ld.eventMap ? (
 						<EventMap ctx={ctx} map={ld.eventMap as EventMapPayload} scope={mapScope} />
