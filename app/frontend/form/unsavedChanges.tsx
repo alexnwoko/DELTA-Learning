@@ -4,7 +4,7 @@
 // Saving the form never asks.
 import React, { useCallback, useEffect, useRef } from "react";
 import { Button, Dialog, Heading, Modal, ModalOverlay } from "react-aria-components";
-import { useBlocker, useNavigation, type Blocker, type BlockerFunction } from "react-router";
+import { useBlocker, useLocation, useNavigation, type Blocker, type BlockerFunction } from "react-router";
 import type { ViewContext } from "~/frontend/context";
 
 export interface NavigationGuardState {
@@ -12,6 +12,17 @@ export interface NavigationGuardState {
 	submitting: boolean;
 	currentPathname: string;
 	nextPathname: string;
+	/** The user already confirmed leaving in the form's own dialog. */
+	leaving?: boolean;
+	/**
+	 * The form's own page. Moves to its sub-pages (dialogs opened as nested
+	 * routes) and back stay inside the form and never ask.
+	 */
+	scopePathname?: string;
+}
+
+function within(pathname: string, scope: string): boolean {
+	return pathname === scope || pathname.startsWith(`${scope}/`);
 }
 
 /**
@@ -20,7 +31,25 @@ export interface NavigationGuardState {
  * on the same page, such as a tab, does not ask).
  */
 export function shouldBlockNavigation(s: NavigationGuardState): boolean {
-	return s.dirty && !s.submitting && s.currentPathname !== s.nextPathname;
+	if (!s.dirty || s.submitting || s.leaving) return false;
+	if (s.scopePathname) return !within(s.nextPathname, s.scopePathname);
+	return s.currentPathname !== s.nextPathname;
+}
+
+export interface UnsavedChangesGuardOptions {
+	/**
+	 * Edits the input events cannot see, for example controlled widgets that
+	 * keep their value in React state. Combined with the input events.
+	 */
+	isDirty?: boolean;
+	/** Treat the page the form opened on, and its sub-pages, as the form. */
+	scopeToMountPath?: boolean;
+}
+
+export interface UnsavedChangesGuard {
+	blocker: Blocker;
+	/** Call before leaving on purpose after the form's own confirmation. */
+	allowLeave: () => void;
 }
 
 /**
@@ -28,10 +57,21 @@ export function shouldBlockNavigation(s: NavigationGuardState): boolean {
  * change events) and the form that contains them. Returns the router
  * blocker for UnsavedChangesDialog.
  */
-export function useUnsavedChangesGuard(containerRef: React.RefObject<HTMLElement | null>): Blocker {
-	const dirty = useRef(false);
+export function useUnsavedChangesGuard(
+	containerRef: React.RefObject<HTMLElement | null>,
+	options: UnsavedChangesGuardOptions = {},
+): UnsavedChangesGuard {
+	const edited = useRef(false);
 	const submitting = useRef(false);
+	const leaving = useRef(false);
+	const externalDirty = useRef(false);
+	externalDirty.current = options.isDirty ?? false;
+	const location = useLocation();
+	const scope = useRef<string | undefined>(
+		options.scopeToMountPath ? location.pathname : undefined,
+	);
 	const navigation = useNavigation();
+	const isDirty = () => edited.current || externalDirty.current;
 
 	// A save that comes back with errors stays on the page: guard again.
 	useEffect(() => {
@@ -43,13 +83,13 @@ export function useUnsavedChangesGuard(containerRef: React.RefObject<HTMLElement
 		if (!container) return;
 		const form = container.closest("form");
 		const onEdit = () => {
-			dirty.current = true;
+			edited.current = true;
 		};
 		const onSubmit = () => {
 			submitting.current = true;
 		};
 		const onBeforeUnload = (event: BeforeUnloadEvent) => {
-			if (!dirty.current || submitting.current) return;
+			if (!isDirty() || submitting.current || leaving.current) return;
 			event.preventDefault();
 			// Older browsers need returnValue set to show their prompt.
 			event.returnValue = "";
@@ -69,14 +109,20 @@ export function useUnsavedChangesGuard(containerRef: React.RefObject<HTMLElement
 	const shouldBlock = useCallback<BlockerFunction>(
 		({ currentLocation, nextLocation }) =>
 			shouldBlockNavigation({
-				dirty: dirty.current,
+				dirty: isDirty(),
 				submitting: submitting.current,
+				leaving: leaving.current,
 				currentPathname: currentLocation.pathname,
 				nextPathname: nextLocation.pathname,
+				scopePathname: scope.current,
 			}),
 		[],
 	);
-	return useBlocker(shouldBlock);
+	const blocker = useBlocker(shouldBlock);
+	const allowLeave = useCallback(() => {
+		leaving.current = true;
+	}, []);
+	return { blocker, allowLeave };
 }
 
 /** Asks before leaving a form with unsaved changes. */

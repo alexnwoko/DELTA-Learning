@@ -38,7 +38,7 @@ function recordBasis(
 		: approvalBasis(filters.audience, basisColumns(alias));
 }
 
-interface HazardFilters {
+export interface HazardFilters {
 	countryAccountsId: string;
 	hazardTypeId: string | null;
 	hazardClusterId: string | null;
@@ -211,7 +211,7 @@ interface AffectedPeopleResult {
 	measures: Record<HumanEffectMeasure, MeasureValue>;
 }
 
-const HUMAN_EFFECT_MEASURES = [
+export const HUMAN_EFFECT_MEASURES = [
 	"deaths",
 	"injured",
 	"missing",
@@ -219,13 +219,13 @@ const HUMAN_EFFECT_MEASURES = [
 	"affected_direct",
 	"affected_indirect",
 ] as const;
-type HumanEffectMeasure = (typeof HUMAN_EFFECT_MEASURES)[number];
+export type HumanEffectMeasure = (typeof HUMAN_EFFECT_MEASURES)[number];
 
 /**
  * True when the record's plausibility flags (legacy_data.migration) name any
  * of the source fields that feed one of the measures (solution pack C30).
  */
-function plausibilityFlagged(
+export function plausibilityFlagged(
 	legacyData: SQL,
 	measures: PlausibilityMeasure[],
 ): SQL {
@@ -253,7 +253,7 @@ function plausibilityFlagged(
  * holds an explicit No with no value; otherwise as not reported. Totals are
  * read from the presence table, so the disaggregation cube is never summed.
  */
-function humanEffectMeasuresSelect(): SQL {
+export function humanEffectMeasuresSelect(): SQL {
 	const parts = HUMAN_EFFECT_MEASURES.map((m) => {
 		const flag = sql.raw(`hcp."${m}"`);
 		// Displaced leaves out people relocated after the event (contract O-2).
@@ -275,6 +275,27 @@ function humanEffectMeasuresSelect(): SQL {
 	return sql.join([...parts, sql`COUNT(*) AS records_total`], sql`, `);
 }
 
+/** The measures read back from a row selected with humanEffectMeasuresSelect. */
+export function humanEffectMeasuresFromRow(
+	row: Record<string, unknown>,
+): Record<HumanEffectMeasure, MeasureValue> {
+	return Object.fromEntries(
+		HUMAN_EFFECT_MEASURES.map((m) => [
+			m,
+			measureValue(
+				{
+					sum: row[`${m}_sum`] as number | string | null,
+					reported: row[`${m}_reported`] as number | string,
+					zeroConfirmed: row[`${m}_zero`] as number | string,
+					total: row.records_total as number | string,
+					flagged: row[`${m}_flagged`] as number | string,
+				},
+				PROVISIONAL_ZERO_COVERAGE,
+			),
+		]),
+	) as Record<HumanEffectMeasure, MeasureValue>;
+}
+
 /**
  * Records in scope for the human-effects figures: tenant, approval basis,
  * HIPs, date range and, when set, the level-1 division. Returns the CTE body
@@ -282,7 +303,7 @@ function humanEffectMeasuresSelect(): SQL {
  * WITH RECURSIVE. Every record counts, including those with no
  * human-effects rows, so "not reported" is measured rather than dropped.
  */
-function humanEffectsFilteredRecords(
+export function humanEffectsFilteredRecords(
 	filters: HazardFilters,
 	basisOverride?: RecordBasisOverride,
 ): SQL {
@@ -448,6 +469,70 @@ export async function getAffectedPeopleByHazardFilters(
 		totalAffectedIndirect: measures.affected_indirect.value,
 		measures,
 	};
+}
+
+/** Groupings the D1 dashboard asks for (impact panels 1 to 4). */
+export type HumanEffectGrouping = "year" | "hipType" | "hipTypeYear";
+
+/** One group's measures, each with its value state and record counts. */
+export interface GroupedHumanEffects {
+	year: number | null;
+	hipTypeId: string | null;
+	measures: Record<HumanEffectMeasure, MeasureValue>;
+}
+
+/**
+ * The headline human-effect measures (getAffectedPeopleByHazardFilters)
+ * per year of the record's start date and or per HIPs type, for the D1
+ * Disaster impact panels: sparklines, the timeline and the hazard ranking.
+ * Same value-state rules as the headline: a group nobody reported is null,
+ * never 0 (TR-076). Records with no start year or no HIPs type form their
+ * own group (null key), never dropped.
+ */
+export async function getHumanEffectsGrouped(
+	filters: HazardFilters,
+	grouping: HumanEffectGrouping,
+	basisOverride?: RecordBasisOverride,
+): Promise<GroupedHumanEffects[]> {
+	const yearExpr = sql`NULLIF(substring(rec."start_date" from '^[0-9]{4}'), '')::int`;
+	const typeExpr = sql`NULLIF(rec."hip_type_id", '')`;
+	const keys =
+		grouping === "year"
+			? sql`${yearExpr} AS year, NULL::text AS hip_type_id`
+			: grouping === "hipType"
+				? sql`NULL::int AS year, ${typeExpr} AS hip_type_id`
+				: sql`${yearExpr} AS year, ${typeExpr} AS hip_type_id`;
+	const rawQuery = sql`
+          WITH RECURSIVE ${humanEffectsFilteredRecords(filters, basisOverride)}
+          SELECT ${keys}, ${humanEffectMeasuresSelect()}
+          FROM filtered_records fr
+          LEFT JOIN "human_category_presence" hcp
+            ON hcp."record_id" = fr.record_id
+          LEFT JOIN "disaster_records" rec
+            ON rec."id" = fr.record_id
+          GROUP BY 1, 2
+          ORDER BY 1 NULLS LAST, 2 NULLS LAST
+        `;
+	const result = await dr.execute(rawQuery);
+	return (result.rows as Record<string, unknown>[]).map((row) => ({
+		year: row.year === null || row.year === undefined ? null : Number(row.year),
+		hipTypeId: (row.hip_type_id as string | null) ?? null,
+		measures: Object.fromEntries(
+			HUMAN_EFFECT_MEASURES.map((m) => [
+				m,
+				measureValue(
+					{
+						sum: row[`${m}_sum`] as number | string | null,
+						reported: row[`${m}_reported`] as number | string,
+						zeroConfirmed: row[`${m}_zero`] as number | string,
+						total: row.records_total as number | string,
+						flagged: row[`${m}_flagged`] as number | string,
+					},
+					PROVISIONAL_ZERO_COVERAGE,
+				),
+			]),
+		) as Record<HumanEffectMeasure, MeasureValue>,
+	}));
 }
 
 type DisaggregationDimension =

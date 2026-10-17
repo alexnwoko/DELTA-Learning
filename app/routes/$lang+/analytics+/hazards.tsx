@@ -50,7 +50,7 @@ import { ViewContext } from "~/frontend/context";
 
 import { BackendContext } from "~/backend.server/context";
 import { htmlTitle } from "~/utils/htmlmeta";
-import { approvalAudienceFromRequest } from "~/backend.server/approvalAudience.server";
+import { approvalAudienceForBasis } from "~/backend.server/approvalAudience.server";
 import { basisIncludesProvisional } from "~/utils/approvalBasis";
 import { ProvisionalFiguresNotice } from "~/frontend/analytics/ProvisionalFiguresNotice";
 
@@ -61,7 +61,7 @@ interface interfaceMap {
 	description: string;
 	colorPercentage: number;
 	geojson: any;
-	/** Point inside the division, [lng, lat], for map spikes (RV-5). */
+	/** Point inside the division, [lng, lat], for map bubbles and bars (RV-5 as amended). */
 	labelPoint?: [number, number] | null;
 	/** Map state; a division with no record in scope is not_reported. */
 	valueState?: ValueState;
@@ -128,7 +128,11 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 		currency = settings.currencyCode;
 	}
 
-	const audience = await approvalAudienceFromRequest(request);
+	// Reviewer provisional basis on request (AB-01, ruling D7); refused with
+	// 403 for anyone without ValidateData, never silently downgraded.
+	const basis =
+		formData.get("basis") === "provisional" ? "provisional" : "published";
+	const audience = await approvalAudienceForBasis(request, basis);
 	const filters = {
 		countryAccountsId,
 		audience,
@@ -141,7 +145,7 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 	};
 
 	const geographicLevel1 = await getDivisionByLevel(1, countryAccountsId);
-	// Where each map spike stands (ruling RV-5).
+	// Where each map bubble or bar stands (RV-5 as amended).
 	const labelPoints = await divisionLabelPoints(
 		geographicLevel1.map((d) => d.id),
 		countryAccountsId,
