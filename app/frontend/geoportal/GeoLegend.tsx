@@ -3,8 +3,6 @@
 import {
 	OFF_RAMP_STATES,
 	PLAUSIBILITY_MARKER,
-	SPIKE_MAX_HEIGHT_PX,
-	SPIKE_MIN_HEIGHT_PX,
 	STATE_ENCODING,
 	type MapLegend,
 } from "~/utils/mapState";
@@ -56,26 +54,6 @@ function Swatch(props: {
 	);
 }
 
-/** Reference values are fractions of the maximum; show whole numbers once they are large enough. */
-export function spikeReferenceValue(value: number): number {
-	return Math.abs(value) >= 10
-		? Math.round(value)
-		: Math.round(value * 100) / 100;
-}
-
-/** Legend spike drawn at the same scale as the map's spikes. */
-function SpikeSwatch(props: { ratio: number; color: string }) {
-	const h = Math.max(
-		SPIKE_MIN_HEIGHT_PX,
-		Math.round(props.ratio * SPIKE_MAX_HEIGHT_PX),
-	);
-	const top = SPIKE_MAX_HEIGHT_PX + 1;
-	return (
-		<svg width="12" height={top + 1} aria-hidden="true" focusable="false">
-			<polygon points={`1,${top} 11,${top} 6,${top - h}`} fill={props.color} />
-		</svg>
-	);
-}
 
 export interface GeoLegendProvenance {
 	/** Read-model refresh time (ISO), or null when never refreshed. */
@@ -109,12 +87,7 @@ export function GeoLegend(props: {
 					{ n: fmt(n) },
 				);
 	const method =
-		legend.mode === "spikes"
-			? t({
-					code: "geoportal.legend.method_spikes",
-					msg: "Spike height is proportional to the value",
-				})
-			: legend.mode === "classes"
+		legend.mode === "classes"
 				? t(
 						{
 							code: "geoportal.legend.method_quantile",
@@ -139,22 +112,6 @@ export function GeoLegend(props: {
 			)}
 			{method && <p className="text-xs text-brand-text-muted mb-1">{method}</p>}
 			<ul className="space-y-1">
-				{legend.mode === "spikes" &&
-					legend.spikes &&
-					legend.spikes.references.map((r) => (
-						<li key={r.ratio} className="flex items-end gap-2">
-							<SpikeSwatch ratio={r.ratio} color={legend.spikes!.color} />
-							<span>{fmt(spikeReferenceValue(r.value))}</span>
-						</li>
-					))}
-				{legend.mode === "spikes" && legend.spikes?.maxFlagged && (
-					<li className="text-xs">
-						{t({
-							code: "geoportal.legend.max_flagged",
-							msg: "Largest spike includes figures flagged for review",
-						})}
-					</li>
-				)}
 				{legend.mode === "classes" &&
 					legend.classes.map((c) => (
 						<li key={c.index} className="flex items-center gap-2">

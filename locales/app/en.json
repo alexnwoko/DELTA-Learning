@@ -5350,31 +5350,6 @@
     "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
   },
   {
-    "id": "geoportal.legend.max_flagged",
-    "translation": "Largest spike includes figures flagged for review",
-    "description": "File: app/frontend/geoportal/GeoLegend.tsx"
-  },
-  {
-    "id": "geoportal.legend.method_spikes",
-    "translation": "Spike height is proportional to the value",
-    "description": "File: app/frontend/geoportal/GeoLegend.tsx"
-  },
-  {
-    "id": "geoportal.map.density",
-    "translation": "Density",
-    "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
-  },
-  {
-    "id": "geoportal.map.spikes",
-    "translation": "Spikes",
-    "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
-  },
-  {
-    "id": "geoportal.map.symbol",
-    "translation": "Map style",
-    "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
-  },
-  {
     "id": "geoportal.place.all",
     "translation": "All areas",
     "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
