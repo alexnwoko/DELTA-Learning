@@ -12,6 +12,7 @@ import {
 import { refreshGeoReadModel } from "~/backend.server/models/geo/refresh";
 import {
 	getBoundaries,
+	eventCountsByDivision,
 	getChoropleth,
 	getDivisionTile,
 	getHazardTree,
@@ -792,6 +793,34 @@ describe("geoportal read model (G1)", () => {
 				C: 1,
 				D: 0,
 			});
+		});
+
+		it("gives the analytics maps the same event counts per area (eventCountsByDivision)", async () => {
+			const r2 = req({ dim: "disaster_event", measure: "events", level: "2" });
+			const counts = await eventCountsByDivision(ids.countryAccountId, {
+				...r2,
+				level: 2,
+			});
+			const body = await getChoropleth(ids.countryAccountId, r2);
+			for (const c of body.cells) {
+				expect(counts.byDivision.get(c.division_id)?.events).toBe(c.value);
+			}
+			expect(counts.byDivision.get(div.d1)).toEqual({
+				events: 2,
+				fromRecords: 1,
+			});
+			expect(counts.byDivision.get(div.d2)).toEqual({
+				events: 1,
+				fromRecords: 1,
+			});
+			expect(counts.unplacedEvents).toBe(1); // e3
+			expect(counts.reasons).toEqual({ no_division_row: 1 });
+			const r1 = req({ dim: "disaster_event", measure: "events", level: "1" });
+			const l1 = await eventCountsByDivision(ids.countryAccountId, {
+				...r1,
+				level: 1,
+			});
+			expect(l1.byDivision.get(div.r1)).toEqual({ events: 2, fromRecords: 1 });
 		});
 
 		it("counts an event once at a coarser level", async () => {

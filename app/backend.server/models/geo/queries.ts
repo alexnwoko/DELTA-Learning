@@ -933,3 +933,98 @@ export async function getHazardTree(
 		types,
 	};
 }
+
+/** Events placed in one division at the requested level. */
+export interface DivisionEventCount {
+	/** Events counted once in this division (an event in several counts in each). */
+	events: number;
+	/** Of those, events placed where their member records are (no own link). */
+	fromRecords: number;
+}
+
+/**
+ * Event counts per division from geo.event_atom, the one derivation of
+ * "event in a division" shared by the geoportal and the analytics maps
+ * (Analytics, 2026-10-17). Same scope as the choropleth: approval basis,
+ * hazard, date range, division or region, grade floor. An event that cannot
+ * be placed at the level is counted in unplaced with its reason, never
+ * dropped. Division counts do not add up to a total.
+ */
+export async function eventCountsByDivision(
+	countryAccountsId: string,
+	req: GeoRequest & { level: number },
+): Promise<{
+	byDivision: Map<string, DivisionEventCount>;
+	unplacedEvents: number;
+	reasons: Record<string, number>;
+}> {
+	if (req.query.dimension === "disaster_impact") {
+		throw new Error("eventCountsByDivision: use an event dimension");
+	}
+	const t = countryAccountsId;
+	const ranged = hasRange(req);
+	const res = await dr.execute(sql`
+		WITH scope AS (
+			SELECT a.* FROM ${atomSource(req)} a WHERE ${scopeFilters(t, req)}
+		),
+		ranged AS (
+			SELECT * FROM scope a WHERE ${ranged ? dateInRange(req) : sql`true`}
+		),
+		in_area AS (
+			SELECT * FROM ranged a
+			WHERE a.division_id IS NULL OR ${inDivision(t, req)}
+		),
+		placed AS (
+			SELECT DISTINCT ON (da.ancestor_id, g.disaster_record_id)
+				da.ancestor_id AS division_id, g.disaster_record_id AS event_id, g.derivation
+			FROM in_area g
+			JOIN geo.division_ancestor da
+				ON da.division_id = g.division_id
+				AND da.country_accounts_id = ${t}
+				AND da.ancestor_level = ${req.level}
+			WHERE g.division_id IS NOT NULL AND ${gradeFloor(req.query.minAttGrade)}
+			ORDER BY da.ancestor_id, g.disaster_record_id, g.att_grade
+		),
+		unplaced AS (
+			SELECT DISTINCT ON (s.disaster_record_id) s.disaster_record_id,
+				CASE
+					WHEN ${ranged} AND s.start_instant IS NULL THEN 'undated'
+					WHEN s.unattributed_reason IS NOT NULL THEN s.unattributed_reason
+					ELSE 'coarser_than_level'
+				END AS reason
+			FROM scope s
+			WHERE s.disaster_record_id NOT IN (SELECT event_id FROM placed)
+				AND (
+					(${ranged} AND s.start_instant IS NULL)
+					OR s.disaster_record_id IN (SELECT disaster_record_id FROM in_area)
+				)
+			ORDER BY s.disaster_record_id, s.unattributed_reason NULLS LAST
+		)
+		SELECT
+			(SELECT COALESCE(jsonb_agg(jsonb_build_object(
+				'division_id', division_id, 'events', n, 'from_records', fr)), '[]'::jsonb)
+				FROM (SELECT division_id, COUNT(*) AS n,
+					COUNT(*) FILTER (WHERE derivation = 'from_records') AS fr
+					FROM placed GROUP BY division_id) d) AS divisions,
+			(SELECT COUNT(*) FROM unplaced) AS unplaced,
+			(SELECT COALESCE(jsonb_object_agg(reason, n), '{}'::jsonb)
+				FROM (SELECT reason, COUNT(*) AS n FROM unplaced GROUP BY reason) u) AS reasons
+	`);
+	const row = res.rows[0] as {
+		divisions: { division_id: string; events: number; from_records: number }[];
+		unplaced: string | number;
+		reasons: Record<string, number | string>;
+	};
+	return {
+		byDivision: new Map(
+			row.divisions.map((d) => [
+				d.division_id,
+				{ events: Number(d.events), fromRecords: Number(d.from_records) },
+			]),
+		),
+		unplacedEvents: Number(row.unplaced),
+		reasons: Object.fromEntries(
+			Object.entries(row.reasons).map(([k, v]) => [k, Number(v)]),
+		),
+	};
+}
