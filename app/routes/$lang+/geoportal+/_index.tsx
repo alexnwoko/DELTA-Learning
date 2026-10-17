@@ -78,6 +78,7 @@ import { GEO_DIMENSION_LABELS, geoMeasureInfo } from "~/utils/geoMeasures";
 import { htmlTitle } from "~/utils/htmlmeta";
 import { PrintButton } from "~/frontend/print/PrintButton";
 import { basemapLayers } from "~/utils/basemap.server";
+import { listRegions } from "~/backend.server/models/geo/regions";
 import { selectableBasemaps, type BasemapLayerId } from "~/utils/basemap";
 
 // OpenLayers loads with the map, not with the page (NFR-130).
@@ -139,8 +140,9 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 			requireMeasure: true,
 			requireLevel: true,
 			eventDimensions: true,
+			region: true,
 		});
-		const [choropleth, boundaries, tree] = await Promise.all([
+		const [choropleth, boundaries, tree, regions] = await Promise.all([
 			getChoropleth(countryAccountsId, req),
 			getBoundaries(countryAccountsId, {
 				level: req.level as number,
@@ -150,6 +152,8 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 			getHazardTree(countryAccountsId, { ...req, notApplied: [] }, lang).catch(
 				() => null,
 			),
+			// RG-1: the tenant's regions for the Area control.
+			listRegions(countryAccountsId, lang),
 		]);
 		return {
 			query: req.query,
@@ -168,6 +172,11 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 				}[];
 			},
 			hazardTree: tree as HazardTree | null,
+			regions: regions.map((r) => ({
+				regionId: r.regionId,
+				name: r.name,
+				kind: r.kind,
+			})),
 			basemaps,
 			symbol,
 			refusal: null,
@@ -182,6 +191,7 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 				choropleth: null,
 				boundaries: null,
 				hazardTree: null,
+				regions: [],
 				basemaps,
 				symbol,
 				refusal: refusalBody(err.refusal, err.meta),
@@ -446,6 +456,8 @@ export default function GeoportalPage() {
 			canReview={data.canReview}
 			onChange={onFilters}
 			hazardTree={data.hazardTree}
+			place={data.regions.length > 0 ? { regions: data.regions } : null}
+			notApplied={data.choropleth?.meta.notApplied}
 			t={t}
 		/>
 	);
