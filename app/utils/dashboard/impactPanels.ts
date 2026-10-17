@@ -85,7 +85,8 @@ export interface ImpactPanels1to4 {
 	meta: Record<"tiles" | "coverage" | "timeline" | "hazardRanking", PanelMeta>;
 }
 
-const cell = (
+/** Builds an example cell for the labelled fixtures. Not for real figures. */
+export const exampleCell = (
 	value: number | null,
 	valueState: PanelCell["valueState"],
 	reported: number,
@@ -119,37 +120,37 @@ export const IMPACT_PANELS_FIXTURE: ImpactPanels1to4 = {
 	tiles: [
 		{
 			measure: "deaths",
-			cell: cell(615, "reported", 243, 534, 2),
+			cell: exampleCell(615, "reported", 243, 534, 2),
 			sparkline: [
 				2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024,
 			].map((year, i) => ({
 				year,
 				cell:
 					i === 3
-						? cell(null, "not_reported", 0, 40)
+						? exampleCell(null, "not_reported", 0, 40)
 						: i === 6
-							? cell(0, "zero_confirmed", 5, 40)
-							: cell(20 + i * 7, "reported", 12, 40),
+							? exampleCell(0, "zero_confirmed", 5, 40)
+							: exampleCell(20 + i * 7, "reported", 12, 40),
 			})),
 		},
 		{
 			measure: "missing",
-			cell: cell(null, "not_reported", 0, 534),
+			cell: exampleCell(null, "not_reported", 0, 534),
 			sparkline: [],
 		},
 		{
 			measure: "injured",
-			cell: cell(0, "zero_confirmed", 30, 534),
+			cell: exampleCell(0, "zero_confirmed", 30, 534),
 			sparkline: [],
 		},
 		{
 			measure: "affected_direct",
-			cell: cell(120400, "reported", 310, 534),
+			cell: exampleCell(120400, "reported", 310, 534),
 			sparkline: [],
 		},
 		{
 			measure: "displaced",
-			cell: cell(34943, "reported", 130, 534),
+			cell: exampleCell(34943, "reported", 130, 534),
 			sparkline: [],
 		},
 	],
@@ -164,9 +165,9 @@ export const IMPACT_PANELS_FIXTURE: ImpactPanels1to4 = {
 	timeline: {
 		measure: "deaths",
 		years: [
-			{ year: 2022, cell: cell(110, "reported", 30, 60) },
-			{ year: 2023, cell: cell(null, "not_reported", 0, 55) },
-			{ year: 2024, cell: cell(0, "zero_confirmed", 4, 50) },
+			{ year: 2022, cell: exampleCell(110, "reported", 30, 60) },
+			{ year: 2023, cell: exampleCell(null, "not_reported", 0, 55) },
+			{ year: 2024, cell: exampleCell(0, "zero_confirmed", 4, 50) },
 		],
 		annotations: [{ year: 2022, label: "Highest year in scope" }],
 		byHazard: [],
@@ -175,17 +176,17 @@ export const IMPACT_PANELS_FIXTURE: ImpactPanels1to4 = {
 		{
 			hipTypeId: "1042",
 			label: "Meteorological and Hydrological",
-			cell: cell(560, "reported", 210, 480),
+			cell: exampleCell(560, "reported", 210, 480),
 		},
 		{
 			hipTypeId: "1037",
 			label: "Biological",
-			cell: cell(55, "reported", 20, 40),
+			cell: exampleCell(55, "reported", 20, 40),
 		},
 		{
 			hipTypeId: "1041",
 			label: "Geological",
-			cell: cell(null, "not_reported", 0, 14),
+			cell: exampleCell(null, "not_reported", 0, 14),
 		},
 	],
 	meta: {
