@@ -36,6 +36,8 @@ Rules:
   reported cannot share a treatment.
 - DV-STATE-002's generic empty cases are replaced by the states above.
 - `zero_confirmed` and `not_reported` must look different in every view.
+- Draw a gap as a full-height light band or an empty slot with a label, never as a partial-height
+  shape: a partial bar reads as a value (found in the first prototype, 2026-10-17).
 
 ## Grade (A to D)
 
