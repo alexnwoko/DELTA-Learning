@@ -26,12 +26,41 @@ describe("shouldBlockNavigation (TR-251)", () => {
 	});
 });
 
+describe("shouldBlockNavigation with a form scope (DisasterEventForm)", () => {
+	const scoped = {
+		...base,
+		currentPathname: "/en/disaster-event/edit/7",
+		scopePathname: "/en/disaster-event/edit/7",
+	};
+	it("does not ask when opening a dialog that is a sub-page of the form", () => {
+		expect(shouldBlockNavigation({ ...scoped, nextPathname: "/en/disaster-event/edit/7/affected-areas-modal" })).toBe(false);
+	});
+	it("does not ask when closing that dialog back to the form", () => {
+		expect(
+			shouldBlockNavigation({
+				...scoped,
+				currentPathname: "/en/disaster-event/edit/7/affected-areas-modal",
+				nextPathname: "/en/disaster-event/edit/7",
+			}),
+		).toBe(false);
+	});
+	it("asks when leaving the form for the event list", () => {
+		expect(shouldBlockNavigation({ ...scoped, nextPathname: "/en/disaster-event" })).toBe(true);
+	});
+	it("does not treat a sibling path with the same prefix as the form", () => {
+		expect(shouldBlockNavigation({ ...scoped, nextPathname: "/en/disaster-event/edit/70" })).toBe(true);
+	});
+	it("does not ask again after the form's own exit dialog was confirmed", () => {
+		expect(shouldBlockNavigation({ ...scoped, nextPathname: "/en/disaster-event", leaving: true })).toBe(false);
+	});
+});
+
 describe("useUnsavedChangesGuard", () => {
 	it("renders on the server inside a router, idle until the user edits", () => {
 		const ctx = { t: ({ msg }: { msg: string }) => msg, lang: "en" } as unknown as ViewContext;
 		function Probe() {
 			const ref = useRef<HTMLDivElement>(null);
-			const blocker = useUnsavedChangesGuard(ref);
+			const { blocker } = useUnsavedChangesGuard(ref);
 			return (
 				<form>
 					<div ref={ref} data-blocker={blocker.state}>
@@ -45,5 +74,18 @@ describe("useUnsavedChangesGuard", () => {
 		const html = renderToString(<Stub initialEntries={["/"]} />);
 		expect(html).toContain('data-blocker="unblocked"');
 		expect(html).not.toContain("Leave without saving?");
+	});
+
+	it("accepts state-based edits and a form scope, and returns allowLeave", () => {
+		let api: ReturnType<typeof useUnsavedChangesGuard> | undefined;
+		function Probe() {
+			const ref = useRef<HTMLFormElement>(null);
+			api = useUnsavedChangesGuard(ref, { isDirty: true, scopeToMountPath: true });
+			return <form ref={ref} data-blocker={api.blocker.state} />;
+		}
+		const Stub = createRoutesStub([{ path: "/en/disaster-event/edit/7", Component: Probe }]);
+		const html = renderToString(<Stub initialEntries={["/en/disaster-event/edit/7"]} />);
+		expect(html).toContain('data-blocker="unblocked"');
+		expect(typeof api?.allowLeave).toBe("function");
 	});
 });
