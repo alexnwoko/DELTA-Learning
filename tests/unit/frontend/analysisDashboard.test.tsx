@@ -234,7 +234,7 @@ describe("page-level CSV", () => {
 		expect(csv).toContain("Sendai Targets A and B counts,A-2 Deaths,,615,reported,");
 		expect(csv).toContain("Houses damaged (input to B-3; no indicator value)");
 		expect(csv).not.toMatch(/,B-3 [A-Z]/);
-		expect(csv).toContain("People moved,Meteorological,Displaced,,not_reported,");
+		expect(csv).toContain("People moved,Biological,Displaced,,not_reported,");
 	});
 });
 
