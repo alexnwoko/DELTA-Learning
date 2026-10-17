@@ -66,4 +66,13 @@
   --delta-data-chart-axis: #6b7280; /** Axis lines and neutral chart ink; also the fallback bar colour, which should never show. */
   --delta-data-notice-provisional-border: #d97706;
   --delta-data-notice-provisional-background: #fffbeb;
+  --delta-data-hazard-meteorological-hydrological: #1f6fb2; /** Meteorological and Hydrological */
+  --delta-data-hazard-geological: #8c5a2b; /** Geological */
+  --delta-data-hazard-biological: #2e7d32; /** Biological */
+  --delta-data-hazard-environmental: #6b7a12; /** Environmental */
+  --delta-data-hazard-chemical: #8e3fa8; /** Chemical */
+  --delta-data-hazard-technological: #c2410c; /** Technological */
+  --delta-data-hazard-societal: #b0306a; /** Societal */
+  --delta-data-hazard-extraterrestrial: #0f7c8c; /** Extraterrestrial */
+  --delta-data-hazard-unclassified: #6b7280; /** No HIPs type recorded */
 }

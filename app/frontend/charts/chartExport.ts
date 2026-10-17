@@ -76,26 +76,27 @@ export function csvCell(value: string | number | null | undefined): string {
 	return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
 }
 
-/** The rows a chart draws, with state, method, grade, basis and caveat. */
-export function chartCsv(rows: ChartExportRow[], meta: ChartExportMeta): string {
-	const header = [
-		"label",
-		"series",
-		"value",
-		"value_state",
-		"unit",
-		"records_flagged",
-		"method",
-		"grade",
-		"basis",
-		"source",
-		"scope",
-		"notes",
-		"title",
-		"generated",
-	];
+const CSV_COLUMNS = [
+	"label",
+	"series",
+	"value",
+	"value_state",
+	"unit",
+	"records_flagged",
+	"method",
+	"grade",
+	"basis",
+	"source",
+	"scope",
+	"notes",
+	"title",
+	"generated",
+];
+
+/** One CSV line per row, in CSV_COLUMNS order, cells already escaped. */
+function csvLines(rows: ChartExportRow[], meta: ChartExportMeta): string[] {
 	const date = meta.generatedAt.toISOString().slice(0, 10);
-	const lines = rows.map((r) =>
+	return rows.map((r) =>
 		[
 			r.label,
 			r.series ?? "",
@@ -116,9 +117,32 @@ export function chartCsv(rows: ChartExportRow[], meta: ChartExportMeta): string 
 			.map(csvCell)
 			.join(","),
 	);
-	// CRLF per RFC 4180; a byte order mark so spreadsheet tools read UTF-8
-	// (Tajik, Russian and Arabic labels).
-	return `﻿${[header.join(","), ...lines].join("\r\n")}\r\n`;
+}
+
+// CRLF per RFC 4180; a byte order mark so spreadsheet tools read UTF-8
+// (Tajik, Russian and Arabic labels).
+const csvFile = (lines: string[]) => `\ufeff${lines.join("\r\n")}\r\n`;
+
+/** The rows a chart draws, with state, method, grade, basis and caveat. */
+export function chartCsv(rows: ChartExportRow[], meta: ChartExportMeta): string {
+	return csvFile([CSV_COLUMNS.join(","), ...csvLines(rows, meta)]);
+}
+
+/**
+ * Every panel of a dashboard in one file (D1, ruling D6): a first line with
+ * the page's scope and basis, then the chart columns with a leading panel
+ * column. Each row keeps its value state, and each panel its own method
+ * and notes, exactly as its own CSV would.
+ */
+export function dashboardCsv(
+	scopeLine: string,
+	panels: { title: string; rows: ChartExportRow[]; meta: Omit<ChartExportMeta, "title"> }[],
+): string {
+	const header = ["panel", ...CSV_COLUMNS].join(",");
+	const lines = panels.flatMap((p) =>
+		csvLines(p.rows, { ...p.meta, title: p.title }).map((line) => `${csvCell(p.title)},${line}`),
+	);
+	return csvFile([`${csvCell("scope")},${csvCell(scopeLine)}`, header, ...lines]);
 }
 
 /** A file name from the title, for example "deaths-by-hazard_2026-10-16.csv". */

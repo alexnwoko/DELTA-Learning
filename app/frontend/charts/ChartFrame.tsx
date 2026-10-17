@@ -32,6 +32,11 @@ export interface ChartFrameProps {
 	rows: ChartExportRow[];
 	/** Formats a reported value for the table, for example with a currency. */
 	formatValue?: (value: number, row: ChartExportRow) => string;
+	/**
+	 * Offer PNG and SVG downloads. False for a panel that is itself a table:
+	 * it has no picture, so only its CSV is offered.
+	 */
+	pictures?: boolean;
 	children: React.ReactNode;
 }
 
@@ -42,7 +47,8 @@ function stateText(row: ChartExportRow): string | null {
 	return STATE_ENCODING[row.valueState].label;
 }
 
-function saveBlob(blob: Blob, fileName: string) {
+/** Saves a file the page made, through a temporary link. */
+export function saveBlob(blob: Blob, fileName: string) {
 	const url = URL.createObjectURL(blob);
 	const link = document.createElement("a");
 	link.href = url;
@@ -71,7 +77,7 @@ function svgToPng(svg: string, width: number, height: number, scale = 2): Promis
 	});
 }
 
-export function ChartFrame({ ctx, title, meta, rows, formatValue, children }: ChartFrameProps) {
+export function ChartFrame({ ctx, title, meta, rows, formatValue, pictures = true, children }: ChartFrameProps) {
 	const titleId = useId();
 	const chartRef = useRef<HTMLDivElement>(null);
 	const fullMeta = (): ChartExportMeta => ({ ...meta, title, generatedAt: new Date() });
@@ -133,7 +139,9 @@ export function ChartFrame({ ctx, title, meta, rows, formatValue, children }: Ch
 									["svg", t("charts.download_svg", "Scalable picture (SVG)")],
 									["csv", t("charts.download_csv", "Data (CSV)")],
 								] as const
-							).map(([id, label]) => (
+							)
+								.filter(([id]) => pictures || id === "csv")
+								.map(([id, label]) => (
 								<MenuItem
 									key={id}
 									id={id}

@@ -46,6 +46,15 @@
 	--color-data-chart-axis: var(--delta-data-chart-axis);
 	--color-data-notice-provisional-border: var(--delta-data-notice-provisional-border);
 	--color-data-notice-provisional-background: var(--delta-data-notice-provisional-background);
+	--color-data-hazard-meteorological-hydrological: var(--delta-data-hazard-meteorological-hydrological);
+	--color-data-hazard-geological: var(--delta-data-hazard-geological);
+	--color-data-hazard-biological: var(--delta-data-hazard-biological);
+	--color-data-hazard-environmental: var(--delta-data-hazard-environmental);
+	--color-data-hazard-chemical: var(--delta-data-hazard-chemical);
+	--color-data-hazard-technological: var(--delta-data-hazard-technological);
+	--color-data-hazard-societal: var(--delta-data-hazard-societal);
+	--color-data-hazard-extraterrestrial: var(--delta-data-hazard-extraterrestrial);
+	--color-data-hazard-unclassified: var(--delta-data-hazard-unclassified);
 	--color-brand-interactive: var(--delta-brand-interactive);
 	--color-brand-interactive-active: var(--delta-brand-interactive-active);
 	--color-brand-secondary: var(--delta-brand-secondary);
