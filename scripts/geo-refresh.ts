@@ -6,7 +6,12 @@ import { refreshGeoReadModel } from "../app/backend.server/models/geo/refresh";
 import { loadEnvFile } from "../app/utils/env";
 
 async function main() {
+	// An explicit DATABASE_URL (for example inside a container, where .env
+	// points at 127.0.0.1) wins over the .env file, which loadEnvFile would
+	// otherwise apply on top of it (Analytics, 2026-10-17).
+	const explicitUrl = process.env.DATABASE_URL;
 	loadEnvFile("");
+	if (explicitUrl) process.env.DATABASE_URL = explicitUrl;
 	initDB();
 	const only = process.argv[2];
 	const tenants = only
