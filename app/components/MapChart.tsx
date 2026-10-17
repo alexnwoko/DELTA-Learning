@@ -20,6 +20,9 @@ import {
 	type MapStateResult,
 	type MeasureFamily,
 	type MeasureKind,
+	type MapCellPart,
+	type MapSymbol,
+	type MapUnderlayKind,
 	type NotAppliedInput,
 	PLAUSIBILITY_MARKER,
 	type MapAreaSymbol,
@@ -63,6 +66,10 @@ export type MapChartArea = {
 	 * ST_PointOnSurface, where a bubble or bar stands (RV-5 as amended).
 	 */
 	labelPoint?: [number, number] | null;
+	/** Land area in km² (divisionAreasKm2), for density shading under symbols (option D). */
+	areaKm2?: number | null;
+	/** Bars mode: the parts of a breakdown, each with its own value state. */
+	parts?: MapCellPart[];
 };
 
 type MapChartProps = {
@@ -94,6 +101,13 @@ type MapChartProps = {
 	 * rates as a choropleth (ruling RV-5). Defaults to "count".
 	 */
 	measureKind?: MeasureKind;
+	/** Overrides the default symbol, for example "bars" for a breakdown. */
+	symbol?: MapSymbol;
+	/**
+	 * Option D: shade the areas under the symbols by density or coverage.
+	 * Density uses each area's areaKm2.
+	 */
+	underlay?: { kind: MapUnderlayKind; family: MeasureFamily };
 };
 
 type DataSourceType = MapChartArea[];
@@ -135,6 +149,7 @@ function toCell(area: MapChartArea, index: number): MapCell {
 		sharedRecords: area.sharedRecords,
 		gradeDistribution: area.gradeDistribution,
 		geoPrecision: area.geoPrecision,
+		parts: area.parts,
 	};
 }
 
@@ -409,6 +424,8 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 			scope,
 			notApplied,
 			measureKind,
+			symbol,
+			underlay,
 		},
 		ref,
 	) => {
@@ -528,7 +545,17 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 					family: currentFamily ?? "people",
 					scope: scope ?? DEFAULT_SCOPE,
 					notApplied,
-					symbol: defaultSymbolFor(measureKind ?? "count"),
+					symbol: symbol ?? defaultSymbolFor(measureKind ?? "count"),
+					underlay: underlay
+						? {
+								...underlay,
+								areaKm2: new Map(
+									dataSource.flatMap((a, i) =>
+										a.areaKm2 ? [[String(i), a.areaKm2] as const] : [],
+									),
+								),
+							}
+						: undefined,
 				});
 				setMapState(resolved);
 				setUpdatedDataSource(dataSource);
@@ -669,6 +696,8 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 				scope,
 				notApplied,
 				measureKind,
+				symbol,
+				underlay,
 			],
 		);
 
@@ -823,6 +852,45 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 										})}
 									</li>
 								)}
+							{legend.underlay && (
+								<li style={{ ...legendRow, fontWeight: 600 }}>
+									{legend.underlay.kind === "density"
+										? ctx.t({
+												code: "analysis.map_underlay_density",
+												desc: "Map legend heading for area shading under bubbles or bars: the figure per 1,000 km² of land area.",
+												msg: "Shading: per 1,000 km² of land area",
+											})
+										: ctx.t({
+												code: "analysis.map_underlay_coverage",
+												desc: "Map legend heading for area shading under bubbles or bars: the share of records that report the figure.",
+												msg: "Shading: % of records reporting",
+											})}
+								</li>
+							)}
+							{legend.underlay?.classes.map((c) => (
+								<li key={`underlay-${c.index}`} style={legendRow}>
+									<Swatch
+										fill={c.color}
+										opacity={1}
+										stroke={dataTokens.map.areaBoundary.stroke}
+									/>
+									{c.lower === c.upper
+										? formatNumberWithoutDecimals(c.lower)
+										: `${formatNumberWithoutDecimals(c.lower)} to ${formatNumberWithoutDecimals(c.upper)}`}
+								</li>
+							))}
+							{legend.underlay && legend.underlay.areasWithout > 0 && (
+								<li style={{ ...legendRow, whiteSpace: "normal" }}>
+									{ctx.t(
+										{
+											code: "analysis.map_underlay_without",
+											desc: "Map legend note: areas with a bubble or bar but no shading value, for example no land area recorded. {count} is the number of areas.",
+											msg: "{count} areas have no shading value",
+										},
+										{ count: legend.underlay.areasWithout },
+									)}
+								</li>
+							)}
 							{legend.mode === "classes" &&
 								legend.classes.map((c) => (
 									<li key={`class-${c.index}`} style={legendRow}>
