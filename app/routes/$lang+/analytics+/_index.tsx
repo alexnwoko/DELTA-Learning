@@ -7,16 +7,21 @@ import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { useLoaderData, useSearchParams } from "react-router";
 import { approvalAudienceForBasis } from "~/backend.server/approvalAudience.server";
 import { getImpactPanels1to4 } from "~/backend.server/models/analytics/dashboard/impactPanels.server";
-import { getImpactPanels5to16 } from "~/backend.server/models/analytics/dashboard/impactPanels5to16.server";
+import {
+	getImpactMap,
+	getImpactPanels5to16,
+} from "~/backend.server/models/analytics/dashboard/impactPanels5to16.server";
 import { AboutTheData } from "~/frontend/analytics/dashboard/AboutTheData";
 import { DashboardDownload } from "~/frontend/analytics/dashboard/DashboardDownload";
 import { DashboardShell, dimensionLabel } from "~/frontend/analytics/dashboard/DashboardShell";
+import { ImpactMap } from "~/frontend/analytics/dashboard/panels/impact/ImpactMap";
 import { impactDashboardPanels } from "~/frontend/analytics/dashboard/panels/impact/impactDashboardPanels";
 import type { DashboardPanel } from "~/frontend/analytics/dashboard/types";
 import { ViewContext } from "~/frontend/context";
 import { basisIncludesProvisional } from "~/utils/approvalBasis";
 import { authLoaderPublicOrWithPerm, hasPermission } from "~/utils/auth";
 import type { ImpactPanels1to4 } from "~/utils/dashboard/impactPanels";
+import type { ImpactMapPayload } from "~/utils/dashboard/impactMap";
 import type { ImpactPanels5to16 } from "~/utils/dashboard/impactPanels5to16";
 import {
 	parseDeltaQuery,
@@ -52,7 +57,11 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request }:
 	// Only the chosen dimension is read; the others load when their tab opens.
 	const impact =
 		query.dimension === "disaster_impact"
-			? await Promise.all([getImpactPanels1to4(query, ctx), getImpactPanels5to16(query, ctx)])
+			? await Promise.all([
+					getImpactPanels1to4(query, ctx),
+					getImpactPanels5to16(query, ctx),
+					getImpactMap(query, ctx),
+				])
 			: null;
 	return {
 		query,
@@ -63,6 +72,8 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request }:
 		country,
 		impact: impact?.[0] ?? null,
 		impactMore: impact?.[1] ?? null,
+		impactMap: impact?.[2] ?? null,
+		audience,
 	};
 });
 
@@ -116,6 +127,21 @@ export default function AnalysisDashboard() {
 				onDimensionChange={(dimension) => setQuery({ ...query, dimension })}
 				summary={summary}
 				provisional={ld.provisional}
+				map={
+					ld.impactMap ? (
+						<ImpactMap
+							ctx={ctx}
+							map={ld.impactMap as ImpactMapPayload}
+							scope={{
+								tenant: ld.country || null,
+								fromDate: query.where.time?.from ?? null,
+								toDate: query.where.time?.to ?? null,
+								audience: ld.audience,
+								provisional: ld.provisional,
+							}}
+						/>
+					) : undefined
+				}
 				panels={panels}
 				download={
 					ld.signedIn && impact ? (
