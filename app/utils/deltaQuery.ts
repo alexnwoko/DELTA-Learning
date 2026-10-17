@@ -82,6 +82,8 @@ export const QUERY_REFUSALS = {
 	monetaryPending: "MONETARY_CONVENTIONS_PENDING",
 	/** A valid measure the read model does not hold yet (Geoportal I-0). */
 	measureNotAvailable: "MEASURE_NOT_AVAILABLE",
+	/** A region and a division together: one place facet at a time (HTTP 422). */
+	regionAndDivision: "REGION_AND_DIVISION",
 } as const;
 
 export interface DeltaQuery {
@@ -100,6 +102,11 @@ export interface DeltaQuery {
 		hazard?: { typeId?: string; clusterId?: string; hazardId?: string };
 		/** A division and its descendants, within the tenant. */
 		geo?: { divisionId: string };
+		/**
+		 * A region of the tenant: a grouping of its own divisions (Geoportal
+		 * I-4, RG-1). Never together with geo; a record counts once in it.
+		 */
+		region?: { regionId: string };
 		/** Inclusive ISO dates (YYYY, YYYY-MM or YYYY-MM-DD). */
 		time?: { from?: string; to?: string };
 		sectors?: string[];
@@ -145,6 +152,11 @@ function isPartialDate(v: unknown): v is string {
 export interface QueryIssue {
 	param: string;
 	reason: string;
+	/**
+	 * Set when the request must be refused, not served with the input
+	 * dropped (for example REGION_AND_DIVISION, HTTP 422).
+	 */
+	refusal?: (typeof QUERY_REFUSALS)[keyof typeof QUERY_REFUSALS];
 }
 
 export interface ParsedQuery {
@@ -162,6 +174,7 @@ const P = {
 	hazardCluster: "hipCluster",
 	hazard: "hip",
 	division: "division",
+	region: "region",
 	from: "from",
 	to: "to",
 	sector: "sector",
@@ -274,7 +287,20 @@ export function parseDeltaQuery(params: URLSearchParams): ParsedQuery {
 	}
 
 	const divisionId = uuidParam(P.division);
-	if (divisionId) query.where.geo = { divisionId };
+	const regionId = uuidParam(P.region);
+	if (divisionId && regionId) {
+		// Two place facets: refuse. Keeping either one would quietly answer a
+		// different question than the one asked.
+		issues.push({
+			param: P.region,
+			reason: "region and division cannot be combined",
+			refusal: QUERY_REFUSALS.regionAndDivision,
+		});
+	} else if (divisionId) {
+		query.where.geo = { divisionId };
+	} else if (regionId) {
+		query.where.region = { regionId };
+	}
 
 	const from = params.get(P.from);
 	const to = params.get(P.to);
@@ -341,6 +367,7 @@ export function serializeDeltaQuery(query: DeltaQuery): URLSearchParams {
 	if (w.hazard?.clusterId) params.set(P.hazardCluster, w.hazard.clusterId);
 	if (w.hazard?.hazardId) params.set(P.hazard, w.hazard.hazardId);
 	if (w.geo?.divisionId) params.set(P.division, w.geo.divisionId);
+	if (w.region?.regionId) params.set(P.region, w.region.regionId);
 	if (w.time?.from) params.set(P.from, w.time.from);
 	if (w.time?.to) params.set(P.to, w.time.to);
 	for (const s of w.sectors ?? []) params.append(P.sector, s);
@@ -361,9 +388,14 @@ export function withLockedFilters(
 		where?: Partial<DeltaQuery["where"]>;
 	},
 ): DeltaQuery {
+	const where = { ...query.where, ...(locked.where ?? {}) };
+	// A locked place facet replaces the other one from the URL, so an embed
+	// locked to a division cannot be moved to a region, or the reverse.
+	if (locked.where?.geo) delete where.region;
+	if (locked.where?.region) delete where.geo;
 	return {
 		...query,
 		dimension: locked.dimension ?? query.dimension,
-		where: { ...query.where, ...(locked.where ?? {}) },
+		where,
 	};
 }

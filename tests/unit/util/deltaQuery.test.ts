@@ -4,6 +4,7 @@ import {
 	serializeDeltaQuery,
 	withLockedFilters,
 	DEFAULT_QUERY,
+	QUERY_REFUSALS,
 } from "~/utils/deltaQuery";
 
 const DIV = "11111111-1111-4111-8111-111111111111";
@@ -124,5 +125,44 @@ describe("delta.query/1", () => {
 		});
 		expect(locked.dimension).toBe("disaster_impact");
 		expect(locked.where.disasterEventId).toBe(EVT);
+	});
+});
+
+describe("region place facet (Geoportal I-4, RG-1)", () => {
+	const REG = "55555555-5555-4555-8555-555555555555";
+
+	it("reads a region and writes it back", () => {
+		const { query, issues } = q(`region=${REG}`);
+		expect(issues).toEqual([]);
+		expect(query.where.region).toEqual({ regionId: REG });
+		expect(query.where.geo).toBeUndefined();
+		expect(serializeDeltaQuery(query).get("region")).toBe(REG);
+	});
+
+	it("refuses a region and a division together, applying neither", () => {
+		const { query, issues } = q(`region=${REG}&division=${DIV}`);
+		expect(query.where.region).toBeUndefined();
+		expect(query.where.geo).toBeUndefined();
+		expect(issues).toEqual([
+			expect.objectContaining({
+				param: "region",
+				refusal: QUERY_REFUSALS.regionAndDivision,
+			}),
+		]);
+	});
+
+	it("reports a malformed region instead of dropping it silently", () => {
+		const { query, issues } = q("region=not-a-uuid");
+		expect(query.where.region).toBeUndefined();
+		expect(issues).toEqual([{ param: "region", reason: "not a valid id" }]);
+	});
+
+	it("lets a locked division replace a region from the URL", () => {
+		const { query } = q(`region=${REG}`);
+		const locked = withLockedFilters(query, {
+			where: { geo: { divisionId: DIV } },
+		});
+		expect(locked.where.geo).toEqual({ divisionId: DIV });
+		expect(locked.where.region).toBeUndefined();
 	});
 });
