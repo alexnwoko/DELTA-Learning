@@ -10,7 +10,7 @@ import type { ChartExportRow } from "~/frontend/charts/chartExport";
 import type { ViewContext } from "~/frontend/context";
 import type { SectorGap, SectorPanels1to7 } from "~/utils/dashboard/sectorPanels";
 import { dataTokens } from "~/utils/designTokens.generated";
-import { cellRow, cellText, coverageText, panelNotes, type PanelExport } from "../../panelCell";
+import { cellRow, cellText, coverageText, emptyViewPanel, panelNotes, type PanelExport } from "../../panelCell";
 import type { DashboardPanel } from "../../types";
 import { RowBars, ShadedTable, type BarSeries } from "../blocks";
 import { YearColumns } from "../impact/ImpactTimeline";
@@ -58,6 +58,9 @@ export function sectorDashboardPanels(
 	opts: { source: string; scope: string; provisional: boolean; country: string },
 ): DashboardPanel[] {
 	const t = ctx.t;
+	if (d.empty) {
+		return [emptyViewPanel("sectors", tr(t, "dashboard.view_sectors", "Sectors"), tr(t, "dashboard.sectors_empty", d.empty.reason))];
+	}
 	const m = d.meta;
 	const n = (x: number) => x.toLocaleString(ctx.lang);
 	const noLinked = tr(t, "dashboard.no_records_linked", "No records linked");

@@ -47,9 +47,11 @@ export interface ImpactMapProps {
 	ctx: ViewContext;
 	map: ImpactMapPayload;
 	scope: MapScopeQuery;
+	/** Selecting an area sets the place filter for the whole page (brief section 2). */
+	onSelectDivision?: (divisionId: string) => void;
 }
 
-export function ImpactMap({ ctx, map, scope }: ImpactMapProps) {
+export function ImpactMap({ ctx, map, scope, onSelectDivision }: ImpactMapProps) {
 	const t = ctx.t;
 	const labels = {
 		destroyed: t({ code: "dashboard.map_dwellings_destroyed", msg: "Dwellings destroyed" }),
@@ -71,6 +73,8 @@ export function ImpactMap({ ctx, map, scope }: ImpactMapProps) {
 					measureFamily="people"
 					layered={{ barsFamily: "housing" }}
 					scope={scope}
+					// The map reports the index among the drawn areas.
+					onAreaClick={onSelectDivision ? (i) => onSelectDivision(drawn[i].divisionId) : undefined}
 					notApplied={map.meta.notApplied}
 				/>
 			</div>
