@@ -121,6 +121,11 @@ type MapChartProps = {
 	 * recorded" on the event maps.
 	 */
 	notReportedLabel?: string;
+	/**
+	 * Called when a reader selects an area (its shape or its symbol), with
+	 * the area's index in dataSource; for example to set the place filter.
+	 */
+	onAreaClick?: (index: number, area: MapChartArea) => void;
 };
 
 type DataSourceType = MapChartArea[];
@@ -456,6 +461,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 			underlay,
 			layered,
 			notReportedLabel,
+			onAreaClick,
 		},
 		ref,
 	) => {
@@ -669,6 +675,9 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 							geojsonLayer.bindPopup(
 								popupHtml(ctx, region, area, notReportedLabel),
 							);
+							if (onAreaClick) {
+								geojsonLayer.on("click", () => onAreaClick(index, region));
+							}
 
 							geojsonLayer.addTo(mapRef.current);
 							geoJsonLayers.push(geojsonLayer);
@@ -716,6 +725,9 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 								marker.bindPopup(
 									popupHtml(ctx, region, area, notReportedLabel),
 								);
+								if (onAreaClick) {
+									marker.on("click", () => onAreaClick(index, region));
+								}
 								marker.addTo(mapRef.current);
 							}
 						} catch (error) {
@@ -748,6 +760,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 				underlay,
 				layered,
 				notReportedLabel,
+				onAreaClick,
 			],
 		);
 
