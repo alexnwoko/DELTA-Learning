@@ -2,6 +2,7 @@
 // bubbles, counted by the geoportal's eventCountsByDivision so both surfaces
 // agree. Needs the geo read model refreshed for the tenant (geo:refresh).
 
+import { cachedDashboard } from "~/backend.server/models/analytics/dashboard/dashboardCache.server";
 import { eventCountsByDivision } from "~/backend.server/models/geo/queries";
 import {
 	impactFiltersFromQuery,
@@ -11,7 +12,7 @@ import { levelOneAreas } from "~/backend.server/models/analytics/dashboard/impac
 import type { DeltaQuery } from "~/utils/deltaQuery";
 import type { EventMapPayload } from "~/utils/dashboard/eventMap";
 
-export async function getEventMap(
+async function computeGetEventMap(
 	query: DeltaQuery,
 	ctx: ImpactPanelsContext,
 	dimension: "disaster_event" | "hazardous_event",
@@ -57,4 +58,15 @@ export async function getEventMap(
 			),
 		},
 	};
+}
+
+/** getEventMap, reused for DASHBOARD_CACHE_TTL_MS per tenant, audience, query and dimension. */
+export function getEventMap(
+	query: DeltaQuery,
+	ctx: ImpactPanelsContext,
+	dimension: "disaster_event" | "hazardous_event",
+): Promise<EventMapPayload> {
+	return cachedDashboard("getEventMap", [ctx, query, dimension], () =>
+		computeGetEventMap(query, ctx, dimension),
+	);
 }

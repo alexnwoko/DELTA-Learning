@@ -2,6 +2,7 @@
 // loader behind ~/utils/dashboard/hazardEventPanels. Events are filtered on
 // their own fields: tenant, approval basis, HIPs, start year and division.
 
+import { cachedDashboard } from "~/backend.server/models/analytics/dashboard/dashboardCache.server";
 import { sql, type SQL } from "drizzle-orm";
 import {
 	hipTypeLabels,
@@ -62,7 +63,7 @@ function hazardEventsCte(filters: HazardFilters): SQL {
 	)`;
 }
 
-export async function getHazardEventPanels1to7(
+async function computeGetHazardEventPanels1to7(
 	query: DeltaQuery,
 	ctx: ImpactPanelsContext,
 ): Promise<HazardEventPanels1to7> {
@@ -218,4 +219,14 @@ export async function getHazardEventPanels1to7(
 			notApplied,
 		},
 	};
+}
+
+/** getHazardEventPanels1to7, reused for DASHBOARD_CACHE_TTL_MS per tenant, audience and query. */
+export function getHazardEventPanels1to7(
+	query: DeltaQuery,
+	ctx: ImpactPanelsContext,
+): Promise<HazardEventPanels1to7> {
+	return cachedDashboard("getHazardEventPanels1to7", [ctx, query], () =>
+		computeGetHazardEventPanels1to7(query, ctx),
+	);
 }

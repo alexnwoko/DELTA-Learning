@@ -3,6 +3,7 @@
 // empty ("No published records yet") instead of drawing empty panels.
 // Retired records are left out, as on every basis.
 
+import { cachedDashboard } from "~/backend.server/models/analytics/dashboard/dashboardCache.server";
 import { sql } from "drizzle-orm";
 import { humanEffectsFilteredRecords } from "~/backend.server/models/analytics/hazard-analysis";
 import {
@@ -21,7 +22,7 @@ export interface RecordsByApproval {
 	unpublished: number;
 }
 
-export async function getRecordsByApproval(
+async function computeGetRecordsByApproval(
 	query: DeltaQuery,
 	ctx: ImpactPanelsContext,
 ): Promise<RecordsByApproval> {
@@ -44,4 +45,14 @@ export async function getRecordsByApproval(
 			JOIN "disaster_records" rec ON rec."id" = fr.record_id`)
 	)[0];
 	return { published: num(r?.published), unpublished: num(r?.unpublished) };
+}
+
+/** getRecordsByApproval, reused for DASHBOARD_CACHE_TTL_MS per tenant, audience and query. */
+export function getRecordsByApproval(
+	query: DeltaQuery,
+	ctx: ImpactPanelsContext,
+): Promise<RecordsByApproval> {
+	return cachedDashboard("getRecordsByApproval", [ctx, query], () =>
+		computeGetRecordsByApproval(query, ctx),
+	);
 }
