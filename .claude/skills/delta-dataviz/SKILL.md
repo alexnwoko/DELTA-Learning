@@ -55,7 +55,7 @@ overstating what the data says. This skill sits on top of `delta-data-honesty` a
    ("reported by 14 of 21 provinces"). A chart's source line carries method, grade and date.
 4. **Money is refused** until the monetary convention is ruled. The tile shows the refusal with the
    code `MONETARY_CONVENTIONS_PENDING` and a one-line reason. Never compact money (overrides
-   DV-HONEST-007's "$4.2M" example).
+   the compact-money example in DV-HONEST-007).
 5. **Words.** "Human effects and damage" where no money is shown. "Disaster impact" for the record
    dimension. Sendai Framework Targets A to D names; HIPs 2025 hazard names. Count unit "disaster
    records" unless ruled otherwise (RV-4).
