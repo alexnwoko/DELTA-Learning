@@ -38,7 +38,7 @@ function recordBasis(
 		: approvalBasis(filters.audience, basisColumns(alias));
 }
 
-interface HazardFilters {
+export interface HazardFilters {
 	countryAccountsId: string;
 	hazardTypeId: string | null;
 	hazardClusterId: string | null;
@@ -448,6 +448,70 @@ export async function getAffectedPeopleByHazardFilters(
 		totalAffectedIndirect: measures.affected_indirect.value,
 		measures,
 	};
+}
+
+/** Groupings the D1 dashboard asks for (impact panels 1 to 4). */
+export type HumanEffectGrouping = "year" | "hipType" | "hipTypeYear";
+
+/** One group's measures, each with its value state and record counts. */
+export interface GroupedHumanEffects {
+	year: number | null;
+	hipTypeId: string | null;
+	measures: Record<HumanEffectMeasure, MeasureValue>;
+}
+
+/**
+ * The headline human-effect measures (getAffectedPeopleByHazardFilters)
+ * per year of the record's start date and or per HIPs type, for the D1
+ * Disaster impact panels: sparklines, the timeline and the hazard ranking.
+ * Same value-state rules as the headline: a group nobody reported is null,
+ * never 0 (TR-076). Records with no start year or no HIPs type form their
+ * own group (null key), never dropped.
+ */
+export async function getHumanEffectsGrouped(
+	filters: HazardFilters,
+	grouping: HumanEffectGrouping,
+	basisOverride?: RecordBasisOverride,
+): Promise<GroupedHumanEffects[]> {
+	const yearExpr = sql`NULLIF(substring(rec."start_date" from '^[0-9]{4}'), '')::int`;
+	const typeExpr = sql`NULLIF(rec."hip_type_id", '')`;
+	const keys =
+		grouping === "year"
+			? sql`${yearExpr} AS year, NULL::text AS hip_type_id`
+			: grouping === "hipType"
+				? sql`NULL::int AS year, ${typeExpr} AS hip_type_id`
+				: sql`${yearExpr} AS year, ${typeExpr} AS hip_type_id`;
+	const rawQuery = sql`
+          WITH RECURSIVE ${humanEffectsFilteredRecords(filters, basisOverride)}
+          SELECT ${keys}, ${humanEffectMeasuresSelect()}
+          FROM filtered_records fr
+          LEFT JOIN "human_category_presence" hcp
+            ON hcp."record_id" = fr.record_id
+          LEFT JOIN "disaster_records" rec
+            ON rec."id" = fr.record_id
+          GROUP BY 1, 2
+          ORDER BY 1 NULLS LAST, 2 NULLS LAST
+        `;
+	const result = await dr.execute(rawQuery);
+	return (result.rows as Record<string, unknown>[]).map((row) => ({
+		year: row.year === null || row.year === undefined ? null : Number(row.year),
+		hipTypeId: (row.hip_type_id as string | null) ?? null,
+		measures: Object.fromEntries(
+			HUMAN_EFFECT_MEASURES.map((m) => [
+				m,
+				measureValue(
+					{
+						sum: row[`${m}_sum`] as number | string | null,
+						reported: row[`${m}_reported`] as number | string,
+						zeroConfirmed: row[`${m}_zero`] as number | string,
+						total: row.records_total as number | string,
+						flagged: row[`${m}_flagged`] as number | string,
+					},
+					PROVISIONAL_ZERO_COVERAGE,
+				),
+			]),
+		) as Record<HumanEffectMeasure, MeasureValue>,
+	}));
 }
 
 type DisaggregationDimension =
