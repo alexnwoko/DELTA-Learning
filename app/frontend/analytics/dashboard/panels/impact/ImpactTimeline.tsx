@@ -7,6 +7,7 @@
 import React, { useState } from "react";
 import { ToggleButton } from "react-aria-components";
 import { ChartFrame } from "~/frontend/charts/ChartFrame";
+import { roundedBarPath } from "~/frontend/charts/roundedBar";
 import type { ViewContext } from "~/frontend/context";
 import type { ImpactTimeline as ImpactTimelinePayload, PanelCell, PanelMeta } from "~/utils/dashboard/impactPanels";
 import { dataTokens } from "~/utils/designTokens.generated";
@@ -69,7 +70,7 @@ export function YearColumns({
 				if (valueState === "reported" && value !== null && value > 0) {
 					const h = Math.max(1, (value / max) * plot);
 					top = base - h;
-					mark = <rect x={x} y={top} width={bar} height={h} fill={dataTokens.chart.axis} />;
+					mark = <path d={roundedBarPath(x, top, bar, h, "up")} fill={dataTokens.chart.axis} />;
 				} else if (valueState === "zero_confirmed") {
 					mark = (
 						<rect

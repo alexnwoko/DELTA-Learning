@@ -3,6 +3,7 @@
 // figure only when a record reported it; every other state shows its word
 // in place, never a 0 or an empty bar (TR-076).
 import type { ViewContext } from "~/frontend/context";
+import { roundedBarPath } from "~/frontend/charts/roundedBar";
 import type { PanelCell } from "~/utils/dashboard/impactPanels";
 import { dataTokens } from "~/utils/designTokens.generated";
 import { cellText } from "../panelCell";
@@ -166,11 +167,8 @@ export function RowBars({ ctx, label, rows, series }: RowBarsProps) {
 							const w = Math.max(1, (value / max) * track);
 							return (
 								<g key={i}>
-									<rect
-										x={LABEL_W}
-										y={by}
-										width={w}
-										height={BAR_H}
+									<path
+										d={roundedBarPath(LABEL_W, by, w, BAR_H, "right")}
 										fill={b.series?.fill ?? dataTokens.chart.axis}
 									/>
 									<text x={LABEL_W + w + 4} y={by + 10} fill="currentColor" fontSize={10}>

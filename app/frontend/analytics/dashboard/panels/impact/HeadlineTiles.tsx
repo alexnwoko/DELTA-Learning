@@ -4,6 +4,7 @@
 // the monetary convention is ruled (G-06, MONETARY_CONVENTIONS_PENDING).
 // No green-up or red-down: the sparkline is one neutral ink.
 import { ChartFrame } from "~/frontend/charts/ChartFrame";
+import { roundedBarPath } from "~/frontend/charts/roundedBar";
 import type { ViewContext } from "~/frontend/context";
 import type { HeadlineTile, PanelCell, PanelMeta } from "~/utils/dashboard/impactPanels";
 import { dataTokens } from "~/utils/designTokens.generated";
@@ -40,9 +41,9 @@ export function Sparkline({ points }: { points: { year: number; cell: PanelCell 
 				if (valueState === "reported" && value !== null && value > 0) {
 					const h = Math.max(1, (value / max) * (SPARK_H - 2));
 					return (
-						<rect key={p.year} x={x} y={SPARK_H - h} width={bar} height={h} fill={dataTokens.chart.axis}>
+						<path key={p.year} d={roundedBarPath(x, SPARK_H - h, bar, h, "up", 3)} fill={dataTokens.chart.axis}>
 							<title>{`${p.year}: ${value}`}</title>
-						</rect>
+						</path>
 					);
 				}
 				if (valueState === "zero_confirmed") {
