@@ -3,7 +3,10 @@ import {
 	FAMILY_RAMPS,
 	MIN_AREAS_FOR_CLASSES,
 	SPIKE_BASE_FILL,
+	SPIKE_MAX_HEIGHT_PX,
+	SPIKE_MIN_HEIGHT_PX,
 	defaultSymbolFor,
+	spikeHeightPx,
 	type MapCell,
 	type MapScopeQuery,
 	OFF_RAMP_STATES,
@@ -424,5 +427,14 @@ describe("spike mode (ruling RV-5)", () => {
 			reported("b", 5, { recordsFlagged: 1 }),
 		]);
 		expect(clean.legend.spikes?.maxFlagged).toBe(false);
+	});
+});
+
+describe("spikeHeightPx", () => {
+	it("is linear up to the maximum and never below the minimum", () => {
+		expect(spikeHeightPx(1)).toBe(SPIKE_MAX_HEIGHT_PX);
+		expect(spikeHeightPx(0.5)).toBe(SPIKE_MAX_HEIGHT_PX / 2);
+		expect(spikeHeightPx(0.00001)).toBe(SPIKE_MIN_HEIGHT_PX);
+		expect(spikeHeightPx(0.5, 24)).toBe(12);
 	});
 });

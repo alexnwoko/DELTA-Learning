@@ -242,6 +242,17 @@ export const SPIKE_MAX_HEIGHT_PX = 60;
  */
 export const SPIKE_MIN_HEIGHT_PX = 2;
 
+/** Drawn height of a spike in pixels: linear, never below the minimum. */
+export function spikeHeightPx(
+	ratio: number,
+	maxHeight: number = SPIKE_MAX_HEIGHT_PX,
+): number {
+	return Math.max(ratio * maxHeight, SPIKE_MIN_HEIGHT_PX);
+}
+
+/** Base width of a spike in pixels. PROVISIONAL. */
+export const SPIKE_WIDTH_PX = 8;
+
 /** Base fill of a reported area in spike mode: the map canvas, so the spike carries the value. */
 export const SPIKE_BASE_FILL = dataTokens.map.canvas.background;
 
