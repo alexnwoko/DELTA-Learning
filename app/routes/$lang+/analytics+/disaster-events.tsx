@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { divisionLabelPoints } from "~/backend.server/models/analytics/divisionLabelPoints";
 import type { MetaFunction } from "react-router";
 import { useLoaderData, Outlet } from "react-router";
 
@@ -63,6 +64,8 @@ interface interfaceMap {
 	description: string;
 	colorPercentage: number;
 	geojson: any;
+	/** Point inside the division, [lng, lat], for map spikes (RV-5). */
+	labelPoint?: [number, number] | null;
 }
 
 interface interfacePieChart {
@@ -323,6 +326,11 @@ export const loader = authLoaderPublicOrWithPerm(
 						1,
 						settings.countryAccountsId,
 					);
+					// Where each map spike stands (ruling RV-5).
+					const labelPoints = await divisionLabelPoints(
+						divisionLevel1.map((d) => d.id),
+						settings.countryAccountsId,
+					);
 					for (const item of divisionLevel1) {
 						const lossesMapTotal = await getSectorImpactTotal({
 							impact: "losses",
@@ -377,6 +385,7 @@ export const loader = authLoaderPublicOrWithPerm(
 										)),
 							colorPercentage: 1,
 							geojson: item.geojson,
+							labelPoint: labelPoints.get(String(item.id)) ?? null,
 						});
 
 						// Populate the geoData for the map for losses
@@ -399,6 +408,7 @@ export const loader = authLoaderPublicOrWithPerm(
 										})),
 							colorPercentage: 1,
 							geojson: item.geojson,
+							labelPoint: labelPoints.get(String(item.id)) ?? null,
 						});
 
 						// Populate the geoData for the map for damages
@@ -421,6 +431,7 @@ export const loader = authLoaderPublicOrWithPerm(
 										})),
 							colorPercentage: 1,
 							geojson: item.geojson,
+							labelPoint: labelPoints.get(String(item.id)) ?? null,
 						});
 					}
 				} catch (e) {
