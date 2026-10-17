@@ -3,6 +3,7 @@ import {
 	DASHBOARD_VIEWS,
 	legacyAnalyticsTarget,
 	searchForView,
+	toggleDivision,
 	viewFromSearch,
 } from "~/frontend/analytics/dashboard/views";
 import { parseDeltaQuery } from "~/utils/deltaQuery";
@@ -55,5 +56,18 @@ describe("old analysis pages", () => {
 			"/analytics?dim=disaster_event&from=2015",
 		);
 		expect(legacyAnalyticsTarget("plausibility-review", new URLSearchParams(""))).toBeNull();
+	});
+});
+
+describe("map clicks set the place filter", () => {
+	it("select a division, replace a region, and clear on a second click", () => {
+		const before = q("region=00000000-0000-0000-0000-000000000001&from=2015");
+		expect(before.where.region).toEqual({ regionId: "00000000-0000-0000-0000-000000000001" });
+		const picked = toggleDivision(before, "d1");
+		expect(picked.where.geo).toEqual({ divisionId: "d1" });
+		expect(picked.where.region).toBeUndefined();
+		expect(picked.where.time).toEqual({ from: "2015" });
+		expect(toggleDivision(picked, "d1").where.geo).toBeUndefined();
+		expect(toggleDivision(picked, "d2").where.geo).toEqual({ divisionId: "d2" });
 	});
 });
