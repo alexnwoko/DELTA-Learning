@@ -96,6 +96,8 @@ export interface RowBarsProps {
 	rows: { key: string; label: string; note?: string; bars: { series?: BarSeries; cell: PanelCell }[] }[];
 	/** A legend entry per series; omit for one series. */
 	series?: BarSeries[];
+	/** Words for a not-reported slot, when the panel has its own (e.g. "No records linked"). */
+	notReportedText?: string;
 }
 
 const BAR_H = 12;
@@ -108,7 +110,7 @@ const WIDTH = 380;
  * record reported has no bar: its slot says the state in words. All bars
  * share one scale, so the chart never suggests that series add up.
  */
-export function RowBars({ ctx, label, rows, series }: RowBarsProps) {
+export function RowBars({ ctx, label, rows, series, notReportedText }: RowBarsProps) {
 	const max = Math.max(1, ...rows.flatMap((r) => r.bars.map((b) => reportedValue(b.cell) ?? 0)));
 	const track = WIDTH - LABEL_W - 70;
 	const groupH = (r: RowBarsProps["rows"][number]) =>
@@ -160,7 +162,7 @@ export function RowBars({ ctx, label, rows, series }: RowBarsProps) {
 								return (
 									<text key={i} x={LABEL_W} y={by + 10} fill="currentColor" fontStyle="italic" fontSize={10}>
 										{prefix}
-										{cellText(ctx, b.cell)}
+										{notReportedText && b.cell.valueState === "not_reported" ? notReportedText : cellText(ctx, b.cell)}
 									</text>
 								);
 							}
