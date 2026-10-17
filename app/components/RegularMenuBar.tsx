@@ -277,6 +277,14 @@ export default function RegularMenuBar({
 						// no drop-down. The reviewer queue is linked from its header.
 						command: () => navigate(ctx.url("/analytics")),
 					},
+					{
+						// Beside Analysis, not inside it (Alex, 2026-10-17). Signed-in
+						// only, as the geoportal route (ViewData); a public entry waits
+						// for management clearance.
+						label: ctx.t({ code: "nav.geoportal", msg: "Geoportal" }).toUpperCase(),
+						icon: "pi pi-map",
+						command: () => navigate(ctx.url("/geoportal")),
+					},
 				]
 			: []),
 		{
