@@ -51,6 +51,9 @@ export function impactFiltersFromQuery(
 	if (query.where.sectors?.length) notApplied.push("sector");
 	if (query.where.disasterEventId) notApplied.push("disasterEvent");
 	if (query.where.hazardousEventId) notApplied.push("hazardousEvent");
+	// Effect chips select which effects a view draws; no loader filters
+	// records by them, so they are named, never silently ignored (TR-175).
+	if (query.where.humanEffects?.length) notApplied.push("humanEffects");
 	return {
 		filters: {
 			countryAccountsId: ctx.countryAccountsId,

@@ -50,8 +50,10 @@ export async function getEventMap(
 		meta: {
 			method:
 				"Events per level-1 division from the geoportal's event placement (geo.event_atom): an event's own division link, or else the divisions of its member records; each event counted once per division",
+			// eventCountsByDivision applies the place (division or region).
 			notApplied: notApplied.filter(
-				(n) => n !== "disasterEvent" && n !== "hazardousEvent",
+				(n) =>
+					n !== "disasterEvent" && n !== "hazardousEvent" && n !== "region",
 			),
 		},
 	};
