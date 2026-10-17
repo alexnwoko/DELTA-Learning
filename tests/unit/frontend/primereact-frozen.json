@@ -53,7 +53,6 @@
 		"app/routes/$lang+/admin+/fictitious-country-mgmt+/edit.$id.tsx",
 		"app/routes/$lang+/admin+/fictitious-country-mgmt+/new.tsx",
 		"app/routes/$lang+/admin+/login.tsx",
-		"app/routes/$lang+/analytics+/disaster-events.tsx",
 		"app/routes/$lang+/disaster-event+/edit.$id.affected-areas-modal.tsx",
 		"app/routes/$lang+/disaster-event+/edit.$id.linked-disaster-records-modal.tsx",
 		"app/routes/$lang+/disaster-event+/edit.$id.linked-triggered-disaster-events-modal.tsx",

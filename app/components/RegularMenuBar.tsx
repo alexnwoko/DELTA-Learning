@@ -273,43 +273,17 @@ export default function RegularMenuBar({
 							.t({ code: "nav.analysis", msg: "Analysis" })
 							.toUpperCase(),
 						icon: "pi pi-chart-bar",
-						items: [
-							{
-								label: ctx.t({ code: "nav.analysis.sectors", msg: "Sectors" }),
-								icon: "pi pi-chart-bar",
-								description: "Analyze data by sectors",
-								template: itemRenderer,
-								command: () => navigate(ctx.url("/analytics/sectors")),
-							},
-							{
-								label: ctx.t({ code: "nav.analysis.hazards", msg: "Hazards" }),
-								icon: "pi pi-chart-bar",
-								description: "Analyze data by hazards",
-								template: itemRenderer,
-								command: () => navigate(ctx.url("/analytics/hazards")),
-							},
-							{
-								label: ctx.t({
-									code: "nav.analysis.disaster_events",
-									msg: "Disaster events",
-								}),
-								icon: "pi pi-chart-bar",
-								description: "Analyze data by disaster events",
-								template: itemRenderer,
-								command: () => navigate(ctx.url("/analytics/disaster-events")),
-							},
-							{
-								label: ctx.t({
-									code: "nav.analysis.data_quality_review",
-									msg: "Data quality review",
-								}),
-								icon: "pi pi-flag",
-								description: "Review records flagged as implausible",
-								template: itemRenderer,
-								command: () =>
-									navigate(ctx.url("/analytics/plausibility-review")),
-							},
-						],
+						// One Analysis dashboard with four buttons (Alex, 2026-10-17):
+						// no drop-down. The reviewer queue is linked from its header.
+						command: () => navigate(ctx.url("/analytics")),
+					},
+					{
+						// Beside Analysis, not inside it (Alex, 2026-10-17). Signed-in
+						// only, as the geoportal route (ViewData); a public entry waits
+						// for management clearance.
+						label: ctx.t({ code: "nav.geoportal", msg: "Geoportal" }).toUpperCase(),
+						icon: "pi pi-map",
+						command: () => navigate(ctx.url("/geoportal")),
 					},
 				]
 			: []),
