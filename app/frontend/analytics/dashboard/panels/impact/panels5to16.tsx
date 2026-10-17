@@ -58,17 +58,29 @@ const RAMP = dataTokens.ramp.people;
 // ---------------------------------------------------------------------------
 // Export functions: one per panel, the single source of each panel's rows.
 
-/** Panel 5. Indicators keep their code; dwelling inputs never get one. */
-export function sendaiExport(t: T, p: SendaiCountsPanel, meta: PanelMeta, country: string): PanelExport {
-	const rows: ChartExportRow[] = [
-		...p.indicators.map((i) => cellRow(`${i.code} ${i.label}`, i.cell)),
-		...p.inputs.map((i) =>
-			cellRow(tr(t, "dashboard.sendai_input", "{label} (input to {code}; no indicator value)", { label: i.label, code: i.inputTo }), i.cell),
-		),
-	];
+/** The line every Sendai figure carries under a place filter (TR-060, FR-AN-009). */
+export function subnationalNote(t: T): string {
+	return tr(t, "dashboard.subnational_sendai", "Sub-national figures. Not a Sendai indicator value (TR-060).");
+}
+
+/**
+ * Panel 5. Indicators keep their code; dwelling inputs never get one. Under
+ * a place filter no figure carries a code at all (TR-060, FR-AN-009).
+ */
+export function sendaiExport(t: T, p: SendaiCountsPanel, meta: PanelMeta, country: string, subnational = false): PanelExport {
+	const rows: ChartExportRow[] = subnational
+		? [...p.indicators, ...p.inputs].map((i) => cellRow(i.label, i.cell))
+		: [
+				...p.indicators.map((i) => cellRow(`${i.code} ${i.label}`, i.cell)),
+				...p.inputs.map((i) =>
+					cellRow(tr(t, "dashboard.sendai_input", "{label} (input to {code}; no indicator value)", { label: i.label, code: i.inputTo }), i.cell),
+				),
+			];
 	const notes = panelNotes(meta, [
 		sendaiNotice(t, country),
-		...p.refused.map((r) => tr(t, "dashboard.sendai_refused", "{code} not computed: {reason}", { code: r.code, reason: r.reason })),
+		...(subnational
+			? [subnationalNote(t)]
+			: p.refused.map((r) => tr(t, "dashboard.sendai_refused", "{code} not computed: {reason}", { code: r.code, reason: r.reason }))),
 	]);
 	return { rows, method: meta.method, notes };
 }
@@ -301,7 +313,7 @@ function recordLabel(t: T, r: LargestRecords["rows"][number]): string {
 // ---------------------------------------------------------------------------
 // Views.
 
-interface Common {
+export interface Common {
 	ctx: ViewContext;
 	title: string;
 	source: string;
@@ -342,20 +354,39 @@ function Frame({
 const tableTh = "border-b border-brand-border bg-brand-surface-subtle px-2 py-1 font-semibold";
 const tableTd = "border-b border-brand-border px-2 py-1";
 
-function SendaiView({ common, p, exp, country }: { common: Common; p: SendaiCountsPanel; exp: PanelExport; country: string }) {
+export function SendaiView({
+	common,
+	p,
+	exp,
+	country,
+	subnational = false,
+	showNotice = true,
+}: {
+	common: Common;
+	p: SendaiCountsPanel;
+	exp: PanelExport;
+	country: string;
+	/** Under a place filter: no indicator code anywhere (TR-060). */
+	subnational?: boolean;
+	/** False inside the Sendai section, whose header carries the notice once. */
+	showNotice?: boolean;
+}) {
 	const { ctx } = common;
 	const t = ctx.t;
 	return (
 		<Frame common={common} exp={exp} pictures={false}>
-			<p role="note" className="m-0 mb-2 border-s-4 border-brand-warning-border bg-brand-warning-background px-3 py-2 text-sm">
-				{sendaiNotice(t, country)}
-			</p>
+			{showNotice && (
+				<p role="note" className="m-0 mb-2 border-s-4 border-brand-warning-border bg-brand-warning-background px-3 py-2 text-sm">
+					{sendaiNotice(t, country)}
+				</p>
+			)}
+			{subnational && <p className="m-0 mb-2 text-sm font-semibold">{subnationalNote(t)}</p>}
 			<div className="max-w-full overflow-x-auto">
 				<table className="w-full border-collapse text-sm">
 					<caption className="sr-only">{common.title}</caption>
 					<thead>
 						<tr>
-							<th scope="col" className={`${tableTh} text-start`}>{tr(t, "dashboard.indicator", "Indicator")}</th>
+							{!subnational && <th scope="col" className={`${tableTh} text-start`}>{tr(t, "dashboard.indicator", "Indicator")}</th>}
 							<th scope="col" className={`${tableTh} text-start`}>{tr(t, "dashboard.measure", "Measure")}</th>
 							<th scope="col" className={`${tableTh} text-end`}>{tr(t, "dashboard.count", "Count")}</th>
 							<th scope="col" className={`${tableTh} text-start`}>{tr(t, "dashboard.records_reporting", "Records reporting")}</th>
@@ -364,7 +395,7 @@ function SendaiView({ common, p, exp, country }: { common: Common; p: SendaiCoun
 					<tbody>
 						{p.indicators.map((i) => (
 							<tr key={i.code}>
-								<th scope="row" className={`${tableTd} text-start font-semibold`}>{i.code}</th>
+								{!subnational && <th scope="row" className={`${tableTd} text-start font-semibold`}>{i.code}</th>}
 								<td className={tableTd}>{i.label}</td>
 								<td className={`${tableTd} text-end tabular-nums`}>{cellText(ctx, i.cell)}</td>
 								<td className={`${tableTd} text-brand-text-muted`}>{coverageText(ctx, i.cell)}</td>
@@ -373,9 +404,11 @@ function SendaiView({ common, p, exp, country }: { common: Common; p: SendaiCoun
 						{p.inputs.map((i) => (
 							<tr key={i.inputTo}>
 								{/* An input carries no indicator code: the cell says what it feeds. */}
-								<th scope="row" className={`${tableTd} text-start font-normal text-brand-text-muted`}>
-									{tr(t, "dashboard.input_to", "Input to {code}", { code: i.inputTo })}
-								</th>
+								{!subnational && (
+									<th scope="row" className={`${tableTd} text-start font-normal text-brand-text-muted`}>
+										{tr(t, "dashboard.input_to", "Input to {code}", { code: i.inputTo })}
+									</th>
+								)}
 								<td className={tableTd}>{i.label}</td>
 								<td className={`${tableTd} text-end tabular-nums`}>{cellText(ctx, i.cell)}</td>
 								<td className={`${tableTd} text-brand-text-muted`}>{coverageText(ctx, i.cell)}</td>
@@ -650,7 +683,7 @@ function ExtensiveView({ common, p, exp }: { common: Common; p: ExtensiveIntensi
 export function impactPanels5to16(
 	ctx: ViewContext,
 	data: ImpactPanels5to16,
-	opts: { source: string; scope: string; provisional: boolean; country: string },
+	opts: { source: string; scope: string; provisional: boolean; country: string; subnational?: boolean },
 ): DashboardPanel[] {
 	const t = ctx.t;
 	const m = data.meta;
@@ -671,8 +704,8 @@ export function impactPanels5to16(
 	const disaggSeries = data.disaggregation;
 
 	const spec: [number, string, PanelExport, (c: Common, e: PanelExport) => React.ReactNode][] = [
-		[5, tr(t, "dashboard.impact_5", "Sendai Targets A and B counts"), sendaiExport(t, data.sendai, m.sendai, opts.country),
-			(c, e) => <SendaiView common={c} p={data.sendai} exp={e} country={opts.country} />],
+		[5, tr(t, "dashboard.impact_5", "Sendai Targets A and B counts"), sendaiExport(t, data.sendai, m.sendai, opts.country, opts.subnational),
+			(c, e) => <SendaiView common={c} p={data.sendai} exp={e} country={opts.country} subnational={opts.subnational} />],
 		[6, tr(t, "dashboard.impact_6", "Hazard by human effect"), hazardEffectExport(t, data.hazardEffect, m.hazardEffect),
 			(c, e) => (
 				<Frame common={c} exp={e} pictures={false}>

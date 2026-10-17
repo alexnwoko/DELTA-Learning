@@ -168,6 +168,8 @@ export default function AnalysisDashboard() {
 		? impactDashboardPanels(ctx, impact, source, {
 				data: ld.impactMore as ImpactPanels5to16,
 				country: ld.country,
+				// A place filter makes every figure sub-national: no Sendai codes (TR-060).
+				subnational: Boolean(query.where.geo || query.where.region),
 			})
 		: ld.events
 			? eventDashboardPanels(ctx, ld.events as EventPanels1to7, opts)

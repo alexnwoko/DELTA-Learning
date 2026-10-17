@@ -16,7 +16,7 @@ export function impactDashboardPanels(
 	ctx: ViewContext,
 	data: ImpactPanels1to4,
 	source: string,
-	later?: { data: ImpactPanels5to16; country: string },
+	later?: { data: ImpactPanels5to16; country: string; subnational?: boolean },
 ): DashboardPanel[] {
 	const t = (code: string, msg: string) => ctx.t({ code, msg });
 	// No record in scope: one frame, never tiles and bars of 0 (Alex, 2026-10-17).
@@ -89,6 +89,7 @@ export function impactDashboardPanels(
 				scope: data.scopeText,
 				provisional: data.provisional,
 				country: later.country,
+				subnational: later.subnational,
 			})
 		: [];
 	return [...ready, ...rest];
