@@ -106,4 +106,12 @@ describe("getImpactPanels1to4", () => {
 		);
 		expect(p.meta.tiles.notApplied).toContain("region");
 	});
+
+	it("names the effect chips as not applied instead of ignoring them", async () => {
+		const p = await getImpactPanels1to4(
+			{ ...DEFAULT_QUERY, where: { humanEffects: ["deaths"] } },
+			ctx(),
+		);
+		expect(p.meta.tiles.notApplied).toContain("humanEffects");
+	});
 });

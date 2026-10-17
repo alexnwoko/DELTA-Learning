@@ -813,3 +813,75 @@ describe("Alex's default: deaths shading with housing bars on top", () => {
 		expect(readout).not.toContain("40 people");
 	});
 });
+
+import { flattenHazardTree } from "~/frontend/geoportal/GeoFilterBar";
+
+describe("hazard tree from G6 (nested) to the bar's flat lists", () => {
+	const nested = {
+		types: [
+			{
+				id: "1042",
+				name: "Meteorological and Hydrological",
+				recordCountSubtree: 858,
+				clusters: [
+					{
+						id: "c1",
+						name: "Flood",
+						recordCountSubtree: 600,
+						hazards: [
+							{
+								id: "h1",
+								name: "Flash flood",
+								code: "MH0600",
+								recordCountSubtree: 400,
+							},
+						],
+					},
+				],
+			},
+		],
+	};
+
+	it("keeps each node's parent id", () => {
+		const flat = flattenHazardTree(nested)!;
+		expect(flat.types).toEqual([
+			{
+				id: "1042",
+				name: "Meteorological and Hydrological",
+				recordCountSubtree: 858,
+			},
+		]);
+		expect(flat.clusters).toEqual([
+			{ id: "c1", name: "Flood", recordCountSubtree: 600, typeId: "1042" },
+		]);
+		expect(flat.hazards).toEqual([
+			{
+				id: "h1",
+				name: "Flash flood",
+				recordCountSubtree: 400,
+				clusterId: "c1",
+				code: "MH0600",
+			},
+		]);
+		expect(flattenHazardTree(null)).toBeNull();
+	});
+
+	it("renders the cluster and hazard selects when a hazard is chosen", () => {
+		const html = renderToString(
+			<GeoFilterBar
+				query={{
+					...DEFAULT_QUERY,
+					measure: "deaths",
+					where: { ...DEFAULT_QUERY.where, hazard: { hazardId: "h1" } },
+				}}
+				level={1}
+				levels={[1]}
+				canReview={false}
+				onChange={() => {}}
+				hazardTree={flattenHazardTree(nested)}
+			/>,
+		);
+		expect(html).toContain("Cluster");
+		expect(html).toContain("MH0600");
+	});
+});
