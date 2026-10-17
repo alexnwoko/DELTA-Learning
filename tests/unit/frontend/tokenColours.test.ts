@@ -9,6 +9,7 @@ const RETROFITTED = [
 	"app/frontend/charts/ChartFrame.tsx",
 	"app/frontend/print/PrintButton.tsx",
 	"app/frontend/print/PrintReport.tsx",
+	"app/frontend/form/unsavedChanges.tsx",
 ];
 
 const PALETTE =

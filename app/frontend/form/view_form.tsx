@@ -8,6 +8,7 @@ import { SubmitButton } from "./submit";
 import * as repeatablefields from "~/frontend/components/repeatablefields";
 import { ViewContext } from "../context";
 import { UserForFrontend } from "~/utils/auth";
+import { UnsavedChangesDialog, useUnsavedChangesGuard } from "./unsavedChanges";
 
 interface FormViewProps {
 	ctx: ViewContext;
@@ -50,6 +51,8 @@ export function FormView(props: FormViewProps) {
 	const isSubmitting =
 		navigation.state === "submitting" || navigation.state === "loading";
 	let [intClickedCtr, setIntClickedCtr] = useState(0);
+	// Ask before leaving with unsaved edits (TR-251).
+	const unsavedBlocker = useUnsavedChangesGuard(inputsRef);
 
 	useEffect(() => {
 		const formElement = document.querySelector<HTMLFormElement>(".dts-form");
@@ -121,6 +124,7 @@ export function FormView(props: FormViewProps) {
 					className="dts-form"
 					id={props.id ? `${props.id}` : "form-new"}
 				>
+					<UnsavedChangesDialog ctx={ctx} blocker={unsavedBlocker} />
 					{ props.hiddenFields }
 					<div ref={inputsRef}>
 						<Inputs
