@@ -17,6 +17,11 @@ import {
 	getImpactPanels5to16,
 } from "~/backend.server/models/analytics/dashboard/impactPanels5to16.server";
 import { AboutTheData } from "~/frontend/analytics/dashboard/AboutTheData";
+import { chipsFor, measuresFor } from "~/frontend/analytics/dashboard/filterDefinitions";
+import { getDashboardFilterOptions } from "~/frontend/analytics/dashboard/filterOptions.server";
+import { GeoFilterBar } from "~/frontend/geoportal/GeoFilterBar";
+import { querySummary } from "~/frontend/geoportal/filterBarState";
+import type { GeoT } from "~/frontend/geoportal/i18n";
 import { BasisSwitch, PublishedBasisNotice, type ApprovalCounts } from "~/frontend/analytics/dashboard/BasisControls";
 import { DashboardDownload } from "~/frontend/analytics/dashboard/DashboardDownload";
 import { DashboardShell, viewLabel } from "~/frontend/analytics/dashboard/DashboardShell";
@@ -37,6 +42,7 @@ import type { EventPanels1to7 } from "~/utils/dashboard/eventPanels";
 import type { HazardEventPanels1to7 } from "~/utils/dashboard/hazardEventPanels";
 import type { ImpactMapPayload } from "~/utils/dashboard/impactMap";
 import type { SectorPanels1to7 } from "~/utils/dashboard/sectorPanels";
+import type { DashboardFilterOptions } from "~/frontend/analytics/dashboard/filterOptions.server";
 import type { ImpactPanels5to16 } from "~/utils/dashboard/impactPanels5to16";
 import {
 	parseDeltaQuery,
@@ -45,7 +51,7 @@ import {
 import { htmlTitle } from "~/utils/htmlmeta";
 import { getCountryAccountsIdFromSession, getCountrySettingsFromSession } from "~/utils/session";
 
-export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request }: LoaderFunctionArgs) => {
+export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request, params: routeParams }: LoaderFunctionArgs) => {
 	const params = new URL(request.url).searchParams;
 	const { query, issues } = parseDeltaQuery(params);
 	const view = viewFromSearch(params, query);
@@ -89,6 +95,8 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request }:
 		view === "disaster_event" || (view === "hazardous_event" && !hazardEvents?.empty)
 			? await getEventMap(query, ctx, view)
 			: null;
+	// The shared filter bar's options: hazard tree, divisions and regions.
+	const filterOptions = await getDashboardFilterOptions(countryAccountsId, query, audience, routeParams.lang ?? "en");
 	// For the G-00 notice: only the published basis can be empty this way.
 	const approvalCounts = query.scope.basis === "published" ? await getRecordsByApproval(query, ctx) : null;
 	return {
@@ -98,6 +106,7 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request }:
 		hazardEvents,
 		sectors,
 		eventMap,
+		filterOptions,
 		approvalCounts: approvalCounts as ApprovalCounts | null,
 		canReview,
 		canOpenReviewQueue,
@@ -129,11 +138,20 @@ export default function AnalysisDashboard() {
 		});
 
 	// Until the shared filter bar arrives, the line names the place and basis.
-	const summary =
-		impact?.scopeText ??
-		[ld.country, ld.provisional ? ctx.t({ code: "dashboard.basis_provisional", msg: "Basis: provisional" }) : ctx.t({ code: "dashboard.basis_published", msg: "Basis: published" })]
-			.filter(Boolean)
-			.join(" · ");
+	const geoT = ctx.t as unknown as GeoT;
+	const filterOptions = ld.filterOptions as DashboardFilterOptions;
+	// The same words as the geoportal bar's summary (querySummary).
+	const summary = querySummary(query, { scopeLabel: ld.country || undefined, hazardTree: filterOptions.hazardTree }, geoT);
+	// Filters the current view's loader could not apply, named on the bar.
+	const notApplied: string[] =
+		(impact?.meta.tiles.notApplied ??
+			(ld.events as EventPanels1to7 | null)?.meta.headline.notApplied ??
+			(ld.hazardEvents as HazardEventPanels1to7 | null)?.meta.notApplied ??
+			(ld.sectors as SectorPanels1to7 | null)?.meta.headline.notApplied ??
+			[]) as string[];
+	const sectorChips = (ld.sectors as SectorPanels1to7 | null)?.reporting.groups.flatMap((g) =>
+		g.rows.map((r) => ({ id: r.sector.sectorId, label: r.sector.label })),
+	);
 
 	const opts = { source, scope: summary, provisional: ld.provisional };
 	const mapScope = {
@@ -177,6 +195,28 @@ export default function AnalysisDashboard() {
 					) : undefined
 				}
 				summary={summary}
+				filterBar={
+					<GeoFilterBar
+						query={query}
+						level={1}
+						levels={[1]}
+						// The header's Basis switch is the one basis control on this page.
+						canReview={false}
+						onChange={({ query: next }) =>
+							setSearchParams(searchForView(next, view), { preventScrollReset: true })
+						}
+						hazardTree={filterOptions.hazardTree}
+						dimensionControl="none"
+						measures={measuresFor(view)}
+						chips={chipsFor(view, { hazardTree: filterOptions.hazardTree, sectors: sectorChips })}
+						place={filterOptions.place}
+						levelControl={false}
+						presets={[1, 3, 5, 10]}
+						notApplied={notApplied}
+						summary={false}
+						t={geoT}
+					/>
+				}
 				provisional={ld.provisional}
 				map={
 					ld.impactMap ? (
