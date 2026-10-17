@@ -1,13 +1,22 @@
 import { hazardousEventLabel } from "~/frontend/events/hazardeventform";
-import { sql, and, eq, or } from "drizzle-orm";
+import { sql, and, eq } from "drizzle-orm";
 import { hipHazardTable } from "~/drizzle/schema/hipHazardTable";
 import { disasterEventTable } from "~/drizzle/schema/disasterEventTable";
 import { hazardousEventTable } from "~/drizzle/schema/hazardousEventTable";
 import { formatDateDisplay } from "~/utils/date";
 import { BackendContext } from "~/backend.server/context";
 import { DContext } from "~/utils/dcontext";
+import { approvalBasis, type ApprovalAudience } from "~/utils/approvalBasis";
 
-export function contentPickerConfig(ctx: DContext) {
+/**
+ * @param audience Approval basis of the request (C23). The data source
+ * loader passes the request's audience; browser-side callers only use the
+ * display fields, so the default is the most restrictive basis.
+ */
+export function contentPickerConfig(
+	ctx: DContext,
+	audience: ApprovalAudience = "public",
+) {
 	return {
 		id: "disasterEventId",
 		required: false,
@@ -113,13 +122,7 @@ export function contentPickerConfig(ctx: DContext) {
 					condition: eq(hazardousEventTable.hipHazardId, hipHazardTable.id),
 				},
 			],
-			where: [
-				// Define search filters
-				or(
-					eq(disasterEventTable.approvalStatus, "published"),
-					eq(disasterEventTable.approvalStatus, "validated"),
-				),
-			],
+			where: [approvalBasis(audience, disasterEventTable)],
 			whereIlike: [
 				{
 					column: disasterEventTable.otherId1,

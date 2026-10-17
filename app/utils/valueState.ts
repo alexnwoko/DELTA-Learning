@@ -1,6 +1,6 @@
 // Value states for analytical figures. A figure is never a bare number: it
 // carries its state and the record counts behind it, so "not reported" is
-// never shown as a confirmed zero (TRD TR-076; solution pack C10, C11).
+// never shown as a confirmed zero (TR-076, E17; PD-04:596, PD-05:96).
 // Pure module: safe to import from server and client code.
 
 export const VALUE_STATES = [
@@ -47,10 +47,18 @@ export interface CoverageRule {
 }
 
 /**
- * Coverage rule applied to every aggregate zero on the analytics screens
- * (solution pack V-5, C11). The 25% share is the provisional V-5 value. The
- * minimum record count is not yet ruled (pack decision 8); 1 adds no test
- * beyond "at least one confirming record" until it is.
+ * Coverage rule for an aggregate zero_confirmed (PD-04:596, PD-05:96). An
+ * aggregate zero is confirmed only when all three hold:
+ * - the measure has a tri-state source (reported, confirmed zero, not
+ *   reported), such as the human-effect measures (PD-03:326);
+ * - the share of records in scope that confirm zero is at or above the
+ *   platform threshold, 25% (provisional; PD-04:877 lists it as open);
+ * - at least the minimum record count confirms zero.
+ * Otherwise the aggregate is insufficient_reporting, never 0.
+ *
+ * The minimum record count is not ruled (PD-04:877; the grading standard
+ * proposes 2, OP-18). It stays 1, which adds no test beyond "at least one
+ * confirming record", until Alex rules.
  */
 export const PROVISIONAL_ZERO_COVERAGE: CoverageRule = {
 	minCoverage: 0.25,
@@ -72,6 +80,11 @@ function toValue(v: number | string | null | undefined): number | null {
 
 /**
  * Builds a figure from a measure's sum and record counts.
+ *
+ * Only for measures with a tri-state source (PD-04:596): every caller passes
+ * a human-effect measure, whose stored 0 or explicit No is a confirmed zero
+ * (PD-03:326). A measure without a tri-state source, such as a monetary
+ * column, has no confirmed zero and must not be passed here.
  *
  * - reported: at least one record reported a non-zero value.
  * - zero_confirmed: no record reported a value and at least one confirmed
@@ -115,4 +128,102 @@ export function measureValue(
 		return { value: 0, valueState: "zero_confirmed", ...base };
 	}
 	return { value: null, valueState: "not_reported", ...base };
+}
+
+/**
+ * Value states a monetary figure can take. Damage, loss, recovery and
+ * disruption costs have no tri-state source (PD-04:596): a stored 0 is a
+ * reported 0, never a confirmed zero, so zero_confirmed and
+ * insufficient_reporting never apply (TR-076, E17).
+ */
+export type MonetaryValueState = Extract<
+	ValueState,
+	"reported" | "not_reported"
+>;
+
+/**
+ * A monetary figure: the sum in the currency the source rows carry, with no
+ * conversion, deflation or cross-currency sum (those wait on D-04, the
+ * deflator and FX convention, PD-09:1088).
+ */
+export interface MonetaryValue {
+	/** null unless at least one record reported a cost. */
+	value: number | null;
+	valueState: MonetaryValueState;
+	recordsReported: number;
+	recordsNotReported: number;
+	recordsTotal: number;
+}
+
+export interface MonetaryCounts {
+	/** Sum over records that reported a cost; null when none did. */
+	sum: number | string | null;
+	/** Records that reported a cost, including a reported 0. */
+	reported: number | string;
+	/** All records in scope, whatever their state. */
+	total: number | string;
+}
+
+/**
+ * Builds a monetary figure from its sum and record counts. A record that
+ * reported a cost counts as reported, even when the cost is 0; with no such
+ * record the value is null and the state not_reported, never 0. A summed 0
+ * is a reported 0: money has no tri-state source, so it is never
+ * zero_confirmed (PD-04:596).
+ */
+export function monetaryValue(counts: MonetaryCounts): MonetaryValue {
+	const recordsReported = toCount(counts.reported);
+	const recordsTotal = Math.max(toCount(counts.total), recordsReported);
+	const base = {
+		recordsReported,
+		recordsNotReported: recordsTotal - recordsReported,
+		recordsTotal,
+	};
+	const sum = toValue(counts.sum);
+	if (recordsReported > 0) {
+		return { value: sum ?? 0, valueState: "reported", ...base };
+	}
+	return { value: null, valueState: "not_reported", ...base };
+}
+
+/** A figure summed from component figures, such as people affected. */
+export interface CompositeValue {
+	/** Sum of the reported components; null when none was reported. */
+	value: number | null;
+	valueState: ValueState;
+	/** True when some components were reported and others were not. */
+	partial: boolean;
+}
+
+/**
+ * Sums component figures without turning a missing component into 0. The
+ * composite is reported when any component is reported (partial when not
+ * all are), zero_confirmed only when every component is, and otherwise
+ * insufficient_reporting or not_reported with a null value.
+ */
+export function compositeValue(
+	parts: readonly { value: number | null; valueState: ValueState }[],
+): CompositeValue {
+	const reported = parts.filter(
+		(p) => p.valueState === "reported" && p.value !== null,
+	);
+	const zero = parts.filter((p) => p.valueState === "zero_confirmed");
+	if (reported.length > 0) {
+		return {
+			value: reported.reduce((a, p) => a + (p.value as number), 0),
+			valueState: "reported",
+			partial: reported.length + zero.length < parts.length,
+		};
+	}
+	if (parts.length > 0 && zero.length === parts.length) {
+		return { value: 0, valueState: "zero_confirmed", partial: false };
+	}
+	if (parts.some((p) => p.valueState === "insufficient_reporting")) {
+		return {
+			value: null,
+			valueState: "insufficient_reporting",
+			partial: false,
+		};
+	}
+	return { value: null, valueState: "not_reported", partial: false };
 }

@@ -139,7 +139,7 @@ export function DisruptionView(props: DisruptionViewProps) {
 						<p key="recordId">
 							{ctx.t({
 								code: "disaster_records.id",
-								msg: "Disaster record ID",
+								msg: "Disaster impact ID",
 							})}
 							: {props.item.recordId}
 						</p>

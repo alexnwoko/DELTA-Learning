@@ -1,4 +1,6 @@
 import { and, eq, gte, lte, SQL, sql } from "drizzle-orm";
+import { displacedHeadlineSql } from "~/backend.server/models/analytics/displacedHeadline";
+import { divisionAndDescendantsSql } from "~/backend.server/utils/geographicFilters";
 import {
 	measureValue,
 	PROVISIONAL_ZERO_COVERAGE,
@@ -9,10 +11,34 @@ import {
 	type PlausibilityMeasure,
 } from "~/utils/plausibility";
 import { dr } from "~/db.server";
+import {
+	approvalBasis,
+	basisColumns,
+	type ApprovalAudience,
+} from "~/utils/approvalBasis";
 import { disasterEventTable } from "~/drizzle/schema/disasterEventTable";
 import { disasterRecordsDivisionTable } from "~/drizzle/schema/disasterRecordsDivisionTable";
 
-interface HazardFilters {
+/**
+ * Replaces the audience approval basis on disaster_records with another
+ * basis, given the table alias. Only server code outside the routes passes
+ * one: the C23 reconciliation basis (reconciliationRecordBasis in
+ * models/reconciliationBasis.server.ts), for safeguard 4 and the C29 exit
+ * gate. It is a function, so no request parameter can supply it.
+ */
+export type RecordBasisOverride = (alias: string) => SQL;
+
+function recordBasis(
+	filters: HazardFilters,
+	alias: string,
+	override?: RecordBasisOverride,
+): SQL {
+	return override
+		? override(alias)
+		: approvalBasis(filters.audience, basisColumns(alias));
+}
+
+export interface HazardFilters {
 	countryAccountsId: string;
 	hazardTypeId: string | null;
 	hazardClusterId: string | null;
@@ -20,6 +46,8 @@ interface HazardFilters {
 	geographicLevelId: string | null;
 	fromDate: string | null;
 	toDate: string | null;
+	/** Approval basis (C23): public or signed-in, from the request. */
+	audience: ApprovalAudience;
 }
 
 /**
@@ -42,7 +70,7 @@ export async function getDisasterEventCount(
 
 	const conditions: any[] = [
 		eq(disasterEventTable.countryAccountsId, countryAccountsId),
-		sql`${disasterEventTable.approvalStatus} IN ('published', 'validated')`,
+		approvalBasis(filters.audience, disasterEventTable),
 	];
 
 	if (hazardTypeId) {
@@ -63,7 +91,7 @@ export async function getDisasterEventCount(
 				SELECT 1
 				FROM disaster_event_division ded
 				WHERE ded.disaster_event_id = ${disasterEventTable.id}
-					AND ded.division_id = ${geographicLevelId}::uuid
+					AND ded.division_id IN ${divisionAndDescendantsSql(geographicLevelId, countryAccountsId)}
 			)`,
 		);
 	}
@@ -106,7 +134,7 @@ export async function getDisasterEventCountByYear(
 
 	const conditions: any[] = [
 		eq(disasterEventTable.countryAccountsId, countryAccountsId),
-		sql`${disasterEventTable.approvalStatus} IN ('published', 'validated')`,
+		approvalBasis(filters.audience, disasterEventTable),
 	];
 
 	if (hazardTypeId) {
@@ -127,7 +155,7 @@ export async function getDisasterEventCountByYear(
 				SELECT 1
 				FROM disaster_event_division ded
 				WHERE ded.disaster_event_id = ${disasterEventTable.id}
-					AND ded.division_id = ${geographicLevelId}::uuid
+					AND ded.division_id IN ${divisionAndDescendantsSql(geographicLevelId, countryAccountsId)}
 			)`,
 		);
 	}
@@ -183,7 +211,7 @@ interface AffectedPeopleResult {
 	measures: Record<HumanEffectMeasure, MeasureValue>;
 }
 
-const HUMAN_EFFECT_MEASURES = [
+export const HUMAN_EFFECT_MEASURES = [
 	"deaths",
 	"injured",
 	"missing",
@@ -191,13 +219,13 @@ const HUMAN_EFFECT_MEASURES = [
 	"affected_direct",
 	"affected_indirect",
 ] as const;
-type HumanEffectMeasure = (typeof HUMAN_EFFECT_MEASURES)[number];
+export type HumanEffectMeasure = (typeof HUMAN_EFFECT_MEASURES)[number];
 
 /**
  * True when the record's plausibility flags (legacy_data.migration) name any
  * of the source fields that feed one of the measures (solution pack C30).
  */
-function plausibilityFlagged(
+export function plausibilityFlagged(
 	legacyData: SQL,
 	measures: PlausibilityMeasure[],
 ): SQL {
@@ -225,10 +253,14 @@ function plausibilityFlagged(
  * holds an explicit No with no value; otherwise as not reported. Totals are
  * read from the presence table, so the disaggregation cube is never summed.
  */
-function humanEffectMeasuresSelect(): SQL {
+export function humanEffectMeasuresSelect(): SQL {
 	const parts = HUMAN_EFFECT_MEASURES.map((m) => {
 		const flag = sql.raw(`hcp."${m}"`);
-		const total = sql.raw(`hcp."${m}_total"`);
+		// Displaced leaves out people relocated after the event (contract O-2).
+		const total =
+			m === "displaced"
+				? displacedHeadlineSql("hcp")
+				: sql.raw(`hcp."${m}_total"`);
 		return sql`
 			SUM(${total}) FILTER (WHERE ${total} > 0) AS ${sql.raw(`"${m}_sum"`)},
 			COUNT(*) FILTER (WHERE ${total} > 0) AS ${sql.raw(`"${m}_reported"`)},
@@ -243,6 +275,27 @@ function humanEffectMeasuresSelect(): SQL {
 	return sql.join([...parts, sql`COUNT(*) AS records_total`], sql`, `);
 }
 
+/** The measures read back from a row selected with humanEffectMeasuresSelect. */
+export function humanEffectMeasuresFromRow(
+	row: Record<string, unknown>,
+): Record<HumanEffectMeasure, MeasureValue> {
+	return Object.fromEntries(
+		HUMAN_EFFECT_MEASURES.map((m) => [
+			m,
+			measureValue(
+				{
+					sum: row[`${m}_sum`] as number | string | null,
+					reported: row[`${m}_reported`] as number | string,
+					zeroConfirmed: row[`${m}_zero`] as number | string,
+					total: row.records_total as number | string,
+					flagged: row[`${m}_flagged`] as number | string,
+				},
+				PROVISIONAL_ZERO_COVERAGE,
+			),
+		]),
+	) as Record<HumanEffectMeasure, MeasureValue>;
+}
+
 /**
  * Records in scope for the human-effects figures: tenant, approval basis,
  * HIPs, date range and, when set, the level-1 division. Returns the CTE body
@@ -250,7 +303,10 @@ function humanEffectMeasuresSelect(): SQL {
  * WITH RECURSIVE. Every record counts, including those with no
  * human-effects rows, so "not reported" is measured rather than dropped.
  */
-function humanEffectsFilteredRecords(filters: HazardFilters): SQL {
+export function humanEffectsFilteredRecords(
+	filters: HazardFilters,
+	basisOverride?: RecordBasisOverride,
+): SQL {
 	const {
 		countryAccountsId,
 		hazardTypeId,
@@ -263,7 +319,7 @@ function humanEffectsFilteredRecords(filters: HazardFilters): SQL {
 
 	// Build WHERE conditions for disaster_records
 	const whereConditions: SQL[] = [];
-	whereConditions.push(sql`dr."approvalStatus" IN ('published', 'validated')`);
+	whereConditions.push(recordBasis(filters, "dr", basisOverride));
 	whereConditions.push(sql`dr."country_accounts_id" = ${countryAccountsId}`);
 	if (hazardTypeId)
 		whereConditions.push(sql`dr."hip_type_id" = ${hazardTypeId}`);
@@ -327,7 +383,7 @@ function humanEffectsFilteredRecords(filters: HazardFilters): SQL {
           division_hierarchy AS (
             SELECT id, parent_id, id AS level1_id
             FROM "division"
-            WHERE parent_id IS NULL
+            WHERE level = 1
             UNION ALL
             SELECT d.id, d.parent_id, dh.level1_id
             FROM "division" d
@@ -372,8 +428,9 @@ function humanEffectsFilteredRecords(filters: HazardFilters): SQL {
  */
 export async function getAffectedPeopleByHazardFilters(
 	filters: HazardFilters,
+	basisOverride?: RecordBasisOverride,
 ): Promise<AffectedPeopleResult> {
-	const filteredRecords = humanEffectsFilteredRecords(filters);
+	const filteredRecords = humanEffectsFilteredRecords(filters, basisOverride);
 
 	const rawQuery = sql`
           WITH RECURSIVE ${filteredRecords}
@@ -414,6 +471,70 @@ export async function getAffectedPeopleByHazardFilters(
 	};
 }
 
+/** Groupings the D1 dashboard asks for (impact panels 1 to 4). */
+export type HumanEffectGrouping = "year" | "hipType" | "hipTypeYear";
+
+/** One group's measures, each with its value state and record counts. */
+export interface GroupedHumanEffects {
+	year: number | null;
+	hipTypeId: string | null;
+	measures: Record<HumanEffectMeasure, MeasureValue>;
+}
+
+/**
+ * The headline human-effect measures (getAffectedPeopleByHazardFilters)
+ * per year of the record's start date and or per HIPs type, for the D1
+ * Disaster impact panels: sparklines, the timeline and the hazard ranking.
+ * Same value-state rules as the headline: a group nobody reported is null,
+ * never 0 (TR-076). Records with no start year or no HIPs type form their
+ * own group (null key), never dropped.
+ */
+export async function getHumanEffectsGrouped(
+	filters: HazardFilters,
+	grouping: HumanEffectGrouping,
+	basisOverride?: RecordBasisOverride,
+): Promise<GroupedHumanEffects[]> {
+	const yearExpr = sql`NULLIF(substring(rec."start_date" from '^[0-9]{4}'), '')::int`;
+	const typeExpr = sql`NULLIF(rec."hip_type_id", '')`;
+	const keys =
+		grouping === "year"
+			? sql`${yearExpr} AS year, NULL::text AS hip_type_id`
+			: grouping === "hipType"
+				? sql`NULL::int AS year, ${typeExpr} AS hip_type_id`
+				: sql`${yearExpr} AS year, ${typeExpr} AS hip_type_id`;
+	const rawQuery = sql`
+          WITH RECURSIVE ${humanEffectsFilteredRecords(filters, basisOverride)}
+          SELECT ${keys}, ${humanEffectMeasuresSelect()}
+          FROM filtered_records fr
+          LEFT JOIN "human_category_presence" hcp
+            ON hcp."record_id" = fr.record_id
+          LEFT JOIN "disaster_records" rec
+            ON rec."id" = fr.record_id
+          GROUP BY 1, 2
+          ORDER BY 1 NULLS LAST, 2 NULLS LAST
+        `;
+	const result = await dr.execute(rawQuery);
+	return (result.rows as Record<string, unknown>[]).map((row) => ({
+		year: row.year === null || row.year === undefined ? null : Number(row.year),
+		hipTypeId: (row.hip_type_id as string | null) ?? null,
+		measures: Object.fromEntries(
+			HUMAN_EFFECT_MEASURES.map((m) => [
+				m,
+				measureValue(
+					{
+						sum: row[`${m}_sum`] as number | string | null,
+						reported: row[`${m}_reported`] as number | string,
+						zeroConfirmed: row[`${m}_zero`] as number | string,
+						total: row.records_total as number | string,
+						flagged: row[`${m}_flagged`] as number | string,
+					},
+					PROVISIONAL_ZERO_COVERAGE,
+				),
+			]),
+		) as Record<HumanEffectMeasure, MeasureValue>,
+	}));
+}
+
 type DisaggregationDimension =
 	| "sex"
 	| "age"
@@ -441,7 +562,10 @@ export interface DisaggregationCoverage {
  * by one dimension. Only rows split by that dimension alone are read: every
  * other dimension and the custom columns must be empty, so cross-tab rows
  * (for example sex by age) are never counted twice. A category is null when no
- * record in scope carries the breakdown (TR-076, pack C10).
+ * record in scope carries the breakdown (TR-076, pack C10). Relocated people
+ * (displaced rows with duration 'permanent') are left out: the relocated
+ * measure reports them, and evacuated and relocated people are never added
+ * together (SDG 1.5.1 metadata; contract with Backend Migration, 2026-10-16).
  */
 async function getDisaggregationPanel(
 	filters: HazardFilters,
@@ -462,10 +586,14 @@ async function getDisaggregationPanel(
               ${dim}::text AS category,
               (CASE WHEN inj."injured" > 0 THEN inj."injured" ELSE 0 END +
                CASE WHEN mis."missing" > 0 THEN mis."missing" ELSE 0 END +
-               CASE WHEN dsp."displaced" > 0 THEN dsp."displaced" ELSE 0 END +
+               CASE WHEN dsp."displaced" > 0
+                     AND dsp."duration" IS DISTINCT FROM 'permanent'
+                    THEN dsp."displaced" ELSE 0 END +
                CASE WHEN aff."direct" > 0 THEN aff."direct" ELSE 0 END) AS v,
               (inj."injured" IS NOT NULL OR mis."missing" IS NOT NULL
-               OR dsp."displaced" IS NOT NULL OR aff."direct" IS NOT NULL) AS has_value
+               OR (dsp."displaced" IS NOT NULL
+                   AND dsp."duration" IS DISTINCT FROM 'permanent')
+               OR aff."direct" IS NOT NULL) AS has_value
             FROM filtered_records fr
             INNER JOIN "human_dsg" hd ON hd."record_id" = fr.record_id
             LEFT JOIN "injured" inj ON inj."dsg_id" = hd."id"
@@ -692,7 +820,7 @@ export async function getFilteredDisasterRecords(filters: HazardFilters) {
 
 	// Build WHERE conditions
 	const whereConditions: SQL[] = [
-		sql`"approvalStatus" IN ('published', 'validated')`,
+		approvalBasis(filters.audience, basisColumns()),
 		sql`"country_accounts_id" = ${countryAccountsId}`,
 	];
 
@@ -1194,7 +1322,7 @@ export async function getTotalDamagesByDivision(
 			WITH RECURSIVE division_hierarchy AS (
 				SELECT id, parent_id, id AS level1_id
 				FROM division
-				WHERE parent_id IS NULL
+				WHERE level = 1
 				UNION ALL
 				SELECT d.id, d.parent_id, dh.level1_id
 				FROM division d
@@ -1375,7 +1503,7 @@ export async function getTotalLossesByDivision(
 			WITH RECURSIVE division_hierarchy AS (
 				SELECT id, parent_id, id AS level1_id
 				FROM division
-				WHERE parent_id IS NULL
+				WHERE level = 1
 				UNION ALL
 				SELECT d.id, d.parent_id, dh.level1_id
 				FROM division d
@@ -1452,6 +1580,7 @@ interface DeathsByDivision {
 
 export async function getTotalDeathsByDivision(
 	filters: HazardFilters,
+	basisOverride?: RecordBasisOverride,
 ): Promise<DeathsByDivision[]> {
 	const {
 		countryAccountsId,
@@ -1465,7 +1594,7 @@ export async function getTotalDeathsByDivision(
 
 	// Build WHERE conditions for disaster_records as SQL objects
 	const whereConditions: SQL[] = [];
-	whereConditions.push(sql`dr."approvalStatus" IN ('published', 'validated')`);
+	whereConditions.push(recordBasis(filters, "dr", basisOverride));
 	whereConditions.push(sql`dr."country_accounts_id" = ${countryAccountsId}`);
 	if (hazardTypeId)
 		whereConditions.push(sql`dr."hip_type_id" = ${hazardTypeId}`);
@@ -1531,7 +1660,7 @@ export async function getTotalDeathsByDivision(
 	  WITH RECURSIVE division_hierarchy AS (
 		SELECT id, parent_id, id AS level1_id
 		FROM "division"
-		WHERE parent_id IS NULL
+		WHERE level = 1
 		UNION ALL
 		SELECT d.id, d.parent_id, dh.level1_id
 		FROM "division" d
@@ -1651,19 +1780,18 @@ export async function getTotalAffectedPeopleByDivision(
 		toDate,
 	} = filters;
 
-	// Build WHERE conditions for disaster_event as SQL objects
+	// Build WHERE conditions for disaster_records as SQL objects
 	const whereConditions: SQL[] = [];
-	whereConditions.push(sql`de."approvalStatus" IN ('published', 'validated')`);
-	whereConditions.push(sql`de."country_accounts_id" = ${countryAccountsId}`);
+	whereConditions.push(recordBasis(filters, "dr"));
+	whereConditions.push(sql`dr."country_accounts_id" = ${countryAccountsId}`);
 	if (hazardTypeId)
-		whereConditions.push(sql`de."hip_type_id" = ${hazardTypeId}`);
+		whereConditions.push(sql`dr."hip_type_id" = ${hazardTypeId}`);
 	if (hazardClusterId)
-		whereConditions.push(sql`de."hip_cluster_id" = ${hazardClusterId}`);
+		whereConditions.push(sql`dr."hip_cluster_id" = ${hazardClusterId}`);
 	if (specificHazardId)
-		whereConditions.push(sql`de."hip_hazard_id" = ${specificHazardId}`);
+		whereConditions.push(sql`dr."hip_hazard_id" = ${specificHazardId}`);
 	if (geographicLevelId) {
-		whereConditions.push(sql`(
-			EXISTS (
+		whereConditions.push(sql`EXISTS (
 			WITH RECURSIVE division_tree AS (
 				SELECT id
 				FROM division
@@ -1674,28 +1802,9 @@ export async function getTotalAffectedPeopleByDivision(
 				INNER JOIN division_tree dt ON d.parent_id = dt.id
 			)
 			SELECT 1
-			FROM disaster_event_division ded
-			WHERE ded.disaster_event_id = de.id
-				AND ded.division_id IN (SELECT id FROM division_tree)
-			)
-			OR EXISTS (
-				WITH RECURSIVE division_tree AS (
-					SELECT id
-					FROM division
-					WHERE id = ${geographicLevelId}::uuid
-					UNION ALL
-					SELECT d.id
-					FROM division d
-					INNER JOIN division_tree dt ON d.parent_id = dt.id
-				)
-				SELECT 1
-				FROM disaster_records dr
-				INNER JOIN disaster_records_division drd
-					ON drd.disaster_record_id = dr.id
-				WHERE dr.disaster_event_id = de.id
-					AND dr."approvalStatus" IN ('published', 'validated')
-					AND drd.division_id IN (SELECT id FROM division_tree)
-			)
+			FROM disaster_records_division drd
+			WHERE drd.disaster_record_id = dr.id
+				AND drd.division_id IN (SELECT id FROM division_tree)
 		)`);
 	}
 	if (fromDate || toDate) {
@@ -1704,57 +1813,54 @@ export async function getTotalAffectedPeopleByDivision(
 		whereConditions.push(sql`
 		(
 		  CASE 
-			WHEN de."start_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(de."start_date", 'YYYY-MM-DD')
-			WHEN de."start_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(de."start_date", 'YYYY-MM')
-			WHEN de."start_date" ~ '^[0-9]{4}$' THEN TO_DATE(de."start_date", 'YYYY')
+			WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM-DD')
+			WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM')
+			WHEN dr."start_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."start_date", 'YYYY')
 			ELSE NULL
 		  END IS NULL OR 
 		  CASE 
-			WHEN de."start_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(de."start_date", 'YYYY-MM-DD')
-			WHEN de."start_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(de."start_date", 'YYYY-MM')
-			WHEN de."start_date" ~ '^[0-9]{4}$' THEN TO_DATE(de."start_date", 'YYYY')
+			WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM-DD')
+			WHEN dr."start_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."start_date", 'YYYY-MM')
+			WHEN dr."start_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."start_date", 'YYYY')
 			ELSE NULL
 		  END <= ${to}::date
 		) AND (
 		  CASE 
-			WHEN de."end_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(de."end_date", 'YYYY-MM-DD')
-			WHEN de."end_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(de."end_date", 'YYYY-MM')
-			WHEN de."end_date" ~ '^[0-9]{4}$' THEN TO_DATE(de."end_date", 'YYYY')
+			WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM-DD')
+			WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM')
+			WHEN dr."end_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."end_date", 'YYYY')
 			ELSE NULL
 		  END IS NULL OR 
 		  CASE 
-			WHEN de."end_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(de."end_date", 'YYYY-MM-DD')
-			WHEN de."end_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(de."end_date", 'YYYY-MM')
-			WHEN de."end_date" ~ '^[0-9]{4}$' THEN TO_DATE(de."end_date", 'YYYY')
+			WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM-DD')
+			WHEN dr."end_date" ~ '^[0-9]{4}-[0-9]{2}$' THEN TO_DATE(dr."end_date", 'YYYY-MM')
+			WHEN dr."end_date" ~ '^[0-9]{4}$' THEN TO_DATE(dr."end_date", 'YYYY')
 			ELSE NULL
 		  END >= ${from}::date
 		)
 	  `);
 	}
 
-	const eventWhereClause =
+	const recordsWhereClause =
 		whereConditions.length > 0 ? sql`WHERE ${and(...whereConditions)}` : sql``;
 
 	const rawQuery = sql`
 	  WITH RECURSIVE division_hierarchy AS (
 		SELECT id, parent_id, id AS level1_id
 		FROM "division"
-		WHERE parent_id IS NULL
+		WHERE level = 1
 		UNION ALL
 		SELECT d.id, d.parent_id, dh.level1_id
 		FROM "division" d
 		INNER JOIN division_hierarchy dh ON d.parent_id = dh.id
 	  ),
-	  filtered_events AS (
-		SELECT de."id"
-		FROM "disaster_event" de
-		${eventWhereClause}
-	  ),
 	  filtered_records AS (
+		-- Records are scoped by tenant, hazard, date and division directly, so
+		-- records without a disaster event count too. The event is used only
+		-- to place a record that has no division link of its own.
 		SELECT dr."id" AS record_id, dr."disaster_event_id" AS event_id
 		FROM "disaster_records" dr
-		WHERE dr."approvalStatus" IN ('published', 'validated')
-		  AND dr."disaster_event_id" IN (SELECT fe."id" FROM filtered_events fe)
+		${recordsWhereClause}
 	  ),
 	  record_value AS (
 		-- Composite of injured, missing, displaced and directly affected, from
@@ -1765,15 +1871,15 @@ export async function getTotalAffectedPeopleByDivision(
 		  NULLIF(
 			CASE WHEN hcp."injured_total" > 0 THEN hcp."injured_total" ELSE 0 END +
 			CASE WHEN hcp."missing_total" > 0 THEN hcp."missing_total" ELSE 0 END +
-			CASE WHEN hcp."displaced_total" > 0 THEN hcp."displaced_total" ELSE 0 END +
+			CASE WHEN ${displacedHeadlineSql("hcp")} > 0 THEN ${displacedHeadlineSql("hcp")} ELSE 0 END +
 			CASE WHEN hcp."affected_direct_total" > 0 THEN hcp."affected_direct_total" ELSE 0 END,
 			0
 		  ) AS v,
-		  COALESCE(hcp."injured_total" > 0 OR hcp."missing_total" > 0 OR hcp."displaced_total" > 0 OR hcp."affected_direct_total" > 0, false) AS is_reported,
+		  COALESCE(hcp."injured_total" > 0 OR hcp."missing_total" > 0 OR ${displacedHeadlineSql("hcp")} > 0 OR hcp."affected_direct_total" > 0, false) AS is_reported,
 		  COALESCE(
 			(hcp."injured_total" = 0 AND hcp."injured" IS TRUE) OR (hcp."injured" IS FALSE AND COALESCE(hcp."injured_total", 0) = 0) OR
 			(hcp."missing_total" = 0 AND hcp."missing" IS TRUE) OR (hcp."missing" IS FALSE AND COALESCE(hcp."missing_total", 0) = 0) OR
-			(hcp."displaced_total" = 0 AND hcp."displaced" IS TRUE) OR (hcp."displaced" IS FALSE AND COALESCE(hcp."displaced_total", 0) = 0) OR
+			(${displacedHeadlineSql("hcp")} = 0 AND hcp."displaced" IS TRUE) OR (hcp."displaced" IS FALSE AND COALESCE(${displacedHeadlineSql("hcp")}, 0) = 0) OR
 			(hcp."affected_direct_total" = 0 AND hcp."affected_direct" IS TRUE) OR (hcp."affected_direct" IS FALSE AND COALESCE(hcp."affected_direct_total", 0) = 0),
 			false
 		  ) AS is_zero
@@ -1853,6 +1959,8 @@ export async function getTotalAffectedPeopleByDivision(
 interface DisasterEventCountByDivision {
 	divisionId: string;
 	eventCount: number;
+	/** Events placed through their member records (no division links). */
+	eventsFromRecords: number;
 }
 
 export async function getDisasterEventCountByDivision(
@@ -1870,7 +1978,7 @@ export async function getDisasterEventCountByDivision(
 
 	// Build WHERE conditions for disaster_event as SQL objects
 	const whereConditions: SQL[] = [];
-	whereConditions.push(sql`de."approvalStatus" IN ('published', 'validated')`);
+	whereConditions.push(approvalBasis(filters.audience, basisColumns("de")));
 	whereConditions.push(sql`de."country_accounts_id" = ${countryAccountsId}`);
 	if (hazardTypeId)
 		whereConditions.push(sql`de."hip_type_id" = ${hazardTypeId}`);
@@ -1879,20 +1987,33 @@ export async function getDisasterEventCountByDivision(
 	if (specificHazardId)
 		whereConditions.push(sql`de."hip_hazard_id" = ${specificHazardId}`);
 	if (geographicLevelId) {
-		whereConditions.push(sql`EXISTS (
-			WITH RECURSIVE division_tree AS (
-				SELECT id
-				FROM division
-				WHERE id = ${geographicLevelId}::uuid
-				UNION ALL
-				SELECT d.id
-				FROM division d
-				INNER JOIN division_tree dt ON d.parent_id = dt.id
+		// An event is in the division through its own division links, or,
+		// when it has none, through its member records' divisions (as the
+		// geoportal places it; migrated events carry no division links).
+		const tree = divisionAndDescendantsSql(
+			geographicLevelId,
+			countryAccountsId,
+		);
+		whereConditions.push(sql`(
+			EXISTS (
+				SELECT 1 FROM disaster_event_division ded
+				WHERE ded.disaster_event_id = de.id AND ded.division_id IN ${tree}
 			)
-			SELECT 1
-			FROM disaster_event_division ded
-			WHERE ded.disaster_event_id = de.id
-				AND ded.division_id IN (SELECT id FROM division_tree)
+			OR (
+				NOT EXISTS (
+					SELECT 1 FROM disaster_event_division ded
+					WHERE ded.disaster_event_id = de.id
+				)
+				AND EXISTS (
+					SELECT 1
+					FROM disaster_records r
+					JOIN disaster_records_division drd ON drd.disaster_record_id = r.id
+					WHERE r.disaster_event_id = de.id
+						AND r.country_accounts_id = ${countryAccountsId}
+						AND ${approvalBasis(filters.audience, basisColumns("r"))}
+						AND drd.division_id IN ${tree}
+				)
+			)
 		)`);
 	}
 	if (fromDate || toDate) {
@@ -1936,7 +2057,7 @@ export async function getDisasterEventCountByDivision(
 	  WITH RECURSIVE division_hierarchy AS (
 		SELECT id, parent_id, id AS level1_id
 		FROM "division"
-		WHERE parent_id IS NULL
+		WHERE level = 1
 		UNION ALL
 		SELECT d.id, d.parent_id, dh.level1_id
 		FROM "division" d
@@ -1950,16 +2071,38 @@ export async function getDisasterEventCountByDivision(
 	  event_level1 AS (
 		SELECT DISTINCT
 		  ded."disaster_event_id" AS event_id,
-		  dh.level1_id::text AS level1_id
+		  dh.level1_id::text AS level1_id,
+		  false AS from_records
 		FROM "disaster_event_division" ded
 		INNER JOIN filtered_events fe
 		  ON fe.event_id = ded."disaster_event_id"
 		INNER JOIN division_hierarchy dh
 		  ON dh.id = ded."division_id"
+		UNION
+		-- An event without division links is placed where its member records
+		-- sit (derivation from_records, as in the geoportal).
+		SELECT DISTINCT
+		  r."disaster_event_id" AS event_id,
+		  dh.level1_id::text AS level1_id,
+		  true AS from_records
+		FROM "disaster_records" r
+		INNER JOIN filtered_events fe
+		  ON fe.event_id = r."disaster_event_id"
+		INNER JOIN "disaster_records_division" drd
+		  ON drd."disaster_record_id" = r."id"
+		INNER JOIN division_hierarchy dh
+		  ON dh.id = drd."division_id"
+		WHERE r."country_accounts_id" = ${countryAccountsId}
+		  AND ${approvalBasis(filters.audience, basisColumns("r"))}
+		  AND NOT EXISTS (
+			SELECT 1 FROM "disaster_event_division" ded2
+			WHERE ded2."disaster_event_id" = r."disaster_event_id"
+		  )
 	  )
 	  SELECT 
 		el.level1_id AS division_id,
-		COUNT(*) AS event_count
+		COUNT(*) AS event_count,
+		COUNT(*) FILTER (WHERE el.from_records) AS events_from_records
 	  FROM event_level1 el
 	  GROUP BY el.level1_id
 	`;
@@ -1970,6 +2113,7 @@ export async function getDisasterEventCountByDivision(
 	return result.rows.map((row: any) => ({
 		divisionId: row.division_id,
 		eventCount: Number(row.event_count),
+		eventsFromRecords: Number(row.events_from_records),
 	}));
 }
 
@@ -2000,7 +2144,7 @@ export async function getDisasterSummary(
 
 	// ---- Step 1: Get all disaster events that match filters ----
 	const whereConditions: SQL[] = [];
-	whereConditions.push(sql`"approvalStatus" IN ('published', 'validated')`);
+	whereConditions.push(approvalBasis(filters.audience, basisColumns()));
 	whereConditions.push(sql`"country_accounts_id" = ${countryAccountsId}`);
 	if (hazardTypeId) whereConditions.push(sql`"hip_type_id" = ${hazardTypeId}`);
 	if (hazardClusterId)
@@ -2012,7 +2156,7 @@ export async function getDisasterSummary(
 			SELECT 1
 			FROM disaster_event_division ded
 			WHERE ded.disaster_event_id = disaster_event.id
-				AND ded.division_id = ${geographicLevelId}::uuid
+				AND ded.division_id IN ${divisionAndDescendantsSql(geographicLevelId, countryAccountsId)}
 		)`);
 	}
 	if (fromDate || toDate) {
@@ -2075,7 +2219,7 @@ export async function getDisasterSummary(
     SELECT id, disaster_event_id
     FROM disaster_records
     WHERE disaster_event_id = ANY(ARRAY[${sql.raw(eventIdsList)}]::uuid[])
-    AND "approvalStatus" IN ('published', 'validated')
+    AND ${approvalBasis(filters.audience, basisColumns())}
   `);
 	const disasterRecords = recordsRes.rows as Array<{
 		id: string;
@@ -2091,7 +2235,8 @@ export async function getDisasterSummary(
 			provinceAffected: "",
 			totalDamages: 0,
 			totalLosses: 0,
-			totalAffectedPeople: 0,
+			// No records: the event has no reported people figure (TR-076).
+			totalAffectedPeople: null,
 		}));
 
 	// ---- Step 3: Get all sector_disaster_records_relation entries ----
@@ -2222,11 +2367,11 @@ export async function getDisasterSummary(
            SUM(
              CASE WHEN hcp."injured_total" > 0 THEN hcp."injured_total" ELSE 0 END +
              CASE WHEN hcp."missing_total" > 0 THEN hcp."missing_total" ELSE 0 END +
-             CASE WHEN hcp."displaced_total" > 0 THEN hcp."displaced_total" ELSE 0 END +
+             CASE WHEN ${displacedHeadlineSql("hcp")} > 0 THEN ${displacedHeadlineSql("hcp")} ELSE 0 END +
              CASE WHEN hcp."affected_direct_total" > 0 THEN hcp."affected_direct_total" ELSE 0 END
            ) FILTER (
              WHERE hcp."injured_total" > 0 OR hcp."missing_total" > 0
-               OR hcp."displaced_total" > 0 OR hcp."affected_direct_total" > 0
+               OR ${displacedHeadlineSql("hcp")} > 0 OR hcp."affected_direct_total" > 0
            ) AS total_affected
     FROM "disaster_records" dr
     LEFT JOIN "human_category_presence" hcp ON hcp."record_id" = dr."id"

@@ -1,0 +1,439 @@
+{
+	"data": {
+		"$description": "DELTA data layer (ADR-19, FE-Tokens-01 v0.2). Owned by DELTA; values must match app/utils/mapState.ts until Analytics switches it to the generated module.",
+		"state": {
+			"$description": "Off-ramp value states of TR-076. A reported value takes its colour from data.ramp.",
+			"zero-confirmed": {
+				"$description": "Records in scope confirm the figure is zero.",
+				"fill": {
+					"$type": "color",
+					"$value": "#ffffff"
+				},
+				"stroke": {
+					"$type": "color",
+					"$value": "#4b5563"
+				},
+				"stroke-width": {
+					"$type": "number",
+					"$value": 1.2,
+					"$description": "Stroke width in CSS pixels"
+				},
+				"dash": {
+					"$value": "4 3",
+					"$description": "SVG stroke-dasharray; 'none' draws a solid line",
+					"$extensions": {
+						"org.undrr.delta": {
+							"kind": "dash-array"
+						}
+					}
+				},
+				"pattern": {
+					"$value": "none",
+					"$description": "Pattern drawn over the fill in the stroke colour",
+					"$extensions": {
+						"org.undrr.delta": {
+							"kind": "fill-pattern"
+						}
+					}
+				}
+			},
+			"not-reported": {
+				"$description": "Records exist in scope but did not report this figure (TR-076). NOT the same as data.map.no-records: never merge the two, even if their values match.",
+				"fill": {
+					"$type": "color",
+					"$value": "#c9ced6"
+				},
+				"stroke": {
+					"$type": "color",
+					"$value": "#8a929c"
+				},
+				"stroke-width": {
+					"$type": "number",
+					"$value": 1,
+					"$description": "Stroke width in CSS pixels"
+				},
+				"dash": {
+					"$value": "none",
+					"$description": "SVG stroke-dasharray; 'none' draws a solid line",
+					"$extensions": {
+						"org.undrr.delta": {
+							"kind": "dash-array"
+						}
+					}
+				},
+				"pattern": {
+					"$value": "none",
+					"$description": "Pattern drawn over the fill in the stroke colour",
+					"$extensions": {
+						"org.undrr.delta": {
+							"kind": "fill-pattern"
+						}
+					}
+				}
+			},
+			"insufficient-reporting": {
+				"$description": "The aggregate rests on too little reporting (PD-04).",
+				"fill": {
+					"$type": "color",
+					"$value": "#ffffff"
+				},
+				"stroke": {
+					"$type": "color",
+					"$value": "#6b7280"
+				},
+				"stroke-width": {
+					"$type": "number",
+					"$value": 1.2,
+					"$description": "Stroke width in CSS pixels"
+				},
+				"dash": {
+					"$value": "1 3",
+					"$description": "SVG stroke-dasharray; 'none' draws a solid line",
+					"$extensions": {
+						"org.undrr.delta": {
+							"kind": "dash-array"
+						}
+					}
+				},
+				"pattern": {
+					"$value": "hatch",
+					"$description": "Pattern drawn over the fill in the stroke colour",
+					"$extensions": {
+						"org.undrr.delta": {
+							"kind": "fill-pattern"
+						}
+					}
+				}
+			},
+			"not-applicable": {
+				"$description": "The measure does not apply to this area.",
+				"fill": {
+					"$type": "color",
+					"$value": "#f3f4f6"
+				},
+				"stroke": {
+					"$type": "color",
+					"$value": "#6b7280"
+				},
+				"stroke-width": {
+					"$type": "number",
+					"$value": 1,
+					"$description": "Stroke width in CSS pixels"
+				},
+				"dash": {
+					"$value": "8 3 1 3",
+					"$description": "SVG stroke-dasharray; 'none' draws a solid line",
+					"$extensions": {
+						"org.undrr.delta": {
+							"kind": "dash-array"
+						}
+					}
+				},
+				"pattern": {
+					"$value": "dots",
+					"$description": "Pattern drawn over the fill in the stroke colour",
+					"$extensions": {
+						"org.undrr.delta": {
+							"kind": "fill-pattern"
+						}
+					}
+				}
+			},
+			"suppressed": {
+				"$description": "Withheld by a disclosure rule.",
+				"fill": {
+					"$type": "color",
+					"$value": "#e5e7eb"
+				},
+				"stroke": {
+					"$type": "color",
+					"$value": "#374151"
+				},
+				"stroke-width": {
+					"$type": "number",
+					"$value": 2,
+					"$description": "Stroke width in CSS pixels"
+				},
+				"dash": {
+					"$value": "none",
+					"$description": "SVG stroke-dasharray; 'none' draws a solid line",
+					"$extensions": {
+						"org.undrr.delta": {
+							"kind": "dash-array"
+						}
+					}
+				},
+				"pattern": {
+					"$value": "crosshatch",
+					"$description": "Pattern drawn over the fill in the stroke colour",
+					"$extensions": {
+						"org.undrr.delta": {
+							"kind": "fill-pattern"
+						}
+					}
+				}
+			}
+		},
+		"map": {
+			"no-records": {
+				"$description": "No record at all is in scope for the area. NOT the same as data.state.not-reported (records in scope that reported nothing, TR-076): never merge the two, even if their values match.",
+				"fill": {
+					"$type": "color",
+					"$value": "#f9fafb"
+				},
+				"stroke": {
+					"$type": "color",
+					"$value": "#d1d5db"
+				},
+				"stroke-width": {
+					"$type": "number",
+					"$value": 0.8
+				}
+			},
+			"area-boundary": {
+				"$description": "Line between shaded areas on both maps (Alex, 2026-10-16: one map look).",
+				"stroke": {
+					"$type": "color",
+					"$value": "#ffffff"
+				},
+				"stroke-width": {
+					"$type": "number",
+					"$value": 0.8
+				}
+			},
+			"selected-outline": {
+				"$description": "Outline of the selected area (D-3D-1: depth carries no data).",
+				"stroke": {
+					"$type": "color",
+					"$value": "#111827"
+				},
+				"stroke-width": {
+					"$type": "number",
+					"$value": 2.5
+				}
+			},
+			"plausibility-marker": {
+				"$description": "Outline for an area whose figure includes a record flagged for review (C30).",
+				"stroke": {
+					"$type": "color",
+					"$value": "#b45309"
+				},
+				"stroke-width": {
+					"$type": "number",
+					"$value": 2.5
+				}
+			},
+			"not-applied-note": {
+				"$description": "Note that a filter could not be applied to the map. Shares its border colour with data.map.plausibility-marker but means something else: never merge the two.",
+				"border": {
+					"$type": "color",
+					"$value": "#b45309"
+				},
+				"border-width": {
+					"$type": "number",
+					"$value": 3
+				},
+				"background": {
+					"$type": "color",
+					"$value": "#fff7ed"
+				}
+			},
+			"canvas": {
+				"$description": "Background behind both maps, the analytics dashboard (MapChart) and the geoportal (GeoMap): one map look, grey canvas with the white data.map.area-boundary between shaded areas (Alex, 2026-10-16). Gives the country context before the basemap loads.",
+				"background": {
+					"$type": "color",
+					"$value": "#f3f4f6"
+				}
+			}
+		},
+		"ramp": {
+			"$description": "Five-step sequential ramps per measure family, light to dark. PROVISIONAL until V-3 and V-4 (brand and dark mode). The lightest class is never near-white, so it is never read as a confirmed zero.",
+			"$type": "color",
+			"people": {
+				"1": {
+					"$value": "#dbe7f3"
+				},
+				"2": {
+					"$value": "#a9c8e4"
+				},
+				"3": {
+					"$value": "#6fa4d0"
+				},
+				"4": {
+					"$value": "#3d7cb4"
+				},
+				"5": {
+					"$value": "#1d548f"
+				}
+			},
+			"housing": {
+				"1": {
+					"$value": "#fdd0a2"
+				},
+				"2": {
+					"$value": "#fdae6b"
+				},
+				"3": {
+					"$value": "#fd8d3c"
+				},
+				"4": {
+					"$value": "#e6550d"
+				},
+				"5": {
+					"$value": "#a63603"
+				}
+			},
+			"money": {
+				"1": {
+					"$value": "#c7e9c0"
+				},
+				"2": {
+					"$value": "#a1d99b"
+				},
+				"3": {
+					"$value": "#74c476"
+				},
+				"4": {
+					"$value": "#31a354"
+				},
+				"5": {
+					"$value": "#006d2c"
+				}
+			},
+			"events": {
+				"1": {
+					"$value": "#dadaeb"
+				},
+				"2": {
+					"$value": "#bcbddc"
+				},
+				"3": {
+					"$value": "#9e9ac8"
+				},
+				"4": {
+					"$value": "#756bb1"
+				},
+				"5": {
+					"$value": "#54278f"
+				},
+				"$description": "Also colours record-count maps today (measureFamily(\"records\") returns \"events\")."
+			}
+		},
+		"flag": {
+			"$description": "Markers for records flagged for review (C30).",
+			"review-chip": {
+				"$description": "Chip naming a plausibility flag in tables and lists. Same meaning as data.map.plausibility-marker on maps.",
+				"background": {
+					"$type": "color",
+					"$value": "#fef3c7"
+				},
+				"text": {
+					"$type": "color",
+					"$value": "#78350f"
+				}
+			}
+		},
+		"chart": {
+			"$description": "Neutral ink for charts drawn outside Recharts, such as the geoportal dossier.",
+			"axis": {
+				"$description": "Axis lines and neutral chart ink; also the fallback bar colour, which should never show.",
+				"$type": "color",
+				"$value": "#6b7280"
+			}
+		},
+		"notice": {
+			"$description": "Notes that carry a data meaning.",
+			"provisional": {
+				"$description": "Banner for figures on the reviewer provisional basis: includes unpublished records, never public (AB-01). Not the same as a general warning (brand.warning-*) or a filter not applied (data.map.not-applied-note).",
+				"border": {
+					"$type": "color",
+					"$value": "#d97706"
+				},
+				"background": {
+					"$type": "color",
+					"$value": "#fffbeb"
+				}
+			}
+		},
+		"hazard": {
+			"$description": "Identity colours of the eight HIPs 2025 hazard types (hip_class), for chips, glyphs and legends (NFR-094: a hazard type is never a series colour). Categorical, not a ramp. Each is at least 3:1 against brand surface and surface-subtle (WCAG 1.4.11); a chip always shows the type name too, so colour is never the only signal (1.4.1).",
+			"$type": "color",
+			"meteorological-hydrological": {
+				"$value": "#1f6fb2",
+				"$description": "Meteorological and Hydrological",
+				"$extensions": {
+					"org.undrr.delta": {
+						"hipClassId": "1042"
+					}
+				}
+			},
+			"geological": {
+				"$value": "#8c5a2b",
+				"$description": "Geological",
+				"$extensions": {
+					"org.undrr.delta": {
+						"hipClassId": "1041"
+					}
+				}
+			},
+			"biological": {
+				"$value": "#2e7d32",
+				"$description": "Biological",
+				"$extensions": {
+					"org.undrr.delta": {
+						"hipClassId": "1037"
+					}
+				}
+			},
+			"environmental": {
+				"$value": "#6b7a12",
+				"$description": "Environmental",
+				"$extensions": {
+					"org.undrr.delta": {
+						"hipClassId": "1039"
+					}
+				}
+			},
+			"chemical": {
+				"$value": "#8e3fa8",
+				"$description": "Chemical",
+				"$extensions": {
+					"org.undrr.delta": {
+						"hipClassId": "1038"
+					}
+				}
+			},
+			"technological": {
+				"$value": "#c2410c",
+				"$description": "Technological",
+				"$extensions": {
+					"org.undrr.delta": {
+						"hipClassId": "1044"
+					}
+				}
+			},
+			"societal": {
+				"$value": "#b0306a",
+				"$description": "Societal",
+				"$extensions": {
+					"org.undrr.delta": {
+						"hipClassId": "1043"
+					}
+				}
+			},
+			"extraterrestrial": {
+				"$value": "#0f7c8c",
+				"$description": "Extraterrestrial",
+				"$extensions": {
+					"org.undrr.delta": {
+						"hipClassId": "1040"
+					}
+				}
+			},
+			"unclassified": {
+				"$value": "#6b7280",
+				"$description": "No HIPs type recorded"
+			}
+		}
+	}
+}

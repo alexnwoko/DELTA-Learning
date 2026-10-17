@@ -26,7 +26,7 @@ export const fieldsDefCommon = [
 	{ key: "sectorId", label: "Sector", type: "text", required: true },
 	{
 		key: "disasterRecordId",
-		label: "Disaster Record",
+		label: "Disaster impact",
 		type: "text",
 		required: true,
 	},
@@ -297,7 +297,7 @@ export async function disRecSectorsUpdateByIdAndCountryAccountsId(
 		return {
 			ok: false,
 			errors: {
-				general: ["No matching disaster record found or you don't have access"],
+				general: ["No matching disaster impact found or you don't have access"],
 			},
 		};
 	}

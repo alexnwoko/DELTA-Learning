@@ -1,4 +1,4 @@
-import { dr } from "~/db.server";
+import { dr, Tx } from "~/db.server";
 import { hipHazardTable } from "~/drizzle/schema/hipHazardTable";
 import { hipClusterTable } from "~/drizzle/schema/hipClusterTable";
 import { hipTypeTable } from "~/drizzle/schema/hipTypeTable";
@@ -22,8 +22,12 @@ export interface HipApi {
 	data: Hip[];
 }
 
-export async function getHazardById(ctx: BackendContext, id: string) {
-	const rows = await dr
+export async function getHazardById(
+	ctx: BackendContext,
+	id: string,
+	db: Tx = dr,
+) {
+	const rows = await db
 		.select({
 			id: hipHazardTable.id,
 			clusterId: hipClusterTable.id,
@@ -47,8 +51,12 @@ export async function getHazardById(ctx: BackendContext, id: string) {
 	return rows[0];
 }
 
-export async function getClusterById(ctx: BackendContext, id: string) {
-	const rows = await dr
+export async function getClusterById(
+	ctx: BackendContext,
+	id: string,
+	db: Tx = dr,
+) {
+	const rows = await db
 		.select({
 			id: hipClusterTable.id,
 			typeId: hipClusterTable.typeId,
@@ -65,8 +73,12 @@ export async function getClusterById(ctx: BackendContext, id: string) {
 	return rows[0];
 }
 
-export async function getTypeById(ctx: BackendContext, id: string) {
-	const rows = await dr
+export async function getTypeById(
+	ctx: BackendContext,
+	id: string,
+	db: Tx = dr,
+) {
+	const rows = await db
 		.select({
 			id: hipTypeTable.id,
 			name: sql<string>`dts_jsonb_localized(${hipTypeTable.name}, ${ctx.lang})`,

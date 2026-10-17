@@ -7,74 +7,410 @@ import {
 	useCallback,
 } from "react";
 import type { ValueState } from "~/utils/valueState";
+import { BASEMAP_ATTRIBUTION, isSelfHostedTileUrl } from "~/utils/basemap";
+import { dataTokens } from "~/utils/designTokens.generated";
+import { LEAFLET_CSS, LEAFLET_JS } from "~/utils/leafletAssets";
 import { ViewContext } from "~/frontend/context";
 import { formatNumberWithoutDecimals } from "~/utils/currency";
+import {
+	type MapArea,
+	type MapCell,
+	type MapPattern,
+	type MapScopeQuery,
+	type MapStateResult,
+	type MeasureFamily,
+	type MeasureKind,
+	type MapCellPart,
+	type MapSymbol,
+	type MapUnderlayKind,
+	type NotAppliedInput,
+	PLAUSIBILITY_MARKER,
+	type MapAreaSymbol,
+	BAR_WIDTH_PX,
+	STATE_ENCODING,
+	barLengthPx,
+	bubbleRadiusPx,
+	defaultSymbolFor,
+	rampIndex,
+	resolveLayeredMapState,
+	resolveMapState,
+} from "~/utils/mapState";
 
 export type MapChartRef = {
 	getDataSource: () => DataSourceType;
 	setDataSource: (newData: DataSourceType) => void;
 	setLegendTitle: (newTitle: string) => void;
 	setLegendMaxColor: (newColor: string) => void;
+	setMeasureFamily: (family: MeasureFamily | undefined) => void;
+};
+
+/** One area as passed by a screen. Counts come from the envelope cell. */
+export type MapChartArea = {
+	/** null when not reported (TR-076). */
+	total: number | null;
+	name: string;
+	geojson: any;
+	colorPercentage?: number;
+	description?: string;
+	/** When set, drives the map state (TR-076); otherwise 0 means no data. */
+	valueState?: ValueState;
+	recordsReported?: number;
+	recordsZeroConfirmed?: number;
+	recordsTotal?: number;
+	recordsFlagged?: number;
+	flaggedContribution?: number | null;
+	sharedRecords?: number;
+	gradeDistribution?: MapCell["gradeDistribution"];
+	geoPrecision?: string | null;
+	/**
+	 * A point inside the area, [longitude, latitude], from
+	 * ST_PointOnSurface, where a bubble or bar stands (RV-5 as amended).
+	 */
+	labelPoint?: [number, number] | null;
+	/** Land area in km² (divisionAreasKm2), for density shading under symbols (option D). */
+	areaKm2?: number | null;
+	/** Bars mode: the parts of a breakdown, each with its own value state. */
+	parts?: MapCellPart[];
 };
 
 type MapChartProps = {
 	ctx: ViewContext;
 	id?: string;
-	dataSource: {
-		total: number;
-		name: string;
-		geojson: any;
-		colorPercentage?: number;
-		description?: string;
-		/** When set, drives the map state (TR-076); otherwise 0 means no data. */
-		valueState?: ValueState;
-	}[];
+	dataSource: MapChartArea[];
 	legendMaxColor?: string;
 	legendTitle?: string;
 	/**
+	 * Measure family for the ramp (V-2). Without it the classes are steps of
+	 * legendMaxColor, as before.
+	 */
+	measureFamily?: MeasureFamily;
+	/** The query behind the figures, for the scope label (E2 rule 1, C23). */
+	scope?: MapScopeQuery;
+	/** Filters this measure could not apply (E2 rule 2). */
+	notApplied?: readonly (string | NotAppliedInput)[];
+	/**
 	 * Raster tile URL for an optional basemap. None by default: the
 	 * divisions carry the map, and no external tile service is called
-	 * (geoportal requirements VIS-F01, no API keys in the client). Set this
-	 * only to a self-hosted tile service.
+	 * (TR-166, VIS-F01, no API keys in the client). Only a self-hosted
+	 * URL on the DELTA origin is used (SEC-20); any other is ignored.
 	 */
 	basemapUrl?: string;
+	/** Attribution shown whenever a basemap is drawn (TR-166). */
+	basemapAttribution?: string;
+	/**
+	 * What the figures are: counts and totals draw as bubbles, densities and
+	 * rates as a choropleth (ruling RV-5). Defaults to "count".
+	 */
+	measureKind?: MeasureKind;
+	/** Overrides the default symbol, for example "bars" for a breakdown. */
+	symbol?: MapSymbol;
+	/**
+	 * Option D: shade the areas under the symbols by density or coverage.
+	 * Density uses each area's areaKm2.
+	 */
+	underlay?: { kind: MapUnderlayKind; family: MeasureFamily };
+	/**
+	 * Rounded bars over a choropleth: each area's total and value state shade
+	 * the area (for example the number of deaths) and its parts draw as bars
+	 * on top (for example dwellings damaged and destroyed) in barsFamily.
+	 */
+	layered?: { barsFamily: MeasureFamily };
+	/**
+	 * Replaces "No data" for areas with no value, where the figure is a count
+	 * of recorded things and none is a known count, for example "No events
+	 * recorded" on the event maps.
+	 */
+	notReportedLabel?: string;
+	/**
+	 * Called when a reader selects an area (its shape or its symbol), with
+	 * the area's index in dataSource; for example to set the place filter.
+	 */
+	onAreaClick?: (index: number, area: MapChartArea) => void;
 };
 
-type DataSourceType = {
-	total: number;
-	name: string;
-	geojson: any;
-	colorPercentage?: number;
-	description?: string;
-	valueState?: ValueState;
-}[];
+type DataSourceType = MapChartArea[];
 
-// Map states: a value is shaded; a confirmed zero is white with a dashed
-// outline; anything else (not reported, insufficient, no records) is grey.
-// Grey and white never mean the same thing.
-const NO_DATA_FILL = "#c9ced6";
-const hasValue = (r: { total: number; valueState?: ValueState }) =>
-	r.valueState ? r.valueState === "reported" : r.total !== 0;
-const isZeroConfirmed = (r: { valueState?: ValueState }) =>
-	r.valueState === "zero_confirmed";
-const isNoData = (r: { total: number; valueState?: ValueState }) =>
-	r.valueState
-		? r.valueState !== "reported" && r.valueState !== "zero_confirmed"
-		: r.total === 0;
+// Map states come from the shared resolver (~/utils/mapState), so this map
+// and the geoportal cannot disagree: a value is shaded by quantile class; a
+// confirmed zero is white with a dashed outline; no data is grey; the other
+// states carry their own pattern and outline. Grey and white never mean the
+// same thing.
 
-const glbMapperJS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-const glbMapperCSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+/** Class steps of legendMaxColor when no measure family is given. */
+const CLASS_OPACITY = [0.2, 0.4, 0.6, 0.8, 1.0];
+
+/** Public views see published records only unless a scope says otherwise. */
+const DEFAULT_SCOPE: MapScopeQuery = { tenant: null, audience: "public" };
+
+/**
+ * Envelope cell for one area. A screen that passes no value state has only
+ * a total, where 0 means no record reported: it becomes not_reported with a
+ * null value, never a drawn zero.
+ */
+function toCell(area: MapChartArea, index: number): MapCell {
+	const valueState: ValueState =
+		area.valueState ??
+		(area.total !== null && area.total > 0 ? "reported" : "not_reported");
+	const value =
+		valueState === "reported" || valueState === "zero_confirmed"
+			? area.total
+			: null;
+	return {
+		areaId: String(index),
+		value,
+		valueState,
+		recordsReported: area.recordsReported ?? 0,
+		recordsZeroConfirmed: area.recordsZeroConfirmed ?? 0,
+		recordsTotal: area.recordsTotal ?? 0,
+		recordsFlagged: area.recordsFlagged,
+		flaggedContribution: area.flaggedContribution,
+		sharedRecords: area.sharedRecords,
+		gradeDistribution: area.gradeDistribution,
+		geoPrecision: area.geoPrecision,
+		parts: area.parts,
+	};
+}
+
+const PATTERN_ID = (pattern: MapPattern) => `delta-map-${pattern}`;
+
+/** SVG pattern bodies, drawn in the state's stroke colour. */
+function patternSvg(pattern: MapPattern, fill: string, stroke: string) {
+	const bg = `<rect width="6" height="6" fill="${fill}"/>`;
+	switch (pattern) {
+		case "hatch":
+			return `${bg}<path d="M0,6 L6,0 M-1,1 L1,-1 M5,7 L7,5" stroke="${stroke}" stroke-width="1"/>`;
+		case "dots":
+			return `${bg}<circle cx="3" cy="3" r="1" fill="${stroke}"/>`;
+		case "crosshatch":
+			return `${bg}<path d="M0,6 L6,0 M0,0 L6,6" stroke="${stroke}" stroke-width="0.8"/>`;
+		default:
+			return bg;
+	}
+}
+
+/** One <defs> block with a pattern per patterned state. */
+function patternDefs(): string {
+	return Object.values(STATE_ENCODING)
+		.filter((e) => e.pattern !== "none")
+		.map(
+			(e) =>
+				`<pattern id="${PATTERN_ID(e.pattern)}" patternUnits="userSpaceOnUse" width="6" height="6">${patternSvg(e.pattern, e.fill, e.stroke)}</pattern>`,
+		)
+		.join("");
+}
+
+function ensurePatternDefs(map: any) {
+	const svg: SVGSVGElement | null =
+		map?.getPanes?.().overlayPane?.querySelector("svg") ?? null;
+	if (!svg || svg.querySelector("#delta-map-defs")) return;
+	const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+	defs.setAttribute("id", "delta-map-defs");
+	defs.innerHTML = patternDefs();
+	svg.insertBefore(defs, svg.firstChild);
+}
+
+/** Gap between a bubble and its coverage ring, and the ring's width. */
+const RING_GAP_PX = 2;
+const RING_WIDTH_PX = 2;
+
+/**
+ * A bubble as inline SVG (preview option A): a circle whose area carries the
+ * value, and a thin outer ring whose filled arc is the share of records in
+ * scope that report the measure (n of N). An outlier gets a break mark.
+ */
+function bubbleSvg(
+	radius: number,
+	fill: string,
+	stroke: string,
+	ring: { n: number; of: number } | null,
+	outlier = false,
+): { html: string; size: number } {
+	const outer = radius + (ring ? RING_GAP_PX + RING_WIDTH_PX : 0) + 1;
+	const size = Math.ceil(outer * 2);
+	const c = size / 2;
+	const parts = [
+		`<circle cx="${c}" cy="${c}" r="${radius}" fill="${fill}" fill-opacity="0.75" stroke="${stroke === "none" ? "#ffffff" : stroke}" stroke-width="${stroke === "none" ? 1 : 1.5}"/>`,
+	];
+	if (ring && ring.of > 0) {
+		const rr = radius + RING_GAP_PX + RING_WIDTH_PX / 2;
+		const share = Math.min(ring.n / ring.of, 1);
+		const len = 2 * Math.PI * rr;
+		parts.push(
+			`<circle cx="${c}" cy="${c}" r="${rr}" fill="none" stroke="#d1d5db" stroke-width="${RING_WIDTH_PX}"/>`,
+			`<circle cx="${c}" cy="${c}" r="${rr}" fill="none" stroke="${fill}" stroke-width="${RING_WIDTH_PX}" stroke-dasharray="${(share * len).toFixed(2)} ${len.toFixed(2)}" transform="rotate(-90 ${c} ${c})"/>`,
+		);
+	}
+	if (outlier) {
+		parts.push(
+			`<line x1="${c - radius * 0.5}" y1="${c + 3}" x2="${c + radius * 0.5}" y2="${c - 3}" stroke="#ffffff" stroke-width="2"/>`,
+		);
+	}
+	return {
+		html: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true">${parts.join("")}</svg>`,
+		size,
+	};
+}
+
+/**
+ * A bar standing on a flat baseline with a rounded top (Alex, 2026-10-17:
+ * bars rounded at the value end). The radius shrinks for a short bar.
+ */
+function topRoundedBarPath(
+	x: number,
+	baseY: number,
+	width: number,
+	height: number,
+): string {
+	const r = Math.min(width / 2, height);
+	const top = baseY - height;
+	return `M${x},${baseY} L${x},${top + r} A${r},${r} 0 0 1 ${x + r},${top} L${x + width - r},${top} A${r},${r} 0 0 1 ${x + width},${top + r} L${x + width},${baseY} Z`;
+}
+
+/**
+ * Rounded bars as inline SVG (preview option B), side by side on a shared
+ * flat baseline, each rounded at the top. A part with no reported value
+ * gets an empty dashed slot, never a short bar.
+ */
+function barsSvg(
+	bars: Extract<MapAreaSymbol, { kind: "bars" }>["bars"],
+	fill: string,
+	maxLength: number,
+): { html: string; width: number; height: number } {
+	const gap = 2;
+	const width = bars.length * (BAR_WIDTH_PX + gap) + gap;
+	const height = maxLength + 2;
+	const r = BAR_WIDTH_PX / 2;
+	const shapes = bars.map((b, i) => {
+		const x = gap + i * (BAR_WIDTH_PX + gap);
+		if (b.ratio === null) {
+			const h = Math.min(10, maxLength);
+			return `<rect x="${x + 0.5}" y="${height - h - 0.5}" width="${BAR_WIDTH_PX - 1}" height="${h}" rx="${r}" fill="none" stroke="#9ca3af" stroke-dasharray="2 2"/>`;
+		}
+		const h = barLengthPx(b.ratio, maxLength);
+		const stroke = b.flagged ? PLAUSIBILITY_MARKER.stroke : "#ffffff";
+		return `<path d="${topRoundedBarPath(x, height - 1, BAR_WIDTH_PX, h)}" fill="${fill}" fill-opacity="${1 - i * 0.3}" stroke="${stroke}" stroke-width="1"/>`;
+	});
+	return {
+		html: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" aria-hidden="true">${shapes.join("")}</svg>`,
+		width,
+		height,
+	};
+}
+
+function areaStyle(
+	area: MapArea,
+	maxColor: string,
+	classCount: number,
+	family?: MeasureFamily,
+) {
+	if (area.state === "shaded" && area.symbol && area.classIndex === null) {
+		// Bubble or bars mode: the area keeps the canvas fill; the symbol
+		// carries the value.
+		return {
+			color: dataTokens.map.areaBoundary.stroke,
+			fillColor: area.color as string,
+			weight: dataTokens.map.areaBoundary.strokeWidth,
+			opacity: 1,
+			fillOpacity: 1,
+		};
+	}
+	if (area.state === "shaded") {
+		const marker = area.quality.plausibility ? PLAUSIBILITY_MARKER : null;
+		const step =
+			area.classIndex === null
+				? CLASS_OPACITY[3]
+				: CLASS_OPACITY[rampIndex(area.classIndex, classCount)];
+		return {
+			color: marker
+				? marker.stroke
+				: family
+					? dataTokens.map.areaBoundary.stroke
+					: maxColor,
+			fillColor: family ? (area.color as string) : maxColor,
+			weight: marker
+				? marker.strokeWidth
+				: dataTokens.map.areaBoundary.strokeWidth,
+			opacity: 1,
+			fillOpacity: family ? 1 : step,
+		};
+	}
+	const enc = STATE_ENCODING[area.state];
+	return {
+		color: enc.stroke,
+		fillColor:
+			enc.pattern === "none" ? enc.fill : `url(#${PATTERN_ID(enc.pattern)})`,
+		weight: enc.strokeWidth,
+		opacity: 1,
+		dashArray: enc.dashArray ?? undefined,
+		fillOpacity: 1,
+	};
+}
+
+/** Legend swatch as inline SVG, matching the area encoding. */
+function Swatch(props: {
+	fill: string;
+	stroke: string;
+	dashArray?: string | null;
+	strokeWidth?: number;
+	pattern?: MapPattern;
+	opacity?: number;
+}) {
+	const pattern = props.pattern ?? "none";
+	const id = `swatch-${pattern}`;
+	return (
+		<svg
+			width="16"
+			height="16"
+			viewBox="0 0 16 16"
+			aria-hidden="true"
+			style={{ marginRight: "8px", flexShrink: 0 }}
+		>
+			{pattern !== "none" && (
+				<defs>
+					<pattern
+						id={id}
+						patternUnits="userSpaceOnUse"
+						width="6"
+						height="6"
+						dangerouslySetInnerHTML={{
+							__html: patternSvg(pattern, props.fill, props.stroke),
+						}}
+					/>
+				</defs>
+			)}
+			<rect
+				x="1"
+				y="1"
+				width="14"
+				height="14"
+				fill={pattern !== "none" ? `url(#${id})` : props.fill}
+				fillOpacity={props.opacity ?? 1}
+				stroke={props.stroke}
+				strokeWidth={props.strokeWidth ?? 1}
+				strokeDasharray={props.dashArray ?? undefined}
+			/>
+		</svg>
+	);
+}
+
+function escapeHtml(s: string): string {
+	return s
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;");
+}
 
 const loadLeaflet = (setLeafletLoaded: (loaded: boolean) => void) => {
 	if (typeof window === "undefined") return;
 	if (!(window as any).L) {
 		const leafletCSS = document.createElement("link");
 		leafletCSS.rel = "stylesheet";
-		leafletCSS.href = glbMapperCSS;
+		leafletCSS.href = LEAFLET_CSS;
 		document.head.appendChild(leafletCSS);
 
 		const leafletJS = document.createElement("script");
-		leafletJS.src = glbMapperJS;
+		leafletJS.src = LEAFLET_JS;
 		leafletJS.async = true;
 		leafletJS.onload = () => {
 			console.log("Leaflet loaded successfully.");
@@ -107,13 +443,6 @@ const adjustZoomBasedOnDistance = (map: any, geoJsonLayers: any[]) => {
 	}
 };
 
-const getOpacityForRange = (value: number, min: number, max: number) => {
-	if (value === 0) return 0;
-	if (max === min) return 1.0;
-	const normalizedValue = (value - min) / (max - min);
-	return 0.1 + normalizedValue * 0.9;
-};
-
 const MapChart = forwardRef<MapChartRef, MapChartProps>(
 	(
 		{
@@ -123,6 +452,16 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 			legendMaxColor = "#333333",
 			legendTitle = "Legend",
 			basemapUrl,
+			basemapAttribution = BASEMAP_ATTRIBUTION,
+			measureFamily,
+			scope,
+			notApplied,
+			measureKind,
+			symbol,
+			underlay,
+			layered,
+			notReportedLabel,
+			onAreaClick,
 		},
 		ref,
 	) => {
@@ -131,6 +470,10 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 		const [currentLegendTitle, setCurrentLegendTitle] = useState(legendTitle);
 		const [currentLegendMaxColor, setCurrentLegendMaxColor] =
 			useState(legendMaxColor);
+		const [currentFamily, setCurrentFamily] = useState<
+			MeasureFamily | undefined
+		>(measureFamily);
+		const [mapState, setMapState] = useState<MapStateResult | null>(null);
 
 		useEffect(() => {
 			if (!id) {
@@ -139,6 +482,10 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 				);
 			}
 		}, [id]);
+
+		useEffect(() => {
+			setCurrentFamily(measureFamily);
+		}, [measureFamily]);
 
 		const componentId = (id || generatedId) as string;
 
@@ -153,13 +500,14 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 			setLegendMaxColor: (newColor: string) => {
 				setCurrentLegendMaxColor(newColor);
 			},
+			setMeasureFamily: (family: MeasureFamily | undefined) => {
+				setCurrentFamily(family);
+			},
 		}));
 
 		const [isClient, setIsClient] = useState(false);
 		const [isLeafletLoaded, setLeafletLoaded] = useState(false);
 		const [isMapRendered, setIsMapRendered] = useState(false);
-		const [minTotal, setMinTotal] = useState(0);
-		const [maxTotal, setMaxTotal] = useState(0);
 
 		const mapRef = useRef<any>(null);
 
@@ -228,35 +576,73 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 					return;
 				}
 
-				const shaded = dataSource
-					.filter(hasValue)
-					.map((region) => region.total);
-				const minVal = shaded.length ? Math.min(...shaded) : 0;
-				const maxVal = shaded.length ? Math.max(...shaded) : 0;
-
-				setMinTotal(minVal);
-				setMaxTotal(maxVal);
-
-				const newData = dataSource.map((region) => ({
-					...region,
-					colorPercentage: hasValue(region)
-						? getOpacityForRange(region.total, minVal, maxVal)
-						: 0,
-				}));
-
-				setUpdatedDataSource(newData);
+				// One resolver for every map state, class and marker.
+				const resolved = layered
+					? resolveLayeredMapState(
+							dataSource.map(toCell),
+							dataSource.map((a, i) => ({
+								areaId: String(i),
+								parts: a.parts ?? [],
+							})),
+							{
+								family: currentFamily ?? "people",
+								scope: scope ?? DEFAULT_SCOPE,
+								notApplied,
+								barsFamily: layered.barsFamily,
+							},
+						)
+					: resolveMapState(dataSource.map(toCell), {
+							family: currentFamily ?? "people",
+							scope: scope ?? DEFAULT_SCOPE,
+							notApplied,
+							symbol: symbol ?? defaultSymbolFor(measureKind ?? "count"),
+							underlay: underlay
+								? {
+										...underlay,
+										areaKm2: new Map(
+											dataSource.flatMap((a, i) =>
+												a.areaKm2 ? [[String(i), a.areaKm2] as const] : [],
+											),
+										),
+									}
+								: undefined,
+						});
+				setMapState(resolved);
+				setUpdatedDataSource(dataSource);
+				const classCount = Math.max(resolved.legend.classes.length, 1);
 
 				setTimeout(() => {
 					if (!mapRef.current) {
 						console.log("Creating new Leaflet map...");
-						mapRef.current = L.map(componentId, { preferCanvas: true });
-						if (basemapUrl) {
-							L.tileLayer(basemapUrl, { maxZoom: 20 }).addTo(mapRef.current);
+						// SVG renderer: the state patterns are SVG fills.
+						const tiles = isSelfHostedTileUrl(
+							basemapUrl,
+							window.location?.origin,
+						)
+							? basemapUrl
+							: undefined;
+						if (basemapUrl && !tiles) {
+							console.warn(
+								"MapChart: basemap ignored, not on the DELTA origin (SEC-20)",
+							);
+						}
+						// The attribution control is shown exactly when a basemap is
+						// drawn, and it keeps the data credit (TR-166).
+						mapRef.current = L.map(componentId, {
+							preferCanvas: false,
+							attributionControl: !!tiles,
+						});
+						if (tiles) {
+							mapRef.current.attributionControl?.setPrefix(false);
+							L.tileLayer(tiles, {
+								maxZoom: 20,
+								attribution: basemapAttribution,
+							}).addTo(mapRef.current);
 						}
 					} else {
 						console.log("Clearing previous layers...");
 						mapRef.current.eachLayer((layer: any) => {
-							if (layer instanceof L.GeoJSON) {
+							if (layer instanceof L.GeoJSON || layer.options?.deltaSymbol) {
 								mapRef.current.removeLayer(layer);
 							}
 						});
@@ -264,39 +650,22 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 
 					const geoJsonLayers: any[] = [];
 
-					newData.forEach((region: any) => {
+					dataSource.forEach((region, index) => {
 						try {
 							if (!region.geojson) {
-								console.warn(`⚠️ Skipping invalid GeoJSON:`, region);
+								console.warn(`Skipping invalid GeoJSON:`, region);
 								return;
 							}
+							const area = resolved.areas[index];
 
 							const geojsonLayer = L.geoJSON(region.geojson, {
 								style: () =>
-									isZeroConfirmed(region)
-										? {
-												color: currentLegendMaxColor,
-												fillColor: "#ffffff",
-												weight: 1.2,
-												opacity: 1,
-												dashArray: "4 3",
-												fillOpacity: 1,
-											}
-										: region.valueState && isNoData(region)
-											? {
-													color: "#8a929c",
-													fillColor: NO_DATA_FILL,
-													weight: 1,
-													opacity: 1,
-													fillOpacity: 0.7,
-												}
-											: {
-													color: currentLegendMaxColor,
-													fillColor: currentLegendMaxColor,
-													weight: 1.2,
-													opacity: 1,
-													fillOpacity: region.colorPercentage,
-												},
+									areaStyle(
+										area,
+										currentLegendMaxColor,
+										classCount,
+										currentFamily,
+									),
 							});
 
 							if (geojsonLayer.getPopup()) {
@@ -304,24 +673,68 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 							}
 
 							geojsonLayer.bindPopup(
-								`
-                <div style="
-                  max-width: 300px; 
-                  padding: 10px; 
-                  font-size: 1.2em; 
-                  text-align: left;">
-                  <strong style="font-size: 1.2em; display: block;">${region.name}</strong>
-                  ${region.valueState || region.total > 0 ? `<p>${region?.description || ""}</p>` : ""}
-                </div>
-              `,
+								popupHtml(ctx, region, area, notReportedLabel),
 							);
+							if (onAreaClick) {
+								geojsonLayer.on("click", () => onAreaClick(index, region));
+							}
 
 							geojsonLayer.addTo(mapRef.current);
 							geoJsonLayers.push(geojsonLayer);
+
+							if (area.symbol && resolved.legend.symbols) {
+								// The symbol stands on a point inside the area; the bounds
+								// centre is only a fallback when the screen sent none.
+								const at = region.labelPoint
+									? L.latLng(region.labelPoint[1], region.labelPoint[0])
+									: geojsonLayer.getBounds().getCenter();
+								const fill = resolved.legend.symbols.color;
+								let icon;
+								if (area.symbol.kind === "bubble") {
+									const outline = area.quality.plausibility
+										? PLAUSIBILITY_MARKER.stroke
+										: "none";
+									const b = bubbleSvg(
+										bubbleRadiusPx(area.symbol.areaRatio),
+										fill,
+										outline,
+										area.symbol.ring,
+										area.symbol.outlier,
+									);
+									icon = L.divIcon({
+										className: "",
+										html: b.html,
+										iconSize: [b.size, b.size],
+										iconAnchor: [b.size / 2, b.size / 2],
+									});
+								} else {
+									const b = barsSvg(area.symbol.bars, fill, 40);
+									icon = L.divIcon({
+										className: "",
+										html: b.html,
+										iconSize: [b.width, b.height],
+										iconAnchor: [b.width / 2, b.height],
+									});
+								}
+								const marker = L.marker(at, {
+									icon,
+									interactive: true,
+									keyboard: false,
+									deltaSymbol: true,
+								});
+								marker.bindPopup(
+									popupHtml(ctx, region, area, notReportedLabel),
+								);
+								if (onAreaClick) {
+									marker.on("click", () => onAreaClick(index, region));
+								}
+								marker.addTo(mapRef.current);
+							}
 						} catch (error) {
 							console.error("Error parsing GeoJSON:", error);
 						}
 					});
+					ensurePatternDefs(mapRef.current);
 
 					setTimeout(() => {
 						adjustZoomBasedOnDistance(mapRef.current, geoJsonLayers);
@@ -329,13 +742,6 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 						setTimeout(() => {
 							makeLegendDraggable();
 						}, 1000);
-
-						const attributionElement = document.querySelector(
-							".leaflet-control-attribution.leaflet-control a",
-						);
-						if (attributionElement) {
-							attributionElement.remove();
-						}
 					}, 500);
 				}, 500);
 			},
@@ -343,8 +749,18 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 				isClient,
 				isLeafletLoaded,
 				currentLegendMaxColor,
+				currentFamily,
 				basemapUrl,
+				basemapAttribution,
 				componentId,
+				scope,
+				notApplied,
+				measureKind,
+				symbol,
+				underlay,
+				layered,
+				notReportedLabel,
+				onAreaClick,
 			],
 		);
 
@@ -352,155 +768,422 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 			updateMapLayers(dataSource);
 		}, [dataSource, updateMapLayers]);
 
-		// Compute unique legend items based on actual data
-		const uniqueOpacities = Array.from(
-			new Set(
-				updatedDataSource
-					.map((item) => item.colorPercentage)
-					.filter(
-						(opacity): opacity is number =>
-							opacity !== undefined && opacity > 0,
-					),
-			),
-		).sort((a, b) => a - b);
+		const legend = mapState?.legend;
+		const showLegend =
+			isMapRendered &&
+			!!legend &&
+			(legend.mode !== "empty" || legend.states.length > 0);
 
-		const hasNoData = updatedDataSource.some(isNoData);
-		const hasZeroConfirmed = updatedDataSource.some(isZeroConfirmed);
-		const usesStates = updatedDataSource.some((item) => item.valueState);
+		const legendRow = {
+			marginBottom: "5px",
+			display: "flex",
+			alignItems: "center",
+		} as const;
 
 		return (
 			<div style={{ position: "relative" }}>
+				{mapState && (scope || mapState.notApplied.length > 0) && (
+					<div style={{ fontSize: "13px", marginBottom: "6px" }}>
+						{scope && (
+							<p style={{ margin: "0 0 4px 0" }}>{mapState.scope.text}</p>
+						)}
+						{mapState.notApplied.map((strip) => (
+							<p
+								key={strip.filter}
+								role="note"
+								style={{
+									margin: "0 0 4px 0",
+									padding: "4px 8px",
+									borderLeft: `${dataTokens.map.notAppliedNote.borderWidth}px solid ${dataTokens.map.notAppliedNote.border}`,
+									background: dataTokens.map.notAppliedNote.background,
+								}}
+							>
+								{strip.text}
+							</p>
+						))}
+					</div>
+				)}
 				<div
 					id={componentId}
 					style={{
 						height: "500px",
 						width: "100%",
 						zIndex: "0",
-						backgroundColor: "#f3f4f6",
+						// One canvas with the geoportal (Alex, 2026-10-16): grey, so the
+						// country has context before the basemap loads (design review R08).
+						backgroundColor: dataTokens.map.canvas.background,
 					}}
 				></div>
 
-				{isMapRendered &&
-					(hasNoData || hasZeroConfirmed || uniqueOpacities.length > 0) && (
-						<div
-							id={`${componentId}_map-legend`}
-							style={{
-								position: "absolute",
-								bottom: "10px",
-								right: "10px",
-								background: "white",
-								padding: "10px",
-								borderRadius: "5px",
-								boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.3)",
-								fontSize: "14px",
-								lineHeight: "1.5",
-								whiteSpace: "nowrap",
-							}}
-						>
-							<strong>{currentLegendTitle}</strong>
-							<ul
-								style={{ listStyle: "none", padding: 0, margin: "5px 0 0 0" }}
-							>
-								{hasNoData && (
-									<li
-										style={{
-											marginBottom: "5px",
-											display: "flex",
-											alignItems: "center",
-										}}
-									>
-										<span
-											style={{
-												display: "inline-flex",
-												width: "14px",
-												height: "14px",
-												justifyContent: "center",
-												alignItems: "center",
-												border: `1px solid ${currentLegendMaxColor}`,
-												marginRight: "8px",
-											}}
-										>
-											<div
-												style={{
-													width: "12px",
-													height: "12px",
-													backgroundColor: usesStates
-														? NO_DATA_FILL
-														: "#ffffff",
-												}}
-											></div>
-										</span>
-										{ctx.t({ code: "common.no_data", msg: "No data" })}
-									</li>
-								)}
-								{hasZeroConfirmed && (
-									<li
-										style={{
-											marginBottom: "5px",
-											display: "flex",
-											alignItems: "center",
-										}}
-									>
-										<span
-											style={{
-												display: "inline-flex",
-												width: "14px",
-												height: "14px",
-												border: `1px dashed ${currentLegendMaxColor}`,
-												backgroundColor: "#ffffff",
-												marginRight: "8px",
-											}}
-										></span>
-										{ctx.t({
-											code: "analysis.zero_confirmed",
-											msg: "Zero, confirmed",
-										})}
-									</li>
-								)}
-								{uniqueOpacities.map((opacity, index) => {
-									// Calculate the corresponding total value for this opacity
-									const normalizedOpacity = (opacity - 0.1) / 0.9; // Reverse the opacity calculation
-									const totalValue =
-										minTotal + normalizedOpacity * (maxTotal - minTotal);
+				{showLegend && legend && (
+					<div
+						id={`${componentId}_map-legend`}
+						style={{
+							position: "absolute",
+							bottom: "10px",
+							right: "10px",
+							background: "white",
+							padding: "10px",
+							borderRadius: "5px",
+							boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.3)",
+							fontSize: "14px",
+							lineHeight: "1.5",
+							whiteSpace: "nowrap",
+						}}
+					>
+						<strong>{currentLegendTitle}</strong>
+						<ul style={{ listStyle: "none", padding: 0, margin: "5px 0 0 0" }}>
+							{legend.symbols?.kind === "bubble" &&
+								legend.symbols &&
+								legend.symbols.references.map((r) => {
+									const b = bubbleSvg(
+										bubbleRadiusPx(r.ratio, 14),
+										legend.symbols!.color,
+										"none",
+										null,
+									);
 									return (
-										<li
-											key={index}
-											style={{
-												display: "flex",
-												alignItems: "center",
-												marginBottom: "5px",
-											}}
-										>
+										<li key={`bubble-${r.value}`} style={legendRow}>
 											<span
-												style={{
-													display: "inline-flex",
-													width: "14px",
-													height: "14px",
-													justifyContent: "center",
-													alignItems: "center",
-													border: `1px solid ${currentLegendMaxColor}`,
-													marginRight: "8px",
-												}}
-											>
-												<div
-													style={{
-														width: "12px",
-														height: "12px",
-														backgroundColor: currentLegendMaxColor,
-														opacity: opacity,
-													}}
-												></div>
-											</span>
-											{`<= ${formatNumberWithoutDecimals(Math.ceil(totalValue))}`}
+												aria-hidden="true"
+												style={{ display: "inline-block", width: 32 }}
+												dangerouslySetInnerHTML={{ __html: b.html }}
+											/>
+											{formatNumberWithoutDecimals(r.value)}
 										</li>
 									);
 								})}
-							</ul>
-						</div>
-					)}
+							{legend.symbols?.kind === "bubble" && legend.symbols && (
+								<li style={{ ...legendRow, whiteSpace: "normal" }}>
+									{ctx.t({
+										code: "analysis.map_bubble_ring",
+										desc: "Map legend note in bubble mode explaining the outer ring.",
+										msg: "Ring: share of records that report this figure",
+									})}
+								</li>
+							)}
+							{legend.symbols?.kind === "bubble" &&
+								legend.symbols?.outliers.map((o) => (
+									<li
+										key={`outlier-${o.areaId}`}
+										style={{ ...legendRow, whiteSpace: "normal" }}
+									>
+										{ctx.t(
+											{
+												code: "analysis.map_bubble_outlier",
+												desc: "Map legend note for an area whose value is above the bubble scale and is drawn at the cap. {value} is the figure.",
+												msg: "Drawn at the cap, above the scale: {value}",
+											},
+											{ value: formatNumberWithoutDecimals(o.value) },
+										)}
+									</li>
+								))}
+							{legend.symbols?.kind === "bars" &&
+								legend.symbols?.parts.map((p, i) => (
+									<li key={`part-${p.key}`} style={legendRow}>
+										<Swatch
+											fill={legend.symbols!.color}
+											opacity={1 - i * 0.3}
+											stroke="#ffffff"
+										/>
+										{p.label}
+									</li>
+								))}
+							{legend.symbols?.kind === "bars" && legend.symbols && (
+								<li style={{ ...legendRow, whiteSpace: "normal" }}>
+									{ctx.t(
+										{
+											code: "analysis.map_bars_scale",
+											desc: "Map legend note in bars mode: the longest bar and what a dashed slot means. {value} is the largest figure.",
+											msg: "Longest bar: {value}. A dashed slot is not reported.",
+										},
+										{
+											value: formatNumberWithoutDecimals(
+												legend.symbols.scaleMax,
+											),
+										},
+									)}
+								</li>
+							)}
+							{legend.symbols !== null && legend.symbols?.maxFlagged && (
+								<li style={{ ...legendRow, whiteSpace: "normal" }}>
+									{ctx.t({
+										code: "analysis.map_symbol_max_flagged",
+										desc: "Map legend note when the largest bubble or bar includes figures flagged for review.",
+										msg: "Largest symbol includes figures flagged for review",
+									})}
+								</li>
+							)}
+							{legend.underlay && (
+								<li style={{ ...legendRow, fontWeight: 600 }}>
+									{legend.underlay.kind === "density"
+										? ctx.t({
+												code: "analysis.map_underlay_density",
+												desc: "Map legend heading for area shading under bubbles or bars: the figure per 1,000 km² of land area.",
+												msg: "Shading: per 1,000 km² of land area",
+											})
+										: ctx.t({
+												code: "analysis.map_underlay_coverage",
+												desc: "Map legend heading for area shading under bubbles or bars: the share of records that report the figure.",
+												msg: "Shading: % of records reporting",
+											})}
+								</li>
+							)}
+							{legend.underlay?.classes.map((c) => (
+								<li key={`underlay-${c.index}`} style={legendRow}>
+									<Swatch
+										fill={c.color}
+										opacity={1}
+										stroke={dataTokens.map.areaBoundary.stroke}
+									/>
+									{c.lower === c.upper
+										? formatNumberWithoutDecimals(c.lower)
+										: `${formatNumberWithoutDecimals(c.lower)} to ${formatNumberWithoutDecimals(c.upper)}`}
+								</li>
+							))}
+							{legend.underlay && legend.underlay.areasWithout > 0 && (
+								<li style={{ ...legendRow, whiteSpace: "normal" }}>
+									{ctx.t(
+										{
+											code: "analysis.map_underlay_without",
+											desc: "Map legend note: areas with a bubble or bar but no shading value, for example no land area recorded. {count} is the number of areas.",
+											msg: "{count} areas have no shading value",
+										},
+										{ count: legend.underlay.areasWithout },
+									)}
+								</li>
+							)}
+							{legend.mode === "classes" &&
+								legend.classes.map((c) => (
+									<li key={`class-${c.index}`} style={legendRow}>
+										<Swatch
+											fill={currentFamily ? c.color : currentLegendMaxColor}
+											opacity={
+												currentFamily
+													? 1
+													: CLASS_OPACITY[
+															rampIndex(c.index, legend.classes.length)
+														]
+											}
+											stroke={
+												currentFamily
+													? dataTokens.map.areaBoundary.stroke
+													: currentLegendMaxColor
+											}
+										/>
+										{c.lower === c.upper
+											? formatNumberWithoutDecimals(c.upper)
+											: `${formatNumberWithoutDecimals(c.lower)} to ${formatNumberWithoutDecimals(c.upper)}`}
+									</li>
+								))}
+							{legend.mode === "single_tone" && legend.singleTone && (
+								<li style={{ ...legendRow, whiteSpace: "normal" }}>
+									<Swatch
+										fill={
+											currentFamily
+												? legend.singleTone.color
+												: currentLegendMaxColor
+										}
+										opacity={currentFamily ? 1 : CLASS_OPACITY[3]}
+										stroke={
+											currentFamily
+												? dataTokens.map.areaBoundary.stroke
+												: currentLegendMaxColor
+										}
+									/>
+									{legend.singleTone.reason === "too_few_areas"
+										? ctx.t(
+												{
+													code: "analysis.map_single_tone_few_areas",
+													desc: "Legend note when too few areas report a value to draw classes. {n} is the number of areas with a value, {min} the number needed.",
+													msg: "One tone: only {n} areas reported a value ({min} needed for classes)",
+												},
+												{
+													n: legend.singleTone.areasShaded,
+													min: legend.singleTone.minimum,
+												},
+											)
+										: ctx.t({
+												code: "analysis.map_single_tone_one_value",
+												msg: "One tone: every reporting area has the same value",
+											})}
+								</li>
+							)}
+							{legend.states.map(({ state }) => {
+								const enc = STATE_ENCODING[state];
+								return (
+									<li key={state} style={legendRow}>
+										<Swatch
+											fill={enc.fill}
+											stroke={enc.stroke}
+											dashArray={enc.dashArray}
+											strokeWidth={enc.strokeWidth}
+											pattern={enc.pattern}
+										/>
+										{stateLabel(ctx, state, notReportedLabel)}
+									</li>
+								);
+							})}
+							{legend.flaggedAreas > 0 && (
+								<li style={legendRow}>
+									<Swatch
+										fill="#ffffff"
+										stroke={PLAUSIBILITY_MARKER.stroke}
+										strokeWidth={PLAUSIBILITY_MARKER.strokeWidth}
+									/>
+									{ctx.t({
+										code: "analysis.map_flagged_marker",
+										msg: "Includes disaster impacts flagged for review",
+									})}
+								</li>
+							)}
+							{legend.provisional && (
+								<li style={legendRow}>
+									{ctx.t({
+										code: "analysis.provisional_not_for_citation",
+										msg: "Provisional",
+									})}
+								</li>
+							)}
+						</ul>
+					</div>
+				)}
 			</div>
 		);
 	},
 );
+
+function stateLabel(
+	ctx: ViewContext,
+	state: Exclude<MapArea["state"], "shaded">,
+	notReportedLabel?: string,
+): string {
+	if (state === "not_reported" && notReportedLabel) return notReportedLabel;
+	switch (state) {
+		case "zero_confirmed":
+			return ctx.t({ code: "analysis.zero_confirmed", msg: "Zero, confirmed" });
+		case "not_reported":
+			return ctx.t({ code: "common.no_data", msg: "No data" });
+		case "insufficient_reporting":
+			return ctx.t({
+				code: "analysis.insufficient_reporting",
+				msg: "Insufficient reporting",
+			});
+		case "not_applicable":
+			return ctx.t({
+				code: "analysis.not_applicable",
+				msg: "Not applicable",
+			});
+		case "suppressed":
+			return ctx.t({ code: "analysis.suppressed", msg: "Suppressed" });
+	}
+}
+
+/** Popup: the screen's description, then the resolver's tooltip parts. */
+function popupHtml(
+	ctx: ViewContext,
+	region: MapChartArea,
+	area: MapArea,
+	notReportedLabel?: string,
+): string {
+	const lines: string[] = [];
+	if (region.valueState || (region.total !== null && region.total > 0)) {
+		if (region.description) lines.push(escapeHtml(region.description));
+	}
+	if (area.state !== "shaded" && !region.valueState) {
+		lines.push(escapeHtml(stateLabel(ctx, area.state, notReportedLabel)));
+	}
+	// PD-04:619: the legend names the state; the tooltip gives the reason.
+	if (area.state === "insufficient_reporting") {
+		lines.push(
+			escapeHtml(
+				area.reason === "coverage_below_v5" ||
+					area.reason === "too_few_confirm_zero"
+					? ctx.t({
+							code: "analysis.too_few_confirm_zero",
+							msg: "Too few records confirm zero",
+						})
+					: ctx.t({
+							code: "analysis.rests_on_too_little_reporting",
+							msg: "Rests on too little reporting",
+						}),
+			),
+		);
+	}
+	const t = area.tooltip;
+	if (region.recordsTotal !== undefined && t.reportedBy.of > 0) {
+		lines.push(
+			escapeHtml(
+				ctx.t(
+					{
+						code: "analysis.reported_by_n_of_n",
+						desc: "Map tooltip. {n} records reported the measure out of {total} in scope.",
+						msg: "Reported by {n} of {total} records",
+					},
+					{ n: t.reportedBy.n, total: t.reportedBy.of },
+				),
+			),
+		);
+	}
+	if (area.symbol?.kind === "bars") {
+		for (const b of area.symbol.bars) {
+			const shown =
+				b.valueState === "reported" && b.value !== null
+					? formatNumberWithoutDecimals(b.value)
+					: stateLabel(
+							ctx,
+							b.valueState === "zero_confirmed" ||
+								b.valueState === "insufficient_reporting" ||
+								b.valueState === "not_applicable" ||
+								b.valueState === "suppressed"
+								? b.valueState
+								: "not_reported",
+						);
+			lines.push(escapeHtml(`${b.label}: ${shown}`));
+		}
+	}
+	if (area.quality.plausibility) {
+		lines.push(
+			escapeHtml(
+				ctx.t(
+					{
+						code: "analysis.map_flagged_records",
+						desc: "Map tooltip caveat. {n} is the number of disaster impacts flagged for review.",
+						msg: "Caveat: includes {n} disaster impact(s) flagged for review",
+					},
+					{ n: area.quality.plausibility.flaggedRecords },
+				),
+			),
+		);
+	}
+	if (t.precision) lines.push(escapeHtml(`Precision: ${t.precision}`));
+	if (t.gradeDistribution) {
+		lines.push(
+			escapeHtml(
+				`Attribution: ${t.gradeDistribution.map((g) => `ATT-${g.grade} ${g.records}`).join(", ")}`,
+			),
+		);
+	}
+	if (area.quality.provisional) {
+		lines.push(
+			escapeHtml(
+				ctx.t({
+					code: "analysis.provisional_not_for_citation",
+					msg: "Provisional",
+				}),
+			),
+		);
+	}
+	return `
+                <div style="
+                  max-width: 300px; 
+                  padding: 10px; 
+                  font-size: 1.2em; 
+                  text-align: left;">
+                  <strong style="font-size: 1.2em; display: block;">${region.name}</strong>
+                  ${lines.map((l) => `<p>${l}</p>`).join("")}
+                </div>
+              `;
+}
 
 export default MapChart;
