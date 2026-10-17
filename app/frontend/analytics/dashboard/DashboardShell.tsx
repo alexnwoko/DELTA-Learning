@@ -42,6 +42,10 @@ export interface DashboardShellProps {
 	provisional: boolean;
 	/** The left hazard rail (mockup option A); beside everything below the notices. */
 	rail?: React.ReactNode;
+	/** The Sendai Framework Monitoring section, the same on every view (FR-AN-024). */
+	sendai?: React.ReactNode;
+	/** Toggle on: only the Sendai section shows; the view buttons are disabled (FR-AN-022, 023). */
+	sfmOn?: boolean;
 	/** The shared filter bar (GeoFilterBar, owned by Geoportal). */
 	filterBar?: React.ReactNode;
 	/** Map M0, drawn through MapChart. */
@@ -67,6 +71,8 @@ export function DashboardShell({
 	summary,
 	provisional,
 	rail,
+	sendai,
+	sfmOn = false,
 	filterBar,
 	map,
 	panels,
@@ -122,6 +128,7 @@ export function DashboardShell({
 			<Tabs
 				selectedKey={view}
 				onSelectionChange={(key: Key) => onViewChange(key as DashboardView)}
+				isDisabled={sfmOn}
 				className="flex min-w-0 flex-1 flex-col gap-4"
 			>
 				<TabList
@@ -135,13 +142,24 @@ export function DashboardShell({
 						</Tab>
 					))}
 				</TabList>
+				{sfmOn && (
+					<p className="m-0 text-sm text-brand-text-muted" data-print="hide">
+						{t({
+							code: "dashboard.sfm_tabs_off",
+							msg: "The Sendai view reads disaster records of all dimensions; the dimension switch applies when the view is off.",
+						})}
+					</p>
+				)}
+				{/* Filters and the Sendai section are the same on every view. */}
+				{filterBar}
+				{sendai}
 				{/* Only the selected panel mounts; the others hold nothing. */}
-				{DASHBOARD_VIEWS.map((v) => (
+				{!sfmOn &&
+					DASHBOARD_VIEWS.map((v) => (
 					<TabPanel key={v} id={v} className="flex flex-col gap-4 outline-none">
 						<h2 className="sr-only print:not-sr-only print:m-0 print:text-xl print:font-semibold">
 							{viewLabel(ctx, v)}
 						</h2>
-						{filterBar}
 						{map && (
 							<div className="min-h-[260px] overflow-hidden rounded border border-brand-border">{map}</div>
 						)}

@@ -63,3 +63,17 @@ export function legacyAnalyticsTarget(page: string, params: URLSearchParams): st
 export function toggleDivision(query: DeltaQuery, divisionId: string): DeltaQuery {
 	return withPlace(query, query.where.geo?.divisionId === divisionId ? null : { divisionId });
 }
+
+/** The Sendai Framework Monitoring toggle: a page parameter, outside delta.query/1 (FR-AN-021). */
+export const SFM_PARAM = "sfm";
+
+export function sfmFromSearch(params: URLSearchParams): boolean {
+	return params.get(SFM_PARAM) === "1";
+}
+
+/** A view's URL with the Sendai toggle kept as it is. */
+export function searchFor(query: DeltaQuery, view: DashboardView, sfm: boolean): URLSearchParams {
+	const params = searchForView(query, view);
+	if (sfm) params.set(SFM_PARAM, "1");
+	return params;
+}
