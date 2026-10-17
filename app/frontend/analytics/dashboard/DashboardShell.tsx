@@ -40,6 +40,8 @@ export interface DashboardShellProps {
 	/** One line of scope and basis, e.g. "Angola · 2015 to 2024 · Basis: published". */
 	summary: string;
 	provisional: boolean;
+	/** The left hazard rail (mockup option A); beside everything below the notices. */
+	rail?: React.ReactNode;
 	/** The shared filter bar (GeoFilterBar, owned by Geoportal). */
 	filterBar?: React.ReactNode;
 	/** Map M0, drawn through MapChart. */
@@ -64,6 +66,7 @@ export function DashboardShell({
 	notice,
 	summary,
 	provisional,
+	rail,
 	filterBar,
 	map,
 	panels,
@@ -113,10 +116,13 @@ export function DashboardShell({
 
 			{notice}
 
+			{/* The rail sits left of the views on wide screens, above them on phones. */}
+			<div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+			{rail}
 			<Tabs
 				selectedKey={view}
 				onSelectionChange={(key: Key) => onViewChange(key as DashboardView)}
-				className="flex flex-col gap-4"
+				className="flex min-w-0 flex-1 flex-col gap-4"
 			>
 				<TabList
 					aria-label={t({ code: "dashboard.view", msg: "What to analyse" })}
@@ -143,6 +149,7 @@ export function DashboardShell({
 					</TabPanel>
 				))}
 			</Tabs>
+			</div>
 
 			{about}
 		</div>

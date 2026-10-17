@@ -3,8 +3,8 @@
 // definitions written by Frontend; Analytics owns them and may replace
 // them. Pure module, safe on server and client.
 //
-// - Hazardous events and Disaster events: HIPs type chips in their identity
-//   colours (NFR-094), no measure select (counts of events).
+// - Hazard types: the left rail on every view (HazardRail), not chips.
+// - Hazardous events and Disaster events: no measure select (event counts).
 // - Disaster impact: no chips. The panels show every human effect; the
 //   measure select picks the one that ranks and maps (chosenMeasure). The
 //   loaders do not filter by humanEffects, so effect chips would look like
@@ -14,7 +14,6 @@ import type { HazardTree } from "~/frontend/geoportal/GeoFilterBar";
 import type { ChipSet } from "~/frontend/geoportal/filterBarState";
 import { IMPACT_HEADLINE_MEASURES } from "~/utils/dashboard/impactPanels";
 import { geoMeasureInfo, type GeoLabel } from "~/utils/geoMeasures";
-import { hazardColourVar } from "~/utils/hazardIdentity";
 import type { DashboardView } from "./views";
 
 /** The sub-category buttons of a view. */
@@ -22,19 +21,8 @@ export function chipsFor(
 	view: DashboardView,
 	opts: { hazardTree: HazardTree | null; sectors?: { id: string; label: string }[] },
 ): ChipSet | null {
-	if (view === "hazardous_event" || view === "disaster_event") {
-		if (!opts.hazardTree?.types.length) return null;
-		return {
-			kind: "hip_type",
-			options: opts.hazardTree.types.map((ty) => ({
-				id: ty.id,
-				label: ty.name,
-				colorToken: hazardColourVar(ty.id),
-				// The tree counts records, not events: no number on an event chip.
-				count: null,
-			})),
-		};
-	}
+	// Hazard types are chosen on the left rail (HazardRail) on every view.
+	if (view === "hazardous_event" || view === "disaster_event") return null;
 	if (view === "disaster_impact") return null;
 	return opts.sectors?.length ? { kind: "sector", options: opts.sectors } : null;
 }
