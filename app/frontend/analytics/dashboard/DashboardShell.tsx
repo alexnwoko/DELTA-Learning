@@ -45,6 +45,10 @@ export interface DashboardShellProps {
 	/** Map M0, drawn through MapChart. */
 	map?: React.ReactNode;
 	panels: DashboardPanel[];
+	/** The Basis switch, for reviewers with ValidateData only. */
+	basisControl?: React.ReactNode;
+	/** One notice above the views, e.g. no published records yet (G-00). */
+	notice?: React.ReactNode;
 	/** Page-level CSV download; the route passes it to signed-in readers only (D6). */
 	download?: React.ReactNode;
 	/** "About the data": disclaimer, partners and contact. */
@@ -56,6 +60,8 @@ export function DashboardShell({
 	view,
 	onViewChange,
 	reviewHref,
+	basisControl,
+	notice,
 	summary,
 	provisional,
 	filterBar,
@@ -78,6 +84,7 @@ export function DashboardShell({
 					<p className="m-0 text-sm text-brand-text-muted">{summary}</p>
 				</div>
 				<div className="flex flex-wrap items-center gap-2">
+					{basisControl}
 					{reviewHref && (
 						<a
 							href={reviewHref}
@@ -103,6 +110,8 @@ export function DashboardShell({
 					})}
 				</p>
 			)}
+
+			{notice}
 
 			<Tabs
 				selectedKey={view}

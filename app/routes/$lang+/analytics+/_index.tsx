@@ -15,6 +15,7 @@ import {
 	getImpactPanels5to16,
 } from "~/backend.server/models/analytics/dashboard/impactPanels5to16.server";
 import { AboutTheData } from "~/frontend/analytics/dashboard/AboutTheData";
+import { BasisSwitch, PublishedBasisNotice, type ApprovalCounts } from "~/frontend/analytics/dashboard/BasisControls";
 import { DashboardDownload } from "~/frontend/analytics/dashboard/DashboardDownload";
 import { DashboardShell, viewLabel } from "~/frontend/analytics/dashboard/DashboardShell";
 import { searchForView, viewFromSearch, type DashboardView } from "~/frontend/analytics/dashboard/views";
@@ -84,6 +85,9 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request }:
 		events,
 		hazardEvents,
 		sectors,
+		// Records in scope by approval state, for the G-00 notice; null until
+		// the Analytics count loader lands.
+		approvalCounts: null as ApprovalCounts | null,
 		canReview,
 		canOpenReviewQueue,
 		// The page-level CSV is for signed-in readers (ruling D6).
@@ -108,6 +112,10 @@ export default function AnalysisDashboard() {
 
 	const setView = (next: DashboardView) =>
 		setSearchParams(searchForView(query, next), { preventScrollReset: true });
+	const setBasis = (basis: DeltaQuery["scope"]["basis"]) =>
+		setSearchParams(searchForView({ ...query, scope: { ...query.scope, basis } }, view), {
+			preventScrollReset: true,
+		});
 
 	// Until the shared filter bar arrives, the line names the place and basis.
 	const summary =
@@ -137,6 +145,19 @@ export default function AnalysisDashboard() {
 				view={view}
 				onViewChange={setView}
 				reviewHref={ld.canOpenReviewQueue ? ctx.url("/analytics/plausibility-review") : undefined}
+				basisControl={
+					ld.canReview ? <BasisSwitch ctx={ctx} basis={query.scope.basis} onChange={setBasis} /> : undefined
+				}
+				notice={
+					query.scope.basis === "published" ? (
+						<PublishedBasisNotice
+							ctx={ctx}
+							counts={ld.approvalCounts}
+							canReview={ld.canReview}
+							onShowUnpublished={() => setBasis("provisional")}
+						/>
+					) : undefined
+				}
 				summary={summary}
 				provisional={ld.provisional}
 				map={
