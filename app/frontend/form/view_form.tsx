@@ -52,7 +52,7 @@ export function FormView(props: FormViewProps) {
 		navigation.state === "submitting" || navigation.state === "loading";
 	let [intClickedCtr, setIntClickedCtr] = useState(0);
 	// Ask before leaving with unsaved edits (TR-251).
-	const unsavedBlocker = useUnsavedChangesGuard(inputsRef);
+	const { blocker: unsavedBlocker } = useUnsavedChangesGuard(inputsRef);
 
 	useEffect(() => {
 		const formElement = document.querySelector<HTMLFormElement>(".dts-form");
