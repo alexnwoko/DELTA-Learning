@@ -5,6 +5,7 @@
 // in the sector or below it. Losses and disruption read their own flags;
 // they are never merged with damage. Money is gap G-06.
 
+import { cachedDashboard } from "~/backend.server/models/analytics/dashboard/dashboardCache.server";
 import { sql, type SQL } from "drizzle-orm";
 import {
 	humanEffectsFilteredRecords,
@@ -100,7 +101,7 @@ function sectorFilter(query: DeltaQuery): SQL {
 		: sql``;
 }
 
-export async function getSectorPanels1to7(
+async function computeGetSectorPanels1to7(
 	query: DeltaQuery,
 	ctx: ImpactPanelsContext,
 ): Promise<SectorPanels1to7> {
@@ -434,4 +435,14 @@ export async function getSectorPanels1to7(
 			),
 		},
 	};
+}
+
+/** getSectorPanels1to7, reused for DASHBOARD_CACHE_TTL_MS per tenant, audience and query. */
+export function getSectorPanels1to7(
+	query: DeltaQuery,
+	ctx: ImpactPanelsContext,
+): Promise<SectorPanels1to7> {
+	return cachedDashboard("getSectorPanels1to7", [ctx, query], () =>
+		computeGetSectorPanels1to7(query, ctx),
+	);
 }

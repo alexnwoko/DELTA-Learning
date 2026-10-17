@@ -3,6 +3,7 @@
 // panels 1 to 4: one delta.query/1 object in, every figure a cell with its
 // value state and record counts (TR-076), never a bare 0.
 
+import { cachedDashboard } from "~/backend.server/models/analytics/dashboard/dashboardCache.server";
 import { sql, type SQL } from "drizzle-orm";
 import { dr } from "~/db.server";
 import {
@@ -223,7 +224,7 @@ const ALL_DSG_DIMS = [
 	"national_poverty_line",
 ];
 
-export async function getImpactPanels5to16(
+async function computeGetImpactPanels5to16(
 	query: DeltaQuery,
 	ctx: ImpactPanelsContext,
 ): Promise<ImpactPanels5to16> {
@@ -800,7 +801,7 @@ export async function getImpactPanels5to16(
  * Every level-1 division is listed, so an area nobody reported reads as not
  * reported, never as absent or 0.
  */
-export async function getImpactMap(
+async function computeGetImpactMap(
 	query: DeltaQuery,
 	ctx: ImpactPanelsContext,
 ): Promise<ImpactMapPayload> {
@@ -905,4 +906,24 @@ export async function levelOneAreas(
 		shapes.map((r) => [r.id as string, r.geojson ?? null]),
 	);
 	return { ids, names, points, shapeBy };
+}
+
+/** getImpactPanels5to16, reused for DASHBOARD_CACHE_TTL_MS per tenant, audience and query. */
+export function getImpactPanels5to16(
+	query: DeltaQuery,
+	ctx: ImpactPanelsContext,
+): Promise<ImpactPanels5to16> {
+	return cachedDashboard("getImpactPanels5to16", [ctx, query], () =>
+		computeGetImpactPanels5to16(query, ctx),
+	);
+}
+
+/** getImpactMap, reused for DASHBOARD_CACHE_TTL_MS per tenant, audience and query. */
+export function getImpactMap(
+	query: DeltaQuery,
+	ctx: ImpactPanelsContext,
+): Promise<ImpactMapPayload> {
+	return cachedDashboard("getImpactMap", [ctx, query], () =>
+		computeGetImpactMap(query, ctx),
+	);
 }

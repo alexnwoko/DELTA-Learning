@@ -4,6 +4,7 @@
 // events with a linked record in the division, because events carry no
 // division links of their own (disaster_event_division is empty).
 
+import { cachedDashboard } from "~/backend.server/models/analytics/dashboard/dashboardCache.server";
 import { sql, type SQL } from "drizzle-orm";
 import {
 	humanEffectMeasuresFromRow,
@@ -105,7 +106,7 @@ const zeroRules = (): Record<EventGroupingRule, number> => ({
 	entered: 0,
 });
 
-export async function getEventPanels1to7(
+async function computeGetEventPanels1to7(
 	query: DeltaQuery,
 	ctx: ImpactPanelsContext,
 ): Promise<EventPanels1to7> {
@@ -348,4 +349,14 @@ export async function getEventPanels1to7(
 			),
 		},
 	};
+}
+
+/** getEventPanels1to7, reused for DASHBOARD_CACHE_TTL_MS per tenant, audience and query. */
+export function getEventPanels1to7(
+	query: DeltaQuery,
+	ctx: ImpactPanelsContext,
+): Promise<EventPanels1to7> {
+	return cachedDashboard("getEventPanels1to7", [ctx, query], () =>
+		computeGetEventPanels1to7(query, ctx),
+	);
 }

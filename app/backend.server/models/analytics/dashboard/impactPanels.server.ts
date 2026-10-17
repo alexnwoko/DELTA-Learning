@@ -3,6 +3,7 @@
 // delta.query/1 object and returns every figure as a cell with its value
 // state and record counts (TR-076).
 
+import { cachedDashboard } from "~/backend.server/models/analytics/dashboard/dashboardCache.server";
 import { sql } from "drizzle-orm";
 import { dr } from "~/db.server";
 import {
@@ -116,7 +117,7 @@ function yearRange(rows: GroupedHumanEffects[]): number[] {
 	return Array.from({ length: to - from + 1 }, (_, i) => from + i);
 }
 
-export async function getImpactPanels1to4(
+async function computeGetImpactPanels1to4(
 	query: DeltaQuery,
 	ctx: ImpactPanelsContext,
 ): Promise<ImpactPanels1to4> {
@@ -222,4 +223,14 @@ export async function getImpactPanels1to4(
 			},
 		},
 	};
+}
+
+/** getImpactPanels1to4, reused for DASHBOARD_CACHE_TTL_MS per tenant, audience and query. */
+export function getImpactPanels1to4(
+	query: DeltaQuery,
+	ctx: ImpactPanelsContext,
+): Promise<ImpactPanels1to4> {
+	return cachedDashboard("getImpactPanels1to4", [ctx, query], () =>
+		computeGetImpactPanels1to4(query, ctx),
+	);
 }
