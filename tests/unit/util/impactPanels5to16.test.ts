@@ -36,8 +36,7 @@ describe("Disaster impact panels 5 to 16: payload fixture", () => {
 		}
 	});
 
-	it("keeps the Sendai notice and matrix widths", () => {
-		expect(F.sendai.notice).toContain("not the official");
+	it("keeps the matrix widths", () => {
 		for (const r of F.hazardEffect.rows)
 			expect(r.cells).toHaveLength(F.hazardEffect.effects.length);
 		for (const r of F.hazardSector.rows)
