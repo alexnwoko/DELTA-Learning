@@ -34,6 +34,8 @@ export interface DashboardShellProps {
 	/** Map M0, drawn through MapChart. */
 	map?: React.ReactNode;
 	panels: DashboardPanel[];
+	/** Page-level CSV download; the route passes it to signed-in readers only (D6). */
+	download?: React.ReactNode;
 	/** "About the data": disclaimer, partners and contact. */
 	about?: React.ReactNode;
 }
@@ -47,6 +49,7 @@ export function DashboardShell({
 	filterBar,
 	map,
 	panels,
+	download,
 	about,
 }: DashboardShellProps) {
 	const t = ctx.t;
@@ -62,7 +65,8 @@ export function DashboardShell({
 					</h1>
 					<p className="m-0 text-sm text-brand-text-muted">{summary}</p>
 				</div>
-				<div className="flex items-center gap-2">
+				<div className="flex flex-wrap items-center gap-2">
+					{download}
 					<PrintButton ctx={ctx} />
 				</div>
 			</header>

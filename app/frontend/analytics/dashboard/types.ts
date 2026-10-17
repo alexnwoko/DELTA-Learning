@@ -2,6 +2,7 @@
 // and 3): one panel per question, numbered 1 to 16 per dimension.
 import type React from "react";
 import type { QueryDimension } from "~/utils/deltaQuery";
+import type { PanelExport } from "./panelCell";
 
 /** Why a panel has nothing to draw yet (panels paper, section 6). */
 export interface PanelGap {
@@ -29,6 +30,8 @@ export interface DashboardPanel {
 	gap?: PanelGap | null;
 	/** Draws the panel (normally a ChartFrame). Not called for a gap panel. */
 	render?: () => React.ReactNode;
+	/** The panel's rows and notes, for the page-level CSV. */
+	exportData?: PanelExport;
 }
 
 /** Panels shown by default; the rest wait under "Show more". */

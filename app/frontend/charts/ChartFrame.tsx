@@ -42,7 +42,8 @@ function stateText(row: ChartExportRow): string | null {
 	return STATE_ENCODING[row.valueState].label;
 }
 
-function saveBlob(blob: Blob, fileName: string) {
+/** Saves a file the page made, through a temporary link. */
+export function saveBlob(blob: Blob, fileName: string) {
 	const url = URL.createObjectURL(blob);
 	const link = document.createElement("a");
 	link.href = url;

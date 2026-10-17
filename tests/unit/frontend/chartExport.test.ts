@@ -3,6 +3,7 @@ import {
 	chartCsv,
 	chartFileName,
 	csvCell,
+	dashboardCsv,
 	exportNotes,
 	standaloneChartSvg,
 	type ChartExportMeta,
@@ -129,5 +130,35 @@ describe("standaloneChartSvg", () => {
 		const svg = standaloneChartSvg(chart, { width: 400, height: 200 }, { ...META, title: "<b>x</b> & y" }, ROWS);
 		expect(svg).toContain("&lt;b&gt;x&lt;/b&gt; &amp; y");
 		expect(svg).not.toContain("<b>x</b>");
+	});
+});
+
+describe("dashboardCsv (D1, ruling D6)", () => {
+	const { title: _t, ...meta } = META;
+	const csv = dashboardCsv("Angola · 2015 to 2024 · Basis: published", [
+		{ title: "Deaths by hazard", rows: ROWS, meta },
+		{ title: "Coverage", rows: [{ label: "Reported", value: 235, valueState: "reported", unit: "records" }], meta },
+	]);
+
+	it("opens with the scope line, then a panel column before the chart columns", () => {
+		const [scope, header] = csvRows(csv);
+		expect(scope).toBe("scope,Angola · 2015 to 2024 · Basis: published");
+		expect(header).toBe(
+			"panel,label,series,value,value_state,unit,records_flagged,method,grade,basis,source,scope,notes,title,generated",
+		);
+	});
+
+	it("keeps each row's value state and each panel's title, a missing figure blank", () => {
+		const lines = csvRows(csv).slice(2);
+		expect(lines).toHaveLength(4);
+		expect(lines[2].startsWith("Deaths by hazard,Landslide,,,not_reported,")).toBe(true);
+		expect(lines[3].startsWith("Coverage,Reported,,235,reported,records,")).toBe(true);
+		expect(csv.charCodeAt(0)).toBe(0xfeff);
+	});
+
+	it("matches the single-panel CSV row for row after the panel column", () => {
+		const single = csvRows(chartCsv(ROWS, META)).slice(1);
+		const combined = csvRows(csv).slice(2, 5).map((l) => l.slice("Deaths by hazard,".length));
+		expect(combined).toEqual(single);
 	});
 });

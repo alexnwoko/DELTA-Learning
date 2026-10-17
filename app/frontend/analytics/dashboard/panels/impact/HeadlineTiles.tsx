@@ -8,7 +8,7 @@ import type { ViewContext } from "~/frontend/context";
 import type { HeadlineTile, PanelCell, PanelMeta } from "~/utils/dashboard/impactPanels";
 import { dataTokens } from "~/utils/designTokens.generated";
 import { STATE_ENCODING } from "~/utils/mapState";
-import { cellRow, cellText, coverageText, flaggedText } from "../../panelCell";
+import { cellRow, cellText, coverageText, flaggedText, panelNotes, type PanelExport } from "../../panelCell";
 import { impactMeasureLabel } from "./measureLabels";
 
 const SPARK_W = 120;
@@ -77,6 +77,15 @@ export function Sparkline({ points }: { points: { year: number; cell: PanelCell 
 	);
 }
 
+/** Panel 1's rows and notes, for its frame and the page-level CSV. */
+export function headlineExport(ctx: ViewContext, tiles: HeadlineTile[], meta: PanelMeta): PanelExport {
+	return {
+		rows: tiles.map((tile) => cellRow(impactMeasureLabel(ctx, tile.measure), tile.cell)),
+		method: meta.method,
+		notes: panelNotes(meta),
+	};
+}
+
 export interface HeadlineTilesProps {
 	ctx: ViewContext;
 	title: string;
@@ -88,10 +97,7 @@ export interface HeadlineTilesProps {
 }
 
 export function HeadlineTiles({ ctx, title, tiles, meta, source, scope, provisional }: HeadlineTilesProps) {
-	const rows = tiles.map((tile) => cellRow(impactMeasureLabel(ctx, tile.measure), tile.cell));
-	const notes = [meta.coverage, ...meta.notApplied.map((f) => `Not applied: ${f}`)].filter(
-		(n): n is string => Boolean(n),
-	);
+	const { rows, notes } = headlineExport(ctx, tiles, meta);
 	return (
 		<ChartFrame
 			ctx={ctx}

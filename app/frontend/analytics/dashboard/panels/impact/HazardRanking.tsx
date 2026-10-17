@@ -7,7 +7,7 @@ import type { ViewContext } from "~/frontend/context";
 import type { HazardRankingRow, PanelMeta } from "~/utils/dashboard/impactPanels";
 import { dataTokens } from "~/utils/designTokens.generated";
 import { hazardColour } from "~/utils/hazardIdentity";
-import { cellRow, cellText, coverageText } from "../../panelCell";
+import { cellRow, cellText, coverageText, panelNotes, type PanelExport } from "../../panelCell";
 
 /** Splits a hazard name over at most two lines of about `max` characters. */
 export function wrapLabel(label: string, max = 22): [string, string?] {
@@ -30,6 +30,11 @@ export function rankHazards(rows: HazardRankingRow[]): HazardRankingRow[] {
 		if (drawn(a)) return (b.cell.value as number) - (a.cell.value as number);
 		return a.label.localeCompare(b.label);
 	});
+}
+
+/** Panel 4's rows and notes, for its frame and the page-level CSV. */
+export function rankingExport(rows: HazardRankingRow[], meta: PanelMeta): PanelExport {
+	return { rows: rankHazards(rows).map((r) => cellRow(r.label, r.cell)), method: meta.method, notes: panelNotes(meta) };
 }
 
 export interface HazardRankingProps {
@@ -58,15 +63,13 @@ export function HazardRanking({
 		1,
 		...ranked.map((r) => (r.cell.valueState === "reported" && r.cell.value ? r.cell.value : 0)),
 	);
-	const notes = [meta.coverage, ...meta.notApplied.map((f) => `Not applied: ${f}`)].filter(
-		(n): n is string => Boolean(n),
-	);
+	const { rows: exportRows, notes } = rankingExport(rows, meta);
 
 	return (
 		<ChartFrame
 			ctx={ctx}
 			title={title}
-			rows={ranked.map((r) => cellRow(r.label, r.cell))}
+			rows={exportRows}
 			meta={{ source, scope, method: meta.method, basis: provisional ? "provisional" : "published", notes }}
 		>
 			<div className="flex flex-col gap-1">

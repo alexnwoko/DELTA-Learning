@@ -9,6 +9,7 @@ import type { ViewContext } from "~/frontend/context";
 import type { CoverageWaffle as CoverageWafflePayload, PanelMeta } from "~/utils/dashboard/impactPanels";
 import { dataTokens } from "~/utils/designTokens.generated";
 import { PLAUSIBILITY_MARKER, STATE_ENCODING } from "~/utils/mapState";
+import { panelNotes, type PanelExport } from "../../panelCell";
 import { impactMeasureLabel } from "./measureLabels";
 
 export const WAFFLE_CELLS = 100;
@@ -41,6 +42,35 @@ export function waffleShares(counts: number[], cells = WAFFLE_CELLS): number[] {
 const SIZE = 14;
 const GAP = 2;
 const SIDE = 10 * SIZE + 9 * GAP;
+
+/** Panel 2's rows and notes, for its frame and the page-level CSV. */
+export function waffleExport(ctx: ViewContext, coverage: CoverageWafflePayload, meta: PanelMeta): PanelExport {
+	const t = ctx.t;
+	const record = (label: string, value: number): ChartExportRow =>
+		// A count of records is always a reported figure: every record has a state.
+		({ label, value, valueState: "reported", unit: "records" });
+	return {
+		rows: [
+			record(t({ code: "dashboard.state_reported", msg: "Reported" }), coverage.recordsReported),
+			record(STATE_ENCODING.zero_confirmed.label, coverage.recordsZeroConfirmed),
+			record(STATE_ENCODING.not_reported.label, coverage.recordsNotReported),
+			record(
+				t({ code: "dashboard.flagged_records", msg: "Flagged for review (part of reported)" }),
+				coverage.recordsFlagged,
+			),
+		],
+		method: meta.method,
+		notes: panelNotes(meta, [
+			t(
+				{ code: "dashboard.waffle_note", msg: "{measure}: {total} records in scope; one square is about 1% of them" },
+				{
+					measure: impactMeasureLabel(ctx, coverage.measure),
+					total: coverage.recordsTotal.toLocaleString(ctx.lang),
+				},
+			),
+		]),
+	};
+}
 
 export interface CoverageWaffleProps {
 	ctx: ViewContext;
@@ -93,26 +123,7 @@ export function CoverageWaffle({ ctx, title, coverage, meta, source, scope, prov
 	const total = coverage.recordsTotal;
 	const pct = (n: number) =>
 		total > 0 ? `${Math.round((n / total) * 100).toLocaleString(ctx.lang)}%` : "";
-	const measure = impactMeasureLabel(ctx, coverage.measure);
-
-	// Counts of records are always reported figures: every record has a state.
-	const rows: ChartExportRow[] = [
-		...parts.map((p) => ({ label: p.label, value: p.count, valueState: "reported" as const, unit: "records" })),
-		{
-			label: t({ code: "dashboard.flagged_records", msg: "Flagged for review (part of reported)" }),
-			value: coverage.recordsFlagged,
-			valueState: "reported" as const,
-			unit: "records",
-		},
-	];
-	const notes = [
-		t(
-			{ code: "dashboard.waffle_note", msg: "{measure}: {total} records in scope; one square is about 1% of them" },
-			{ measure, total: total.toLocaleString(ctx.lang) },
-		),
-		meta.coverage,
-		...meta.notApplied.map((f) => `Not applied: ${f}`),
-	].filter((n): n is string => Boolean(n));
+	const { rows, notes } = waffleExport(ctx, coverage, meta);
 
 	return (
 		<ChartFrame
