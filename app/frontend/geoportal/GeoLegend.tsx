@@ -73,6 +73,8 @@ export function GeoLegend(props: {
 	title: string;
 	/** "Admin level 1 · all dates" style line. */
 	subtitle?: string;
+	/** One extra line, for example the TR-060 note on sub-national figures. */
+	note?: string;
 	noRecordsAreas: number;
 	provenance?: GeoLegendProvenance;
 	t?: GeoT;
@@ -120,9 +122,12 @@ export function GeoLegend(props: {
 			{props.subtitle && (
 				<p className="text-xs text-brand-text-muted">{props.subtitle}</p>
 			)}
+			{props.note && (
+				<p className="text-xs text-brand-text-muted">{props.note}</p>
+			)}
 			{method && <p className="text-xs text-brand-text-muted mb-1">{method}</p>}
 			<ul className="space-y-1">
-				{legend.mode === "bubbles" &&
+				{legend.symbols?.kind === "bubble" &&
 					legend.symbols?.references.map((r) => {
 						const rad = bubbleRadiusPx(r.ratio, 14);
 						const size = Math.ceil(rad * 2 + 2);
@@ -142,7 +147,7 @@ export function GeoLegend(props: {
 							</li>
 						);
 					})}
-				{legend.mode === "bubbles" && legend.symbols && (
+				{legend.symbols?.kind === "bubble" && (
 					<li className="text-xs">
 						{t({
 							code: "geoportal.legend.bubble_ring",
@@ -150,7 +155,7 @@ export function GeoLegend(props: {
 						})}
 					</li>
 				)}
-				{legend.mode === "bubbles" &&
+				{legend.symbols?.kind === "bubble" &&
 					legend.symbols?.outliers.map((o) => (
 						<li key={`outlier-${o.areaId}`} className="text-xs">
 							{t(
@@ -165,7 +170,7 @@ export function GeoLegend(props: {
 								: ""}
 						</li>
 					))}
-				{legend.mode === "bars" &&
+				{legend.symbols?.kind === "bars" &&
 					legend.symbols?.parts.map((p, i) => (
 						<li key={`part-${p.key}`} className="flex items-center gap-2">
 							<svg width={14} height={14} aria-hidden="true">
@@ -178,7 +183,7 @@ export function GeoLegend(props: {
 							<span>{p.label}</span>
 						</li>
 					))}
-				{legend.mode === "bars" && legend.symbols && (
+				{legend.symbols?.kind === "bars" && (
 					<li className="text-xs">
 						{t(
 							{
@@ -189,15 +194,14 @@ export function GeoLegend(props: {
 						)}
 					</li>
 				)}
-				{(legend.mode === "bubbles" || legend.mode === "bars") &&
-					legend.symbols?.maxFlagged && (
-						<li className="text-xs">
-							{t({
-								code: "geoportal.legend.symbol_max_flagged",
-								msg: "Largest symbol includes figures flagged for review",
-							})}
-						</li>
-					)}
+				{legend.symbols?.maxFlagged && (
+					<li className="text-xs">
+						{t({
+							code: "geoportal.legend.symbol_max_flagged",
+							msg: "Largest symbol includes figures flagged for review",
+						})}
+					</li>
+				)}
 				{legend.mode === "classes" &&
 					legend.classes.map((c) => (
 						<li key={c.index} className="flex items-center gap-2">

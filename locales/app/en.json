@@ -5410,6 +5410,11 @@
     "description": "File: app/frontend/geoportal/GeoLegend.tsx"
   },
   {
+    "id": "geoportal.legend.not_sendai",
+    "translation": "Sub-national figures. Not a Sendai indicator value.",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
+  },
+  {
     "id": "geoportal.legend.symbol_max_flagged",
     "translation": "Largest symbol includes figures flagged for review",
     "description": "File: app/frontend/geoportal/GeoLegend.tsx"
@@ -5417,6 +5422,11 @@
   {
     "id": "geoportal.map.bars",
     "translation": "Bars",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
+  },
+  {
+    "id": "geoportal.map.bars_of",
+    "translation": "bars: {what}",
     "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
   },
   {
