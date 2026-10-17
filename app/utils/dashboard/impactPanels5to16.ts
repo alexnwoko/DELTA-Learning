@@ -13,8 +13,8 @@ import type { QueryHumanEffect } from "~/utils/deltaQuery";
 
 /** Panel 5: Sendai Targets A and B counts, computed from DELTA records. */
 export interface SendaiCountsPanel {
-	/** Always shown: these are not the country's official SFM submission. */
-	notice: "These figures are not the official Sendai Framework Monitor submission of the country.";
+	// The Sendai notice is rendered by the panel from the disclaimer wording
+	// and the instance country, so it is not part of the payload.
 	/** Indicators with a count: A-2 deaths, A-3 missing, B-2 injured or ill. */
 	indicators: { code: "A-2" | "A-3" | "B-2"; label: string; cell: PanelCell }[];
 	/** Dwelling counts are inputs to B-3 and B-4 and carry no indicator code. */
@@ -187,8 +187,6 @@ const meta = (method: string): PanelMeta => ({
  */
 export const IMPACT_PANELS_5TO16_FIXTURE: ImpactPanels5to16 = {
 	sendai: {
-		notice:
-			"These figures are not the official Sendai Framework Monitor submission of the country.",
 		indicators: [
 			{ code: "A-2", label: "Deaths", cell: c(615, "reported", 243, 534, 2) },
 			{
@@ -227,7 +225,7 @@ export const IMPACT_PANELS_5TO16_FIXTURE: ImpactPanels5to16 = {
 		rows: [
 			{
 				hipTypeId: "1042",
-				label: "Hydrological",
+				label: "Meteorological and Hydrological",
 				cells: [
 					c(410, "reported", 150, 300),
 					c(900, "reported", 60, 300),
@@ -236,7 +234,7 @@ export const IMPACT_PANELS_5TO16_FIXTURE: ImpactPanels5to16 = {
 			},
 			{
 				hipTypeId: "1037",
-				label: "Meteorological",
+				label: "Biological",
 				cells: [
 					c(0, "zero_confirmed", 12, 90),
 					c(null, "not_reported", 0, 90),
@@ -270,12 +268,12 @@ export const IMPACT_PANELS_5TO16_FIXTURE: ImpactPanels5to16 = {
 		rows: [
 			{
 				hipTypeId: "1042",
-				label: "Hydrological",
+				label: "Meteorological and Hydrological",
 				cells: [c(64, "reported", 64, 300), c(120, "reported", 120, 300)],
 			},
 			{
 				hipTypeId: "1037",
-				label: "Meteorological",
+				label: "Biological",
 				cells: [c(null, "not_reported", 0, 90), c(9, "reported", 9, 90)],
 			},
 		],
@@ -284,14 +282,14 @@ export const IMPACT_PANELS_5TO16_FIXTURE: ImpactPanels5to16 = {
 		rows: [
 			{
 				hipTypeId: "1042",
-				label: "Hydrological",
+				label: "Meteorological and Hydrological",
 				displaced: c(34943, "reported", 120, 300),
 				evacuated: c(26117, "reported", 90, 300),
 				relocated: c(8826, "reported", 35, 300),
 			},
 			{
 				hipTypeId: "1037",
-				label: "Meteorological",
+				label: "Biological",
 				displaced: c(null, "not_reported", 0, 90),
 				evacuated: c(null, "not_reported", 0, 90),
 				relocated: c(310, "reported", 4, 90),
@@ -305,13 +303,13 @@ export const IMPACT_PANELS_5TO16_FIXTURE: ImpactPanels5to16 = {
 		rows: [
 			{
 				key: "1042",
-				label: "Hydrological",
+				label: "Meteorological and Hydrological",
 				destroyed: c(7900, "reported", 200, 300),
 				damaged: c(29000, "reported", 280, 300),
 			},
 			{
 				key: "1037",
-				label: "Meteorological",
+				label: "Biological",
 				destroyed: c(0, "zero_confirmed", 10, 90),
 				damaged: c(null, "not_reported", 0, 90),
 			},
