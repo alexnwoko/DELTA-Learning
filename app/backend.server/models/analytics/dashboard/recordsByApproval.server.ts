@@ -13,7 +13,7 @@ import {
 	num,
 	rows,
 } from "~/backend.server/models/analytics/dashboard/impactPanels5to16.server";
-import { notRetired } from "~/utils/approvalBasis";
+import { approvalBasis, basisColumns, notRetired } from "~/utils/approvalBasis";
 import type { DeltaQuery } from "~/utils/deltaQuery";
 
 export interface RecordsByApproval {
@@ -29,12 +29,17 @@ export async function getRecordsByApproval(
 	const fr = humanEffectsFilteredRecords(filters, (alias) =>
 		notRetired(sql`${sql.identifier(alias)}."legacy_data"`),
 	);
+	// Published means the public basis, from the shared helper (TR-192).
+	const published = approvalBasis(
+		"public",
+		basisColumns("rec", { legacyData: false }),
+	);
 	const r = (
 		await rows(sql`
 			WITH RECURSIVE ${fr}
 			SELECT
-				COUNT(*) FILTER (WHERE rec."approvalStatus" = 'published') AS published,
-				COUNT(*) FILTER (WHERE rec."approvalStatus" <> 'published') AS unpublished
+				COUNT(*) FILTER (WHERE ${published}) AS published,
+				COUNT(*) FILTER (WHERE NOT ${published}) AS unpublished
 			FROM filtered_records fr
 			JOIN "disaster_records" rec ON rec."id" = fr.record_id`)
 	)[0];
