@@ -828,23 +828,9 @@ export async function getImpactMap(
 			) m`),
 		divisionNames(ctx.countryAccountsId),
 	]);
-	const ids = [...divNames.keys()];
-	const [points, shapes] = await Promise.all([
-		divisionLabelPoints(ids, ctx.countryAccountsId),
-		// Simplified to about 500 m (0.005 degrees): the largest tenant's
-		// level-1 shapes drop from 23 MB stored to about 150 kB. The stored
-		// geojson is the fallback for a division without geom.
-		rows(sql`
-			SELECT "id"::text AS id,
-				COALESCE(
-					ST_AsGeoJSON(ST_SimplifyPreserveTopology("geom", ${MAP_SIMPLIFY_DEGREES}), 4)::jsonb,
-					"geojson"
-				) AS geojson
-			FROM "division"
-			WHERE "level" = 1 AND "country_accounts_id" = ${ctx.countryAccountsId}`),
-	]);
-	const shapeBy = new Map(
-		shapes.map((r) => [r.id as string, r.geojson ?? null]),
+	const { ids, points, shapeBy } = await levelOneAreas(
+		ctx.countryAccountsId,
+		divNames,
 	);
 	const measuresBy = new Map(byDivision.map((r) => [r.k1 as string | null, r]));
 	const housesBy = new Map(houseRows.map((r) => [r.division_id as string, r]));
@@ -883,4 +869,40 @@ export async function getImpactMap(
 			notApplied,
 		},
 	};
+}
+
+/**
+ * Each level-1 division's display shape (simplified, MAP_SIMPLIFY_DEGREES)
+ * and anchor point, shared by every D1 map so all three draw the same areas.
+ */
+export async function levelOneAreas(
+	countryAccountsId: string,
+	divNames?: Map<string, string>,
+): Promise<{
+	ids: string[];
+	names: Map<string, string>;
+	points: Map<string, [number, number]>;
+	shapeBy: Map<string, unknown>;
+}> {
+	const names = divNames ?? (await divisionNames(countryAccountsId));
+	const ctx = { countryAccountsId };
+	const ids = [...names.keys()];
+	const [points, shapes] = await Promise.all([
+		divisionLabelPoints(ids, ctx.countryAccountsId),
+		// Simplified to about 500 m (0.005 degrees): the largest tenant's
+		// level-1 shapes drop from 23 MB stored to about 150 kB. The stored
+		// geojson is the fallback for a division without geom.
+		rows(sql`
+			SELECT "id"::text AS id,
+				COALESCE(
+					ST_AsGeoJSON(ST_SimplifyPreserveTopology("geom", ${MAP_SIMPLIFY_DEGREES}), 4)::jsonb,
+					"geojson"
+				) AS geojson
+			FROM "division"
+			WHERE "level" = 1 AND "country_accounts_id" = ${ctx.countryAccountsId}`),
+	]);
+	const shapeBy = new Map(
+		shapes.map((r) => [r.id as string, r.geojson ?? null]),
+	);
+	return { ids, names, points, shapeBy };
 }
