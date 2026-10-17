@@ -78,6 +78,7 @@ StyleDictionary.registerFormat({
 			"\tflag: { reviewChip: { background: string; text: string } };\n" +
 			"\tchart: { axis: string };\n" +
 			"\tnotice: { provisional: { border: string; background: string } };\n" +
+			"\thazard: Record<\"meteorologicalHydrological\" | \"geological\" | \"biological\" | \"environmental\" | \"chemical\" | \"technological\" | \"societal\" | \"extraterrestrial\" | \"unclassified\", string>;\n" +
 			"\tramp: Record<\"people\" | \"housing\" | \"money\" | \"events\", readonly string[]>;\n" +
 			"};\n"
 		);
