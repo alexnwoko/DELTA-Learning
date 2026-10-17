@@ -71,6 +71,42 @@ export interface HazardTree {
 	hazards: (HazardNode & { clusterId: string; code: string })[];
 }
 
+/** The nested shape getHazardTree returns (G6): clusters inside types, hazards inside clusters. */
+export interface NestedHazardTree {
+	types: (HazardNode & {
+		clusters: (HazardNode & {
+			hazards: (HazardNode & { code: string })[];
+		})[];
+	})[];
+}
+
+/**
+ * Flattens G6's nested hazard tree into the bar's three lists, keeping each
+ * node's parent id. Pure; shared by the geoportal page and the analytics
+ * dashboard so both read the tree the same way.
+ */
+export function flattenHazardTree(
+	tree: NestedHazardTree | null | undefined,
+): HazardTree | null {
+	if (!tree) return null;
+	const node = (n: HazardNode): HazardNode => ({
+		id: n.id,
+		name: n.name,
+		recordCountSubtree: n.recordCountSubtree,
+	});
+	return {
+		types: tree.types.map(node),
+		clusters: tree.types.flatMap((t) =>
+			t.clusters.map((c) => ({ ...node(c), typeId: t.id })),
+		),
+		hazards: tree.types.flatMap((t) =>
+			t.clusters.flatMap((c) =>
+				c.hazards.map((h) => ({ ...node(h), clusterId: c.id, code: h.code })),
+			),
+		),
+	};
+}
+
 export interface GeoFilterBarProps {
 	query: DeltaQuery;
 	level: number;
