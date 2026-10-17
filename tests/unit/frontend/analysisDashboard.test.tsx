@@ -348,3 +348,18 @@ describe("table shading", () => {
 		}
 	});
 });
+
+describe("Sendai counts under a place filter (TR-060, FR-AN-009)", () => {
+	it("drop every indicator code and say the figures are sub-national", () => {
+		const sub = impactDashboardPanels(ctx, IMPACT_PANELS_FIXTURE, "EXAMPLE DATA", {
+			data: IMPACT_PANELS_5TO16_FIXTURE,
+			country: "Angola",
+			subnational: true,
+		});
+		const p5 = sub.find((p) => p.n === 5)!;
+		const html = text(renderToString(<>{p5.render!()}</>));
+		expect(html).toContain("Sub-national figures. Not a Sendai indicator value (TR-060).");
+		expect(html).not.toMatch(/\b[AB]-\d\b/);
+		expect(p5.exportData!.rows.map((r) => r.label).join(" ")).not.toMatch(/\b[AB]-\d\b/);
+	});
+});
