@@ -505,3 +505,90 @@ describe("symbol sizes", () => {
 		expect(barLengthPx(0.00001)).toBe(BAR_MIN_LENGTH_PX);
 	});
 });
+
+describe("underlay under symbols (option D)", () => {
+	const five = [
+		reported("a", 100, { recordsReported: 4, recordsTotal: 4 }),
+		reported("b", 50, { recordsReported: 1, recordsTotal: 4 }),
+		reported("c", 40, { recordsReported: 2, recordsTotal: 4 }),
+		reported("d", 30, { recordsReported: 3, recordsTotal: 4 }),
+		reported("e", 20, { recordsReported: 2, recordsTotal: 8 }),
+		cell("n", "not_reported"),
+	];
+	const km2 = new Map([
+		["a", 1000],
+		["b", 100],
+		["c", 400],
+		["d", 300],
+		["e", 2000],
+	]);
+
+	it("shades by density per 1,000 km² under the bubbles and keeps the bubble sizes", () => {
+		const r = resolveMapState(five, {
+			family: "housing",
+			scope: signedIn,
+			symbol: "bubble",
+			underlay: { kind: "density", family: "people", areaKm2: km2 },
+		});
+		expect(r.legend.underlayRefused).toBeNull();
+		expect(byId(r, "b").underlay?.value).toBe(500);
+		expect(byId(r, "a").underlay?.value).toBe(100);
+		const bClass = r.legend.underlay?.classes.find(
+			(c) => c.index === byId(r, "b").underlay!.classIndex,
+		);
+		expect(byId(r, "b").color).toBe(bClass?.color);
+		expect(FAMILY_RAMPS.people).toContain(byId(r, "b").color);
+		const a = byId(r, "a").symbol;
+		expect(a?.kind === "bubble" && a.areaRatio).toBe(1);
+		expect(byId(r, "n").underlay).toBeNull();
+		expect(byId(r, "n").color).toBeNull();
+		expect(r.legend.underlay?.unit).toBe("per 1,000 km² of land area");
+	});
+
+	it("shades by coverage, and leaves an area without a land area unshaded and counted", () => {
+		const r = resolveMapState(five, {
+			family: "housing",
+			scope: signedIn,
+			symbol: "bubble",
+			underlay: { kind: "coverage", family: "people" },
+		});
+		expect(byId(r, "a").underlay?.value).toBe(100);
+		expect(byId(r, "e").underlay?.value).toBe(25);
+		const partial = resolveMapState(five, {
+			family: "housing",
+			scope: signedIn,
+			symbol: "bubble",
+			underlay: {
+				kind: "density",
+				family: "people",
+				areaKm2: new Map([["a", 1000]]),
+			},
+		});
+		expect(byId(partial, "b").underlay).toBeNull();
+		expect(partial.legend.underlay?.areasWithout).toBe(4);
+	});
+
+	it("refuses an underlay in the same colour family, outside symbol mode, or with no areas", () => {
+		const same = resolveMapState(five, {
+			family: "people",
+			scope: signedIn,
+			symbol: "bubble",
+			underlay: { kind: "coverage", family: "people" },
+		});
+		expect(same.legend.underlayRefused).toBe("same_family_as_symbols");
+		expect(same.areas.every((a) => a.underlay === null)).toBe(true);
+		const choro = resolveMapState(five, {
+			family: "housing",
+			scope: signedIn,
+			underlay: { kind: "coverage", family: "people" },
+		});
+		expect(choro.legend.underlayRefused).toBe("not_symbol_mode");
+		const noArea = resolveMapState(five, {
+			family: "housing",
+			scope: signedIn,
+			symbol: "bars",
+			underlay: { kind: "density", family: "people" },
+		});
+		expect(noArea.legend.underlayRefused).toBe("no_area_data");
+	});
+});

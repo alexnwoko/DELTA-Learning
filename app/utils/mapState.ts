@@ -297,7 +297,35 @@ export interface ResolveMapOptions {
 	/** Filters active in the query, and those this measure applied. */
 	activeFilters?: readonly string[];
 	appliedFilters?: readonly string[];
+	/**
+	 * Bubble or bars mode: shade the areas under the symbols by a second
+	 * quantity (option D, Alex 2026-10-17). The shading never shows the same
+	 * count as the symbols.
+	 */
+	underlay?: MapUnderlayOption;
 }
+
+/**
+ * What the shading under the symbols shows:
+ * - density: the measure per 1,000 km² of land area (needs areaKm2);
+ * - coverage: the share of records in scope that report the measure,
+ *   a confirmed zero included (n of N), as a percentage.
+ */
+export type MapUnderlayKind = "density" | "coverage";
+
+export interface MapUnderlayOption {
+	kind: MapUnderlayKind;
+	/** Ramp for the shading; must differ from the symbols' family. */
+	family: MeasureFamily;
+	/** Density only: land area in km² per area id (divisionAreasKm2). Absent ids get no shading. */
+	areaKm2?: ReadonlyMap<string, number>;
+}
+
+/** Why an underlay was asked for and not drawn. */
+export type UnderlayRefusal =
+	| "not_symbol_mode"
+	| "same_family_as_symbols"
+	| "no_area_data";
 
 // ---------------------------------------------------------------------------
 // Output.
@@ -357,6 +385,8 @@ export interface MapArea {
 	 * symbol (TR-076).
 	 */
 	symbol: MapAreaSymbol | null;
+	/** Underlay value under the symbol (density or coverage); null when not drawn. */
+	underlay: { value: number; classIndex: number } | null;
 	quality: MapQualityMarker;
 	tooltip: MapTooltipParts;
 }
@@ -402,6 +432,10 @@ export interface MapLegend {
 	/** classes: graded; single_tone: E2 rule 5; empty: no area shaded; bubbles and bars: RV-5 as amended. */
 	mode: "classes" | "single_tone" | "empty" | "bubbles" | "bars";
 	symbol: MapSymbol;
+	/** Option D: the shading under the symbols and its classes. */
+	underlay: MapLegendUnderlay | null;
+	/** An underlay was asked for and not drawn, and why. */
+	underlayRefused: UnderlayRefusal | null;
 	/** Bubble or bars mode: colour, scale and reference sizes for the legend. */
 	symbols: {
 		kind: "bubble" | "bars";
@@ -444,6 +478,17 @@ export interface ScopeLabel {
 	approvalBasis: readonly string[];
 	provisional: boolean;
 	text: string;
+}
+
+export interface MapLegendUnderlay {
+	kind: MapUnderlayKind;
+	family: MeasureFamily;
+	/** "per 1,000 km² of land area" or "% of records reporting". */
+	unit: string;
+	/** Quantile classes, or one class in the single tone when too few areas. */
+	classes: LegendClass[];
+	/** Shaded areas with a symbol but no underlay value (no area recorded). */
+	areasWithout: number;
 }
 
 export interface MapStateResult {
@@ -732,6 +777,48 @@ export function resolveMapState(
 		MAP_AREA_STATES.map((s) => [s, 0]),
 	) as Record<MapAreaState, number>;
 
+	// Option D: a second quantity shades the areas under the symbols.
+	const underlayAsked = options.underlay ?? null;
+	let underlayRefused: UnderlayRefusal | null = null;
+	if (underlayAsked) {
+		if (mode !== "bubbles" && mode !== "bars" && mode !== "empty")
+			underlayRefused = "not_symbol_mode";
+		else if (underlayAsked.family === options.family)
+			underlayRefused = "same_family_as_symbols";
+		else if (underlayAsked.kind === "density" && !underlayAsked.areaKm2?.size)
+			underlayRefused = "no_area_data";
+	}
+	const underlayOn =
+		underlayAsked !== null && underlayRefused === null && mode !== "empty";
+	const underlayValueOf = (cell: MapCell): number | null => {
+		if (!underlayAsked) return null;
+		if (underlayAsked.kind === "density") {
+			const km2 = underlayAsked.areaKm2?.get(cell.areaId);
+			return km2 && km2 > 0 ? ((cell.value as number) / km2) * 1000 : null;
+		}
+		const n = count(cell.recordsReported) + count(cell.recordsZeroConfirmed);
+		const of = Math.max(count(cell.recordsTotal), n);
+		return of > 0 ? (n / of) * 100 : null;
+	};
+	const underlayValues = new Map<string, number>();
+	if (underlayOn) {
+		for (const r of resolved) {
+			if (r.state !== "shaded") continue;
+			const v = underlayValueOf(r.cell);
+			if (v !== null) underlayValues.set(r.cell.areaId, v);
+		}
+	}
+	const uSorted = [...underlayValues.values()].sort((a, b) => a - b);
+	const uGraded =
+		uSorted.length >= MIN_AREAS_FOR_CLASSES && new Set(uSorted).size > 1;
+	const uBreaks = uGraded ? quantileBreaks(uSorted) : [];
+	const uClassCount = uBreaks.length + 1;
+	const uRamp = underlayAsked ? FAMILY_RAMPS[underlayAsked.family] : ramp;
+	const uColor = (classIndex: number) =>
+		uGraded
+			? uRamp[rampIndex(classIndex, uClassCount)]
+			: uRamp[SINGLE_TONE_CLASS];
+
 	const areas: MapArea[] = resolved.map(({ cell, state, reason }) => {
 		counts[state]++;
 		let classIndex: number | null = null;
@@ -780,6 +867,13 @@ export function resolveMapState(
 				color = singleToneColor;
 			}
 		}
+		const uv = underlayValues.get(cell.areaId);
+		let underlayHere: MapArea["underlay"] = null;
+		if (uv !== undefined) {
+			const classIndex = uGraded ? classOf(uv, uBreaks) : SINGLE_TONE_CLASS;
+			color = uColor(classIndex);
+			underlayHere = { value: uv, classIndex };
+		}
 		const flagged = count(cell.recordsFlagged);
 		const reported = count(cell.recordsReported);
 		const zc = count(cell.recordsZeroConfirmed);
@@ -793,6 +887,7 @@ export function resolveMapState(
 			color,
 			reason,
 			symbol: symbolDrawn,
+			underlay: underlayHere,
 			quality: {
 				plausibility:
 					flagged > 0
@@ -838,6 +933,44 @@ export function resolveMapState(
 			method: "quantile",
 			mode,
 			symbol,
+			underlay: underlayOn
+				? {
+						kind: underlayAsked!.kind,
+						family: underlayAsked!.family,
+						unit:
+							underlayAsked!.kind === "density"
+								? "per 1,000 km² of land area"
+								: "% of records reporting",
+						classes: uGraded
+							? Array.from({ length: uClassCount }, (_, i) => {
+									const inClass = uSorted.filter(
+										(v) => classOf(v, uBreaks) === i,
+									);
+									return {
+										index: i,
+										lower: inClass[0],
+										upper: inClass[inClass.length - 1],
+										color: uColor(i),
+										areas: inClass.length,
+									};
+								}).filter((c) => c.areas > 0)
+							: uSorted.length
+								? [
+										{
+											index: SINGLE_TONE_CLASS,
+											lower: uSorted[0],
+											upper: uSorted[uSorted.length - 1],
+											color: uColor(SINGLE_TONE_CLASS),
+											areas: uSorted.length,
+										},
+									]
+								: [],
+						areasWithout: resolved.filter(
+							(r) => r.state === "shaded" && !underlayValues.has(r.cell.areaId),
+						).length,
+					}
+				: null,
+			underlayRefused,
 			symbols:
 				mode === "bubbles"
 					? {

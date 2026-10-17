@@ -805,6 +805,21 @@
     "description": "File: app/components/MapChart.tsx:734"
   },
   {
+    "id": "analysis.map_underlay_coverage",
+    "translation": "Shading: % of records reporting",
+    "description": "Map legend heading for area shading under bubbles or bars: the share of records that report the figure. File: app/components/MapChart.tsx"
+  },
+  {
+    "id": "analysis.map_underlay_density",
+    "translation": "Shading: per 1,000 km² of land area",
+    "description": "Map legend heading for area shading under bubbles or bars: the figure per 1,000 km² of land area. File: app/components/MapChart.tsx"
+  },
+  {
+    "id": "analysis.map_underlay_without",
+    "translation": "{count} areas have no shading value",
+    "description": "Map legend note: areas with a bubble or bar but no shading value, for example no land area recorded. {count} is the number of areas. File: app/components/MapChart.tsx"
+  },
+  {
     "id": "analysis.map_bars_scale",
     "translation": "Longest bar: {value}. A dashed slot is not reported.",
     "description": "Map legend note in bars mode: the longest bar and what a dashed slot means. {value} is the largest figure. File: app/components/MapChart.tsx"
