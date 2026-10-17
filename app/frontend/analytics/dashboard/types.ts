@@ -32,6 +32,8 @@ export interface DashboardPanel {
 	render?: () => React.ReactNode;
 	/** The panel's rows and notes, for the page-level CSV. */
 	exportData?: PanelExport;
+	/** Sendai section only: the target row it sits in ("S" is the full-width counts row). */
+	group?: "S" | "A" | "B" | "C" | "D";
 }
 
 /** Panels shown by default; the rest wait under "Show more". */

@@ -37,6 +37,11 @@ export interface ChartFrameProps {
 	 * it has no picture, so only its CSV is offered.
 	 */
 	pictures?: boolean;
+	/**
+	 * Notes every download carries but the on-screen caption leaves out,
+	 * because the page states them once nearby (for example the Sendai notice).
+	 */
+	quietNotes?: string[];
 	children: React.ReactNode;
 }
 
@@ -77,12 +82,12 @@ function svgToPng(svg: string, width: number, height: number, scale = 2): Promis
 	});
 }
 
-export function ChartFrame({ ctx, title, meta, rows, formatValue, pictures = true, children }: ChartFrameProps) {
+export function ChartFrame({ ctx, title, meta, rows, formatValue, pictures = true, quietNotes = [], children }: ChartFrameProps) {
 	const titleId = useId();
 	const chartRef = useRef<HTMLDivElement>(null);
 	const fullMeta = (): ChartExportMeta => ({ ...meta, title, generatedAt: new Date() });
 	const notes = exportNotes({ ...meta, title, generatedAt: new Date() }, rows).filter(
-		(note) => !note.startsWith("Generated "),
+		(note) => !note.startsWith("Generated ") && !quietNotes.includes(note),
 	);
 	const hasSeries = rows.some((r) => r.series);
 
