@@ -47,7 +47,7 @@ const MONEY_GAP: SectorGap = {
 };
 
 /** Level-2 ancestor of every sector, and each record's sector effects. */
-const sectorHitsCtes = sql`sec_up AS (
+export const sectorHitsCtes = sql`sec_up AS (
 	SELECT "id", "id" AS top_id FROM "sector" WHERE "level" = 2
 	UNION ALL
 	SELECT s."id", u.top_id FROM "sector" s JOIN sec_up u ON s."parent_id" = u."id"
