@@ -14,6 +14,7 @@ import type { ApprovalAudience } from "~/utils/approvalBasis";
 import { authLoaderWithPerm } from "~/utils/auth";
 import {
 	isMonetaryMeasure,
+	isUuid,
 	parseDeltaQuery,
 	QUERY_REFUSALS,
 	type DeltaQuery,
@@ -137,6 +138,7 @@ export function isCalendarPartialDate(v: string): boolean {
 /** Parameters that refuse the request when rejected: dropping them changes the figure. */
 const REFUSING_PARAMS = new Set([
 	"division",
+	"region",
 	"measure",
 	"basis",
 	"from",
@@ -160,6 +162,8 @@ export async function resolveGeoRequest(
 		requireLevel: boolean;
 		/** The view serves the two event dimensions as well as disaster impact. */
 		eventDimensions?: boolean;
+		/** The view applies the RG-1 region facet; others name it in notApplied. */
+		region?: boolean;
 	},
 ): Promise<GeoRequest> {
 	const { query, issues } = parseDeltaQuery(ctx.url.searchParams);
@@ -192,6 +196,7 @@ async function resolveParsed(
 		requireLevel: boolean;
 		/** The view serves the two event dimensions as well as disaster impact. */
 		eventDimensions?: boolean;
+		region?: boolean;
 	},
 	query: DeltaQuery,
 	issues: QueryIssue[],
@@ -295,6 +300,38 @@ async function resolveParsed(
 		}
 	}
 
+	// RG-1 place facet (URL key "region"). A dropped place filter widens the
+	// view, so a malformed or foreign region refuses and a view without region
+	// support names it in notApplied (Analytics, 2026-10-17).
+	let regionId: string | undefined;
+	const regionParam = params.get("region");
+	if (regionParam !== null) {
+		if (!isUuid(regionParam)) throw malformed("region must be a UUID.");
+		if (w.geo?.divisionId) {
+			throw new GeoRefusalError(
+				"REGION_AND_DIVISION",
+				"A request can filter by a division or by a region, not both.",
+				"RG-1; delta.query/1 place facet",
+				"Remove division or region.",
+				422,
+			);
+		}
+		if (!opts.region) {
+			notApplied.push("region: this view does not apply regions yet");
+		} else {
+			const res = await dr.execute(sql`
+				SELECT 1 FROM geo.region
+				WHERE region_id = ${regionParam}
+					AND country_accounts_id = ${ctx.countryAccountsId}
+			`);
+			if (res.rows.length === 0) {
+				// Another tenant's region is not revealed (SEC-22).
+				throw new Response("Region not found", { status: 404 });
+			}
+			regionId = regionParam;
+		}
+	}
+
 	let audience: ApprovalAudience;
 	if (ctx.viaApiKey) {
 		if (query.scope.basis === "provisional") {
@@ -308,7 +345,13 @@ async function resolveParsed(
 		audience = await approvalAudienceForBasis(ctx.request, query.scope.basis);
 	}
 
-	return { query, level, audience, notApplied };
+	return {
+		query,
+		level,
+		audience,
+		notApplied,
+		...(regionId && { regionId }),
+	};
 }
 
 /** Weak ETag from the tenant, the read-model refresh time and the request. */

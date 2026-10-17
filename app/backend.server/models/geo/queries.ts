@@ -38,6 +38,8 @@ export type GeoRefusalCode =
 	| "PRECISION_BELOW_CEILING"
 	| "GRAIN_CARDINALITY_EXCEEDED"
 	| "MALFORMED_REQUEST"
+	// RG-1: until Analytics adds QUERY_REFUSALS.regionAndDivision (2026-10-17).
+	| "REGION_AND_DIVISION"
 	| (typeof QUERY_REFUSALS)[keyof typeof QUERY_REFUSALS];
 
 /** A resolved geo request: the selection, the map level and the basis. */
@@ -48,10 +50,15 @@ export interface GeoRequest {
 	audience: ApprovalAudience;
 	/** Filters this endpoint could not apply, each named (TR-175). */
 	notApplied: string[];
+	/**
+	 * RG-1 place facet (URL key "region"), resolved to the tenant. Held here
+	 * until delta.query/1 carries where.region (Analytics adds it with I-4).
+	 */
+	regionId?: string;
 }
 
 export interface GeoMeta {
-	query: DeltaQuery & { level?: number };
+	query: DeltaQuery & { level?: number; region?: string };
 	boundaryVersion: string;
 	hazardVocabularyVersion: "HIPs 2025";
 	methodVersion: string;
@@ -121,6 +128,7 @@ export async function baseMeta(
 		query: {
 			...req.query,
 			...(req.level !== undefined && { level: req.level }),
+			...(req.regionId && { region: req.regionId }),
 		},
 		boundaryVersion: "unknown",
 		hazardVocabularyVersion: "HIPs 2025",
@@ -168,8 +176,20 @@ function dateInRange(req: GeoRequest): SQL {
 	return sql.join(parts, sql` AND `);
 }
 
-/** Atoms placed in the requested division or its descendants. */
+/**
+ * Atoms placed in the requested division or its descendants, or in a member
+ * of the requested region or its descendants (RG-1). The parser refuses both
+ * together, so at most one applies.
+ */
 function inDivision(countryAccountsId: string, req: GeoRequest): SQL {
+	if (req.regionId) {
+		return sql`a.division_id IN (
+			SELECT da.division_id FROM geo.division_ancestor da
+			JOIN geo.region_member m
+				ON m.division_id = da.ancestor_id AND m.country_accounts_id = da.country_accounts_id
+			WHERE da.country_accounts_id = ${countryAccountsId} AND m.region_id = ${req.regionId}
+		)`;
+	}
 	const divisionId = req.query.where.geo?.divisionId;
 	if (!divisionId) return sql`true`;
 	return sql`a.division_id IN (
@@ -290,12 +310,17 @@ function atomSource(req: GeoRequest): SQL {
  * record-level reports: unattributed reasons, the grade-floor exclusion,
  * records counted in several areas, run ids and the provisional flag.
  */
-async function aggregate(
+export async function aggregate(
 	countryAccountsId: string,
 	req: GeoRequest,
 	measures: readonly GeoMeasure[],
 	level: number,
 	restrictToDivision?: string,
+	/**
+	 * RG-1 region total: every in-area atom goes to this one id, so a record
+	 * linked to several member areas counts once. Level is not used.
+	 */
+	collapseTo?: string,
 ) {
 	const t = countryAccountsId;
 	const m0 = measures[0];
@@ -304,6 +329,26 @@ async function aggregate(
 	const restrict = restrictToDivision
 		? sql`AND da.ancestor_id = ${restrictToDivision}`
 		: sql``;
+	const placedRows = collapseTo
+		? sql`
+			SELECT DISTINCT ON (g.measure, g.disaster_record_id)
+				g.measure, ${collapseTo}::uuid AS division_id, g.disaster_record_id,
+				g.value, g.value_state, g.att_grade, g.geo_precision,
+				g.plausibility_flags, g.record_status, g.migration_run_id, g.derivation
+			FROM graded g
+			ORDER BY g.measure, g.disaster_record_id, g.att_grade`
+		: sql`
+			SELECT DISTINCT ON (g.measure, da.ancestor_id, g.disaster_record_id)
+				g.measure, da.ancestor_id AS division_id, g.disaster_record_id,
+				g.value, g.value_state, g.att_grade, g.geo_precision,
+				g.plausibility_flags, g.record_status, g.migration_run_id, g.derivation
+			FROM graded g
+			JOIN geo.division_ancestor da
+				ON da.division_id = g.division_id
+				AND da.country_accounts_id = ${t}
+				AND da.ancestor_level = ${level}
+				${restrict}
+			ORDER BY g.measure, da.ancestor_id, g.disaster_record_id, g.att_grade`;
 
 	const res = await dr.execute(sql`
 		WITH scope AS (
@@ -325,19 +370,7 @@ async function aggregate(
 			SELECT * FROM in_area a
 			WHERE a.division_id IS NOT NULL AND ${gradeFloor(floor)}
 		),
-		placed AS (
-			SELECT DISTINCT ON (g.measure, da.ancestor_id, g.disaster_record_id)
-				g.measure, da.ancestor_id AS division_id, g.disaster_record_id,
-				g.value, g.value_state, g.att_grade, g.geo_precision,
-				g.plausibility_flags, g.record_status, g.migration_run_id, g.derivation
-			FROM graded g
-			JOIN geo.division_ancestor da
-				ON da.division_id = g.division_id
-				AND da.country_accounts_id = ${t}
-				AND da.ancestor_level = ${level}
-				${restrict}
-			ORDER BY g.measure, da.ancestor_id, g.disaster_record_id, g.att_grade
-		),
+		placed AS (${placedRows}),
 		prec AS (
 			SELECT measure, division_id, jsonb_object_agg(geo_precision, n) AS precision
 			FROM (

@@ -18,6 +18,7 @@ export const loader = geoLoader(async (_args, ctx) => {
 		requireMeasure: true,
 		requireLevel: true,
 		eventDimensions: true,
+		region: true,
 	});
 	const etag = geoEtag(
 		ctx.countryAccountsId,
