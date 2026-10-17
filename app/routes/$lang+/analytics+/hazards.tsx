@@ -26,7 +26,6 @@ import {
 	getTotalLossesByYear,
 } from "~/backend.server/models/analytics/hazard-analysis";
 import { MainContainer } from "~/frontend/container";
-import { NavSettings } from "~/frontend/components/NavSettings";
 import HazardFilters from "~/frontend/analytics/hazards/sections/HazardFilters";
 import ImpactByHazard from "~/frontend/analytics/hazards/sections/ImpactByHazard";
 import {
@@ -494,7 +493,6 @@ export default function HazardAnalysis() {
 				code: "analysis.hazards_analysis",
 				msg: "Hazards analysis",
 			})}
-			headerExtra={<NavSettings ctx={ctx} />}
 		>
 			<div>
 				<div>

@@ -4,7 +4,6 @@ import type { MetaFunction } from "react-router";
 import { useLoaderData, Outlet } from "react-router";
 
 import { authLoaderPublicOrWithPerm } from "~/utils/auth";
-import { NavSettings } from "~/frontend/components/NavSettings";
 import { MainContainer } from "~/frontend/container";
 
 import { ContentPicker } from "~/components/ContentPicker";
@@ -657,7 +656,6 @@ function DisasterEventsAnalysisContent() {
 				code: "analysis.disaster_events_analysis",
 				msg: "Disaster events analysis",
 			})}
-			headerExtra={<NavSettings ctx={ctx} />}
 		>
 			<Tooltip
 				target=".custom-target-icon"

@@ -7,9 +7,10 @@ import React from "react";
 import { Tab, TabList, TabPanel, Tabs, type Key } from "react-aria-components";
 import type { ViewContext } from "~/frontend/context";
 import { PrintButton } from "~/frontend/print/PrintButton";
-import { QUERY_DIMENSIONS, type QueryDimension } from "~/utils/deltaQuery";
+import type { QueryDimension } from "~/utils/deltaQuery";
 import { PanelGrid } from "./PanelGrid";
 import { collapsesGaps, type DashboardPanel } from "./types";
+import { DASHBOARD_VIEWS, type DashboardView } from "./views";
 
 export function dimensionLabel(ctx: ViewContext, dimension: QueryDimension): string {
 	switch (dimension) {
@@ -22,10 +23,20 @@ export function dimensionLabel(ctx: ViewContext, dimension: QueryDimension): str
 	}
 }
 
+/** The button label of a view: the three dimensions and Sectors. */
+export function viewLabel(ctx: ViewContext, view: DashboardView): string {
+	return view === "sectors"
+		? ctx.t({ code: "dashboard.view_sectors", msg: "Sectors" })
+		: dimensionLabel(ctx, view);
+}
+
 export interface DashboardShellProps {
 	ctx: ViewContext;
-	dimension: QueryDimension;
-	onDimensionChange: (dimension: QueryDimension) => void;
+	/** The view shown: one of the four buttons, in Alex's order. */
+	view: DashboardView;
+	onViewChange: (view: DashboardView) => void;
+	/** The reviewer queue, for signed-in users who may open it; omitted otherwise. */
+	reviewHref?: string;
 	/** One line of scope and basis, e.g. "Angola · 2015 to 2024 · Basis: published". */
 	summary: string;
 	provisional: boolean;
@@ -42,8 +53,9 @@ export interface DashboardShellProps {
 
 export function DashboardShell({
 	ctx,
-	dimension,
-	onDimensionChange,
+	view,
+	onViewChange,
+	reviewHref,
 	summary,
 	provisional,
 	filterBar,
@@ -66,6 +78,15 @@ export function DashboardShell({
 					<p className="m-0 text-sm text-brand-text-muted">{summary}</p>
 				</div>
 				<div className="flex flex-wrap items-center gap-2">
+					{reviewHref && (
+						<a
+							href={reviewHref}
+							data-print="hide"
+							className="rounded border border-brand-border-control bg-brand-surface px-3 py-1 text-sm text-brand-interactive no-underline hover:bg-brand-surface-subtle focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus-ring"
+						>
+							{t({ code: "dashboard.review_flagged", msg: "Review flagged records" })}
+						</a>
+					)}
 					{download}
 					<PrintButton ctx={ctx} />
 				</div>
@@ -84,32 +105,32 @@ export function DashboardShell({
 			)}
 
 			<Tabs
-				selectedKey={dimension}
-				onSelectionChange={(key: Key) => onDimensionChange(key as QueryDimension)}
+				selectedKey={view}
+				onSelectionChange={(key: Key) => onViewChange(key as DashboardView)}
 				className="flex flex-col gap-4"
 			>
 				<TabList
-					aria-label={t({ code: "dashboard.dimension", msg: "Dimension" })}
+					aria-label={t({ code: "dashboard.view", msg: "What to analyse" })}
 					data-print="hide"
 					className="flex flex-wrap gap-1 border-b border-brand-border"
 				>
-					{QUERY_DIMENSIONS.map((d) => (
-						<Tab key={d} id={d} className={tabClass}>
-							{dimensionLabel(ctx, d)}
+					{DASHBOARD_VIEWS.map((v) => (
+						<Tab key={v} id={v} className={tabClass}>
+							{viewLabel(ctx, v)}
 						</Tab>
 					))}
 				</TabList>
 				{/* Only the selected panel mounts; the others hold nothing. */}
-				{QUERY_DIMENSIONS.map((d) => (
-					<TabPanel key={d} id={d} className="flex flex-col gap-4 outline-none">
+				{DASHBOARD_VIEWS.map((v) => (
+					<TabPanel key={v} id={v} className="flex flex-col gap-4 outline-none">
 						<h2 className="sr-only print:not-sr-only print:m-0 print:text-xl print:font-semibold">
-							{dimensionLabel(ctx, d)}
+							{viewLabel(ctx, v)}
 						</h2>
 						{filterBar}
 						{map && (
 							<div className="min-h-[260px] overflow-hidden rounded border border-brand-border">{map}</div>
 						)}
-						<PanelGrid ctx={ctx} panels={panels} collapseGaps={collapsesGaps(d)} />
+						<PanelGrid ctx={ctx} panels={panels} collapseGaps={collapsesGaps(v)} />
 					</TabPanel>
 				))}
 			</Tabs>
