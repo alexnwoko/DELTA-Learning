@@ -5320,6 +5320,36 @@
     "description": "File: app/routes/$lang+/settings+/geography+/edit.$id.tsx:634"
   },
   {
+    "id": "geoportal.chips.effect",
+    "translation": "Effect",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.chips.hip_type",
+    "translation": "Hazard type",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.chips.sector",
+    "translation": "Sector",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.filters.locked",
+    "translation": "Fixed by this page: {facet}",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.filters.not_applied",
+    "translation": "Not applied: {filter}",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.filters.status",
+    "translation": "Filter status",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
     "id": "geoportal.legend.max_flagged",
     "translation": "Largest spike includes figures flagged for review",
     "description": "File: app/frontend/geoportal/GeoLegend.tsx"
@@ -5345,9 +5375,84 @@
     "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
   },
   {
+    "id": "geoportal.place.all",
+    "translation": "All areas",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.place.area",
+    "translation": "Area",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.place.divisions",
+    "translation": "Divisions",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.place.regions",
+    "translation": "Regions",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.summary.basis",
+    "translation": "Basis: {basis}",
+    "description": "File: app/frontend/geoportal/filterBarState.ts"
+  },
+  {
+    "id": "geoportal.summary.basis_provisional",
+    "translation": "provisional",
+    "description": "File: app/frontend/geoportal/filterBarState.ts"
+  },
+  {
+    "id": "geoportal.summary.basis_published",
+    "translation": "published",
+    "description": "File: app/frontend/geoportal/filterBarState.ts"
+  },
+  {
+    "id": "geoportal.summary.from",
+    "translation": "from {from}",
+    "description": "File: app/frontend/geoportal/filterBarState.ts"
+  },
+  {
+    "id": "geoportal.summary.hazard",
+    "translation": "Hazard: {name}",
+    "description": "File: app/frontend/geoportal/filterBarState.ts"
+  },
+  {
+    "id": "geoportal.summary.hazard_all",
+    "translation": "all",
+    "description": "File: app/frontend/geoportal/filterBarState.ts"
+  },
+  {
+    "id": "geoportal.summary.hazard_selected",
+    "translation": "selected",
+    "description": "File: app/frontend/geoportal/filterBarState.ts"
+  },
+  {
+    "id": "geoportal.summary.period",
+    "translation": "{from} to {to}",
+    "description": "File: app/frontend/geoportal/filterBarState.ts"
+  },
+  {
+    "id": "geoportal.summary.to",
+    "translation": "up to {to}",
+    "description": "File: app/frontend/geoportal/filterBarState.ts"
+  },
+  {
     "id": "geoportal.unit.per_1000km2",
     "translation": "per 1,000 km²",
     "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
+  },
+  {
+    "id": "geoportal.when.last_1",
+    "translation": "Last 1 year",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.when.last_n",
+    "translation": "Last {n} years",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
   },
   {
     "id": "go_back",
@@ -8836,16 +8941,6 @@
     "id": "geoportal.when.invalid",
     "translation": "Use YYYY, YYYY-MM or YYYY-MM-DD",
     "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:133"
-  },
-  {
-    "id": "geoportal.when.last10",
-    "translation": "Last 10 years",
-    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:186"
-  },
-  {
-    "id": "geoportal.when.last5",
-    "translation": "Last 5 years",
-    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx:192"
   },
   {
     "id": "geoportal.when.period",
