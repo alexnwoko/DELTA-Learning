@@ -105,8 +105,11 @@ function Grid({ ctx, panels }: { ctx: ViewContext; panels: DashboardPanel[] }) {
 
 export function PanelGrid({ ctx, panels, collapseGaps }: PanelGridProps) {
 	const sorted = [...panels].sort((a, b) => a.n - b.n);
-	const visible = collapseGaps ? sorted.filter((p) => !p.gap) : sorted;
-	const strip = collapseGaps ? sorted.filter((p) => p.gap) : [];
+	// A strip lists several gaps; a lone gap (a whole view with no data, such
+	// as G-01) keeps its own frame across the view.
+	const fold = collapseGaps && sorted.filter((p) => p.gap).length > 1;
+	const visible = fold ? sorted.filter((p) => !p.gap) : sorted;
+	const strip = fold ? sorted.filter((p) => p.gap) : [];
 	const main = visible.filter((p) => p.n <= DEFAULT_PANEL_COUNT);
 	const more = visible.filter((p) => p.n > DEFAULT_PANEL_COUNT);
 
