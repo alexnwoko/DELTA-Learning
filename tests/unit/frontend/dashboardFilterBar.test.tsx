@@ -41,10 +41,8 @@ describe("filters per view (D1 brief section 2)", () => {
 		}
 	});
 
-	it("Disaster impact: the six human-effect chips and the headline measures", () => {
-		const chips = chipsFor("disaster_impact", { hazardTree: tree });
-		expect(chips?.kind).toBe("effect");
-		expect(chips?.options.map((o) => o.id)).toEqual(["deaths", "injured", "missing", "affected_direct", "affected_indirect", "displaced"]);
+	it("Disaster impact: no effect chips (the loaders do not filter by them); the measure select picks the effect", () => {
+		expect(chipsFor("disaster_impact", { hazardTree: tree })).toBeNull();
 		expect(measuresFor("disaster_impact")?.map((m) => m.id)).toEqual(["deaths", "missing", "injured", "affected_direct", "displaced"]);
 	});
 
@@ -86,7 +84,7 @@ describe("the shared bar as the dashboard sets it up", () => {
 		expect(html).not.toMatch(/>\s*Provisional\s*</);
 	});
 
-	it("offers the effect chips, the Area control and the 1, 3, 5 and 10 year presets", () => {
+	it("offers the measure select, the Area control and the 1, 3, 5 and 10 year presets", () => {
 		expect(html).toContain("Directly affected");
 		expect(html).toContain("Area");
 		for (const n of [1, 3, 5, 10]) expect(html).toMatch(new RegExp(`\\b${n}\\b`));
