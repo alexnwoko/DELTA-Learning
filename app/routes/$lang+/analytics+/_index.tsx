@@ -6,7 +6,9 @@
 import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { useLoaderData, useSearchParams } from "react-router";
 import { approvalAudienceForBasis } from "~/backend.server/approvalAudience.server";
+import { getEventMap } from "~/backend.server/models/analytics/dashboard/eventMap.server";
 import { getEventPanels1to7 } from "~/backend.server/models/analytics/dashboard/eventPanels.server";
+import { getRecordsByApproval } from "~/backend.server/models/analytics/dashboard/recordsByApproval.server";
 import { getHazardEventPanels1to7 } from "~/backend.server/models/analytics/dashboard/hazardEventPanels.server";
 import { getSectorPanels1to7 } from "~/backend.server/models/analytics/dashboard/sectorPanels.server";
 import { getImpactPanels1to4 } from "~/backend.server/models/analytics/dashboard/impactPanels.server";
@@ -19,6 +21,7 @@ import { BasisSwitch, PublishedBasisNotice, type ApprovalCounts } from "~/fronte
 import { DashboardDownload } from "~/frontend/analytics/dashboard/DashboardDownload";
 import { DashboardShell, viewLabel } from "~/frontend/analytics/dashboard/DashboardShell";
 import { searchForView, viewFromSearch, type DashboardView } from "~/frontend/analytics/dashboard/views";
+import { EventMap } from "~/frontend/analytics/dashboard/panels/events/EventMap";
 import { eventDashboardPanels } from "~/frontend/analytics/dashboard/panels/events/eventPanels";
 import { hazardEventDashboardPanels } from "~/frontend/analytics/dashboard/panels/hazards/hazardEventPanels";
 import { ImpactMap } from "~/frontend/analytics/dashboard/panels/impact/ImpactMap";
@@ -29,6 +32,7 @@ import { ViewContext } from "~/frontend/context";
 import { basisIncludesProvisional } from "~/utils/approvalBasis";
 import { authLoaderPublicOrWithPerm, hasPermission } from "~/utils/auth";
 import type { ImpactPanels1to4 } from "~/utils/dashboard/impactPanels";
+import type { EventMapPayload } from "~/utils/dashboard/eventMap";
 import type { EventPanels1to7 } from "~/utils/dashboard/eventPanels";
 import type { HazardEventPanels1to7 } from "~/utils/dashboard/hazardEventPanels";
 import type { ImpactMapPayload } from "~/utils/dashboard/impactMap";
@@ -79,15 +83,22 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request }:
 	const events = view === "disaster_event" ? await getEventPanels1to7(query, ctx) : null;
 	const hazardEvents = view === "hazardous_event" ? await getHazardEventPanels1to7(query, ctx) : null;
 	const sectors = view === "sectors" ? await getSectorPanels1to7(query, ctx) : null;
+	// Every dimension has a map (Alex, 2026-10-17). A view with no hazardous
+	// event at all (G-01) shows its one frame instead.
+	const eventMap =
+		view === "disaster_event" || (view === "hazardous_event" && !hazardEvents?.empty)
+			? await getEventMap(query, ctx, view)
+			: null;
+	// For the G-00 notice: only the published basis can be empty this way.
+	const approvalCounts = query.scope.basis === "published" ? await getRecordsByApproval(query, ctx) : null;
 	return {
 		query,
 		view,
 		events,
 		hazardEvents,
 		sectors,
-		// Records in scope by approval state, for the G-00 notice; null until
-		// the Analytics count loader lands.
-		approvalCounts: null as ApprovalCounts | null,
+		eventMap,
+		approvalCounts: approvalCounts as ApprovalCounts | null,
 		canReview,
 		canOpenReviewQueue,
 		// The page-level CSV is for signed-in readers (ruling D6).
@@ -125,6 +136,13 @@ export default function AnalysisDashboard() {
 			.join(" · ");
 
 	const opts = { source, scope: summary, provisional: ld.provisional };
+	const mapScope = {
+		tenant: ld.country || null,
+		fromDate: query.where.time?.from ?? null,
+		toDate: query.where.time?.to ?? null,
+		audience: ld.audience,
+		provisional: ld.provisional,
+	};
 	const panels: DashboardPanel[] = impact
 		? impactDashboardPanels(ctx, impact, source, {
 				data: ld.impactMore as ImpactPanels5to16,
@@ -152,7 +170,7 @@ export default function AnalysisDashboard() {
 					query.scope.basis === "published" ? (
 						<PublishedBasisNotice
 							ctx={ctx}
-							counts={ld.approvalCounts}
+							counts={ld.approvalCounts as ApprovalCounts | null}
 							canReview={ld.canReview}
 							onShowUnpublished={() => setBasis("provisional")}
 						/>
@@ -162,17 +180,9 @@ export default function AnalysisDashboard() {
 				provisional={ld.provisional}
 				map={
 					ld.impactMap ? (
-						<ImpactMap
-							ctx={ctx}
-							map={ld.impactMap as ImpactMapPayload}
-							scope={{
-								tenant: ld.country || null,
-								fromDate: query.where.time?.from ?? null,
-								toDate: query.where.time?.to ?? null,
-								audience: ld.audience,
-								provisional: ld.provisional,
-							}}
-						/>
+						<ImpactMap ctx={ctx} map={ld.impactMap as ImpactMapPayload} scope={mapScope} />
+					) : ld.eventMap ? (
+						<EventMap ctx={ctx} map={ld.eventMap as EventMapPayload} scope={mapScope} />
 					) : undefined
 				}
 				panels={panels}

@@ -49,6 +49,7 @@ export function EventMap({ ctx, map, scope }: { ctx: ViewContext; map: EventMapP
 					legendTitle={legend}
 					measureFamily="events"
 					symbol="bubble"
+					notReportedLabel={t({ code: "analysis.map_no_events_recorded", msg: "No events recorded" })}
 					scope={scope}
 					notApplied={map.meta.notApplied}
 				/>
