@@ -2,6 +2,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { createRoutesStub } from "react-router";
 import { AboutTheData } from "~/frontend/analytics/dashboard/AboutTheData";
+import { dashboardPanelsCsv } from "~/frontend/analytics/dashboard/DashboardDownload";
 import { DashboardShell } from "~/frontend/analytics/dashboard/DashboardShell";
 import { PanelGrid } from "~/frontend/analytics/dashboard/PanelGrid";
 import { cellRow, cellText, coverageText, flaggedText } from "~/frontend/analytics/dashboard/panelCell";
@@ -210,5 +211,19 @@ describe("dashboard shell", () => {
 		expect(html).toContain("World Meteorological Organization (WMO)");
 		expect(html).not.toMatch(/<img/);
 		expect(html).toContain("Contact details not yet set");
+	});
+});
+
+describe("page-level CSV", () => {
+	it("takes every drawn panel in order, skips gap panels, and keeps value states", () => {
+		const panels = impactDashboardPanels(ctx, IMPACT_PANELS_FIXTURE, "EXAMPLE DATA");
+		const csv = dashboardPanelsCsv(panels, "EXAMPLE DATA · Angola", "EXAMPLE DATA", "provisional", new Date("2026-10-17T00:00:00Z"));
+		const lines = csv.replace(/^\ufeff/, "").trim().split("\r\n");
+		const titles = [...new Set(lines.slice(2).map((l) => l.split(",")[0]))];
+		expect(titles).toEqual(["Human effects at a glance", "Coverage of the records", "Human effects by year", "Hazard ranking"]);
+		expect(csv).toContain("Human effects at a glance,Missing,,,not_reported,");
+		expect(csv).toContain("Human effects by year,2023,,,not_reported,");
+		expect(csv).toContain("PROVISIONAL: includes unpublished records; not for publication");
+		expect(csv).not.toContain("Sendai Targets");
 	});
 });

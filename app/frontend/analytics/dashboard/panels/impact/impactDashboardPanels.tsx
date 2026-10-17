@@ -4,10 +4,10 @@
 import type { ViewContext } from "~/frontend/context";
 import type { ImpactPanels1to4 } from "~/utils/dashboard/impactPanels";
 import type { DashboardPanel } from "../../types";
-import { CoverageWaffle } from "./CoverageWaffle";
-import { HazardRanking } from "./HazardRanking";
-import { HeadlineTiles } from "./HeadlineTiles";
-import { ImpactTimeline } from "./ImpactTimeline";
+import { CoverageWaffle, waffleExport } from "./CoverageWaffle";
+import { HazardRanking, rankingExport } from "./HazardRanking";
+import { HeadlineTiles, headlineExport } from "./HeadlineTiles";
+import { ImpactTimeline, timelineExport } from "./ImpactTimeline";
 import { impactMeasureLabel } from "./measureLabels";
 
 /** Titles of panels 5 to 16, in the paper's order. */
@@ -40,6 +40,7 @@ export function impactDashboardPanels(
 		{
 			id: "impact-1",
 			n: 1,
+			exportData: headlineExport(ctx, data.tiles, data.meta.tiles),
 			title: t("dashboard.impact_1", "Human effects at a glance"),
 			render: () => (
 				<HeadlineTiles
@@ -53,6 +54,7 @@ export function impactDashboardPanels(
 		{
 			id: "impact-2",
 			n: 2,
+			exportData: waffleExport(ctx, data.coverage, data.meta.coverage),
 			title: t("dashboard.impact_2", "Coverage of the records"),
 			render: () => (
 				<CoverageWaffle
@@ -66,6 +68,7 @@ export function impactDashboardPanels(
 		{
 			id: "impact-3",
 			n: 3,
+			exportData: timelineExport(ctx, data.timeline, data.meta.timeline, "all"),
 			title: t("dashboard.impact_3", "Human effects by year"),
 			render: () => (
 				<ImpactTimeline
@@ -79,6 +82,7 @@ export function impactDashboardPanels(
 		{
 			id: "impact-4",
 			n: 4,
+			exportData: rankingExport(data.hazardRanking, data.meta.hazardRanking),
 			title: t("dashboard.impact_4", "Hazard ranking"),
 			render: () => (
 				<HazardRanking

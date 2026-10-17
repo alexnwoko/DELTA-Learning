@@ -3,7 +3,7 @@
 // state shows its word, never 0. Pure module, safe on server and client.
 import type { ChartExportRow } from "~/frontend/charts/chartExport";
 import type { DContext } from "~/utils/dcontext";
-import type { PanelCell } from "~/utils/dashboard/impactPanels";
+import type { PanelCell, PanelMeta } from "~/utils/dashboard/impactPanels";
 import { STATE_ENCODING } from "~/utils/mapState";
 
 /** The figure as the screen shows it: a number or a state word. */
@@ -55,4 +55,18 @@ export function cellRow(label: string, cell: PanelCell, series?: string): ChartE
 		valueState: cell.valueState,
 		recordsFlagged: cell.recordsFlagged,
 	};
+}
+
+/** What a panel exports: the rows its chart draws and its caption notes. */
+export interface PanelExport {
+	rows: ChartExportRow[];
+	method: string;
+	notes: string[];
+}
+
+/** Caption notes: the panel's own lines, then coverage and unapplied filters. */
+export function panelNotes(meta: PanelMeta, own: (string | undefined)[] = []): string[] {
+	return [...own, meta.coverage, ...meta.notApplied.map((f) => `Not applied: ${f}`)].filter(
+		(n): n is string => Boolean(n),
+	);
 }

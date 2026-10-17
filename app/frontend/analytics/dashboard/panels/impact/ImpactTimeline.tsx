@@ -12,7 +12,7 @@ import type { ImpactTimeline as ImpactTimelinePayload, PanelCell, PanelMeta } fr
 import { dataTokens } from "~/utils/designTokens.generated";
 import { hazardColour } from "~/utils/hazardIdentity";
 import { STATE_ENCODING } from "~/utils/mapState";
-import { cellRow } from "../../panelCell";
+import { cellRow, panelNotes, type PanelExport } from "../../panelCell";
 import { impactMeasureLabel } from "./measureLabels";
 
 type YearCell = { year: number; cell: PanelCell };
@@ -126,6 +126,31 @@ export function YearColumns({
 	);
 }
 
+/**
+ * Panel 3's rows and notes. On screen the rows follow the toggle; the
+ * page-level CSV takes both (`view` "all"): the series, then each hazard.
+ */
+export function timelineExport(
+	ctx: ViewContext,
+	timeline: ImpactTimelinePayload,
+	meta: PanelMeta,
+	view: "total" | "by_hazard" | "all" = "total",
+): PanelExport {
+	const total = timeline.years.map((y) => cellRow(String(y.year), y.cell));
+	const hazards = timeline.byHazard
+		.slice(0, 6)
+		.flatMap((h) => h.years.map((y) => cellRow(String(y.year), y.cell, h.label)));
+	const rows = view === "total" ? total : view === "by_hazard" ? hazards : [...total, ...hazards];
+	const notes = panelNotes(meta, [
+		ctx.t({
+			code: "dashboard.timeline_caveat",
+			msg: "More records in later years can reflect more reporting, not more impact.",
+		}),
+		ctx.t({ code: "dashboard.timeline_gaps", msg: "Outlined years: no record reported this measure." }),
+	]);
+	return { rows, method: meta.method, notes };
+}
+
 export interface ImpactTimelineProps {
 	ctx: ViewContext;
 	title: string;
@@ -143,18 +168,7 @@ export function ImpactTimeline({ ctx, title, timeline, meta, source, scope, prov
 	const noData = STATE_ENCODING.not_reported.label;
 	const smallMultiples = timeline.byHazard.slice(0, 6);
 
-	const rows = byHazard
-		? smallMultiples.flatMap((h) => h.years.map((y) => cellRow(String(y.year), y.cell, h.label)))
-		: timeline.years.map((y) => cellRow(String(y.year), y.cell));
-	const notes = [
-		t({
-			code: "dashboard.timeline_caveat",
-			msg: "More records in later years can reflect more reporting, not more impact.",
-		}),
-		t({ code: "dashboard.timeline_gaps", msg: "Outlined years: no record reported this measure." }),
-		meta.coverage,
-		...meta.notApplied.map((f) => `Not applied: ${f}`),
-	].filter((n): n is string => Boolean(n));
+	const { rows, notes } = timelineExport(ctx, timeline, meta, byHazard ? "by_hazard" : "total");
 
 	return (
 		<ChartFrame

@@ -10,6 +10,7 @@ import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { useLoaderData, useSearchParams } from "react-router";
 import { approvalAudienceForBasis } from "~/backend.server/approvalAudience.server";
 import { AboutTheData } from "~/frontend/analytics/dashboard/AboutTheData";
+import { DashboardDownload } from "~/frontend/analytics/dashboard/DashboardDownload";
 import { DashboardShell, dimensionLabel } from "~/frontend/analytics/dashboard/DashboardShell";
 import { impactDashboardPanels } from "~/frontend/analytics/dashboard/panels/impact/impactDashboardPanels";
 import type { DashboardPanel } from "~/frontend/analytics/dashboard/types";
@@ -42,6 +43,8 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request }:
 	return {
 		query,
 		canReview,
+		// The page-level CSV is for signed-in readers (ruling D6).
+		signedIn: audience !== "public",
 		example: true,
 		impact: { ...IMPACT_PANELS_FIXTURE, query },
 		country: "Example country",
@@ -90,6 +93,18 @@ export default function AnalysisDashboard() {
 				summary={ld.impact.scopeText}
 				provisional={query.scope.basis === "provisional"}
 				panels={panels}
+				download={
+					ld.signedIn ? (
+						<DashboardDownload
+							ctx={ctx}
+							title={`${ctx.t({ code: "dashboard.title", msg: "Analysis" })}: ${dimensionLabel(ctx, query.dimension)}`}
+							scopeLine={ld.impact.scopeText}
+							source={source}
+							basis={query.scope.basis}
+							panels={panels}
+						/>
+					) : undefined
+				}
 				about={
 					<AboutTheData
 						ctx={ctx}
