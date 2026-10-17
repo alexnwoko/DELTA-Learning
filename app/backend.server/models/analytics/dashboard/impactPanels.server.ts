@@ -48,7 +48,6 @@ export function impactFiltersFromQuery(
 	ctx: ImpactPanelsContext,
 ): { filters: HazardFilters; notApplied: string[] } {
 	const notApplied: string[] = [];
-	if (query.where.region) notApplied.push("region");
 	if (query.where.sectors?.length) notApplied.push("sector");
 	if (query.where.disasterEventId) notApplied.push("disasterEvent");
 	if (query.where.hazardousEventId) notApplied.push("hazardousEvent");
@@ -63,6 +62,7 @@ export function impactFiltersFromQuery(
 			hazardClusterId: query.where.hazard?.clusterId ?? null,
 			specificHazardId: query.where.hazard?.hazardId ?? null,
 			geographicLevelId: query.where.geo?.divisionId ?? null,
+			regionId: query.where.region?.regionId ?? null,
 			fromDate: query.where.time?.from ?? null,
 			toDate: query.where.time?.to ?? null,
 		},

@@ -44,6 +44,8 @@ export interface HazardFilters {
 	hazardClusterId: string | null;
 	specificHazardId: string | null;
 	geographicLevelId: string | null;
+	/** A region (geo.region): records in its member divisions or below (RG-1). */
+	regionId?: string | null;
 	fromDate: string | null;
 	toDate: string | null;
 	/** Approval basis (C23): public or signed-in, from the request. */
@@ -362,50 +364,35 @@ export function humanEffectsFilteredRecords(
       `);
 	}
 
-	// Check if we need geographic filtering
-	const needsGeographicFilter =
-		geographicLevelId && geographicLevelId.trim() !== "";
+	// Place: the division and its descendants, or the members of a region
+	// and their descendants, as the geoportal resolves them (RG-1). A record
+	// linked to several divisions counts once.
+	if (geographicLevelId && geographicLevelId.trim() !== "") {
+		whereConditions.push(sql`EXISTS (
+			SELECT 1 FROM "disaster_records_division" drd
+			WHERE drd."disaster_record_id" = dr."id"
+				AND drd."division_id" IN ${divisionAndDescendantsSql(geographicLevelId, countryAccountsId)}
+		)`);
+	} else if (filters.regionId) {
+		whereConditions.push(sql`EXISTS (
+			SELECT 1 FROM "disaster_records_division" drd
+			JOIN geo.division_ancestor da
+				ON da.division_id = drd."division_id"
+				AND da.country_accounts_id = ${countryAccountsId}
+			JOIN geo.region_member m
+				ON m.division_id = da.ancestor_id
+				AND m.country_accounts_id = da.country_accounts_id
+			WHERE drd."disaster_record_id" = dr."id"
+				AND m.region_id = ${filters.regionId}
+		)`);
+	}
 
-	// Records in scope; every record counts, including those with no
-	// human-effects rows, so "not reported" is measured rather than dropped.
-	let filteredRecords: SQL;
-	if (needsGeographicFilter) {
-		const geoConditions = [
-			...whereConditions,
-			sql`drd."division_id" IS NOT NULL`,
-			sql`dh.level1_id IN (
-                SELECT level1_id 
-                FROM division_hierarchy 
-                WHERE id = ${geographicLevelId}
-            )`,
-		];
-		filteredRecords = sql`
-          division_hierarchy AS (
-            SELECT id, parent_id, id AS level1_id
-            FROM "division"
-            WHERE level = 1
-            UNION ALL
-            SELECT d.id, d.parent_id, dh.level1_id
-            FROM "division" d
-            INNER JOIN division_hierarchy dh ON d.parent_id = dh.id
-          ),
-          filtered_records AS (
-            SELECT DISTINCT dr."id" AS record_id
-            FROM "disaster_records" dr
-			LEFT JOIN "disaster_records_division" drd
-			  ON dr."id" = drd."disaster_record_id"
-            LEFT JOIN division_hierarchy dh 
-			  ON drd."division_id" = dh.id
-            WHERE ${and(...geoConditions)}
-          )`;
-	} else {
-		filteredRecords = sql`
+	const filteredRecords = sql`
           filtered_records AS (
             SELECT dr."id" AS record_id
             FROM "disaster_records" dr
             WHERE ${and(...whereConditions)}
           )`;
-	}
 
 	return filteredRecords;
 }

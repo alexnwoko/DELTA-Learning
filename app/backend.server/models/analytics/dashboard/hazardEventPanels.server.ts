@@ -48,6 +48,15 @@ function hazardEventsCte(filters: HazardFilters): SQL {
 			WHERE hed."hazardous_event_id" = he."id"
 				AND hed."division_id" IN ${divisionAndDescendantsSql(filters.geographicLevelId, filters.countryAccountsId)}
 		)`);
+	if (filters.regionId)
+		conds.push(sql`EXISTS (
+			SELECT 1 FROM "hazardous_event_division" hed
+			JOIN geo.division_ancestor da
+				ON da.division_id = hed."division_id" AND da.country_accounts_id = ${filters.countryAccountsId}
+			JOIN geo.region_member m
+				ON m.division_id = da.ancestor_id AND m.country_accounts_id = da.country_accounts_id
+			WHERE hed."hazardous_event_id" = he."id" AND m.region_id = ${filters.regionId}
+		)`);
 	return sql`hev AS (
 		SELECT he."id", NULLIF(he."hip_type_id", '') AS hip_type_id,
 			NULLIF(he."hip_cluster_id", '') AS hip_cluster_id,
