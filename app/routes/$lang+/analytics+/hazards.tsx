@@ -50,7 +50,7 @@ import { ViewContext } from "~/frontend/context";
 
 import { BackendContext } from "~/backend.server/context";
 import { htmlTitle } from "~/utils/htmlmeta";
-import { approvalAudienceFromRequest } from "~/backend.server/approvalAudience.server";
+import { approvalAudienceForBasis } from "~/backend.server/approvalAudience.server";
 import { basisIncludesProvisional } from "~/utils/approvalBasis";
 import { ProvisionalFiguresNotice } from "~/frontend/analytics/ProvisionalFiguresNotice";
 
@@ -128,7 +128,11 @@ export const action = async (actionArgs: ActionFunctionArgs) => {
 		currency = settings.currencyCode;
 	}
 
-	const audience = await approvalAudienceFromRequest(request);
+	// Reviewer provisional basis on request (AB-01, ruling D7); refused with
+	// 403 for anyone without ValidateData, never silently downgraded.
+	const basis =
+		formData.get("basis") === "provisional" ? "provisional" : "published";
+	const audience = await approvalAudienceForBasis(request, basis);
 	const filters = {
 		countryAccountsId,
 		audience,
