@@ -17,12 +17,17 @@ DV-A11Y rules; DELTA A10 (axe 0 serious or critical; RTL check); WCAG 2.2 AA.
 - **Recharts 3.** `accessibilityLayer` defaults to true (3.10.1 types). Test keyboard and screen
   reader output before relying on it.
 
-## Categorical palette (colour-vision safe)
+## Colour (use DELTA tokens first)
 
-Wong palette, from the Community-Access knowledge base: `#E69F00`, `#56B4E9`, `#009E73`,
-`#F0E442`, `#0072B2`, `#D55E00`, `#CC79A7` (plus black). Use at most five categories in one chart;
-`#F0E442` only on dark surfaces or with an outline. Map these to DELTA design tokens; do not
-hard-code colours in components.
+- Quantities: the single-hue ramps in `app/styles/tokens/data.css`: `--delta-data-ramp-people-1..5`,
+  `-housing-1..5`, `-events-1..5` (`-money-*` stays unused while money is refused).
+- Hazards: one colour per HIPs 2025 type: `--delta-data-hazard-meteorological-hydrological`,
+  `-geological`, `-biological`, `-environmental`, `-chemical`, `-technological`, `-societal`,
+  `-extraterrestrial`, `-unclassified`.
+- States: the state tokens (see `delta-states-and-honesty.md`).
+- Fallback categorical palette only where no token fits (Wong, colour-vision safe, from the
+  Community-Access knowledge base): `#E69F00`, `#56B4E9`, `#009E73`, `#F0E442`, `#0072B2`,
+  `#D55E00`, `#CC79A7`. Propose a new token instead of hard-coding.
 
 ## Right-to-left and long labels
 

@@ -3,19 +3,28 @@
 Sources: `delta-data-honesty`; DASH round 1 review (2026-10-16); vois-dataviz DV-HONEST and DV-STATE
 rules (`third_party/vois-dataviz`); tastecheck absence states (`third_party/tastecheck-data-viz`).
 
-## The seven states
+## Value states (use the code's names)
 
-Every value shown on a DELTA chart, tile, map or table is in exactly one state.
+Every value is a `MeasureValue` with one `valueState` from `app/utils/valueState.ts`:
+`reported`, `zero_confirmed`, `not_reported`, `not_applicable`, `suppressed`,
+`insufficient_reporting`. Two view states sit on top: "no records match the filters" and
+"provisional". Draw each with its design token from `app/styles/tokens/data.css`
+(`--delta-data-state-<state>-fill|stroke|dash|pattern`, `--delta-data-map-no-records-*`,
+`--delta-data-notice-provisional-*`). Never invent a colour for a state.
 
 | State | Meaning | Chart | Tile | Map | Table |
 |---|---|---|---|---|---|
-| Reported value | A figure was reported | Normal mark | Value | Class colour or spike | Value |
-| Reported zero | The source says zero | A visible zero mark (bar stub or point at 0) | "0" | Lightest class, outlined | 0 |
-| Not reported | No figure was reported | Gap with the label "Not reported" | "Not reported" in place of a value | Hatched grey, legend entry | "Not reported" |
-| Not applied | The field does not apply to this record or hazard | No mark; strip label "Not applied" | Hidden, with a note | Not drawn; legend note | "Not applied" |
-| No records match | The filters return nothing | Empty-state message naming the filters | "No records match these filters" | Plain basemap and message | Message row |
-| Suppressed | Hidden to protect small counts (E22) | Gap labelled "Suppressed" | "Suppressed" | Hatched, legend entry | "Suppressed" |
-| Provisional | Loaded, not yet published | Normal mark plus "Provisional" badge on the panel | Badge on tile | Badge in legend | Column flag |
+| `reported` | A figure was reported | Normal mark | Value | Class colour or spike | Value |
+| `zero_confirmed` | The source confirms zero | Visible zero mark, dashed outline (state token) | "0 (confirmed)" | Outlined, state token | 0 |
+| `not_reported` | No figure reported | Gap labelled "Not reported" (state token) | "Not reported" in place of a value | State token fill, legend entry | "Not reported" |
+| `insufficient_reporting` | Too few records report it to show a figure | Hatched gap labelled "Insufficient reporting" | "Insufficient reporting" with coverage | Hatched (state token) | "Insufficient reporting" |
+| `not_applicable` | The field does not apply | No mark; strip label "Not applicable" | Hidden, with a note | Not drawn; `map-not-applied-note` | "Not applicable" |
+| `suppressed` | Hidden to protect small counts (E22) | Crosshatched gap labelled "Suppressed" | "Suppressed" | Crosshatched (state token) | "Suppressed" |
+| No records match (view) | Filters return nothing | Message naming the filters | "No records match these filters" | `map-no-records` fill and message | Message row |
+| Provisional (view) | Loaded, not yet published | Panel badge (`notice-provisional`) | Badge on tile | Legend badge | Column flag |
+
+Monetary figures use `MonetaryValueState` (`reported` or `not_reported` only) and are refused on
+screen until D-04 is ruled.
 
 Rules:
 
@@ -23,9 +32,10 @@ Rules:
   (DV-HONEST-005, DV-HONEST-008).
 - Never sum "not reported" into a total. A total over partial data says "at least" and shows
   coverage.
-- "Reported zero" and "not reported" must look different in every view (tastecheck: zero, not
-  observed, suppressed, not applicable and not yet reported cannot share a treatment).
+- Tastecheck makes the same point: zero, not observed, suppressed, not applicable and not yet
+  reported cannot share a treatment.
 - DV-STATE-002's generic empty cases are replaced by the states above.
+- `zero_confirmed` and `not_reported` must look different in every view.
 
 ## Grade (A to D)
 

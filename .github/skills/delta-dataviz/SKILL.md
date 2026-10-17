@@ -16,6 +16,9 @@ overstating what the data says. This skill sits on top of `delta-data-honesty` a
 
 ## Stack (decided; do not reopen)
 
+- Tokens: `app/styles/tokens/data.css` (states, ramps, hazard colours, map, notices) and
+  `brand.css`. Never hard-code a colour a token covers.
+
 - Charts: Recharts 3 (`accessibilityLayer` is on by default in 3.10.1; test what it gives).
   No second chart stack: no D3 by hand, no ECharts, no Vega.
 - Maps: OpenLayers. Components: PrimeReact + Tailwind 4 with headless React Aria (D-06).
@@ -45,8 +48,9 @@ overstating what the data says. This skill sits on top of `delta-data-honesty` a
 
 1. **Null is not zero.** "Not reported" is never drawn as 0, never summed as 0 and never hidden.
    A real reported zero is a mark; a missing value is a gap with a label.
-2. **States are distinct.** Reported value, reported zero, not reported, not applied, no records
-   match the filters, suppressed and provisional never share one mark, line, cell or colour.
+2. **States are distinct and use the code's names.** `reported`, `zero_confirmed`, `not_reported`,
+   `not_applicable`, `suppressed`, `insufficient_reporting` (`app/utils/valueState.ts`), plus "no
+   records match" and "provisional", each drawn with its token from `app/styles/tokens/data.css`.
 3. **Grade and coverage travel with the figure.** A KPI tile shows value, grade badge and coverage
    ("reported by 14 of 21 provinces"). A chart's source line carries method, grade and date.
 4. **Money is refused** until the monetary convention is ruled. The tile shows the refusal with the

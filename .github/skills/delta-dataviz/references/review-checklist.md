@@ -8,8 +8,10 @@ checklist (`third_party/tufte/checklist.md`, `kill-list.md`) and the vois-datavi
 
 - [ ] The panel answers one stated question and names its DELTA item.
 - [ ] No "not reported" value is drawn, summed or tabulated as 0.
-- [ ] Reported zero, not reported, not applied, no records match, suppressed and provisional each
-      have a distinct treatment in chart, tile, map and table.
+- [ ] Each `valueState` (`zero_confirmed`, `not_reported`, `not_applicable`, `suppressed`,
+      `insufficient_reporting`) plus no-records and provisional uses its own token in chart, tile, map
+      and table.
+- [ ] Colours come from `app/styles/tokens/data.css`; none hard-coded.
 - [ ] Every figure shows grade and coverage; provisional data carries the badge.
 - [ ] No money figure is shown; refusal tiles carry `MONETARY_CONVENTIONS_PENDING`.
 - [ ] Wording: "human effects and damage" where no money is shown; Sendai and HIPs names.
