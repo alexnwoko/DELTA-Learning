@@ -32,6 +32,7 @@ import {
 	bubbleRadiusPx,
 	defaultSymbolFor,
 	rampIndex,
+	resolveLayeredMapState,
 	resolveMapState,
 } from "~/utils/mapState";
 
@@ -108,6 +109,12 @@ type MapChartProps = {
 	 * Density uses each area's areaKm2.
 	 */
 	underlay?: { kind: MapUnderlayKind; family: MeasureFamily };
+	/**
+	 * Rounded bars over a choropleth: each area's total and value state shade
+	 * the area (for example the number of deaths) and its parts draw as bars
+	 * on top (for example dwellings damaged and destroyed) in barsFamily.
+	 */
+	layered?: { barsFamily: MeasureFamily };
 };
 
 type DataSourceType = MapChartArea[];
@@ -234,9 +241,24 @@ function bubbleSvg(
 }
 
 /**
+ * A bar standing on a flat baseline with a rounded top (Alex, 2026-10-17:
+ * bars rounded at the value end). The radius shrinks for a short bar.
+ */
+function topRoundedBarPath(
+	x: number,
+	baseY: number,
+	width: number,
+	height: number,
+): string {
+	const r = Math.min(width / 2, height);
+	const top = baseY - height;
+	return `M${x},${baseY} L${x},${top + r} A${r},${r} 0 0 1 ${x + r},${top} L${x + width - r},${top} A${r},${r} 0 0 1 ${x + width},${top + r} L${x + width},${baseY} Z`;
+}
+
+/**
  * Rounded bars as inline SVG (preview option B), side by side on a shared
- * baseline. A part with no reported value gets an empty dashed slot, never a
- * short bar.
+ * flat baseline, each rounded at the top. A part with no reported value
+ * gets an empty dashed slot, never a short bar.
  */
 function barsSvg(
 	bars: Extract<MapAreaSymbol, { kind: "bars" }>["bars"],
@@ -255,7 +277,7 @@ function barsSvg(
 		}
 		const h = barLengthPx(b.ratio, maxLength);
 		const stroke = b.flagged ? PLAUSIBILITY_MARKER.stroke : "#ffffff";
-		return `<rect x="${x}" y="${height - h - 1}" width="${BAR_WIDTH_PX}" height="${h}" rx="${r}" fill="${fill}" fill-opacity="${1 - i * 0.3}" stroke="${stroke}" stroke-width="1"/>`;
+		return `<path d="${topRoundedBarPath(x, height - 1, BAR_WIDTH_PX, h)}" fill="${fill}" fill-opacity="${1 - i * 0.3}" stroke="${stroke}" stroke-width="1"/>`;
 	});
 	return {
 		html: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" aria-hidden="true">${shapes.join("")}</svg>`,
@@ -270,7 +292,7 @@ function areaStyle(
 	classCount: number,
 	family?: MeasureFamily,
 ) {
-	if (area.state === "shaded" && area.symbol) {
+	if (area.state === "shaded" && area.symbol && area.classIndex === null) {
 		// Bubble or bars mode: the area keeps the canvas fill; the symbol
 		// carries the value.
 		return {
@@ -426,6 +448,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 			measureKind,
 			symbol,
 			underlay,
+			layered,
 		},
 		ref,
 	) => {
@@ -541,22 +564,36 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 				}
 
 				// One resolver for every map state, class and marker.
-				const resolved = resolveMapState(dataSource.map(toCell), {
-					family: currentFamily ?? "people",
-					scope: scope ?? DEFAULT_SCOPE,
-					notApplied,
-					symbol: symbol ?? defaultSymbolFor(measureKind ?? "count"),
-					underlay: underlay
-						? {
-								...underlay,
-								areaKm2: new Map(
-									dataSource.flatMap((a, i) =>
-										a.areaKm2 ? [[String(i), a.areaKm2] as const] : [],
-									),
-								),
-							}
-						: undefined,
-				});
+				const resolved = layered
+					? resolveLayeredMapState(
+							dataSource.map(toCell),
+							dataSource.map((a, i) => ({
+								areaId: String(i),
+								parts: a.parts ?? [],
+							})),
+							{
+								family: currentFamily ?? "people",
+								scope: scope ?? DEFAULT_SCOPE,
+								notApplied,
+								barsFamily: layered.barsFamily,
+							},
+						)
+					: resolveMapState(dataSource.map(toCell), {
+							family: currentFamily ?? "people",
+							scope: scope ?? DEFAULT_SCOPE,
+							notApplied,
+							symbol: symbol ?? defaultSymbolFor(measureKind ?? "count"),
+							underlay: underlay
+								? {
+										...underlay,
+										areaKm2: new Map(
+											dataSource.flatMap((a, i) =>
+												a.areaKm2 ? [[String(i), a.areaKm2] as const] : [],
+											),
+										),
+									}
+								: undefined,
+						});
 				setMapState(resolved);
 				setUpdatedDataSource(dataSource);
 				const classCount = Math.max(resolved.legend.classes.length, 1);
@@ -698,6 +735,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 				measureKind,
 				symbol,
 				underlay,
+				layered,
 			],
 		);
 
@@ -770,7 +808,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 					>
 						<strong>{currentLegendTitle}</strong>
 						<ul style={{ listStyle: "none", padding: 0, margin: "5px 0 0 0" }}>
-							{legend.mode === "bubbles" &&
+							{legend.symbols?.kind === "bubble" &&
 								legend.symbols &&
 								legend.symbols.references.map((r) => {
 									const b = bubbleSvg(
@@ -790,7 +828,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 										</li>
 									);
 								})}
-							{legend.mode === "bubbles" && legend.symbols && (
+							{legend.symbols?.kind === "bubble" && legend.symbols && (
 								<li style={{ ...legendRow, whiteSpace: "normal" }}>
 									{ctx.t({
 										code: "analysis.map_bubble_ring",
@@ -799,7 +837,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 									})}
 								</li>
 							)}
-							{legend.mode === "bubbles" &&
+							{legend.symbols?.kind === "bubble" &&
 								legend.symbols?.outliers.map((o) => (
 									<li
 										key={`outlier-${o.areaId}`}
@@ -815,7 +853,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 										)}
 									</li>
 								))}
-							{legend.mode === "bars" &&
+							{legend.symbols?.kind === "bars" &&
 								legend.symbols?.parts.map((p, i) => (
 									<li key={`part-${p.key}`} style={legendRow}>
 										<Swatch
@@ -826,7 +864,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 										{p.label}
 									</li>
 								))}
-							{legend.mode === "bars" && legend.symbols && (
+							{legend.symbols?.kind === "bars" && legend.symbols && (
 								<li style={{ ...legendRow, whiteSpace: "normal" }}>
 									{ctx.t(
 										{
@@ -842,16 +880,15 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 									)}
 								</li>
 							)}
-							{(legend.mode === "bubbles" || legend.mode === "bars") &&
-								legend.symbols?.maxFlagged && (
-									<li style={{ ...legendRow, whiteSpace: "normal" }}>
-										{ctx.t({
-											code: "analysis.map_symbol_max_flagged",
-											desc: "Map legend note when the largest bubble or bar includes figures flagged for review.",
-											msg: "Largest symbol includes figures flagged for review",
-										})}
-									</li>
-								)}
+							{legend.symbols !== null && legend.symbols?.maxFlagged && (
+								<li style={{ ...legendRow, whiteSpace: "normal" }}>
+									{ctx.t({
+										code: "analysis.map_symbol_max_flagged",
+										desc: "Map legend note when the largest bubble or bar includes figures flagged for review.",
+										msg: "Largest symbol includes figures flagged for review",
+									})}
+								</li>
+							)}
 							{legend.underlay && (
 								<li style={{ ...legendRow, fontWeight: 600 }}>
 									{legend.underlay.kind === "density"
@@ -1059,6 +1096,23 @@ function popupHtml(
 				),
 			),
 		);
+	}
+	if (area.symbol?.kind === "bars") {
+		for (const b of area.symbol.bars) {
+			const shown =
+				b.valueState === "reported" && b.value !== null
+					? formatNumberWithoutDecimals(b.value)
+					: stateLabel(
+							ctx,
+							b.valueState === "zero_confirmed" ||
+								b.valueState === "insufficient_reporting" ||
+								b.valueState === "not_applicable" ||
+								b.valueState === "suppressed"
+								? b.valueState
+								: "not_reported",
+						);
+			lines.push(escapeHtml(`${b.label}: ${shown}`));
+		}
 	}
 	if (area.quality.plausibility) {
 		lines.push(

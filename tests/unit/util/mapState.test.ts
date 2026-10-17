@@ -18,6 +18,7 @@ import {
 	notAppliedStrips,
 	q2Grade,
 	quantileBreaks,
+	resolveLayeredMapState,
 	resolveMapState,
 	scopeLabel,
 } from "~/utils/mapState";
@@ -590,5 +591,82 @@ describe("underlay under symbols (option D)", () => {
 			underlay: { kind: "density", family: "people" },
 		});
 		expect(noArea.legend.underlayRefused).toBe("no_area_data");
+	});
+});
+
+describe("rounded bars over a choropleth (Alex's choice, 2026-10-17)", () => {
+	const deaths = [
+		reported("a", 120),
+		reported("b", 40),
+		reported("c", 10),
+		reported("d", 70),
+		reported("e", 5),
+		cell("n", "not_reported"),
+	];
+	const houses = (destroyed: number | null, damaged: number | null) => [
+		{
+			key: "destroyed",
+			label: "Dwellings destroyed",
+			value: destroyed,
+			valueState:
+				destroyed === null ? ("not_reported" as const) : ("reported" as const),
+		},
+		{
+			key: "damaged",
+			label: "Dwellings damaged",
+			value: damaged,
+			valueState:
+				damaged === null ? ("not_reported" as const) : ("reported" as const),
+		},
+	];
+	const run = () =>
+		resolveLayeredMapState(
+			deaths,
+			[
+				{ areaId: "a", parts: houses(300, 900) },
+				{ areaId: "b", parts: houses(null, 200) },
+				{ areaId: "c", parts: houses(null, null) },
+				{ areaId: "n", parts: houses(50, null) },
+			],
+			{ family: "people", scope: signedIn, barsFamily: "housing" },
+		);
+
+	it("shades by the number of deaths in classes and stands house bars on top", () => {
+		const r = run();
+		expect(r.legend.mode).toBe("classes");
+		expect(byId(r, "a").classIndex).not.toBeNull();
+		expect(FAMILY_RAMPS.people).toContain(byId(r, "a").color);
+		const a = byId(r, "a").symbol;
+		expect(a?.kind === "bars" && a.bars.map((b) => b.ratio)).toEqual([
+			300 / 900,
+			1,
+		]);
+		expect(r.legend.symbols?.kind).toBe("bars");
+		expect(r.legend.symbols?.color).toBe(FAMILY_RAMPS.housing.at(-1));
+		expect(r.legend.symbols?.scaleMax).toBe(900);
+	});
+
+	it("keeps each layer's own states: no deaths reported still draws reported houses", () => {
+		const r = run();
+		expect(byId(r, "n").state).toBe("not_reported");
+		const n = byId(r, "n").symbol;
+		expect(n?.kind === "bars" && n.bars.map((b) => b.ratio)).toEqual([
+			50 / 900,
+			null,
+		]);
+		const b = byId(r, "b").symbol;
+		expect(b?.kind === "bars" && b.bars[0].ratio).toBeNull();
+		expect(byId(r, "c").symbol).toBeNull();
+		expect(byId(r, "d").symbol).toBeNull();
+	});
+
+	it("refuses bars and shading in the same colour family", () => {
+		expect(() =>
+			resolveLayeredMapState(deaths, [], {
+				family: "people",
+				scope: signedIn,
+				barsFamily: "people",
+			}),
+		).toThrow();
 	});
 });
