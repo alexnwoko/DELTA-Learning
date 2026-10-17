@@ -78,7 +78,7 @@ const MATRIX_EFFECTS: QueryHumanEffect[] = [
  * Houses destroyed (td) and damaged (pd) per record: counted damage rows in
  * the Housing sector or below it, leaving out furniture and equipment.
  */
-const housesCte = sql`houses AS (
+export const housesCte = sql`houses AS (
 	SELECT d."record_id",
 		SUM(d."td_damage_amount") AS td,
 		SUM(d."pd_damage_amount") AS pd
@@ -121,11 +121,11 @@ function recordDivisionsCte(countryAccountsId: string): SQL {
 const yearExpr = sql`NULLIF(substring(rec."start_date" from '^[0-9]{4}'), '')::int`;
 const monthExpr = sql`NULLIF(substring(rec."start_date" from '^[0-9]{4}-([0-9]{2})'), '')::int`;
 
-async function rows(query: SQL): Promise<Record<string, unknown>[]> {
+export async function rows(query: SQL): Promise<Record<string, unknown>[]> {
 	return (await dr.execute(query)).rows as Record<string, unknown>[];
 }
 
-const num = (v: unknown): number =>
+export const num = (v: unknown): number =>
 	v === null || v === undefined ? 0 : Number(v);
 
 /** A count measure without a confirmed-zero source (houses, evacuated, relocated). */
