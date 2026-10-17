@@ -115,6 +115,12 @@ type MapChartProps = {
 	 * on top (for example dwellings damaged and destroyed) in barsFamily.
 	 */
 	layered?: { barsFamily: MeasureFamily };
+	/**
+	 * Replaces "No data" for areas with no value, where the figure is a count
+	 * of recorded things and none is a known count, for example "No events
+	 * recorded" on the event maps.
+	 */
+	notReportedLabel?: string;
 };
 
 type DataSourceType = MapChartArea[];
@@ -449,6 +455,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 			symbol,
 			underlay,
 			layered,
+			notReportedLabel,
 		},
 		ref,
 	) => {
@@ -659,7 +666,9 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 								geojsonLayer.unbindPopup();
 							}
 
-							geojsonLayer.bindPopup(popupHtml(ctx, region, area));
+							geojsonLayer.bindPopup(
+								popupHtml(ctx, region, area, notReportedLabel),
+							);
 
 							geojsonLayer.addTo(mapRef.current);
 							geoJsonLayers.push(geojsonLayer);
@@ -704,7 +713,9 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 									keyboard: false,
 									deltaSymbol: true,
 								});
-								marker.bindPopup(popupHtml(ctx, region, area));
+								marker.bindPopup(
+									popupHtml(ctx, region, area, notReportedLabel),
+								);
 								marker.addTo(mapRef.current);
 							}
 						} catch (error) {
@@ -736,6 +747,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 				symbol,
 				underlay,
 				layered,
+				notReportedLabel,
 			],
 		);
 
@@ -995,7 +1007,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 											strokeWidth={enc.strokeWidth}
 											pattern={enc.pattern}
 										/>
-										{stateLabel(ctx, state)}
+										{stateLabel(ctx, state, notReportedLabel)}
 									</li>
 								);
 							})}
@@ -1031,7 +1043,9 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 function stateLabel(
 	ctx: ViewContext,
 	state: Exclude<MapArea["state"], "shaded">,
+	notReportedLabel?: string,
 ): string {
+	if (state === "not_reported" && notReportedLabel) return notReportedLabel;
 	switch (state) {
 		case "zero_confirmed":
 			return ctx.t({ code: "analysis.zero_confirmed", msg: "Zero, confirmed" });
@@ -1057,13 +1071,14 @@ function popupHtml(
 	ctx: ViewContext,
 	region: MapChartArea,
 	area: MapArea,
+	notReportedLabel?: string,
 ): string {
 	const lines: string[] = [];
 	if (region.valueState || (region.total !== null && region.total > 0)) {
 		if (region.description) lines.push(escapeHtml(region.description));
 	}
 	if (area.state !== "shaded" && !region.valueState) {
-		lines.push(escapeHtml(stateLabel(ctx, area.state)));
+		lines.push(escapeHtml(stateLabel(ctx, area.state, notReportedLabel)));
 	}
 	// PD-04:619: the legend names the state; the tooltip gives the reason.
 	if (area.state === "insufficient_reporting") {

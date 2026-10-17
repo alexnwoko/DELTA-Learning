@@ -477,6 +477,27 @@
       "when": 1792130400000,
       "tag": "20261011120000_add_fk_lookup_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1792137600000,
+      "tag": "20260928120000_geo_read_model",
+      "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1792148400000,
+      "tag": "20261015200000_geo_event_atom",
+      "breakpoints": true
+    },
+    {
+      "idx": 70,
+      "version": "7",
+      "when": 1792152000000,
+      "tag": "20261017090000_geo_region",
+      "breakpoints": true
     }
   ]
 }
