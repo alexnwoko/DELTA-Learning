@@ -11,7 +11,7 @@ import {
 	getRegion,
 	getRegionSummary,
 } from "~/backend.server/models/geo/regions";
-import { isUuid } from "~/utils/deltaQuery";
+import { isUuid, QUERY_REFUSALS } from "~/utils/deltaQuery";
 
 // RG-1 (I-4; OpenAPI 0.7.0-draft): one measure for a region, each record once
 // in the total, with every member area and the records shared between them.
@@ -27,7 +27,7 @@ export const loader = geoLoader(async ({ params }, ctx) => {
 	}
 	if (ctx.url.searchParams.has("division")) {
 		throw new GeoRefusalError(
-			"REGION_AND_DIVISION",
+			QUERY_REFUSALS.regionAndDivision,
 			"A request can filter by a division or by a region, not both.",
 			"RG-1; delta.query/1 place facet",
 			"Remove division.",
