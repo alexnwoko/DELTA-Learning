@@ -7,7 +7,10 @@ import {
 	createTestUser,
 	cleanupTestUser,
 } from "../test-helpers";
-import { getImpactPanels5to16 } from "~/backend.server/models/analytics/dashboard/impactPanels5to16.server";
+import {
+	getImpactMap,
+	getImpactPanels5to16,
+} from "~/backend.server/models/analytics/dashboard/impactPanels5to16.server";
 import { DEFAULT_QUERY } from "~/utils/deltaQuery";
 
 // D1 Disaster impact panels 5 to 16 against seeded records:
@@ -163,5 +166,21 @@ describe("getImpactPanels5to16", () => {
 		const north = p.periodChange.rows.find((r) => r.name === "North")!;
 		expect(north.averageB.value).toBe(4.5);
 		expect(north.averageA.valueState).toBe("not_reported");
+	});
+
+	it("feeds the map: deaths shade each division, dwellings stand as two bars, no Sendai code", async () => {
+		const m = await getImpactMap(DEFAULT_QUERY, ctx());
+		const by = Object.fromEntries(m.areas.map((a) => [a.name, a]));
+		expect(Object.keys(by)).toEqual(["North", "South"]);
+		expect(by.North.deaths.value).toBe(45);
+		expect(by.South.deaths.value).toBe(5);
+		expect(by.South.dwellingsDestroyed.value).toBe(700);
+		expect(by.South.dwellingsDamaged.valueState).toBe("not_reported");
+		expect(by.North.dwellingsDestroyed.value).toBe(700);
+		expect(m.recordsWithoutDivision).toBe(2);
+		expect(m.multiDivisionRecords).toBe(1);
+		expect(m.legend.note).toContain("Not a Sendai indicator value");
+		expect(by.North.geojson).toBeNull();
+		expect(JSON.stringify(m.legend)).not.toMatch(/A-2|B-3|B-4/);
 	});
 });

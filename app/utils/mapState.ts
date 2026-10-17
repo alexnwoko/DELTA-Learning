@@ -1036,3 +1036,78 @@ export function resolveMapState(
 		counts,
 	};
 }
+
+/** One area's parts for the bars layer of a layered map. */
+export interface BarsLayerInput {
+	areaId: string;
+	parts: MapCellPart[];
+}
+
+/**
+ * Rounded bars over a choropleth (options B and D, Alex 2026-10-17). The
+ * areas are shaded by one measure with the full choropleth rules, for
+ * example the number of deaths (Sendai A-2); rounded bars of another
+ * measure stand on top, for example dwellings damaged and destroyed (inputs
+ * to B-3 and B-4). The two layers use different colour families, keep their
+ * own value states and are never added. An area draws bars when at least
+ * one part is reported, whatever the shading shows.
+ */
+export function resolveLayeredMapState(
+	shadeCells: readonly MapCell[],
+	bars: readonly BarsLayerInput[],
+	options: Omit<ResolveMapOptions, "symbol" | "underlay"> & {
+		barsFamily: MeasureFamily;
+	},
+): MapStateResult {
+	const { barsFamily, ...shadeOptions } = options;
+	if (barsFamily === shadeOptions.family) {
+		throw new Error(
+			"resolveLayeredMapState: the bars and the shading need different colour families",
+		);
+	}
+	const shade = resolveMapState(shadeCells, {
+		...shadeOptions,
+		symbol: "choropleth",
+	});
+	// A bar cell carries no value of its own: its state says whether any
+	// part is reported, and its value is the largest part, used only to
+	// decide that state. Parts are never added.
+	const barCells: MapCell[] = bars.map((b) => {
+		const reportedParts = b.parts.filter(
+			(p) => p.valueState === "reported" && p.value !== null && p.value > 0,
+		);
+		const anyZero = b.parts.some((p) => p.valueState === "zero_confirmed");
+		const valueState: ValueState = reportedParts.length
+			? "reported"
+			: anyZero
+				? "zero_confirmed"
+				: "not_reported";
+		return {
+			areaId: b.areaId,
+			value: reportedParts.length
+				? Math.max(...reportedParts.map((p) => p.value as number))
+				: valueState === "zero_confirmed"
+					? 0
+					: null,
+			valueState,
+			recordsReported: reportedParts.length ? 1 : 0,
+			recordsZeroConfirmed: !reportedParts.length && anyZero ? 1 : 0,
+			recordsTotal: 1,
+			parts: b.parts,
+		};
+	});
+	const barsResult = resolveMapState(barCells, {
+		family: barsFamily,
+		scope: shadeOptions.scope,
+		symbol: "bars",
+	});
+	const barsById = new Map(barsResult.areas.map((a) => [a.areaId, a.symbol]));
+	return {
+		...shade,
+		areas: shade.areas.map((a) => ({
+			...a,
+			symbol: barsById.get(a.areaId) ?? null,
+		})),
+		legend: { ...shade.legend, symbols: barsResult.legend.symbols },
+	};
+}
