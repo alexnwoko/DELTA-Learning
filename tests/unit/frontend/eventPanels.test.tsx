@@ -18,6 +18,7 @@ const cell = (value: number | null, valueState: PanelCell["valueState"], reporte
 const meta = { method: "Counted per event", notApplied: [] };
 // Shaped like the loader's answer (da02ce9a); figures invented for the test.
 const D: EventPanels1to7 = {
+	empty: null,
 	headline: { events: 120, byRule: { glide: 20, serial: 90, entered: 10 }, eventsWithGlide: 22, recordsLinked: 300, recordsInScope: 1200, deaths: cell(410, "reported", 150, 300) },
 	linkage: { linked: { glide: 80, serial: 200, entered: 20 }, notLinked: 900, recordsInScope: 1200 },
 	largest: { measure: "deaths", rows: [

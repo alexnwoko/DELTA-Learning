@@ -278,6 +278,9 @@ export async function getEventPanels1to7(
 	const ruleNote =
 		"Events are grouped by GLIDE where a GLIDE number exists, or by the guarded country serial rule (RV-1); entered events were recorded as events directly.";
 	return {
+		empty: events.length
+			? null
+			: { reason: "No disaster events in scope for these filters." },
 		headline: {
 			events: events.length,
 			byRule,

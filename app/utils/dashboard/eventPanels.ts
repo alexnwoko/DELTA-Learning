@@ -96,7 +96,16 @@ export interface EventSize {
 	note: string;
 }
 
+/**
+ * Set when no disaster event is in scope. The view then shows one frame with
+ * the reason instead of panels of zeros: no data is never drawn as 0.
+ */
+export interface EventsEmpty {
+	reason: "No disaster events in scope for these filters.";
+}
+
 export interface EventPanels1to7 {
+	empty: EventsEmpty | null;
 	headline: EventHeadline;
 	linkage: EventLinkage;
 	largest: LargestEvents;

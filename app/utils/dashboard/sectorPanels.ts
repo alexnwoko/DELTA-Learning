@@ -90,7 +90,16 @@ export interface SectorSendaiCrosswalk {
 	}[];
 }
 
+/**
+ * Set when no record is in scope. The view then shows one frame with the
+ * reason instead of panels of zeros: no data is never drawn as 0.
+ */
+export interface SectorsEmpty {
+	reason: "No records in scope for these filters.";
+}
+
 export interface SectorPanels1to7 {
+	empty: SectorsEmpty | null;
 	headline: SectorHeadline;
 	reporting: SectorsReporting;
 	effectTypes: EffectTypeMatrix;

@@ -19,6 +19,7 @@ const meta = { method: "Records per sector", notApplied: [] };
 const money = { code: "G-06" as const, reason: "Not shown: monetary convention pending" };
 // Shaped like the loader's answer (a6ac6a7d); figures invented for the test.
 const D: SectorPanels1to7 = {
+	empty: null,
 	headline: { recordsAnySector: cell(260, "reported", 260, 534), sectorsLinked: { linked: 3, level2Total: 41 }, dwellingsDamaged: cell(30211, "reported", 301, 534), dwellingsDestroyed: cell(8120, "reported", 210, 534), losses: cell(null, "not_reported", 0, 534), money },
 	reporting: { groups: [{ level1: sec("p", "Productive", 1, null), rows: [{ sector: sec("s1", "Agriculture"), records: cell(64, "reported", 64, 534) }, { sector: sec("s2", "Fisheries"), records: cell(null, "not_reported", 0, 534) }] }] },
 	effectTypes: { columns: ["damage_physical", "damage_money", "losses", "disruption"], rows: [{ sector: sec("s1", "Agriculture"), damagePhysical: cell(64, "reported", 64, 534), damageMoney: money, losses: cell(null, "not_reported", 0, 534), disruption: cell(null, "not_reported", 0, 534) }] },

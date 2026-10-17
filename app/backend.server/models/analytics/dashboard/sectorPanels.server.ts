@@ -286,6 +286,7 @@ export async function getSectorPanels1to7(
 	});
 
 	return {
+		empty: total ? null : { reason: "No records in scope for these filters." },
 		headline: {
 			recordsAnySector: flagCell(scope[0]?.any_dmg, 0, total),
 			sectorsLinked: { linked: linked.length, level2Total: level2.length },

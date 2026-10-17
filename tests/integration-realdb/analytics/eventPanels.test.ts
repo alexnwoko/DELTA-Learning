@@ -110,6 +110,7 @@ describe("getEventPanels1to7", () => {
 
 	it("counts events by grouping rule and records by linkage", async () => {
 		const p = await getEventPanels1to7(DEFAULT_QUERY, ctx());
+		expect(p.empty).toBeNull();
 		expect(p.headline.events).toBe(3);
 		expect(p.headline.byRule).toEqual({ glide: 1, serial: 1, entered: 1 });
 		expect(p.headline.eventsWithGlide).toBe(1);
@@ -170,5 +171,15 @@ describe("getEventPanels1to7", () => {
 			ctx(),
 		);
 		expect(p.headline.events).toBe(1);
+	});
+
+	it("says no events are in scope instead of drawing zeros", async () => {
+		const p = await getEventPanels1to7(
+			{ ...DEFAULT_QUERY, where: { hazard: { typeId: "1041" } } },
+			ctx(),
+		);
+		expect(p.empty?.reason).toBe(
+			"No disaster events in scope for these filters.",
+		);
 	});
 });

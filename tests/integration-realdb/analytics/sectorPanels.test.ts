@@ -76,6 +76,7 @@ describe("getSectorPanels1to7", () => {
 
 	it("gives headline tiles with damage and losses apart, and money as G-06", async () => {
 		const p = await getSectorPanels1to7(DEFAULT_QUERY, ctx());
+		expect(p.empty).toBeNull();
 		expect(p.headline.recordsAnySector.value).toBe(3);
 		expect(p.headline.sectorsLinked.linked).toBe(3);
 		expect(p.headline.dwellingsDestroyed.value).toBe(700);
@@ -110,6 +111,14 @@ describe("getSectorPanels1to7", () => {
 		]);
 		const d1042 = p.dwellings.rows.find((r) => r.key === "1042")!;
 		expect(d1042.destroyed.value).toBe(700);
+	});
+
+	it("says no records are in scope instead of drawing zeros", async () => {
+		const p = await getSectorPanels1to7(
+			{ ...DEFAULT_QUERY, where: { hazard: { typeId: "1041" } } },
+			ctx(),
+		);
+		expect(p.empty?.reason).toBe("No records in scope for these filters.");
 	});
 
 	it("drops Sendai codes under a place filter (TR-060)", async () => {
