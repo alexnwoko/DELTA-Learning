@@ -1,8 +1,8 @@
 // The D1 Analysis dashboard's building blocks (D1 build brief, sections 2
 // and 3): one panel per question, numbered 1 to 16 per dimension.
 import type React from "react";
-import type { QueryDimension } from "~/utils/deltaQuery";
 import type { PanelExport } from "./panelCell";
+import type { DashboardView } from "./views";
 
 /** Why a panel has nothing to draw yet (panels paper, section 6). */
 export interface PanelGap {
@@ -42,6 +42,6 @@ export const DEFAULT_PANEL_COUNT = 12;
  * two event dimensions fold into one "Not yet available" strip; on Disaster
  * impact each empty panel keeps its own frame with its reason.
  */
-export function collapsesGaps(dimension: QueryDimension): boolean {
-	return dimension !== "disaster_impact";
+export function collapsesGaps(view: DashboardView): boolean {
+	return view === "hazardous_event" || view === "disaster_event";
 }

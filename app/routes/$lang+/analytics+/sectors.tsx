@@ -3,7 +3,6 @@ import type { MetaFunction } from "react-router";
 import { useLoaderData, useLocation, useSubmit } from "react-router";
 
 import { authLoaderPublicOrWithPerm } from "~/utils/auth";
-import { NavSettings } from "~/frontend/components/NavSettings";
 import { MainContainer } from "~/frontend/container";
 
 import ErrorBoundary from "~/frontend/components/ErrorBoundary";
@@ -810,7 +809,6 @@ function SectorsAnalysisContent() {
 	return (
 		<MainContainer
 			title={ctx.t({ code: "analysis.sectors", msg: "Sectors analysis" })}
-			headerExtra={<NavSettings ctx={ctx} />}
 		>
 			<div style={{ maxWidth: "100%", overflow: "hidden" }}>
 				{/* Main content - only shown when JavaScript is enabled */}

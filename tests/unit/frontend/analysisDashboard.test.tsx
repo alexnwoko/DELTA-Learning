@@ -119,6 +119,7 @@ describe("panel grid (decision 1)", () => {
 	it("folds gaps into one strip on the event dimensions, with code and count, never 0", () => {
 		expect(collapsesGaps("hazardous_event")).toBe(true);
 		expect(collapsesGaps("disaster_event")).toBe(true);
+		expect(collapsesGaps("sectors")).toBe(false);
 		const html = text(renderToString(<PanelGrid ctx={ctx} panels={panels} collapseGaps />));
 		expect(html).toContain("Not yet available");
 		expect(html).toContain("Panel 4</span>");
@@ -171,15 +172,20 @@ describe("Disaster impact panels 1 to 4 on the example payload", () => {
 });
 
 describe("dashboard shell", () => {
-	const renderShell = (dimension: "disaster_impact" | "hazardous_event", provisional = false) => {
+	const renderShell = (
+		dimension: "disaster_impact" | "hazardous_event",
+		provisional = false,
+		reviewHref?: string,
+	) => {
 		const Stub = createRoutesStub([
 			{
 				path: "/",
 				Component: () => (
 					<DashboardShell
 						ctx={ctx}
-						dimension={dimension}
-						onDimensionChange={() => {}}
+						view={dimension}
+						onViewChange={() => {}}
+						reviewHref={reviewHref}
 						summary="Angola · 2015 to 2024 · Basis: published"
 						provisional={provisional}
 						panels={[{ id: "x", n: 1, title: "X", gap: { code: "G-01", text: "No events" } }]}
@@ -191,13 +197,20 @@ describe("dashboard shell", () => {
 		return text(renderToString(<Stub />));
 	};
 
-	it("has one h1, the scope line, three dimension tabs and Print", () => {
+	it("has one h1, the scope line, four buttons in Alex's order and Print", () => {
 		const html = renderShell("disaster_impact");
 		expect(html.match(/<h1/g)!.length).toBe(1);
 		expect(html).toContain("Angola · 2015 to 2024 · Basis: published");
-		expect(html.match(/role="tab"/g)!.length).toBe(3);
+		const tabs = [...html.matchAll(/role="tab"[^>]*>([^<]+)</g)].map((m) => m[1]);
+		expect(tabs).toEqual(["Sectors", "Hazardous events", "Disaster events", "Disaster impact"]);
 		expect(html).toMatch(/aria-selected="true"[^>]*role="tab"[^>]*>Disaster impact/);
 		expect(html).toContain("Print or save as PDF");
+	});
+
+	it("links the reviewer queue only when the route allows it", () => {
+		expect(renderShell("disaster_impact")).not.toContain("Review flagged records");
+		const html = renderShell("disaster_impact", false, "/en/analytics/plausibility-review");
+		expect(html).toMatch(/href="\/en\/analytics\/plausibility-review"[^>]*>Review flagged records/);
 	});
 
 	it("shows the provisional banner on the reviewer basis only", () => {
