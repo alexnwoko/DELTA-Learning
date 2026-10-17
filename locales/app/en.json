@@ -5475,6 +5475,71 @@
     "description": "File: app/frontend/geoportal/GeoReadout.tsx"
   },
   {
+    "id": "geoportal.row.all_clusters",
+    "translation": "All clusters",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.row.all_hazards",
+    "translation": "All hazards",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.row.all_level_2",
+    "translation": "All",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.row.all_types",
+    "translation": "All types",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.row.any_year",
+    "translation": "Any",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.row.from_year",
+    "translation": "From year",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.row.hip_cluster",
+    "translation": "HIPs cluster",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.row.hip_type",
+    "translation": "HIPs type",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.row.place_1",
+    "translation": "Place, level 1",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.row.place_2",
+    "translation": "Level 2",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.row.region",
+    "translation": "Region: {name}",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.row.to_year",
+    "translation": "To year",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.row.whole_country",
+    "translation": "All of the country",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
     "id": "geoportal.sendai.a",
     "translation": "Target A: mortality",
     "description": "File: app/frontend/geoportal/GeoSendai.tsx"
