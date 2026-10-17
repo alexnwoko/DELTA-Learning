@@ -618,7 +618,7 @@ export async function getBoundaries(
 					'level', c.admin_level,
 					'parentId', c.parent_id,
 					'boundaryVintage', c.boundary_vintage,
-					-- RV-5: a point always inside the division (spike base), and
+					-- RV-5: a point always inside the division (bubble anchor), and
 					-- its true area for densities per 1,000 km2.
 					'labelPoint', (ST_AsGeoJSON(ST_PointOnSurface(COALESCE(c.geom_z8, c.geom_z12, c.geom_z4)), 6)::jsonb) -> 'coordinates',
 					'areaKm2', round((ST_Area(COALESCE(c.geom_z12, c.geom_z8, c.geom_z4)::geography) / 1e6)::numeric, 3)
