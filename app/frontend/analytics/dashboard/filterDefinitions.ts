@@ -5,13 +5,14 @@
 //
 // - Hazardous events and Disaster events: HIPs type chips in their identity
 //   colours (NFR-094), no measure select (counts of events).
-// - Disaster impact: the six human-effect chips; a measure select for the
-//   panels that follow one measure (timeline, ranking).
+// - Disaster impact: no chips. The panels show every human effect; the
+//   measure select picks the one that ranks and maps (chosenMeasure). The
+//   loaders do not filter by humanEffects, so effect chips would look like
+//   filters that change nothing (Analytics, 2026-10-17).
 // - Sectors: sector chips from the sectors in the payload.
 import type { HazardTree } from "~/frontend/geoportal/GeoFilterBar";
 import type { ChipSet } from "~/frontend/geoportal/filterBarState";
 import { IMPACT_HEADLINE_MEASURES } from "~/utils/dashboard/impactPanels";
-import { HUMAN_EFFECTS } from "~/utils/deltaQuery";
 import { geoMeasureInfo, type GeoLabel } from "~/utils/geoMeasures";
 import { hazardColourVar } from "~/utils/hazardIdentity";
 import type { DashboardView } from "./views";
@@ -59,9 +60,7 @@ export function chipsFor(
 			})),
 		};
 	}
-	if (view === "disaster_impact") {
-		return { kind: "effect", options: HUMAN_EFFECTS.map((e) => ({ id: e, label: geoMeasureInfo(e).label })) };
-	}
+	if (view === "disaster_impact") return null;
 	return opts.sectors?.length ? { kind: "sector", options: opts.sectors } : null;
 }
 
