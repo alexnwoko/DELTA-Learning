@@ -584,6 +584,7 @@ export default function HazardAnalysis() {
 							{actionData && (
 								<HumanAffects
 									ctx={ctx}
+									scope={mapScope}
 									totalPeopleAffected={totalPeopleAffected}
 									totalPeopleAffectedPartial={totalPeopleAffectedPartial}
 									totalDeaths={actionData.totalDeaths}
