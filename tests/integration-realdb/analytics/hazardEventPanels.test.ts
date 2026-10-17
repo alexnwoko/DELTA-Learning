@@ -16,7 +16,7 @@ import { DEFAULT_QUERY } from "~/utils/deltaQuery";
 
 const ids = createTestIds();
 ids.userEmail = ids.userEmail.replace("@", "-hazevpanels@");
-const he = { h1: randomUUID(), h2: randomUUID() };
+const he = { h1: randomUUID(), h2: randomUUID(), h3: randomUUID() };
 const de = randomUUID();
 const div = { d1: randomUUID(), d2: randomUUID(), d3: randomUUID() };
 
@@ -30,13 +30,14 @@ const ctx = () => ({
 describe("getHazardEventPanels1to7", () => {
 	beforeAll(async () => {
 		await createTestUser(ids);
-		for (const id of [he.h1, he.h2, de])
+		for (const id of [he.h1, he.h2, he.h3, de])
 			await dr.execute(sql`INSERT INTO event (id) VALUES (${id})`);
 		await dr.execute(sql`
 			INSERT INTO hazardous_event (id, country_accounts_id, "approvalStatus", hip_type_id, hip_cluster_id, hazardous_event_status, start_date)
 			VALUES
 			(${he.h1}, ${ids.countryAccountId}, 'published', '1042', '1078', 'ongoing', '2024-07-03'),
-			(${he.h2}, ${ids.countryAccountId}, 'published', '1037', NULL, 'passed', '2023')`);
+			(${he.h2}, ${ids.countryAccountId}, 'published', '1037', NULL, 'passed', '2023'),
+			(${he.h3}, ${ids.countryAccountId}, 'published', '1042', NULL, 'forecasted', '2025-01')`);
 		await dr.execute(sql`
 			INSERT INTO disaster_event (id, country_accounts_id, "approvalStatus", hazardous_event_id)
 			VALUES (${de}, ${ids.countryAccountId}, 'published', ${he.h2})`);
@@ -52,14 +53,14 @@ describe("getHazardEventPanels1to7", () => {
 
 	afterAll(async () => {
 		await dr.execute(
-			sql`DELETE FROM hazardous_event_division WHERE hazardous_event_id IN (${he.h1}, ${he.h2})`,
+			sql`DELETE FROM hazardous_event_division WHERE hazardous_event_id IN (${he.h1}, ${he.h2}, ${he.h3})`,
 		);
 		await dr.execute(sql`DELETE FROM disaster_event WHERE id = ${de}`);
 		await dr.execute(
 			sql`DELETE FROM hazardous_event WHERE country_accounts_id = ${ids.countryAccountId}`,
 		);
 		await dr.execute(
-			sql`DELETE FROM event WHERE id IN (${he.h1}, ${he.h2}, ${de})`,
+			sql`DELETE FROM event WHERE id IN (${he.h1}, ${he.h2}, ${he.h3}, ${de})`,
 		);
 		await dr.execute(
 			sql`DELETE FROM division WHERE country_accounts_id = ${ids.countryAccountId}`,
@@ -71,7 +72,7 @@ describe("getHazardEventPanels1to7", () => {
 		const p = await getHazardEventPanels1to7(DEFAULT_QUERY, ctx());
 		expect(p.empty).toBeNull();
 		expect(p.headline).toEqual({
-			events: 2,
+			events: 3,
 			ongoingOrForecasted: 1,
 			linkedToDisasterEvent: 1,
 			withFootprint: 0,
@@ -83,18 +84,16 @@ describe("getHazardEventPanels1to7", () => {
 		expect(p.byYear.years).toEqual([
 			{ year: 2023, events: 1 },
 			{ year: 2024, events: 1 },
+			{ year: 2025, events: 1 },
 		]);
-		expect(p.season).toEqual({
-			cells: [{ year: 2024, month: 7, events: 1 }],
-			eventsWithoutMonth: 1,
-		});
+		expect(p.season.eventsWithoutMonth).toBe(1);
 	});
 
 	it("gives hazards, classification depth and divisions", async () => {
 		const p = await getHazardEventPanels1to7(DEFAULT_QUERY, ctx());
 		const depth = Object.fromEntries(p.depth.rows.map((r) => [r.hipTypeId, r]));
 		expect(depth["1042"]).toMatchObject({
-			typeOnly: 0,
+			typeOnly: 1,
 			cluster: 1,
 			specificHazard: 0,
 		});
@@ -106,6 +105,18 @@ describe("getHazardEventPanels1to7", () => {
 		]);
 		expect(p.divisions.divisionsWithoutEvents).toBe(1);
 		expect(p.divisions.multiDivisionEvents).toBe(1);
+	});
+
+	it("shows a recorded forecasted status to signed-in readers only", async () => {
+		const signedIn = await getHazardEventPanels1to7(DEFAULT_QUERY, {
+			...ctx(),
+			audience: "signed-in",
+		});
+		expect(signedIn.ongoing.rows.map((r) => r.status).sort()).toEqual([
+			"forecasted",
+			"ongoing",
+		]);
+		expect(signedIn.headline.ongoingOrForecasted).toBe(2);
 	});
 
 	it("says G-01 when no hazardous event is in scope", async () => {

@@ -98,6 +98,11 @@ export async function getHazardEventPanels1to7(
 	]);
 	const typeLabel = (id: string | null) =>
 		id === null ? "Hazard not coded" : (labels.get(id) ?? `HIPs type ${id}`);
+	// A recorded "forecasted" status shows to signed-in readers only (D1
+	// brief v0.2, section 3, panel 2). It is never sent to public readers.
+	const shownStatus = (status: unknown) =>
+		status === "ongoing" ||
+		(status === "forecasted" && ctx.audience !== "public");
 	const countBy = <K>(keyOf: (e: Record<string, unknown>) => K) => {
 		const m = new Map<K, number>();
 		for (const e of events) m.set(keyOf(e), (m.get(keyOf(e)) ?? 0) + 1);
@@ -133,16 +138,14 @@ export async function getHazardEventPanels1to7(
 				},
 		headline: {
 			events: events.length,
-			ongoingOrForecasted: events.filter(
-				(e) => e.status === "ongoing" || e.status === "forecasted",
-			).length,
+			ongoingOrForecasted: events.filter((e) => shownStatus(e.status)).length,
 			linkedToDisasterEvent: num(flags[0]?.linked),
 			withFootprint: num(flags[0]?.footprint),
 			codedAtHazardLevel: events.filter((e) => e.hip_hazard_id !== null).length,
 		},
 		ongoing: {
 			rows: events
-				.filter((e) => e.status === "ongoing" || e.status === "forecasted")
+				.filter((e) => shownStatus(e.status))
 				.map((e) => ({
 					eventId: e.id as string,
 					hazardLabel: typeLabel((e.hip_type_id as string | null) ?? null),
