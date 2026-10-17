@@ -805,9 +805,24 @@
     "description": "File: app/components/MapChart.tsx:734"
   },
   {
-    "id": "analysis.map_spike_max_flagged",
-    "translation": "Largest spike includes figures flagged for review",
-    "description": "Map legend note in spike mode when the tallest spike includes figures flagged for review. File: app/components/MapChart.tsx:677"
+    "id": "analysis.map_bars_scale",
+    "translation": "Longest bar: {value}. A dashed slot is not reported.",
+    "description": "Map legend note in bars mode: the longest bar and what a dashed slot means. {value} is the largest figure. File: app/components/MapChart.tsx"
+  },
+  {
+    "id": "analysis.map_bubble_outlier",
+    "translation": "Drawn at the cap, above the scale: {value}",
+    "description": "Map legend note for an area whose value is above the bubble scale and is drawn at the cap. {value} is the figure. File: app/components/MapChart.tsx"
+  },
+  {
+    "id": "analysis.map_bubble_ring",
+    "translation": "Ring: share of records that report this figure",
+    "description": "Map legend note in bubble mode explaining the outer ring. File: app/components/MapChart.tsx"
+  },
+  {
+    "id": "analysis.map_symbol_max_flagged",
+    "translation": "Largest symbol includes figures flagged for review",
+    "description": "Map legend note when the largest bubble or bar includes figures flagged for review. File: app/components/MapChart.tsx"
   },
   {
     "id": "analysis.men",

@@ -1,4 +1,4 @@
-// A point inside each division, where a map spike stands (ruling RV-5).
+// A point inside each division, where a map bubble or bar stands (RV-5 as amended).
 // ST_PointOnSurface always falls inside the area, even for concave or
 // multi-part divisions, which a centroid does not. Same rule as the
 // geoportal's boundaries response.

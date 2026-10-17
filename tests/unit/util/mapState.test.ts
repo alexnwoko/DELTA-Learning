@@ -2,11 +2,14 @@ import { describe, it, expect } from "vitest";
 import {
 	FAMILY_RAMPS,
 	MIN_AREAS_FOR_CLASSES,
-	SPIKE_BASE_FILL,
-	SPIKE_MAX_HEIGHT_PX,
-	SPIKE_MIN_HEIGHT_PX,
+	BAR_MAX_LENGTH_PX,
+	BAR_MIN_LENGTH_PX,
+	BUBBLE_MAX_RADIUS_PX,
+	BUBBLE_MIN_RADIUS_PX,
+	SYMBOL_BASE_FILL,
+	barLengthPx,
+	bubbleRadiusPx,
 	defaultSymbolFor,
-	spikeHeightPx,
 	type MapCell,
 	type MapScopeQuery,
 	OFF_RAMP_STATES,
@@ -373,16 +376,16 @@ describe("q2Grade (proposed thresholds)", () => {
 	});
 });
 
-describe("spike mode (ruling RV-5)", () => {
-	const spikes = (cells: MapCell[]) =>
+describe("bubble mode (RV-5 as amended, preview option A)", () => {
+	const bubbles = (cells: MapCell[]) =>
 		resolveMapState(cells, {
 			family: "people",
 			scope: signedIn,
-			symbol: "spike",
+			symbol: "bubble",
 		});
 
-	it("defaults counts to spikes and densities to a choropleth", () => {
-		expect(defaultSymbolFor("count")).toBe("spike");
+	it("defaults counts to bubbles and densities to a choropleth", () => {
+		expect(defaultSymbolFor("count")).toBe("bubble");
 		expect(defaultSymbolFor("density")).toBe("choropleth");
 		expect(defaultSymbolFor("rate")).toBe("choropleth");
 	});
@@ -390,51 +393,115 @@ describe("spike mode (ruling RV-5)", () => {
 	it("keeps the choropleth when no symbol is given", () => {
 		const r = resolve([reported("a", 1), reported("b", 2)]);
 		expect(r.legend.symbol).toBe("choropleth");
-		expect(r.legend.spikes).toBeNull();
-		expect(r.areas.every((a) => a.spike === null)).toBe(true);
+		expect(r.legend.symbols).toBeNull();
+		expect(r.areas.every((a) => a.symbol === null)).toBe(true);
 	});
 
-	it("sizes spikes linearly to the largest reported value", () => {
-		const r = spikes([reported("a", 100), reported("b", 25), reported("c", 5)]);
-		expect(r.legend.mode).toBe("spikes");
-		expect(byId(r, "a").spike).toEqual({ ratio: 1 });
-		expect(byId(r, "b").spike).toEqual({ ratio: 0.25 });
-		expect(byId(r, "a").color).toBe(SPIKE_BASE_FILL);
+	it("sizes bubbles by area against the largest value and rings them with coverage", () => {
+		const r = bubbles([
+			reported("a", 100),
+			reported("b", 25),
+			reported("c", 30),
+		]);
+		expect(r.legend.mode).toBe("bubbles");
+		expect(byId(r, "a").symbol).toEqual({
+			kind: "bubble",
+			areaRatio: 1,
+			outlier: false,
+			ring: { n: 1, of: 2 },
+		});
+		const b = byId(r, "b").symbol;
+		expect(b?.kind === "bubble" && b.areaRatio).toBe(0.25);
+		expect(byId(r, "a").color).toBe(SYMBOL_BASE_FILL);
 		expect(byId(r, "a").classIndex).toBeNull();
-		expect(r.legend.spikes?.maxValue).toBe(100);
-		expect(r.legend.spikes?.color).toBe(FAMILY_RAMPS.people.at(-1));
+		expect(r.legend.symbols?.scaleMax).toBe(100);
+		expect(r.legend.symbols?.color).toBe(FAMILY_RAMPS.people.at(-1));
+		expect(r.legend.symbols?.references[0]).toEqual({ value: 100, ratio: 1 });
 	});
 
-	it("draws no spike for off-ramp states, which keep their own encoding", () => {
-		const r = spikes([
+	it("draws an outlier at the cap and names it in the legend", () => {
+		const r = bubbles([
+			reported("big", 1000, { recordsFlagged: 1 }),
+			reported("b", 100),
+			reported("c", 50),
+		]);
+		expect(r.legend.symbols?.scaleMax).toBe(100);
+		const big = byId(r, "big").symbol;
+		expect(big?.kind === "bubble" && [big.areaRatio, big.outlier]).toEqual([
+			1,
+			true,
+		]);
+		expect(r.legend.symbols?.outliers).toEqual([
+			{ areaId: "big", value: 1000, flagged: true },
+		]);
+		expect(r.legend.symbols?.maxFlagged).toBe(true);
+	});
+
+	it("draws no bubble for off-ramp states, which keep their own encoding", () => {
+		const r = bubbles([
 			reported("a", 10),
 			cell("z", "zero_confirmed", { recordsZeroConfirmed: 2 }),
 			cell("n", "not_reported"),
 		]);
-		expect(byId(r, "z").spike).toBeNull();
+		expect(byId(r, "z").symbol).toBeNull();
 		expect(byId(r, "z").color).toBeNull();
-		expect(byId(r, "n").spike).toBeNull();
-	});
-
-	it("says when the largest spike includes flagged figures", () => {
-		const flagged = spikes([
-			reported("a", 100, { recordsFlagged: 1 }),
-			reported("b", 5),
-		]);
-		expect(flagged.legend.spikes?.maxFlagged).toBe(true);
-		const clean = spikes([
-			reported("a", 100),
-			reported("b", 5, { recordsFlagged: 1 }),
-		]);
-		expect(clean.legend.spikes?.maxFlagged).toBe(false);
+		expect(byId(r, "n").symbol).toBeNull();
 	});
 });
 
-describe("spikeHeightPx", () => {
-	it("is linear up to the maximum and never below the minimum", () => {
-		expect(spikeHeightPx(1)).toBe(SPIKE_MAX_HEIGHT_PX);
-		expect(spikeHeightPx(0.5)).toBe(SPIKE_MAX_HEIGHT_PX / 2);
-		expect(spikeHeightPx(0.00001)).toBe(SPIKE_MIN_HEIGHT_PX);
-		expect(spikeHeightPx(0.5, 24)).toBe(12);
+describe("bars mode (RV-5 as amended, preview option B)", () => {
+	const parts = (destroyed: number | null, damaged: number | null) => [
+		{
+			key: "destroyed",
+			label: "Houses destroyed",
+			value: destroyed,
+			valueState:
+				destroyed === null ? ("not_reported" as const) : ("reported" as const),
+		},
+		{
+			key: "damaged",
+			label: "Houses damaged",
+			value: damaged,
+			valueState:
+				damaged === null ? ("not_reported" as const) : ("reported" as const),
+		},
+	];
+
+	it("scales every part to the largest reported part and leaves a missing part empty", () => {
+		const r = resolveMapState(
+			[
+				reported("a", 300, { parts: parts(100, 200) }),
+				reported("b", 50, { parts: parts(50, null) }),
+				cell("n", "not_reported", { parts: parts(null, null) }),
+			],
+			{ family: "people", scope: signedIn, symbol: "bars" },
+		);
+		expect(r.legend.mode).toBe("bars");
+		expect(r.legend.symbols?.scaleMax).toBe(200);
+		expect(r.legend.symbols?.parts.map((p) => p.key)).toEqual([
+			"destroyed",
+			"damaged",
+		]);
+		const b = byId(r, "b").symbol;
+		expect(b?.kind === "bars" && b.bars.map((x) => x.ratio)).toEqual([
+			0.25,
+			null,
+		]);
+		expect(byId(r, "n").symbol).toBeNull();
+	});
+});
+
+describe("symbol sizes", () => {
+	it("gives bubbles a true-area radius with a floor", () => {
+		expect(bubbleRadiusPx(1)).toBe(BUBBLE_MAX_RADIUS_PX);
+		expect(bubbleRadiusPx(0.25)).toBe(BUBBLE_MAX_RADIUS_PX / 2);
+		expect(bubbleRadiusPx(0.00001)).toBe(BUBBLE_MIN_RADIUS_PX);
+		expect(bubbleRadiusPx(4)).toBe(BUBBLE_MAX_RADIUS_PX);
+	});
+
+	it("gives bars a linear length with a floor", () => {
+		expect(barLengthPx(1)).toBe(BAR_MAX_LENGTH_PX);
+		expect(barLengthPx(0.5)).toBe(BAR_MAX_LENGTH_PX / 2);
+		expect(barLengthPx(0.00001)).toBe(BAR_MIN_LENGTH_PX);
 	});
 });
