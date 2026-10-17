@@ -1,38 +1,21 @@
 // The Disaster impact panel set (panels paper v0.3, section 4.3): panels 1
-// to 4 draw from the loader payload; 5 to 16 follow in D1 step 2 and say so
-// in their frame meanwhile (decision 1 (a): each keeps its own frame).
+// to 4 from the first payload, 5 to 16 from the second (panels5to16.tsx).
 import type { ViewContext } from "~/frontend/context";
 import type { ImpactPanels1to4 } from "~/utils/dashboard/impactPanels";
+import type { ImpactPanels5to16 } from "~/utils/dashboard/impactPanels5to16";
 import type { DashboardPanel } from "../../types";
 import { CoverageWaffle, waffleExport } from "./CoverageWaffle";
 import { HazardRanking, rankingExport } from "./HazardRanking";
 import { HeadlineTiles, headlineExport } from "./HeadlineTiles";
 import { ImpactTimeline, timelineExport } from "./ImpactTimeline";
 import { impactMeasureLabel } from "./measureLabels";
-
-/** Titles of panels 5 to 16, in the paper's order. */
-function laterPanelTitles(ctx: ViewContext): [number, string][] {
-	const t = (code: string, msg: string) => ctx.t({ code, msg });
-	return [
-		[5, t("dashboard.impact_5", "Sendai Targets A and B counts")],
-		[6, t("dashboard.impact_6", "Hazard by human effect")],
-		[7, t("dashboard.impact_7", "Ranked divisions")],
-		[8, t("dashboard.impact_8", "Hazard by sector")],
-		[9, t("dashboard.impact_9", "People moved")],
-		[10, t("dashboard.impact_10", "Houses destroyed and damaged")],
-		[11, t("dashboard.impact_11", "Largest records")],
-		[12, t("dashboard.impact_12", "Reporting completeness and precision")],
-		[13, t("dashboard.impact_13", "Season of impact")],
-		[14, t("dashboard.impact_14", "Period change by division")],
-		[15, t("dashboard.impact_15", "Extensive and intensive risk")],
-		[16, t("dashboard.impact_16", "Disaggregation")],
-	];
-}
+import { impactPanels5to16 } from "./panels5to16";
 
 export function impactDashboardPanels(
 	ctx: ViewContext,
 	data: ImpactPanels1to4,
 	source: string,
+	later?: { data: ImpactPanels5to16; country: string },
 ): DashboardPanel[] {
 	const t = (code: string, msg: string) => ctx.t({ code, msg });
 	const common = { ctx, source, scope: data.scopeText, provisional: data.provisional };
@@ -95,16 +78,13 @@ export function impactDashboardPanels(
 			),
 		},
 	];
-	const later = laterPanelTitles(ctx).map(
-		([n, title]): DashboardPanel => ({
-			id: `impact-${n}`,
-			n,
-			title,
-			gap: {
-				code: "D1 step 2",
-				text: t("dashboard.panel_in_build", "This panel is being built."),
-			},
-		}),
-	);
-	return [...ready, ...later];
+	const rest = later
+		? impactPanels5to16(ctx, later.data, {
+				source,
+				scope: data.scopeText,
+				provisional: data.provisional,
+				country: later.country,
+			})
+		: [];
+	return [...ready, ...rest];
 }

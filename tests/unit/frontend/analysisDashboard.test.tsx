@@ -12,6 +12,8 @@ import { impactDashboardPanels } from "~/frontend/analytics/dashboard/panels/imp
 import { collapsesGaps, type DashboardPanel } from "~/frontend/analytics/dashboard/types";
 import type { ViewContext } from "~/frontend/context";
 import { IMPACT_PANELS_FIXTURE, type PanelCell } from "~/utils/dashboard/impactPanels";
+import { IMPACT_PANELS_5TO16_FIXTURE } from "~/utils/dashboard/impactPanels5to16";
+import { SHADE_STEPS, shadeFor } from "~/frontend/analytics/dashboard/panels/blocks";
 import { createMockTranslator } from "~/utils/translator";
 
 const ctx = { t: createMockTranslator(), lang: "en", url: (p: string) => `/en/${p}` } as unknown as ViewContext;
@@ -33,7 +35,7 @@ describe("panel figures (TR-076)", () => {
 	it("show a number, a confirmed zero, or a state word, never a bare 0", () => {
 		expect(cellText(ctx, cell({ value: 1234, valueState: "reported", recordsReported: 4 }))).toBe("1,234");
 		expect(cellText(ctx, cell({ value: 0, valueState: "zero_confirmed", recordsZeroConfirmed: 3 }))).toBe(
-			"0 (confirmed)",
+			"Zero, confirmed",
 		);
 		expect(cellText(ctx, cell({}))).toBe("No data");
 		expect(cellText(ctx, cell({ valueState: "suppressed" }))).toBe("Suppressed");
@@ -130,10 +132,9 @@ describe("panel grid (decision 1)", () => {
 describe("Disaster impact panels 1 to 4 on the example payload", () => {
 	const panels = impactDashboardPanels(ctx, IMPACT_PANELS_FIXTURE, "EXAMPLE DATA");
 
-	it("number 16 panels, 1 to 4 drawn and 5 to 16 saying they are being built", () => {
-		expect(panels.map((p) => p.n)).toEqual(Array.from({ length: 16 }, (_, i) => i + 1));
-		expect(panels.filter((p) => p.render).map((p) => p.n)).toEqual([1, 2, 3, 4]);
-		expect(panels.filter((p) => p.gap).every((p) => p.gap!.code === "D1 step 2")).toBe(true);
+	it("number panels 1 to 4 alone without the second payload", () => {
+		expect(panels.map((p) => p.n)).toEqual([1, 2, 3, 4]);
+		expect(panels.every((p) => p.render && p.exportData)).toBe(true);
 	});
 
 	it("headline tiles show state words and coverage, and refuse money", () => {
@@ -142,7 +143,7 @@ describe("Disaster impact panels 1 to 4 on the example payload", () => {
 		expect(html).toContain("243 of 534 records report this");
 		expect(html).toContain("2 flagged for review");
 		expect(html).toContain("No data"); // missing
-		expect(html).toContain("0 (confirmed)"); // injured
+		expect(html).toContain("Zero, confirmed"); // injured
 		expect(html).toContain("Not shown: monetary convention pending");
 		expect(html).toContain("Basis: PROVISIONAL");
 	});
@@ -225,5 +226,112 @@ describe("page-level CSV", () => {
 		expect(csv).toContain("Human effects by year,2023,,,not_reported,");
 		expect(csv).toContain("PROVISIONAL: includes unpublished records; not for publication");
 		expect(csv).not.toContain("Sendai Targets");
+	});
+
+	it("carries panels 5 to 16 when their payload is there, Sendai inputs without a code", () => {
+		const all = impactDashboardPanels(ctx, IMPACT_PANELS_FIXTURE, "EXAMPLE DATA", { data: IMPACT_PANELS_5TO16_FIXTURE, country: "Angola" });
+		const csv = dashboardPanelsCsv(all, "EXAMPLE DATA", "EXAMPLE DATA", "published", new Date("2026-10-17T00:00:00Z"));
+		expect(csv).toContain("Sendai Targets A and B counts,A-2 Deaths,,615,reported,");
+		expect(csv).toContain("Houses damaged (input to B-3; no indicator value)");
+		expect(csv).not.toMatch(/,B-3 [A-Z]/);
+		expect(csv).toContain("People moved,Meteorological,Displaced,,not_reported,");
+	});
+});
+
+describe("Disaster impact panels 5 to 16 on the example payload", () => {
+	const all = impactDashboardPanels(ctx, IMPACT_PANELS_FIXTURE, "EXAMPLE DATA", {
+		data: IMPACT_PANELS_5TO16_FIXTURE,
+		country: "Angola",
+	});
+	const html = (n: number) => text(renderToString(<>{all.find((p) => p.n === n)!.render!()}</>));
+
+	it("number 16 drawn panels with export data", () => {
+		expect(all.map((p) => p.n)).toEqual(Array.from({ length: 16 }, (_, i) => i + 1));
+		expect(all.every((p) => p.render && p.exportData && !p.gap)).toBe(true);
+	});
+
+	it("5: names the country in the notice, keeps dwelling inputs code-free, lists refusals", () => {
+		const h = html(5);
+		expect(h).toContain("These figures are not the official Sendai Framework Monitor submission of Angola.");
+		expect(h).toContain("Input to B-3");
+		expect(h).not.toMatch(/<th[^>]*>B-3<\/th>/);
+		expect(h).toContain("A-1 not computed: Needs a population denominator (TR-152)");
+		expect(h).not.toContain("Scalable picture (SVG)"); // a table: CSV only
+	});
+
+	it("6: a table with no row total and a word for an unreported cell", () => {
+		const h = html(6);
+		expect(h).toContain("<table");
+		expect(h).toContain("No data");
+		expect(h).toContain("Zero, confirmed");
+		expect(h).not.toMatch(/>Total</);
+	});
+
+	it("7: names the grouped rest and says rows do not add up", () => {
+		const h = html(7);
+		expect(h).toContain("3 other divisions");
+		expect(h).toContain("7 records touch several divisions and count in each, so rows do not add up.");
+	});
+
+	it("9: three named bars per hazard, never a sum, with the overlap note", () => {
+		const h = html(9);
+		expect(h).toContain("Displaced includes people evacuated before the event.");
+		expect(h).toContain("Displaced: No data");
+		expect(h).not.toContain(String(34943 + 26117 + 8826));
+	});
+
+	it("12: flags shares under 25% and prints percentages", () => {
+		const h = html(12);
+		expect(h).toContain("2%");
+		expect(h.match(/Under 25% of records report this/g)!.length).toBe(1);
+	});
+
+	it("13: a year by month grid that counts records without a month", () => {
+		const h = html(13);
+		expect(h).toContain("101 records have no month and are left out.");
+		expect(h).toContain('title="May 2021: No data"');
+	});
+
+	it("14: labels periods as annual averages with their years, and lists a one-sided division", () => {
+		const h = html(14);
+		expect(h).toContain("2005 to 2014 annual average (10 years)");
+		expect(h).toContain("Analytical periods; not a Sendai performance measure.");
+		expect(h).toMatch(/Not drawn, one period not reported:.*Cunene/s);
+	});
+
+	it("15: prints the GAR 2015 threshold and splits records in words", () => {
+		const h = html(15);
+		expect(h).toContain("Threshold: 30 deaths or 600 houses destroyed per record (GAR 2015).");
+		expect(h).toContain("Intensive (records at or above the threshold)");
+	});
+
+	it("16: counts records with no breakdown in words, not as a bar", () => {
+		const h = html(16);
+		expect(h).toContain("Not disaggregated: 231 of 243 records");
+		expect(h).toContain("With disability");
+	});
+});
+
+describe("table shading", () => {
+	it("uses only light ramp steps, and none for a missing figure", () => {
+		expect(SHADE_STEPS).toHaveLength(3);
+		expect(shadeFor(null, 10)).toBeUndefined();
+		expect(shadeFor(10, 10)).toBe(SHADE_STEPS[2]);
+		expect(shadeFor(1, 10)).toBe(SHADE_STEPS[0]);
+	});
+
+	it.each(["neutral", "delta"])("keeps %s brand text at 4.5:1 on every step (WCAG 1.4.3)", async (brand) => {
+		const { readFileSync } = await import("node:fs");
+		const text = JSON.parse(readFileSync(`design-tokens/brand/${brand}.json`, "utf8")).brand.text.$value;
+		const lum = (hex: string) => {
+			const [r, g, b] = [1, 3, 5]
+				.map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+				.map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+			return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+		};
+		for (const step of SHADE_STEPS) {
+			const [hi, lo] = [lum(step), lum(text)].sort((a, b) => b - a);
+			expect((hi + 0.05) / (lo + 0.05), step).toBeGreaterThanOrEqual(4.5);
+		}
 	});
 });
