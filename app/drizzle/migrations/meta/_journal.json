@@ -491,6 +491,13 @@
       "when": 1792148400000,
       "tag": "20261015200000_geo_event_atom",
       "breakpoints": true
+    },
+    {
+      "idx": 70,
+      "version": "7",
+      "when": 1792152000000,
+      "tag": "20261017090000_geo_region",
+      "breakpoints": true
     }
   ]
 }
