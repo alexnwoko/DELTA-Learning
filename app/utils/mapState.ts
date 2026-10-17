@@ -200,6 +200,19 @@ export interface MapCell {
 	gradeDistribution?: Partial<Record<AttGrade, number>> | null;
 	/** GEO precision, for example "GEO-L1 (ceiling L1, 47 units)". */
 	geoPrecision?: string | null;
+	/**
+	 * Bars mode: the parts of a breakdown, for example houses destroyed and
+	 * damaged. Each keeps its own value state; parts are never added.
+	 */
+	parts?: MapCellPart[];
+}
+
+export interface MapCellPart {
+	key: string;
+	label: string;
+	value: number | null;
+	valueState: ValueState;
+	recordsFlagged?: number;
 }
 
 /** The query behind the envelope (delta.query/1); never UI state (E2 rule 1). */
@@ -220,45 +233,63 @@ export interface NotAppliedInput {
 }
 
 /**
- * How shaded areas are drawn (ruling RV-5, Alex 2026-10-16): counts as
- * spikes, sized symbols per division, so large or populous divisions do not
- * look worst by area alone; densities and rates as a choropleth.
+ * How shaded areas are drawn (ruling RV-5, amended by Alex 2026-10-17):
+ * counts as bubbles sized by area with a coverage ring (preview option A),
+ * breakdowns as rounded bars (option B), densities and rates as a
+ * choropleth. Spikes are removed. Bubbles over density shading (option D)
+ * wait for a density measure (ST_Area per division).
  */
-export type MapSymbol = "spike" | "choropleth";
+export type MapSymbol = "bubble" | "bars" | "choropleth";
 export type MeasureKind = "count" | "density" | "rate";
 
-/** RV-5 default: spikes for counts, a choropleth for densities and rates. */
+/** Default symbol: bubbles for counts, a choropleth for densities and rates. */
 export function defaultSymbolFor(kind: MeasureKind): MapSymbol {
-	return kind === "count" ? "spike" : "choropleth";
+	return kind === "count" ? "bubble" : "choropleth";
 }
 
-/** Default pixel height of the tallest spike. PROVISIONAL: no ruling sets it. */
-export const SPIKE_MAX_HEIGHT_PX = 60;
-
+/** Radius of a bubble at the top of the scale. PROVISIONAL: no ruling sets it. */
+export const BUBBLE_MAX_RADIUS_PX = 30;
+/** Smallest drawn bubble for a reported value, so it never reads as "no data". PROVISIONAL. */
+export const BUBBLE_MIN_RADIUS_PX = 3;
 /**
- * Smallest drawn spike for a reported value above 0, so a small figure next
- * to a large one never reads as "no data". Renderers draw
- * max(ratio * SPIKE_MAX_HEIGHT_PX, SPIKE_MIN_HEIGHT_PX). Ratios stay linear.
+ * When the largest value is more than this many times the next largest,
+ * the scale is set by the next largest and the largest is drawn at the cap
+ * with its value in the legend (map symbol research, section 5). PROVISIONAL.
  */
-export const SPIKE_MIN_HEIGHT_PX = 2;
+export const OUTLIER_FACTOR = 5;
 
-/** Drawn height of a spike in pixels: linear, never below the minimum. */
-export function spikeHeightPx(
-	ratio: number,
-	maxHeight: number = SPIKE_MAX_HEIGHT_PX,
+/** Drawn radius: area proportional to value (true area), never below the floor. */
+export function bubbleRadiusPx(
+	areaRatio: number,
+	maxRadius: number = BUBBLE_MAX_RADIUS_PX,
 ): number {
-	return Math.max(ratio * maxHeight, SPIKE_MIN_HEIGHT_PX);
+	return Math.max(
+		Math.sqrt(Math.min(Math.max(areaRatio, 0), 1)) * maxRadius,
+		BUBBLE_MIN_RADIUS_PX,
+	);
 }
 
-/** Base width of a spike in pixels. PROVISIONAL. */
-export const SPIKE_WIDTH_PX = 8;
+/** Length of the longest rounded bar. PROVISIONAL. */
+export const BAR_MAX_LENGTH_PX = 40;
+/** Smallest drawn bar for a reported value above 0. PROVISIONAL. */
+export const BAR_MIN_LENGTH_PX = 2;
+/** Thickness of a rounded bar. PROVISIONAL. */
+export const BAR_WIDTH_PX = 7;
 
-/** Base fill of a reported area in spike mode: the map canvas, so the spike carries the value. */
-export const SPIKE_BASE_FILL = dataTokens.map.canvas.background;
+/** Drawn bar length: linear (a bar encodes by length), never below the minimum. */
+export function barLengthPx(
+	ratio: number,
+	maxLength: number = BAR_MAX_LENGTH_PX,
+): number {
+	return Math.max(Math.min(ratio, 1) * maxLength, BAR_MIN_LENGTH_PX);
+}
+
+/** Base fill of a reported area under a symbol: the canvas, so the symbol carries the value. */
+export const SYMBOL_BASE_FILL = dataTokens.map.canvas.background;
 
 export interface ResolveMapOptions {
 	family: MeasureFamily;
-	/** Default "choropleth"; callers pass defaultSymbolFor(kind) for RV-5. */
+	/** Default "choropleth"; callers pass defaultSymbolFor(kind) (RV-5 as amended). */
 	symbol?: MapSymbol;
 	scope: MapScopeQuery;
 	/** meta.notApplied: filters the endpoint named as not applied. */
@@ -321,14 +352,36 @@ export interface MapArea {
 	color: string | null;
 	reason: MapStateReason | null;
 	/**
-	 * Spike mode only: the value as a share of the largest reported value in
-	 * scope, 0 to 1 (linear, a spike encodes by length). Null for every
-	 * off-ramp state, so a missing figure never reads as a short spike.
+	 * Bubble or bars mode: the symbol drawn on the area's anchor point. Null
+	 * for every off-ramp state, so a missing figure never reads as a small
+	 * symbol (TR-076).
 	 */
-	spike: { ratio: number } | null;
+	symbol: MapAreaSymbol | null;
 	quality: MapQualityMarker;
 	tooltip: MapTooltipParts;
 }
+
+export type MapAreaSymbol =
+	| {
+			kind: "bubble";
+			/** value / scaleMax, capped at 1; an outlier is drawn at the cap. */
+			areaRatio: number;
+			outlier: boolean;
+			/** Records reporting the measure (a confirmed zero included), n of N. */
+			ring: { n: number; of: number };
+	  }
+	| {
+			kind: "bars";
+			bars: {
+				key: string;
+				label: string;
+				valueState: ValueState;
+				value: number | null;
+				/** Share of the largest reported part in scope; null when not drawn. */
+				ratio: number | null;
+				flagged: boolean;
+			}[];
+	  };
 
 export interface LegendClass {
 	index: number;
@@ -346,16 +399,23 @@ export interface MapLegend {
 	family: MeasureFamily;
 	ramp: readonly string[];
 	method: "quantile";
-	/** classes: graded; single_tone: E2 rule 5; empty: no area shaded; spikes: RV-5. */
-	mode: "classes" | "single_tone" | "empty" | "spikes";
+	/** classes: graded; single_tone: E2 rule 5; empty: no area shaded; bubbles and bars: RV-5 as amended. */
+	mode: "classes" | "single_tone" | "empty" | "bubbles" | "bars";
 	symbol: MapSymbol;
-	/** Spike mode: colour and reference sizes for the legend. */
-	spikes: {
+	/** Bubble or bars mode: colour, scale and reference sizes for the legend. */
+	symbols: {
+		kind: "bubble" | "bars";
 		color: string;
-		maxValue: number;
-		references: { ratio: number; value: number }[];
-		/** The largest spike includes figures flagged for review (C30). */
+		/** The value drawn at full size. */
+		scaleMax: number;
+		/** Bubbles: value and area ratio; bars: value and length ratio. */
+		references: { value: number; ratio: number }[];
+		/** Areas above the scale, drawn at the cap (bubbles only). */
+		outliers: { areaId: string; value: number; flagged: boolean }[];
+		/** The largest symbol includes figures flagged for review (C30). */
 		maxFlagged: boolean;
+		/** Bars: the parts, in drawing order. */
+		parts: { key: string; label: string }[];
 	} | null;
 	/** Classes actually used after tied breaks are merged (E3 s7.2, M9). */
 	classes: LegendClass[];
@@ -588,6 +648,18 @@ function gradeList(
 	return list.length ? list : null;
 }
 
+/** Rounded legend references: the scale top, then about a half and a tenth. */
+function referenceValues(scaleMax: number): number[] {
+	if (!(scaleMax > 0)) return [];
+	const round = (v: number) => {
+		const mag = 10 ** Math.floor(Math.log10(v));
+		return Math.max(Math.round(v / mag) * mag, 1);
+	};
+	return [...new Set([scaleMax, round(scaleMax / 2), round(scaleMax / 10)])]
+		.filter((v) => v <= scaleMax)
+		.sort((a, b) => b - a);
+}
+
 export function resolveMapState(
 	cells: readonly MapCell[],
 	options: ResolveMapOptions,
@@ -611,8 +683,10 @@ export function resolveMapState(
 	let singleToneReason: SingleToneReason | null = null;
 	if (shadedValues.length === 0) {
 		mode = "empty";
-	} else if (symbol === "spike") {
-		mode = "spikes";
+	} else if (symbol === "bubble") {
+		mode = "bubbles";
+	} else if (symbol === "bars") {
+		mode = "bars";
 	} else if (shadedValues.length < MIN_AREAS_FOR_CLASSES) {
 		mode = "single_tone";
 		singleToneReason = "too_few_areas";
@@ -626,7 +700,33 @@ export function resolveMapState(
 	const maxValue = shadedValues.length
 		? shadedValues[shadedValues.length - 1]
 		: 0;
-	const spikeColor = ramp[ramp.length - 1];
+	const symbolColor = ramp[ramp.length - 1];
+
+	// Bubbles: the outlier rule sets the scale (map symbol research, s5).
+	const nextLargest =
+		shadedValues.length > 1 ? shadedValues[shadedValues.length - 2] : 0;
+	const bubbleScaleMax =
+		nextLargest > 0 && maxValue > OUTLIER_FACTOR * nextLargest
+			? nextLargest
+			: maxValue;
+
+	// Bars: the scale is the largest reported part across the shaded areas.
+	const partOrder = new Map<string, string>();
+	let barScaleMax = 0;
+	if (mode === "bars") {
+		for (const r of resolved) {
+			if (r.state !== "shaded") continue;
+			for (const p of r.cell.parts ?? []) {
+				if (!partOrder.has(p.key)) partOrder.set(p.key, p.label);
+				if (
+					p.valueState === "reported" &&
+					p.value !== null &&
+					p.value > barScaleMax
+				)
+					barScaleMax = p.value;
+			}
+		}
+	}
 
 	const counts = Object.fromEntries(
 		MAP_AREA_STATES.map((s) => [s, 0]),
@@ -636,11 +736,43 @@ export function resolveMapState(
 		counts[state]++;
 		let classIndex: number | null = null;
 		let color: string | null = null;
-		let spike: MapArea["spike"] = null;
+		let symbolDrawn: MapArea["symbol"] = null;
+		const reportedHere = count(cell.recordsReported);
+		const zcHere = count(cell.recordsZeroConfirmed);
 		if (state === "shaded") {
-			if (mode === "spikes") {
-				color = SPIKE_BASE_FILL;
-				spike = { ratio: maxValue > 0 ? (cell.value as number) / maxValue : 0 };
+			if (mode === "bubbles") {
+				color = SYMBOL_BASE_FILL;
+				const v = cell.value as number;
+				symbolDrawn = {
+					kind: "bubble",
+					areaRatio: bubbleScaleMax > 0 ? Math.min(v / bubbleScaleMax, 1) : 0,
+					outlier: v > bubbleScaleMax,
+					ring: {
+						n: reportedHere + zcHere,
+						of: Math.max(count(cell.recordsTotal), reportedHere + zcHere),
+					},
+				};
+			} else if (mode === "bars") {
+				color = SYMBOL_BASE_FILL;
+				const parts = cell.parts ?? [];
+				symbolDrawn = parts.length
+					? {
+							kind: "bars",
+							bars: parts.map((p) => ({
+								key: p.key,
+								label: p.label,
+								valueState: p.valueState,
+								value: p.value,
+								ratio:
+									p.valueState === "reported" &&
+									p.value !== null &&
+									barScaleMax > 0
+										? p.value / barScaleMax
+										: null,
+								flagged: count(p.recordsFlagged) > 0,
+							})),
+						}
+					: null;
 			} else if (mode === "classes") {
 				classIndex = classOf(cell.value as number, breaks);
 				color = ramp[rampIndex(classIndex, classCount)];
@@ -660,7 +792,7 @@ export function resolveMapState(
 			singleTone: state === "shaded" && mode === "single_tone",
 			color,
 			reason,
-			spike,
+			symbol: symbolDrawn,
 			quality: {
 				plausibility:
 					flagged > 0
@@ -706,20 +838,49 @@ export function resolveMapState(
 			method: "quantile",
 			mode,
 			symbol,
-			spikes:
-				mode === "spikes"
+			symbols:
+				mode === "bubbles"
 					? {
-							color: spikeColor,
-							maxValue,
-							references: [1, 0.5, 0.25].map((ratio) => ({
-								ratio,
-								value: maxValue * ratio,
+							kind: "bubble",
+							color: symbolColor,
+							scaleMax: bubbleScaleMax,
+							references: referenceValues(bubbleScaleMax).map((value) => ({
+								value,
+								ratio: value / bubbleScaleMax,
 							})),
+							outliers: areas
+								.filter((a) => a.symbol?.kind === "bubble" && a.symbol.outlier)
+								.map((a) => ({
+									areaId: a.areaId,
+									value: a.value as number,
+									flagged: a.quality.plausibility !== null,
+								})),
 							maxFlagged: areas.some(
-								(x) => x.spike?.ratio === 1 && x.quality.plausibility !== null,
+								(a) => a.value === maxValue && a.quality.plausibility !== null,
 							),
+							parts: [],
 						}
-					: null,
+					: mode === "bars"
+						? {
+								kind: "bars",
+								color: symbolColor,
+								scaleMax: barScaleMax,
+								references:
+									barScaleMax > 0
+										? referenceValues(barScaleMax).map((value) => ({
+												value,
+												ratio: value / barScaleMax,
+											}))
+										: [],
+								outliers: [],
+								maxFlagged: areas.some(
+									(a) =>
+										a.symbol?.kind === "bars" &&
+										a.symbol.bars.some((b) => b.ratio === 1 && b.flagged),
+								),
+								parts: [...partOrder].map(([key, label]) => ({ key, label })),
+							}
+						: null,
 			classes,
 			singleTone:
 				mode === "single_tone" && singleToneReason

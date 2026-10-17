@@ -22,12 +22,14 @@ import {
 	type MeasureKind,
 	type NotAppliedInput,
 	PLAUSIBILITY_MARKER,
-	SPIKE_WIDTH_PX,
+	type MapAreaSymbol,
+	BAR_WIDTH_PX,
 	STATE_ENCODING,
+	barLengthPx,
+	bubbleRadiusPx,
 	defaultSymbolFor,
 	rampIndex,
 	resolveMapState,
-	spikeHeightPx,
 } from "~/utils/mapState";
 
 export type MapChartRef = {
@@ -58,7 +60,7 @@ export type MapChartArea = {
 	geoPrecision?: string | null;
 	/**
 	 * A point inside the area, [longitude, latitude], from
-	 * ST_PointOnSurface, where a spike stands (ruling RV-5).
+	 * ST_PointOnSurface, where a bubble or bar stands (RV-5 as amended).
 	 */
 	labelPoint?: [number, number] | null;
 };
@@ -88,7 +90,7 @@ type MapChartProps = {
 	/** Attribution shown whenever a basemap is drawn (TR-166). */
 	basemapAttribution?: string;
 	/**
-	 * What the figures are: counts and totals draw as spikes, densities and
+	 * What the figures are: counts and totals draw as bubbles, densities and
 	 * rates as a choropleth (ruling RV-5). Defaults to "count".
 	 */
 	measureKind?: MeasureKind;
@@ -174,10 +176,77 @@ function ensurePatternDefs(map: any) {
 	svg.insertBefore(defs, svg.firstChild);
 }
 
-/** A spike as inline SVG: a triangle standing on its base point. */
-function spikeSvg(height: number, fill: string, stroke: string): string {
-	const w = SPIKE_WIDTH_PX;
-	return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${height}" viewBox="0 0 ${w} ${height}" aria-hidden="true"><polygon points="0,${height} ${w / 2},0 ${w},${height}" fill="${fill}" stroke="${stroke}" stroke-width="${stroke === "none" ? 0 : 1.5}"/></svg>`;
+/** Gap between a bubble and its coverage ring, and the ring's width. */
+const RING_GAP_PX = 2;
+const RING_WIDTH_PX = 2;
+
+/**
+ * A bubble as inline SVG (preview option A): a circle whose area carries the
+ * value, and a thin outer ring whose filled arc is the share of records in
+ * scope that report the measure (n of N). An outlier gets a break mark.
+ */
+function bubbleSvg(
+	radius: number,
+	fill: string,
+	stroke: string,
+	ring: { n: number; of: number } | null,
+	outlier = false,
+): { html: string; size: number } {
+	const outer = radius + (ring ? RING_GAP_PX + RING_WIDTH_PX : 0) + 1;
+	const size = Math.ceil(outer * 2);
+	const c = size / 2;
+	const parts = [
+		`<circle cx="${c}" cy="${c}" r="${radius}" fill="${fill}" fill-opacity="0.75" stroke="${stroke === "none" ? "#ffffff" : stroke}" stroke-width="${stroke === "none" ? 1 : 1.5}"/>`,
+	];
+	if (ring && ring.of > 0) {
+		const rr = radius + RING_GAP_PX + RING_WIDTH_PX / 2;
+		const share = Math.min(ring.n / ring.of, 1);
+		const len = 2 * Math.PI * rr;
+		parts.push(
+			`<circle cx="${c}" cy="${c}" r="${rr}" fill="none" stroke="#d1d5db" stroke-width="${RING_WIDTH_PX}"/>`,
+			`<circle cx="${c}" cy="${c}" r="${rr}" fill="none" stroke="${fill}" stroke-width="${RING_WIDTH_PX}" stroke-dasharray="${(share * len).toFixed(2)} ${len.toFixed(2)}" transform="rotate(-90 ${c} ${c})"/>`,
+		);
+	}
+	if (outlier) {
+		parts.push(
+			`<line x1="${c - radius * 0.5}" y1="${c + 3}" x2="${c + radius * 0.5}" y2="${c - 3}" stroke="#ffffff" stroke-width="2"/>`,
+		);
+	}
+	return {
+		html: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true">${parts.join("")}</svg>`,
+		size,
+	};
+}
+
+/**
+ * Rounded bars as inline SVG (preview option B), side by side on a shared
+ * baseline. A part with no reported value gets an empty dashed slot, never a
+ * short bar.
+ */
+function barsSvg(
+	bars: Extract<MapAreaSymbol, { kind: "bars" }>["bars"],
+	fill: string,
+	maxLength: number,
+): { html: string; width: number; height: number } {
+	const gap = 2;
+	const width = bars.length * (BAR_WIDTH_PX + gap) + gap;
+	const height = maxLength + 2;
+	const r = BAR_WIDTH_PX / 2;
+	const shapes = bars.map((b, i) => {
+		const x = gap + i * (BAR_WIDTH_PX + gap);
+		if (b.ratio === null) {
+			const h = Math.min(10, maxLength);
+			return `<rect x="${x + 0.5}" y="${height - h - 0.5}" width="${BAR_WIDTH_PX - 1}" height="${h}" rx="${r}" fill="none" stroke="#9ca3af" stroke-dasharray="2 2"/>`;
+		}
+		const h = barLengthPx(b.ratio, maxLength);
+		const stroke = b.flagged ? PLAUSIBILITY_MARKER.stroke : "#ffffff";
+		return `<rect x="${x}" y="${height - h - 1}" width="${BAR_WIDTH_PX}" height="${h}" rx="${r}" fill="${fill}" fill-opacity="${1 - i * 0.3}" stroke="${stroke}" stroke-width="1"/>`;
+	});
+	return {
+		html: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" aria-hidden="true">${shapes.join("")}</svg>`,
+		width,
+		height,
+	};
 }
 
 function areaStyle(
@@ -186,9 +255,9 @@ function areaStyle(
 	classCount: number,
 	family?: MeasureFamily,
 ) {
-	if (area.state === "shaded" && area.spike) {
-		// Spike mode (RV-5): the area keeps the canvas fill; the spike carries
-		// the value.
+	if (area.state === "shaded" && area.symbol) {
+		// Bubble or bars mode: the area keeps the canvas fill; the symbol
+		// carries the value.
 		return {
 			color: dataTokens.map.areaBoundary.stroke,
 			fillColor: area.color as string,
@@ -496,7 +565,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 					} else {
 						console.log("Clearing previous layers...");
 						mapRef.current.eachLayer((layer: any) => {
-							if (layer instanceof L.GeoJSON || layer.options?.deltaSpike) {
+							if (layer instanceof L.GeoJSON || layer.options?.deltaSymbol) {
 								mapRef.current.removeLayer(layer);
 							}
 						});
@@ -531,30 +600,48 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 							geojsonLayer.addTo(mapRef.current);
 							geoJsonLayers.push(geojsonLayer);
 
-							if (area.spike && resolved.legend.spikes) {
-								// The spike stands on a point inside the area; the bounds
+							if (area.symbol && resolved.legend.symbols) {
+								// The symbol stands on a point inside the area; the bounds
 								// centre is only a fallback when the screen sent none.
 								const at = region.labelPoint
 									? L.latLng(region.labelPoint[1], region.labelPoint[0])
 									: geojsonLayer.getBounds().getCenter();
-								const h = spikeHeightPx(area.spike.ratio);
-								const outline = area.quality.plausibility
-									? PLAUSIBILITY_MARKER.stroke
-									: "none";
-								const icon = L.divIcon({
-									className: "",
-									html: spikeSvg(h, resolved.legend.spikes.color, outline),
-									iconSize: [SPIKE_WIDTH_PX, h],
-									iconAnchor: [SPIKE_WIDTH_PX / 2, h],
-								});
-								const spike = L.marker(at, {
+								const fill = resolved.legend.symbols.color;
+								let icon;
+								if (area.symbol.kind === "bubble") {
+									const outline = area.quality.plausibility
+										? PLAUSIBILITY_MARKER.stroke
+										: "none";
+									const b = bubbleSvg(
+										bubbleRadiusPx(area.symbol.areaRatio),
+										fill,
+										outline,
+										area.symbol.ring,
+										area.symbol.outlier,
+									);
+									icon = L.divIcon({
+										className: "",
+										html: b.html,
+										iconSize: [b.size, b.size],
+										iconAnchor: [b.size / 2, b.size / 2],
+									});
+								} else {
+									const b = barsSvg(area.symbol.bars, fill, 40);
+									icon = L.divIcon({
+										className: "",
+										html: b.html,
+										iconSize: [b.width, b.height],
+										iconAnchor: [b.width / 2, b.height],
+									});
+								}
+								const marker = L.marker(at, {
 									icon,
 									interactive: true,
 									keyboard: false,
-									deltaSpike: true,
+									deltaSymbol: true,
 								});
-								spike.bindPopup(popupHtml(ctx, region, area));
-								spike.addTo(mapRef.current);
+								marker.bindPopup(popupHtml(ctx, region, area));
+								marker.addTo(mapRef.current);
 							}
 						} catch (error) {
 							console.error("Error parsing GeoJSON:", error);
@@ -654,33 +741,88 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 					>
 						<strong>{currentLegendTitle}</strong>
 						<ul style={{ listStyle: "none", padding: 0, margin: "5px 0 0 0" }}>
-							{legend.mode === "spikes" &&
-								legend.spikes &&
-								legend.spikes.references.map((r) => (
-									<li key={`spike-${r.ratio}`} style={legendRow}>
-										<span
-											aria-hidden="true"
-											style={{ display: "inline-block", width: 16 }}
-											dangerouslySetInnerHTML={{
-												__html: spikeSvg(
-													spikeHeightPx(r.ratio, 24),
-													legend.spikes!.color,
-													"none",
-												),
-											}}
-										/>
-										{formatNumberWithoutDecimals(r.value)}
-									</li>
-								))}
-							{legend.mode === "spikes" && legend.spikes?.maxFlagged && (
+							{legend.mode === "bubbles" &&
+								legend.symbols &&
+								legend.symbols.references.map((r) => {
+									const b = bubbleSvg(
+										bubbleRadiusPx(r.ratio, 14),
+										legend.symbols!.color,
+										"none",
+										null,
+									);
+									return (
+										<li key={`bubble-${r.value}`} style={legendRow}>
+											<span
+												aria-hidden="true"
+												style={{ display: "inline-block", width: 32 }}
+												dangerouslySetInnerHTML={{ __html: b.html }}
+											/>
+											{formatNumberWithoutDecimals(r.value)}
+										</li>
+									);
+								})}
+							{legend.mode === "bubbles" && legend.symbols && (
 								<li style={{ ...legendRow, whiteSpace: "normal" }}>
 									{ctx.t({
-										code: "analysis.map_spike_max_flagged",
-										desc: "Map legend note in spike mode when the tallest spike includes figures flagged for review.",
-										msg: "Largest spike includes figures flagged for review",
+										code: "analysis.map_bubble_ring",
+										desc: "Map legend note in bubble mode explaining the outer ring.",
+										msg: "Ring: share of records that report this figure",
 									})}
 								</li>
 							)}
+							{legend.mode === "bubbles" &&
+								legend.symbols?.outliers.map((o) => (
+									<li
+										key={`outlier-${o.areaId}`}
+										style={{ ...legendRow, whiteSpace: "normal" }}
+									>
+										{ctx.t(
+											{
+												code: "analysis.map_bubble_outlier",
+												desc: "Map legend note for an area whose value is above the bubble scale and is drawn at the cap. {value} is the figure.",
+												msg: "Drawn at the cap, above the scale: {value}",
+											},
+											{ value: formatNumberWithoutDecimals(o.value) },
+										)}
+									</li>
+								))}
+							{legend.mode === "bars" &&
+								legend.symbols?.parts.map((p, i) => (
+									<li key={`part-${p.key}`} style={legendRow}>
+										<Swatch
+											fill={legend.symbols!.color}
+											opacity={1 - i * 0.3}
+											stroke="#ffffff"
+										/>
+										{p.label}
+									</li>
+								))}
+							{legend.mode === "bars" && legend.symbols && (
+								<li style={{ ...legendRow, whiteSpace: "normal" }}>
+									{ctx.t(
+										{
+											code: "analysis.map_bars_scale",
+											desc: "Map legend note in bars mode: the longest bar and what a dashed slot means. {value} is the largest figure.",
+											msg: "Longest bar: {value}. A dashed slot is not reported.",
+										},
+										{
+											value: formatNumberWithoutDecimals(
+												legend.symbols.scaleMax,
+											),
+										},
+									)}
+								</li>
+							)}
+							{(legend.mode === "bubbles" || legend.mode === "bars") &&
+								legend.symbols?.maxFlagged && (
+									<li style={{ ...legendRow, whiteSpace: "normal" }}>
+										{ctx.t({
+											code: "analysis.map_symbol_max_flagged",
+											desc: "Map legend note when the largest bubble or bar includes figures flagged for review.",
+											msg: "Largest symbol includes figures flagged for review",
+										})}
+									</li>
+								)}
 							{legend.mode === "classes" &&
 								legend.classes.map((c) => (
 									<li key={`class-${c.index}`} style={legendRow}>
