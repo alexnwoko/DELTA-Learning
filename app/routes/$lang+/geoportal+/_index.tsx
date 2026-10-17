@@ -44,8 +44,9 @@ import {
 	type GeoTableRow,
 } from "~/frontend/geoportal/GeoTable";
 import {
+	flattenHazardTree,
 	GeoFilterBar,
-	type HazardTree,
+	type NestedHazardTree,
 } from "~/frontend/geoportal/GeoFilterBar";
 import { GeoReadout } from "~/frontend/geoportal/GeoReadout";
 import { GeoDossier, type DossierData } from "~/frontend/geoportal/GeoDossier";
@@ -205,7 +206,8 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 					};
 				}[];
 			},
-			hazardTree: tree as HazardTree | null,
+			// G6 is nested; the bar reads three flat lists (Frontend, 2026-10-17).
+			hazardTree: flattenHazardTree(tree as NestedHazardTree | null),
 			regions: regions.map((r) => ({
 				regionId: r.regionId,
 				name: r.name,
