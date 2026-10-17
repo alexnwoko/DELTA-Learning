@@ -567,3 +567,148 @@ describe("RV-5 rounding for reading", () => {
 		expect(spikeReferenceValue(2.5)).toBe(2.5);
 	});
 });
+
+import {
+	applyChips,
+	applyPlace,
+	lockedFacets,
+	periodPresets,
+	placeKey,
+	querySummary,
+	selectedChips,
+	withPlace,
+	type ChipSet,
+} from "~/frontend/geoportal/filterBarState";
+
+describe("shared filter bar state (contract v0.1)", () => {
+	const q = { ...DEFAULT_QUERY, measure: "deaths" as const };
+	const effects: ChipSet = {
+		kind: "effect",
+		options: [
+			{ id: "deaths", label: { code: "x.deaths", msg: "Deaths" } },
+			{ id: "injured", label: { code: "x.injured", msg: "Injured" } },
+			{ id: "missing", label: { code: "x.missing", msg: "Missing" } },
+		],
+	};
+	const types: ChipSet = {
+		kind: "hip_type",
+		options: [
+			{ id: "1037", label: "Meteorological", colorToken: "var(--a)", count: 5 },
+			{ id: "1038", label: "Geological", colorToken: "var(--b)", count: 0 },
+			{ id: "1039", label: "Biological", colorToken: "var(--c)", count: null },
+		],
+	};
+
+	it("keeps one place facet: a division clears the region and the reverse", () => {
+		const withRegion = withPlace(q, { regionId: "r1" });
+		expect(withRegion.where.region).toEqual({ regionId: "r1" });
+		const withDivision = withPlace(withRegion, { divisionId: "d1" });
+		expect(withDivision.where.geo).toEqual({ divisionId: "d1" });
+		expect(withDivision.where.region).toBeUndefined();
+		const back = applyPlace(withDivision, "r:r2");
+		expect(back.where.geo).toBeUndefined();
+		expect(placeKey(back)).toBe("r:r2");
+		const all = applyPlace(back, "all");
+		expect(all.where.geo).toBeUndefined();
+		expect(all.where.region).toBeUndefined();
+		expect(placeKey(all)).toBe("all");
+	});
+
+	it("writes effect chips in option order and removes an empty set", () => {
+		const on = applyChips(q, effects, ["missing", "deaths"]);
+		expect(on.where.humanEffects).toEqual(["deaths", "missing"]);
+		expect(selectedChips(on, effects)).toEqual(["deaths", "missing"]);
+		const off = applyChips(on, effects, []);
+		expect("humanEffects" in off.where).toBe(false);
+	});
+
+	it("keeps one HIPs type chip and clears cluster and hazard", () => {
+		const start = {
+			...q,
+			where: { ...q.where, hazard: { clusterId: "c1", hazardId: "h1" } },
+		};
+		const on = applyChips(start, types, ["1037"]);
+		expect(on.where.hazard).toEqual({ typeId: "1037" });
+		expect("hazard" in applyChips(on, types, []).where).toBe(false);
+	});
+
+	it("counts presets back from this year inclusive, after All years", () => {
+		expect(periodPresets([1, 3, 5, 10], 2026)).toEqual([
+			{ id: "all", years: 0, from: "", to: "" },
+			{ id: "1", years: 1, from: "2026", to: "2026" },
+			{ id: "3", years: 3, from: "2024", to: "2026" },
+			{ id: "5", years: 5, from: "2022", to: "2026" },
+			{ id: "10", years: 10, from: "2017", to: "2026" },
+		]);
+	});
+
+	it("names each locked facet", () => {
+		expect(
+			lockedFacets({
+				dimension: "disaster_impact",
+				where: { region: { regionId: "r1" }, time: { from: "2020" } },
+			}),
+		).toEqual(["dimension", "place", "period"]);
+		expect(lockedFacets(undefined)).toEqual([]);
+	});
+
+	it("states the actual years, the hazard and the basis in the summary", () => {
+		const s = querySummary(
+			{
+				...q,
+				where: {
+					...q.where,
+					time: { from: "2015-03", to: "2024" },
+					hazard: { typeId: "1037" },
+				},
+				scope: { ...q.scope, basis: "provisional" },
+			},
+			{
+				scopeLabel: "Angola",
+				hazardTree: {
+					types: [{ id: "1037", name: "Meteorological" }],
+					clusters: [],
+					hazards: [],
+				},
+			},
+			plainT,
+		);
+		expect(s).toBe(
+			"Angola · 2015 to 2024 · Hazard: Meteorological · Basis: provisional",
+		);
+		expect(querySummary(q, {}, plainT)).toBe(
+			"All years · Hazard: all · Basis: published",
+		);
+	});
+
+	it("renders D1's bar: no dimension toggle or level, chips, Area and status chips", () => {
+		const html = renderToString(
+			<GeoFilterBar
+				query={withPlace(q, { regionId: "r1" })}
+				level={1}
+				levels={[1]}
+				canReview={false}
+				onChange={() => {}}
+				dimensionControl="none"
+				levelControl={false}
+				presets={[1, 3, 5, 10]}
+				chips={types}
+				place={{
+					regions: [{ regionId: "r1", name: "North", kind: "planning" }],
+				}}
+				locked={{ where: { time: { from: "2020" } } }}
+				notApplied={["sector: not in the read model"]}
+			/>,
+		);
+		expect(html).not.toContain("geo-dim-label");
+		expect(html).not.toContain("Map level");
+		expect(html).toContain("Area");
+		expect(html).toContain("North");
+		expect(html).toContain("Meteorological (5)");
+		expect(html).toContain("Biological");
+		expect(html).not.toContain("Biological (0)");
+		expect(html).toContain("Last 1 year");
+		expect(html).toContain("Fixed by this page: period");
+		expect(html).toContain("Not applied: sector: not in the read model");
+	});
+});
