@@ -45,7 +45,14 @@ import type {
 	SeasonGrid,
 	SendaiCountsPanel,
 } from "~/utils/dashboard/impactPanels5to16";
+import type {
+	ImpactMapArea,
+	ImpactMapPayload,
+} from "~/utils/dashboard/impactMap";
+import { divisionLabelPoints } from "~/backend.server/models/analytics/divisionLabelPoints";
 
+/** Simplification tolerance for the impact map shapes, in degrees (about 500 m). */
+export const MAP_SIMPLIFY_DEGREES = 0.005;
 /** Divisions shown by name in panel 7 before the rest are grouped. */
 export const RANKED_DIVISIONS_TOP = 15;
 /** Records listed in panel 11. */
@@ -783,6 +790,97 @@ export async function getImpactPanels5to16(
 			disaggregation: meta(
 				"Sum per category over rows split by that dimension alone; relocated people left out of displaced",
 			),
+		},
+	};
+}
+
+/**
+ * The D1 Disaster impact map (slot M0): per level-1 division, the number of
+ * deaths for the shading and dwellings destroyed and damaged for the bars.
+ * Every level-1 division is listed, so an area nobody reported reads as not
+ * reported, never as absent or 0.
+ */
+export async function getImpactMap(
+	query: DeltaQuery,
+	ctx: ImpactPanelsContext,
+): Promise<ImpactMapPayload> {
+	const { filters, notApplied } = impactFiltersFromQuery(query, ctx);
+	const fr = humanEffectsFilteredRecords(filters);
+	const [byDivision, houseRows, multi, divNames] = await Promise.all([
+		groupedMeasures(filters, sql`rl.l1_id::text AS k1, NULL::text AS k2`, {
+			divisions: true,
+		}),
+		rows(sql`
+			WITH RECURSIVE ${fr}, ${housesCte}, ${recordDivisionsCte(ctx.countryAccountsId)}
+			SELECT rl.l1_id::text AS division_id,
+				SUM(h.td) FILTER (WHERE h.td > 0) AS td_sum,
+				COUNT(*) FILTER (WHERE h.td > 0) AS td_reported,
+				SUM(h.pd) FILTER (WHERE h.pd > 0) AS pd_sum,
+				COUNT(*) FILTER (WHERE h.pd > 0) AS pd_reported,
+				COUNT(*) AS records_total
+			FROM rec_l1 rl
+			LEFT JOIN houses h ON h."record_id" = rl.record_id
+			GROUP BY 1`),
+		rows(sql`
+			WITH RECURSIVE ${fr}, ${recordDivisionsCte(ctx.countryAccountsId)}
+			SELECT COUNT(*) AS n FROM (
+				SELECT record_id FROM rec_l1 GROUP BY 1 HAVING COUNT(*) > 1
+			) m`),
+		divisionNames(ctx.countryAccountsId),
+	]);
+	const ids = [...divNames.keys()];
+	const [points, shapes] = await Promise.all([
+		divisionLabelPoints(ids, ctx.countryAccountsId),
+		// Simplified to about 500 m (0.005 degrees): the largest tenant's
+		// level-1 shapes drop from 23 MB stored to about 150 kB. The stored
+		// geojson is the fallback for a division without geom.
+		rows(sql`
+			SELECT "id"::text AS id,
+				COALESCE(
+					ST_AsGeoJSON(ST_SimplifyPreserveTopology("geom", ${MAP_SIMPLIFY_DEGREES}), 4)::jsonb,
+					"geojson"
+				) AS geojson
+			FROM "division"
+			WHERE "level" = 1 AND "country_accounts_id" = ${ctx.countryAccountsId}`),
+	]);
+	const shapeBy = new Map(
+		shapes.map((r) => [r.id as string, r.geojson ?? null]),
+	);
+	const measuresBy = new Map(byDivision.map((r) => [r.k1 as string | null, r]));
+	const housesBy = new Map(houseRows.map((r) => [r.division_id as string, r]));
+	const areas: ImpactMapArea[] = ids
+		.map((id) => {
+			const m = measuresBy.get(id);
+			const h = housesBy.get(id);
+			return {
+				divisionId: id,
+				name: divNames.get(id) as string,
+				geojson: shapeBy.get(id) ?? null,
+				labelPoint: points.get(id) ?? null,
+				deaths: m ? m.measures.deaths : EMPTY_CELL,
+				dwellingsDestroyed: h
+					? countCell(h.td_sum, h.td_reported, h.records_total)
+					: EMPTY_CELL,
+				dwellingsDamaged: h
+					? countCell(h.pd_sum, h.pd_reported, h.records_total)
+					: EMPTY_CELL,
+			};
+		})
+		.sort((a, b) => a.name.localeCompare(b.name));
+	return {
+		areas,
+		recordsWithoutDivision:
+			measuresBy.get(null)?.measures.deaths.recordsTotal ?? 0,
+		multiDivisionRecords: num(multi[0]?.n),
+		legend: {
+			shading: "Number of deaths",
+			bars: ["Dwellings destroyed", "Dwellings damaged"],
+			note: "Sub-national figures. Not a Sendai indicator value.",
+		},
+		meta: {
+			method:
+				"Per level-1 division: the number of deaths (sum over records, a record in several divisions counts in each) shades the area; dwellings destroyed and damaged are counted damage rows in the Housing sector, furniture and equipment left out, drawn as two bars that are never added",
+			notApplied,
 		},
 	};
 }
