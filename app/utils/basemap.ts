@@ -28,3 +28,109 @@ export function isSelfHostedTileUrl(
 		return false;
 	}
 }
+
+/** Route the DELTA server serves basemap tiles from (I-3). */
+export const BASEMAP_DEFAULT_TILE_PATH = "/tiles/basemap/{z}/{x}/{y}.png";
+
+/**
+ * Zoom range of the basemap. Loss and damage maps work at admin-area
+ * scale, not street level, so tiles stop at zoom 12 (I-3; revisit with
+ * the tile pipeline decision).
+ */
+export const BASEMAP_MIN_ZOOM = 0;
+export const BASEMAP_MAX_ZOOM = 12;
+
+/** A basemap a map may offer; null when none is installed. */
+export type BasemapConfig = {
+	url: string;
+	/** HTML attribution, shown whenever the basemap is drawn (TR-166). */
+	attribution: string;
+	minZoom: number;
+	maxZoom: number;
+} | null;
+
+// ---------------------------------------------------------------------------
+// Basemap switcher (I-3; Alex 2026-10-16: "users should be able to toggle
+// based on their choice"). One list for GeoMap and MapChart.
+
+/** Basemap layers a map may offer, in switcher order. */
+export type BasemapLayerId = "street" | "satellite" | "google" | "mapbox";
+
+/** Third-party providers: an explicit allow-list, each pinned to one host. */
+export const THIRD_PARTY_TILE_HOSTS = {
+	google: "tile.googleapis.com",
+	mapbox: "api.mapbox.com",
+} as const;
+export type ThirdPartyProvider = keyof typeof THIRD_PARTY_TILE_HOSTS;
+
+export interface BasemapLayer {
+	id: BasemapLayerId;
+	/** Locale key and English label. */
+	label: { code: string; msg: string };
+	/** XYZ template; Google's carries {session}, filled in by the map. */
+	url: string;
+	/** HTML attribution shown whenever the layer is drawn. */
+	attribution: string;
+	minZoom: number;
+	maxZoom: number;
+	tileSize: 256 | 512;
+	/** True when tiles come from outside the DELTA origin (SEC-20 exception). */
+	thirdParty: boolean;
+	/** Plain note shown next to a third-party option. */
+	note: { code: string; msg: string } | null;
+	/** Self-hosted logo the provider's terms require, or null. */
+	logo: string | null;
+	/** Google only: session and viewport endpoints and the session body. */
+	google: {
+		createSessionUrl: string;
+		viewportUrl: string;
+		region: string;
+		language: string;
+	} | null;
+}
+
+/**
+ * True when a third-party tile URL uses HTTPS and the provider's one
+ * allowed host. Any other URL is refused, so configuration can never open
+ * the map (or the CSP) to another host.
+ */
+export function isAllowedThirdPartyUrl(
+	provider: string,
+	url: string | null | undefined,
+): boolean {
+	const host = (THIRD_PARTY_TILE_HOSTS as Record<string, string>)[provider];
+	if (!host || !url) return false;
+	try {
+		const u = new URL(url.replace(/[{}]/g, ""));
+		return u.protocol === "https:" && u.host === host;
+	} catch {
+		return false;
+	}
+}
+
+/**
+ * Layers a reader may pick. Public pages offer self-hosted layers only
+ * (Geoportal recommendation, pending Alex), so an anonymous visitor's map
+ * views never reach a third party.
+ */
+export function selectableBasemaps(
+	layers: readonly BasemapLayer[],
+	audience: "public" | "signed-in",
+): BasemapLayer[] {
+	return layers.filter((l) => audience === "signed-in" || !l.thirdParty);
+}
+
+/**
+ * The layer to draw on paper or in an export: third-party tiles never
+ * print (their terms, and cross-origin tiles taint the export canvas), so
+ * the first self-hosted layer stands in, or none.
+ */
+export function printableBasemap(
+	layers: readonly BasemapLayer[],
+	current: BasemapLayerId | null,
+): BasemapLayerId | null {
+	const layer = layers.find((l) => l.id === current);
+	if (!layer) return null;
+	if (!layer.thirdParty) return layer.id;
+	return layers.find((l) => !l.thirdParty)?.id ?? null;
+}
