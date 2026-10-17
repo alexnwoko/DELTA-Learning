@@ -19,11 +19,15 @@ import {
 	type MapScopeQuery,
 	type MapStateResult,
 	type MeasureFamily,
+	type MeasureKind,
 	type NotAppliedInput,
 	PLAUSIBILITY_MARKER,
+	SPIKE_WIDTH_PX,
 	STATE_ENCODING,
+	defaultSymbolFor,
 	rampIndex,
 	resolveMapState,
+	spikeHeightPx,
 } from "~/utils/mapState";
 
 export type MapChartRef = {
@@ -52,6 +56,11 @@ export type MapChartArea = {
 	sharedRecords?: number;
 	gradeDistribution?: MapCell["gradeDistribution"];
 	geoPrecision?: string | null;
+	/**
+	 * A point inside the area, [longitude, latitude], from
+	 * ST_PointOnSurface, where a spike stands (ruling RV-5).
+	 */
+	labelPoint?: [number, number] | null;
 };
 
 type MapChartProps = {
@@ -78,6 +87,11 @@ type MapChartProps = {
 	basemapUrl?: string;
 	/** Attribution shown whenever a basemap is drawn (TR-166). */
 	basemapAttribution?: string;
+	/**
+	 * What the figures are: counts and totals draw as spikes, densities and
+	 * rates as a choropleth (ruling RV-5). Defaults to "count".
+	 */
+	measureKind?: MeasureKind;
 };
 
 type DataSourceType = MapChartArea[];
@@ -160,12 +174,29 @@ function ensurePatternDefs(map: any) {
 	svg.insertBefore(defs, svg.firstChild);
 }
 
+/** A spike as inline SVG: a triangle standing on its base point. */
+function spikeSvg(height: number, fill: string, stroke: string): string {
+	const w = SPIKE_WIDTH_PX;
+	return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${height}" viewBox="0 0 ${w} ${height}" aria-hidden="true"><polygon points="0,${height} ${w / 2},0 ${w},${height}" fill="${fill}" stroke="${stroke}" stroke-width="${stroke === "none" ? 0 : 1.5}"/></svg>`;
+}
+
 function areaStyle(
 	area: MapArea,
 	maxColor: string,
 	classCount: number,
 	family?: MeasureFamily,
 ) {
+	if (area.state === "shaded" && area.spike) {
+		// Spike mode (RV-5): the area keeps the canvas fill; the spike carries
+		// the value.
+		return {
+			color: dataTokens.map.areaBoundary.stroke,
+			fillColor: area.color as string,
+			weight: dataTokens.map.areaBoundary.strokeWidth,
+			opacity: 1,
+			fillOpacity: 1,
+		};
+	}
 	if (area.state === "shaded") {
 		const marker = area.quality.plausibility ? PLAUSIBILITY_MARKER : null;
 		const step =
@@ -308,6 +339,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 			measureFamily,
 			scope,
 			notApplied,
+			measureKind,
 		},
 		ref,
 	) => {
@@ -427,6 +459,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 					family: currentFamily ?? "people",
 					scope: scope ?? DEFAULT_SCOPE,
 					notApplied,
+					symbol: defaultSymbolFor(measureKind ?? "count"),
 				});
 				setMapState(resolved);
 				setUpdatedDataSource(dataSource);
@@ -463,7 +496,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 					} else {
 						console.log("Clearing previous layers...");
 						mapRef.current.eachLayer((layer: any) => {
-							if (layer instanceof L.GeoJSON) {
+							if (layer instanceof L.GeoJSON || layer.options?.deltaSpike) {
 								mapRef.current.removeLayer(layer);
 							}
 						});
@@ -497,6 +530,32 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 
 							geojsonLayer.addTo(mapRef.current);
 							geoJsonLayers.push(geojsonLayer);
+
+							if (area.spike && resolved.legend.spikes) {
+								// The spike stands on a point inside the area; the bounds
+								// centre is only a fallback when the screen sent none.
+								const at = region.labelPoint
+									? L.latLng(region.labelPoint[1], region.labelPoint[0])
+									: geojsonLayer.getBounds().getCenter();
+								const h = spikeHeightPx(area.spike.ratio);
+								const outline = area.quality.plausibility
+									? PLAUSIBILITY_MARKER.stroke
+									: "none";
+								const icon = L.divIcon({
+									className: "",
+									html: spikeSvg(h, resolved.legend.spikes.color, outline),
+									iconSize: [SPIKE_WIDTH_PX, h],
+									iconAnchor: [SPIKE_WIDTH_PX / 2, h],
+								});
+								const spike = L.marker(at, {
+									icon,
+									interactive: true,
+									keyboard: false,
+									deltaSpike: true,
+								});
+								spike.bindPopup(popupHtml(ctx, region, area));
+								spike.addTo(mapRef.current);
+							}
 						} catch (error) {
 							console.error("Error parsing GeoJSON:", error);
 						}
@@ -522,6 +581,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 				componentId,
 				scope,
 				notApplied,
+				measureKind,
 			],
 		);
 
@@ -594,6 +654,33 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 					>
 						<strong>{currentLegendTitle}</strong>
 						<ul style={{ listStyle: "none", padding: 0, margin: "5px 0 0 0" }}>
+							{legend.mode === "spikes" &&
+								legend.spikes &&
+								legend.spikes.references.map((r) => (
+									<li key={`spike-${r.ratio}`} style={legendRow}>
+										<span
+											aria-hidden="true"
+											style={{ display: "inline-block", width: 16 }}
+											dangerouslySetInnerHTML={{
+												__html: spikeSvg(
+													spikeHeightPx(r.ratio, 24),
+													legend.spikes!.color,
+													"none",
+												),
+											}}
+										/>
+										{formatNumberWithoutDecimals(r.value)}
+									</li>
+								))}
+							{legend.mode === "spikes" && legend.spikes?.maxFlagged && (
+								<li style={{ ...legendRow, whiteSpace: "normal" }}>
+									{ctx.t({
+										code: "analysis.map_spike_max_flagged",
+										desc: "Map legend note in spike mode when the tallest spike includes figures flagged for review.",
+										msg: "Largest spike includes figures flagged for review",
+									})}
+								</li>
+							)}
 							{legend.mode === "classes" &&
 								legend.classes.map((c) => (
 									<li key={`class-${c.index}`} style={legendRow}>

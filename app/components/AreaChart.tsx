@@ -80,7 +80,7 @@ const AreaChart: React.FC<AreaChartProps> = ({
 				{data && data.length > 0 ? (
 					<ResponsiveContainer width="100%" height="100%">
 						<RechartsAreaChart
-							data={data}
+							data={data as Array<EventsData | ValueData>}
 							margin={{
 								top: 10,
 								// right: 6,
