@@ -26,6 +26,10 @@ import { InputTextarea } from "primereact/inputtextarea";
 import { Toast } from "primereact/toast";
 import { TreeSelect } from "primereact/treeselect";
 import { ViewContext } from "~/frontend/context";
+import {
+	UnsavedChangesDialog,
+	useUnsavedChangesGuard,
+} from "~/frontend/form/unsavedChanges";
 import { copyTextToClipboardWithToast } from "~/frontend/utils/clipboard";
 import {
 	normalizeDetailTypeValue,
@@ -667,6 +671,21 @@ function StepperValidation({
 		recordingOrganizationName:
 			eventBasicsInitialValues.recordingOrganizationName,
 	});
+
+	// Ask before leaving with unsaved changes (TR-251). Most fields are
+	// controlled PrimeReact widgets, so "edited" also compares the form
+	// state with how it opened. The dialogs opened as sub-pages of this form
+	// stay inside its scope and never ask.
+	const unsavedFormRef = useRef<HTMLFormElement>(null);
+	const formSnapshot = useMemo(() => JSON.stringify(form), [form]);
+	const initialFormSnapshot = useRef(formSnapshot);
+	const { blocker: unsavedBlocker, allowLeave } = useUnsavedChangesGuard(
+		unsavedFormRef,
+		{
+			isDirty: formSnapshot !== initialFormSnapshot.current,
+			scopeToMountPath: true,
+		},
+	);
 
 	const parseDateWithPrecision = (
 		value: string | null | undefined,
@@ -2106,6 +2125,8 @@ function StepperValidation({
 
 	const discardAndExit = () => {
 		setVisibleExitModal(false);
+		// The user confirmed in the exit dialog: do not ask again.
+		allowLeave();
 		document.location.href = ctx.url("/disaster-event");
 	};
 
@@ -3637,7 +3658,12 @@ function StepperValidation({
 		`}</style>
 			<div className="mg-container">
 				<section className="dts-page-section">
-					<RouterForm id="disaster-event-stepper-form" method="post">
+					<RouterForm
+						ref={unsavedFormRef}
+						id="disaster-event-stepper-form"
+						method="post"
+					>
+						<UnsavedChangesDialog ctx={ctx} blocker={unsavedBlocker} />
 						<input
 							type="hidden"
 							id="tempValidatorUserIds"

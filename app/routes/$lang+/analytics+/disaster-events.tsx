@@ -64,7 +64,7 @@ interface interfaceMap {
 	description: string;
 	colorPercentage: number;
 	geojson: any;
-	/** Point inside the division, [lng, lat], for map spikes (RV-5). */
+	/** Point inside the division, [lng, lat], for map bubbles and bars (RV-5 as amended). */
 	labelPoint?: [number, number] | null;
 }
 
@@ -326,7 +326,7 @@ export const loader = authLoaderPublicOrWithPerm(
 						1,
 						settings.countryAccountsId,
 					);
-					// Where each map spike stands (ruling RV-5).
+					// Where each map bubble or bar stands (RV-5 as amended).
 					const labelPoints = await divisionLabelPoints(
 						divisionLevel1.map((d) => d.id),
 						settings.countryAccountsId,

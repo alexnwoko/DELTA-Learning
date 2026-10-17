@@ -9,7 +9,7 @@ import {
 } from "../test-helpers";
 import { divisionLabelPoints } from "~/backend.server/models/analytics/divisionLabelPoints";
 
-// Ruling RV-5: a map spike stands on a point inside its division. For a
+// Ruling RV-5: a map bubble or bar stands on a point inside its division. For a
 // U-shaped division the centroid falls in the gap, outside the area;
 // ST_PointOnSurface does not.
 
