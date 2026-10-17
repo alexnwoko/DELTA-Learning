@@ -75,6 +75,17 @@ function eventsCte(filters: HazardFilters): SQL {
 			WHERE r."disaster_event_id" = de."id"
 				AND drd."division_id" IN ${divisionAndDescendantsSql(filters.geographicLevelId, filters.countryAccountsId)}
 		)`);
+	if (filters.regionId)
+		conds.push(sql`EXISTS (
+			SELECT 1
+			FROM "disaster_records" r
+			JOIN "disaster_records_division" drd ON drd."disaster_record_id" = r."id"
+			JOIN geo.division_ancestor da
+				ON da.division_id = drd."division_id" AND da.country_accounts_id = ${filters.countryAccountsId}
+			JOIN geo.region_member m
+				ON m.division_id = da.ancestor_id AND m.country_accounts_id = da.country_accounts_id
+			WHERE r."disaster_event_id" = de."id" AND m.region_id = ${filters.regionId}
+		)`);
 	return sql`ev AS (
 		SELECT de."id", ${RULE_SQL} AS rule,
 			NULLIF(de."glide", '') AS glide,
