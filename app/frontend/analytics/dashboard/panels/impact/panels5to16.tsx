@@ -7,6 +7,7 @@
 // series colour (NFR-094); money is absent with its refusal (G-06).
 import type React from "react";
 import { ChartFrame } from "~/frontend/charts/ChartFrame";
+import { roundedBarPath } from "~/frontend/charts/roundedBar";
 import type { ChartExportRow } from "~/frontend/charts/chartExport";
 import type { ViewContext } from "~/frontend/context";
 import type { PanelMeta } from "~/utils/dashboard/impactPanels";
@@ -613,7 +614,8 @@ function ExtensiveView({ common, p, exp }: { common: Common; p: ExtensiveIntensi
 					<svg viewBox={`0 0 ${W} 28`} width="100%" height={28} preserveAspectRatio="none" role="img" className="block max-w-full"
 						aria-label={`${names.intensive}: ${pct(share)}; ${names.extensive}: ${pct(1 - share)}`}>
 						<rect x={0} y={0} width={W * share} height={28} fill={RAMP[4]} />
-						<rect x={W * share} y={0} width={W * (1 - share)} height={28} fill={RAMP[1]} />
+						{/* Stacked: only the outer segment's far end is rounded. */}
+						<path d={roundedBarPath(W * share, 0, W * (1 - share), 28, "right")} fill={RAMP[1]} />
 					</svg>
 				) : (
 					<p className="m-0 italic text-brand-text-muted">
