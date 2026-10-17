@@ -1,7 +1,7 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { chipsFor, flattenHazardTree, measuresFor, type NestedHazardTree } from "~/frontend/analytics/dashboard/filterDefinitions";
-import { GeoFilterBar } from "~/frontend/geoportal/GeoFilterBar";
+import { chipsFor, measuresFor } from "~/frontend/analytics/dashboard/filterDefinitions";
+import { flattenHazardTree, GeoFilterBar, type NestedHazardTree } from "~/frontend/geoportal/GeoFilterBar";
 import { plainT } from "~/frontend/geoportal/i18n";
 import { DEFAULT_QUERY } from "~/utils/deltaQuery";
 
@@ -10,8 +10,8 @@ const text = (html: string) => html.replace(/<!-- -->/g, "");
 const NESTED: NestedHazardTree = {
 	types: [
 		{ id: "1042", name: "Meteorological and Hydrological", recordCountSubtree: 120, clusters: [
-			{ id: "c1", typeId: "1042", name: "Flood", recordCountSubtree: 100, hazards: [
-				{ id: "h1", clusterId: "c1", code: "MH0600", name: "Flash flood", recordCountSubtree: 60 },
+			{ id: "c1", name: "Flood", recordCountSubtree: 100, hazards: [
+				{ id: "h1", code: "MH0600", name: "Flash flood", recordCountSubtree: 60 },
 			] },
 		] },
 		{ id: "1041", name: "Geological", recordCountSubtree: 0, clusters: [] },
@@ -20,7 +20,7 @@ const NESTED: NestedHazardTree = {
 
 describe("hazard tree for the bar", () => {
 	it("flattens types, clusters and hazards with their parent ids", () => {
-		const tree = flattenHazardTree(NESTED);
+		const tree = flattenHazardTree(NESTED)!;
 		expect(tree.types.map((x) => x.id)).toEqual(["1042", "1041"]);
 		expect(tree.clusters).toEqual([{ id: "c1", name: "Flood", recordCountSubtree: 100, typeId: "1042" }]);
 		expect(tree.hazards).toEqual([{ id: "h1", name: "Flash flood", recordCountSubtree: 60, clusterId: "c1", code: "MH0600" }]);

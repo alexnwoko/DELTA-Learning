@@ -7,11 +7,10 @@ import { sql } from "drizzle-orm";
 import { dr } from "~/db.server";
 import { getHazardTree } from "~/backend.server/models/geo/queries";
 import { listRegions } from "~/backend.server/models/geo/regions";
-import type { HazardTree } from "~/frontend/geoportal/GeoFilterBar";
+import { flattenHazardTree, type HazardTree, type NestedHazardTree } from "~/frontend/geoportal/GeoFilterBar";
 import type { PlaceOptions } from "~/frontend/geoportal/filterBarState";
 import type { ApprovalAudience } from "~/utils/approvalBasis";
 import type { DeltaQuery } from "~/utils/deltaQuery";
-import { flattenHazardTree, type NestedHazardTree } from "./filterDefinitions";
 
 export interface DashboardFilterOptions {
 	hazardTree: HazardTree | null;
@@ -41,7 +40,8 @@ export async function getDashboardFilterOptions(
 		listRegions(countryAccountsId, lang).catch(() => []),
 	]);
 	return {
-		hazardTree: tree ? flattenHazardTree(tree as unknown as NestedHazardTree) : null,
+		// Geoportal's flattener: the nested G6 tree to the bar's three lists.
+		hazardTree: flattenHazardTree(tree as NestedHazardTree | null),
 		place: {
 			divisions,
 			regions: regions.map((r) => ({ regionId: r.regionId, name: r.name, kind: r.kind })),
