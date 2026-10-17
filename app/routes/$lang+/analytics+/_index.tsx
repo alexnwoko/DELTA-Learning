@@ -2,11 +2,13 @@
 // page with four buttons in Alex's order (2026-10-17): Sectors, Hazardous
 // events, Disaster events, Disaster impact. The URL carries delta.query/1
 // (`dim`) plus `view=sectors`, so every view has a shareable link.
-// Disaster impact reads the Analytics loaders; the other three show their
-// gap until their loaders land.
+// Each view reads its own Analytics loader, only when it is shown.
 import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { useLoaderData, useSearchParams } from "react-router";
 import { approvalAudienceForBasis } from "~/backend.server/approvalAudience.server";
+import { getEventPanels1to7 } from "~/backend.server/models/analytics/dashboard/eventPanels.server";
+import { getHazardEventPanels1to7 } from "~/backend.server/models/analytics/dashboard/hazardEventPanels.server";
+import { getSectorPanels1to7 } from "~/backend.server/models/analytics/dashboard/sectorPanels.server";
 import { getImpactPanels1to4 } from "~/backend.server/models/analytics/dashboard/impactPanels.server";
 import {
 	getImpactMap,
@@ -16,14 +18,20 @@ import { AboutTheData } from "~/frontend/analytics/dashboard/AboutTheData";
 import { DashboardDownload } from "~/frontend/analytics/dashboard/DashboardDownload";
 import { DashboardShell, viewLabel } from "~/frontend/analytics/dashboard/DashboardShell";
 import { searchForView, viewFromSearch, type DashboardView } from "~/frontend/analytics/dashboard/views";
+import { eventDashboardPanels } from "~/frontend/analytics/dashboard/panels/events/eventPanels";
+import { hazardEventDashboardPanels } from "~/frontend/analytics/dashboard/panels/hazards/hazardEventPanels";
 import { ImpactMap } from "~/frontend/analytics/dashboard/panels/impact/ImpactMap";
+import { sectorDashboardPanels } from "~/frontend/analytics/dashboard/panels/sectors/sectorPanels";
 import { impactDashboardPanels } from "~/frontend/analytics/dashboard/panels/impact/impactDashboardPanels";
 import type { DashboardPanel } from "~/frontend/analytics/dashboard/types";
 import { ViewContext } from "~/frontend/context";
 import { basisIncludesProvisional } from "~/utils/approvalBasis";
 import { authLoaderPublicOrWithPerm, hasPermission } from "~/utils/auth";
 import type { ImpactPanels1to4 } from "~/utils/dashboard/impactPanels";
+import type { EventPanels1to7 } from "~/utils/dashboard/eventPanels";
+import type { HazardEventPanels1to7 } from "~/utils/dashboard/hazardEventPanels";
 import type { ImpactMapPayload } from "~/utils/dashboard/impactMap";
+import type { SectorPanels1to7 } from "~/utils/dashboard/sectorPanels";
 import type { ImpactPanels5to16 } from "~/utils/dashboard/impactPanels5to16";
 import {
 	parseDeltaQuery,
@@ -67,9 +75,15 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request }:
 					getImpactMap(query, ctx),
 				])
 			: null;
+	const events = view === "disaster_event" ? await getEventPanels1to7(query, ctx) : null;
+	const hazardEvents = view === "hazardous_event" ? await getHazardEventPanels1to7(query, ctx) : null;
+	const sectors = view === "sectors" ? await getSectorPanels1to7(query, ctx) : null;
 	return {
 		query,
 		view,
+		events,
+		hazardEvents,
+		sectors,
 		canReview,
 		canOpenReviewQueue,
 		// The page-level CSV is for signed-in readers (ruling D6).
@@ -83,27 +97,6 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request }:
 	};
 });
 
-/** The gap shown by a view whose panels are not built yet. */
-function inBuild(ctx: ViewContext, view: DashboardView): DashboardPanel[] {
-	const gap =
-		view === "hazardous_event"
-			? {
-					code: "G-01",
-					text: ctx.t({
-						code: "dashboard.no_hazardous_events",
-						msg: "No hazardous events recorded. Migrated DesInventar records carry no hazardous-event layer.",
-					}),
-				}
-			: {
-					code: view === "disaster_event" ? "D1 step 3" : "D1 sectors",
-					text: ctx.t({
-						code: "dashboard.view_in_build",
-						msg: "Not yet available: the panels for this view are being built.",
-					}),
-				};
-	return [{ id: `${view}-in-build`, n: 1, title: viewLabel(ctx, view), gap }];
-}
-
 export default function AnalysisDashboard() {
 	const ld = useLoaderData<typeof loader>();
 	const ctx = new ViewContext();
@@ -116,18 +109,26 @@ export default function AnalysisDashboard() {
 	const setView = (next: DashboardView) =>
 		setSearchParams(searchForView(query, next), { preventScrollReset: true });
 
-	const panels = impact
-		? impactDashboardPanels(ctx, impact, source, {
-				data: ld.impactMore as ImpactPanels5to16,
-				country: ld.country,
-			})
-		: inBuild(ctx, view);
 	// Until the shared filter bar arrives, the line names the place and basis.
 	const summary =
 		impact?.scopeText ??
 		[ld.country, ld.provisional ? ctx.t({ code: "dashboard.basis_provisional", msg: "Basis: provisional" }) : ctx.t({ code: "dashboard.basis_published", msg: "Basis: published" })]
 			.filter(Boolean)
 			.join(" · ");
+
+	const opts = { source, scope: summary, provisional: ld.provisional };
+	const panels: DashboardPanel[] = impact
+		? impactDashboardPanels(ctx, impact, source, {
+				data: ld.impactMore as ImpactPanels5to16,
+				country: ld.country,
+			})
+		: ld.events
+			? eventDashboardPanels(ctx, ld.events as EventPanels1to7, opts)
+			: ld.hazardEvents
+				? hazardEventDashboardPanels(ctx, ld.hazardEvents as HazardEventPanels1to7, { ...opts, signedIn: ld.signedIn })
+				: ld.sectors
+					? sectorDashboardPanels(ctx, ld.sectors as SectorPanels1to7, { ...opts, country: ld.country })
+					: [];
 
 	return (
 		<div className="mg-container py-4">
@@ -155,7 +156,7 @@ export default function AnalysisDashboard() {
 				}
 				panels={panels}
 				download={
-					ld.signedIn && impact ? (
+					ld.signedIn && panels.some((p) => p.exportData) ? (
 						<DashboardDownload
 							ctx={ctx}
 							title={`${ctx.t({ code: "dashboard.title", msg: "Analysis" })}: ${viewLabel(ctx, view)}`}
