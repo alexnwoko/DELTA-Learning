@@ -653,3 +653,97 @@ describe("shared filter bar state (contract v0.1)", () => {
 		expect(html).toContain("Not applied: sector: not in the read model");
 	});
 });
+
+import { barCells } from "~/frontend/geoportal/geoCells";
+import { symbolStyle } from "~/frontend/geoportal/GeoMap";
+
+describe("bubbles and rounded bars (Alex 2026-10-17)", () => {
+	const destroyed = [
+		cell("p1", {
+			value: 100,
+			value_state: "reported",
+			plausibility_flagged_records: 2,
+		}),
+		cell("p2", { value: 40, value_state: "reported" }),
+		cell("p3", {}),
+	];
+	const damaged = [
+		cell("p1", {
+			value: 300,
+			value_state: "reported",
+			plausibility_flagged_records: 2,
+		}),
+		cell("p2", {}),
+		cell("p3", {}),
+	];
+	const parts = barCells([
+		{ key: "houses_destroyed", label: "Houses destroyed", cells: destroyed },
+		{ key: "houses_damaged", label: "Houses damaged", cells: damaged },
+	]);
+
+	it("never adds the parts and keeps a missing part as not reported", () => {
+		const p1 = parts.find((c) => c.areaId === "p1")!;
+		expect(p1.value).toBe(300); // the largest part, not 400
+		expect(p1.recordsFlagged).toBe(2); // one record flagged on both parts
+		const p2 = parts.find((c) => c.areaId === "p2")!;
+		expect(p2.parts?.map((p) => p.value)).toEqual([40, null]);
+		expect(p2.parts?.[1].valueState).toBe("not_reported");
+		const p3 = parts.find((c) => c.areaId === "p3")!;
+		expect(p3.valueState).toBe("not_reported");
+	});
+
+	it("draws bars only where a part is reported, with an empty slot for the missing part", () => {
+		const s = resolveMapState(parts, {
+			symbol: "bars",
+			family: measureFamily("houses_destroyed"),
+			scope: { tenant: null, audience: "signed-in" },
+		});
+		const byId = new Map(s.areas.map((a) => [a.areaId, a]));
+		const p2 = byId.get("p2")?.symbol;
+		expect(p2?.kind).toBe("bars");
+		expect(p2?.kind === "bars" && p2.bars.map((b) => b.ratio)).toEqual([
+			40 / 300,
+			null,
+		]);
+		expect(byId.get("p3")?.symbol).toBeNull();
+		expect(symbolStyle(byId.get("p3")!, "#f00")).toBeUndefined();
+		expect(symbolStyle(byId.get("p2")!, "#f00")?.getRenderer()).toBeTypeOf(
+			"function",
+		);
+		const html = renderToString(
+			<GeoLegend legend={s.legend} title="Housing" noRecordsAreas={0} />,
+		);
+		expect(html).toContain("Houses destroyed");
+		expect(html).toContain("A dashed slot is not reported");
+		const readout = renderToString(
+			<GeoReadout
+				name="P2"
+				area={byId.get("p2")}
+				unit="houses"
+				reportedNoun="disaster impacts"
+				selected={true}
+			/>,
+		);
+		expect(readout).toContain("Houses destroyed: 40 houses");
+		expect(readout).toContain("Houses damaged: not reported");
+	});
+
+	it("draws bubbles with a coverage ring and nothing for a missing figure", () => {
+		const s = resolveMapState(cells.map(toMapCell), {
+			symbol: "bubble",
+			family: measureFamily("deaths"),
+			scope: { tenant: null, audience: "signed-in" },
+		});
+		const byId = new Map(s.areas.map((a) => [a.areaId, a]));
+		const a = byId.get("a")?.symbol;
+		expect(a?.kind).toBe("bubble");
+		expect(byId.get("c")?.symbol).toBeNull();
+		expect(symbolStyle(byId.get("c")!, "#00f")).toBeUndefined();
+		const html = renderToString(
+			<GeoLegend legend={s.legend} title="Deaths" noRecordsAreas={0} />,
+		);
+		expect(html).toContain("Bubble area is proportional to the value");
+		expect(html).toContain("Ring: share of records that report this figure");
+		expect(html).toContain("<circle");
+	});
+});

@@ -5380,6 +5380,66 @@
     "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
   },
   {
+    "id": "geoportal.legend.bars_scale",
+    "translation": "Longest bar: {value}. A dashed slot is not reported.",
+    "description": "File: app/frontend/geoportal/GeoLegend.tsx"
+  },
+  {
+    "id": "geoportal.legend.bubble_outlier",
+    "translation": "Drawn at the cap, above the scale: {value}",
+    "description": "File: app/frontend/geoportal/GeoLegend.tsx"
+  },
+  {
+    "id": "geoportal.legend.bubble_ring",
+    "translation": "Ring: share of records that report this figure",
+    "description": "File: app/frontend/geoportal/GeoLegend.tsx"
+  },
+  {
+    "id": "geoportal.legend.flagged_short",
+    "translation": "(flagged for review)",
+    "description": "File: app/frontend/geoportal/GeoLegend.tsx"
+  },
+  {
+    "id": "geoportal.legend.method_bars",
+    "translation": "Bar length is proportional to the value; parts are not added",
+    "description": "File: app/frontend/geoportal/GeoLegend.tsx"
+  },
+  {
+    "id": "geoportal.legend.method_bubbles",
+    "translation": "Bubble area is proportional to the value",
+    "description": "File: app/frontend/geoportal/GeoLegend.tsx"
+  },
+  {
+    "id": "geoportal.legend.symbol_max_flagged",
+    "translation": "Largest symbol includes figures flagged for review",
+    "description": "File: app/frontend/geoportal/GeoLegend.tsx"
+  },
+  {
+    "id": "geoportal.map.bars",
+    "translation": "Bars",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
+  },
+  {
+    "id": "geoportal.map.bubbles",
+    "translation": "Bubbles",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
+  },
+  {
+    "id": "geoportal.map.housing",
+    "translation": "Houses destroyed and damaged",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
+  },
+  {
+    "id": "geoportal.map.shading",
+    "translation": "Shading",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
+  },
+  {
+    "id": "geoportal.map.style",
+    "translation": "Map style",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
+  },
+  {
     "id": "geoportal.place.all",
     "translation": "All areas",
     "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
@@ -5398,6 +5458,11 @@
     "id": "geoportal.place.regions",
     "translation": "Regions",
     "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.readout.part_not_reported",
+    "translation": "not reported",
+    "description": "File: app/frontend/geoportal/GeoReadout.tsx"
   },
   {
     "id": "geoportal.summary.basis",

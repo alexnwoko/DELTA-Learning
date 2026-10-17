@@ -28,6 +28,8 @@ import {
 	TabPanel,
 	TabPanels,
 	Tabs,
+	ToggleButton,
+	ToggleButtonGroup,
 } from "react-aria-components";
 import { sql } from "drizzle-orm";
 
@@ -48,6 +50,7 @@ import {
 import { GeoReadout } from "~/frontend/geoportal/GeoReadout";
 import { GeoDossier, type DossierData } from "~/frontend/geoportal/GeoDossier";
 import {
+	barCells,
 	densityPer1000Km2,
 	measureFamily,
 	toMapCell,
@@ -67,14 +70,13 @@ import {
 import { authLoaderWithPerm, hasPermission } from "~/utils/auth";
 import { getCountryAccountsIdFromSession } from "~/utils/session";
 import { serializeDeltaQuery, type DeltaQuery } from "~/utils/deltaQuery";
-import {
-	resolveMapState,
-} from "~/utils/mapState";
+import { resolveMapState, type MapSymbol } from "~/utils/mapState";
 import { GEO_DIMENSION_LABELS, geoMeasureInfo } from "~/utils/geoMeasures";
 import { htmlTitle } from "~/utils/htmlmeta";
 import { PrintButton } from "~/frontend/print/PrintButton";
 import { basemapLayers } from "~/utils/basemap.server";
 import { listRegions } from "~/backend.server/models/geo/regions";
+import { divisionAreasKm2 } from "~/backend.server/models/analytics/divisionAreas";
 import { selectableBasemaps, type BasemapLayerId } from "~/utils/basemap";
 
 // OpenLayers loads with the map, not with the page (NFR-130).
@@ -111,6 +113,15 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 		url.searchParams.set("measure", "records");
 	}
 	const canReview = await hasPermission(args.request, "ValidateData");
+	// Map style (Alex 2026-10-17): bubbles for counts, rounded bars for the
+	// housing breakdown, shading for density. View state, not delta.query.
+	// The default stays shading until Alex confirms the default pairing.
+	const symbolParam = url.searchParams.get("symbol");
+	let symbol: MapSymbol =
+		symbolParam === "bubble" || symbolParam === "bars"
+			? symbolParam
+			: "choropleth";
+	if (symbol === "bars" && dim !== "disaster_impact") symbol = "bubble";
 	// Signed-in page: every configured layer (Alex: the reader chooses).
 	const basemaps = selectableBasemaps(
 		basemapLayers(url.origin, lang),
@@ -144,6 +155,28 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 			// RG-1: the tenant's regions for the Area control.
 			listRegions(countryAccountsId, lang),
 		]);
+		// Bars: the housing breakdown, each part read with the same filters.
+		const housing =
+			symbol === "bars"
+				? await Promise.all(
+						(["houses_destroyed", "houses_damaged"] as const).map((m) =>
+							getChoropleth(countryAccountsId, {
+								...req,
+								query: { ...req.query, measure: m },
+							}).then((c) => c.cells),
+						),
+					)
+				: null;
+		// True area of each division (full geometry), the same figure the
+		// analytics maps use, so a density reads the same on both.
+		const areaKm2 = Object.fromEntries(
+			await divisionAreasKm2(
+				(
+					boundaries as { features: { properties: { divisionId: string } }[] }
+				).features.map((f) => f.properties.divisionId),
+				countryAccountsId,
+			),
+		);
 		return {
 			query: req.query,
 			level: req.level as number,
@@ -167,6 +200,9 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 				kind: r.kind,
 			})),
 			basemaps,
+			symbol,
+			housing: housing ? { destroyed: housing[0], damaged: housing[1] } : null,
+			areaKm2,
 			refusal: null,
 		};
 	} catch (err) {
@@ -181,6 +217,9 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 				hazardTree: null,
 				regions: [],
 				basemaps,
+				symbol,
+				housing: null,
+				areaKm2: {} as Record<string, number>,
 				refusal: refusalBody(err.refusal, err.meta),
 			};
 		}
@@ -280,31 +319,41 @@ export default function GeoportalPage() {
 		? t({ code: "geoportal.unit.events", msg: "events" })
 		: t({ code: "geoportal.unit.disaster_impacts", msg: "disaster impacts" });
 
+	const symbol = data.symbol as MapSymbol;
 	const areaKm2 = useMemo(
-		() =>
-			new Map(
-				(data.boundaries?.features ?? []).map((f) => [
-					f.properties.divisionId,
-					Number(f.properties.areaKm2) || 0,
-				]),
-			),
-		[data.boundaries],
+		() => new Map(Object.entries(data.areaKm2 ?? {})),
+		[data.areaKm2],
 	);
 	const mapState = useMemo(() => {
 		if (!choropleth) return null;
-		// Shading carries density per 1,000 km2 of the division's true area,
-		// never a raw count (Alex, 2026-10-17: spikes removed; bubbles for
-		// counts arrive with the shared resolver). Null stays null.
-		const cells = choropleth.cells.map(toMapCell).map((c) => {
-			if (typeof c.value !== "number") return c;
-			return {
-				...c,
-				value: densityPer1000Km2(c.value, areaKm2.get(c.areaId) ?? 0),
-			};
-		});
+		// Alex 2026-10-17: bubbles carry counts, rounded bars the housing
+		// breakdown, shading a density per 1,000 km2 of true area (never a
+		// raw count). Null stays null; parts are never added.
+		const cells =
+			symbol === "bars" && data.housing
+				? barCells([
+						{
+							key: "houses_destroyed",
+							label: t(geoMeasureInfo("houses_destroyed").label),
+							cells: data.housing.destroyed,
+						},
+						{
+							key: "houses_damaged",
+							label: t(geoMeasureInfo("houses_damaged").label),
+							cells: data.housing.damaged,
+						},
+					])
+				: choropleth.cells.map(toMapCell).map((c) => {
+						if (symbol !== "choropleth" || typeof c.value !== "number")
+							return c;
+						return {
+							...c,
+							value: densityPer1000Km2(c.value, areaKm2.get(c.areaId) ?? 0),
+						};
+					});
 		return resolveMapState(cells, {
-			symbol: "choropleth",
-			family: measureFamily(measure),
+			symbol,
+			family: measureFamily(symbol === "bars" ? "houses_destroyed" : measure),
 			scope: {
 				tenant: null,
 				fromDate: query.where.time?.from ?? null,
@@ -318,7 +367,7 @@ export default function GeoportalPage() {
 			},
 			notApplied: choropleth.meta.notApplied,
 		});
-	}, [choropleth, measure, query, areaKm2]);
+	}, [choropleth, measure, query, areaKm2, symbol, data.housing, t]);
 
 	const rows: GeoTableRow[] = useMemo(() => {
 		if (!data.boundaries || !mapState) return [];
@@ -374,6 +423,13 @@ export default function GeoportalPage() {
 	const onFilters = (next: { query: DeltaQuery; level: number }) => {
 		const p = serializeDeltaQuery(next.query);
 		p.set("level", String(next.level));
+		if (symbol !== "choropleth") p.set("symbol", symbol);
+		navigate(`?${p.toString()}`);
+	};
+	const setSymbol = (next: MapSymbol) => {
+		const p = serializeDeltaQuery(query);
+		p.set("level", String(data.level));
+		if (next !== "choropleth") p.set("symbol", next);
 		navigate(`?${p.toString()}`);
 	};
 	const selectFromMap = (id: string | null) => {
@@ -409,8 +465,18 @@ export default function GeoportalPage() {
 		code: "geoportal.unit.per_1000km2",
 		msg: "per 1,000 km²",
 	});
-	const measureTitle = `${t(GEO_DIMENSION_LABELS[query.dimension])} · ${t(info.label)} (${densityNote})`;
-	const unitLabel = `${t(info.unit)} ${densityNote}`;
+	const measureTitle =
+		symbol === "bars"
+			? `${t(GEO_DIMENSION_LABELS[query.dimension])} · ${t({ code: "geoportal.map.housing", msg: "Houses destroyed and damaged" })}`
+			: symbol === "bubble"
+				? `${t(GEO_DIMENSION_LABELS[query.dimension])} · ${t(info.label)}`
+				: `${t(GEO_DIMENSION_LABELS[query.dimension])} · ${t(info.label)} (${densityNote})`;
+	const unitLabel =
+		symbol === "bars"
+			? t(geoMeasureInfo("houses_destroyed").unit)
+			: symbol === "choropleth"
+				? `${t(info.unit)} ${densityNote}`
+				: t(info.unit);
 	const activeFilters =
 		(query.where.time ? 1 : 0) +
 		(query.where.hazard ? 1 : 0) +
@@ -608,6 +674,7 @@ export default function GeoportalPage() {
 													basemapId={basemapId}
 													onBasemapStatus={setBasemapStatus}
 													homeSignal={homeSignal}
+													symbolColor={mapState.legend.symbols?.color ?? null}
 													height="100%"
 													label={`${measureTitle}: ${t({ code: "geoportal.map", msg: "map" })}`}
 													describedBy={tableId}
@@ -620,6 +687,43 @@ export default function GeoportalPage() {
 									className="absolute right-2 bottom-8 z-10 flex flex-col items-end gap-1"
 									data-print="hide"
 								>
+									<ToggleButtonGroup
+										aria-label={t({
+											code: "geoportal.map.style",
+											msg: "Map style",
+										})}
+										selectionMode="single"
+										disallowEmptySelection
+										selectedKeys={[symbol]}
+										onSelectionChange={(keys) => {
+											const [k] = Array.from(keys);
+											if (k) setSymbol(k as MapSymbol);
+										}}
+										className="flex rounded border border-brand-border-control overflow-hidden text-xs shadow-sm"
+									>
+										{(
+											[
+												[
+													"bubble",
+													{ code: "geoportal.map.bubbles", msg: "Bubbles" },
+												],
+												["bars", { code: "geoportal.map.bars", msg: "Bars" }],
+												[
+													"choropleth",
+													{ code: "geoportal.map.shading", msg: "Shading" },
+												],
+											] as const
+										).map(([id, label]) => (
+											<ToggleButton
+												key={id}
+												id={id}
+												isDisabled={id === "bars" && isEventDim}
+												className="px-2 py-1 bg-brand-surface data-[selected]:bg-brand-interactive data-[selected]:text-brand-text-on-interactive data-[disabled]:opacity-50 data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:-outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
+											>
+												{t(label)}
+											</ToggleButton>
+										))}
+									</ToggleButtonGroup>
 									<Button
 										onPress={() => setHomeSignal((n) => n + 1)}
 										className="border border-brand-border-control rounded px-2 py-1 text-xs bg-brand-surface shadow-sm data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"

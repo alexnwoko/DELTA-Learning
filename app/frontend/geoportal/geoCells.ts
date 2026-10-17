@@ -57,3 +57,50 @@ export function densityPer1000Km2(value: number, km2: number): number | null {
 	if (Math.abs(d) >= 1) return Math.round(d * 10) / 10;
 	return Number(d.toPrecision(2));
 }
+
+export interface BarPartInput {
+	key: string;
+	label: string;
+	cells: readonly GeoCell[];
+}
+
+/**
+ * Bars mode (Alex 2026-10-17, option B): one cell per area whose parts are
+ * the breakdown, for example houses destroyed and damaged. Parts are never
+ * added: the cell's value is the largest reported part, used only to decide
+ * whether the area carries bars. Record counts come from the first part
+ * (both measures are read from the same records). An area where no part is
+ * reported keeps the first part's state, so it draws no bars.
+ */
+export function barCells(inputs: readonly BarPartInput[]): MapCell[] {
+	const byPart = inputs.map(
+		(p) => new Map(p.cells.map((c) => [c.division_id, c])),
+	);
+	const ids = new Set(inputs.flatMap((p) => p.cells.map((c) => c.division_id)));
+	return [...ids].sort().map((id) => {
+		const first = byPart.map((m) => m.get(id)).find(Boolean) as GeoCell;
+		const base = toMapCell(first);
+		const parts = inputs.map((p, i) => {
+			const c = byPart[i].get(id);
+			return {
+				key: p.key,
+				label: p.label,
+				value: c?.value_state === "reported" ? c.value : null,
+				valueState: c?.value_state ?? "not_reported",
+				recordsFlagged: c?.plausibility_flagged_records ?? 0,
+			};
+		});
+		const reported = parts
+			.map((p) => p.value)
+			.filter((v): v is number => typeof v === "number");
+		if (reported.length === 0) return { ...base, parts };
+		return {
+			...base,
+			value: Math.max(...reported),
+			valueState: "reported" as const,
+			// A record flagged on both parts is one record: the larger count, never the sum.
+			recordsFlagged: Math.max(...parts.map((p) => p.recordsFlagged ?? 0)),
+			parts,
+		};
+	});
+}
