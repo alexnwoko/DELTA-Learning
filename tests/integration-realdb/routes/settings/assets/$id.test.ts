@@ -71,13 +71,13 @@ describe("$id.tsx loader", () => {
 		expect(data.item.id).toBe(asset.id);
 	});
 
-	it("should throw 403 for instance-owned asset with different tenant", async () => {
+	it("should throw 404 for instance-owned asset with different tenant", async () => {
 		const otherTenantId = await createOtherTenant();
 
 		const asset = await createTestAsset(otherTenantId, { isBuiltIn: false });
 
 		await expect(callLoader({ id: asset.id })).rejects.toMatchObject({
-			status: 403,
+			status: 404,
 		});
 	});
 });

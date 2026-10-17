@@ -65,14 +65,14 @@ describe("$id.tsx loader", () => {
 		await expect(callLoader({ id: "" })).rejects.toMatchObject({ status: 400 });
 	});
 
-	it("should return 401 for missing country accounts id", async () => {
+	it("should return 403 for missing country accounts id", async () => {
 		vi.mocked(getCountryAccountsIdFromSession).mockResolvedValueOnce(
 			null as any,
 		);
 
 		await expect(
 			callLoader({ id: testData.hazardousEventId }),
-		).rejects.toMatchObject({ status: 401 });
+		).rejects.toMatchObject({ status: 403 });
 	});
 
 	it("should return 403 for hazardous event from different tenant", async () => {

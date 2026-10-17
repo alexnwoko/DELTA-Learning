@@ -48,8 +48,10 @@ describe("edit.$id.tsx loader", () => {
 		await mockSessionValues(testIds);
 		await createTestUser(testIds);
 
+		// Published and validated records are locked against editing.
 		testData = await createTestDisasterEventWithOptions(
 			testIds.countryAccountId,
+			{ approvalStatus: "draft" },
 		);
 	});
 
@@ -72,27 +74,37 @@ describe("edit.$id.tsx loader", () => {
 		expect(data.item!.id).toBe(testData.disasterEventId);
 	});
 
-	it("should return 401 for missing country accounts id", async () => {
+
+	it("should return 403 for a published record", async () => {
+		const published = await createTestDisasterEventWithOptions(testIds.countryAccountId, {
+			approvalStatus: "published",
+		});
+
+		await expect(
+			callLoader({ id: published.disasterEventId }),
+		).rejects.toMatchObject({ status: 403 });
+	});
+	it("should return 403 for missing country accounts id", async () => {
 		vi.mocked(getCountryAccountsIdFromSession).mockResolvedValueOnce(
 			null as any,
 		);
 
 		await expect(
 			callLoader({ id: testData.disasterEventId }),
-		).rejects.toMatchObject({ status: 401 });
+		).rejects.toMatchObject({ status: 403 });
 	});
 
 	it("should throw error for non-existent event", async () => {
 		await expect(callLoader({ id: randomUUID() })).rejects.toThrow();
 	});
 
-	it("should return 401 for event from different tenant", async () => {
+	it("should return 403 for event from different tenant", async () => {
 		const otherTenantId = await createOtherTenant();
 		const otherData = await createTestDisasterEventWithOptions(otherTenantId);
 
 		await expect(
 			callLoader({ id: otherData.disasterEventId }),
-		).rejects.toMatchObject({ status: 401 });
+		).rejects.toMatchObject({ status: 403 });
 
 		await cleanupOtherTenant();
 	});

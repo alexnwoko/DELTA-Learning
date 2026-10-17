@@ -37,8 +37,14 @@ async function callLoader(params: { id: string }) {
 async function callAction(
 	params: { id: string },
 	formData: Record<string, string>,
+	sectorIds: string | null = "test-sector",
 ) {
 	const form = new URLSearchParams(formData);
+	// The sector picker posts two sectorIds fields; the action reads the second (#520).
+	if (sectorIds !== null) {
+		form.append("sectorIds", "");
+		form.append("sectorIds", sectorIds);
+	}
 	const request = new Request(
 		`${TEST_BASE_URL}/en/settings/assets/edit/${params.id}`,
 		{
@@ -86,13 +92,13 @@ describe("edit.$id.tsx loader", () => {
 		expect(data.selectedDisplay).toBeDefined();
 	});
 
-	it("should throw 403 for asset with different tenant", async () => {
+	it("should throw 404 for asset with different tenant", async () => {
 		const otherTenantId = await createOtherTenant();
 
 		const asset = await createTestAsset(otherTenantId, { isBuiltIn: false });
 
 		await expect(callLoader({ id: asset.id })).rejects.toMatchObject({
-			status: 403,
+			status: 404,
 		});
 	});
 
@@ -184,5 +190,22 @@ describe("edit.$id.tsx action", () => {
 		expect(response).not.toBeInstanceOf(Response);
 		expect((response as any).ok).toBe(false);
 		expect((response as any).errors).toBeDefined();
+	});
+
+	it("should return validation error when no sector is selected", async () => {
+		const asset = await createTestAsset(testIds.countryAccountId, {
+			isBuiltIn: false,
+		});
+
+		const response = await callAction(
+			{ id: asset.id },
+			{ customName: "Test" },
+			null,
+		);
+
+		expect(response).toMatchObject({
+			ok: false,
+			errors: { sectorIds: "At least one sector must be selected" },
+		});
 	});
 });

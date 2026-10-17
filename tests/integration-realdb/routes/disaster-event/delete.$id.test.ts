@@ -1,114 +1,140 @@
-// import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-// import {
-// 	createTestIds,
-// 	setupSessionMocks,
-// 	createTestUser,
-// 	cleanupTestUser,
-// 	mockSessionValues,
-// 	TEST_BASE_URL,
-// 	createOtherTenant,
-// 	cleanupOtherTenant,
-// } from "../../test-helpers";
-// import { createTestDisasterEventWithOptions } from "./test-helpers";
-// import { dr } from "~/db.server";
-// import { disasterEventTable } from "~/drizzle/schema/disasterEventTable";
-// import { eq } from "drizzle-orm";
-// import { randomUUID } from "crypto";
-// import { requireUser } from "~/utils/auth";
-// import { getCountryAccountsIdFromSession } from "~/utils/session";
-// import { action as deleteAction } from "~/routes/$lang+/disaster-event+/delete.$id";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import {
+	createTestIds,
+	setupSessionMocks,
+	createTestUser,
+	cleanupTestUser,
+	mockSessionValues,
+	TEST_BASE_URL,
+	createOtherTenant,
+	cleanupOtherTenant,
+} from "../../test-helpers";
+import { createTestDisasterEventWithOptions } from "./test-helpers";
+import { dr } from "~/db.server";
+import { disasterEventTable } from "~/drizzle/schema/disasterEventTable";
+import { eq } from "drizzle-orm";
+import { randomUUID } from "crypto";
+import { getCountryAccountsIdFromSession } from "~/utils/session";
+import {
+	loader as deleteLoader,
+	action as deleteAction,
+} from "~/routes/$lang+/disaster-event+/delete.$id";
 
-// const testIds = createTestIds();
-// testIds.userEmail = testIds.userEmail.replace("@", "-de-delete@");
+const testIds = createTestIds();
+testIds.userEmail = testIds.userEmail.replace("@", "-de-delete@");
 
-// setupSessionMocks();
+setupSessionMocks();
 
-// async function callAction(params: { id: string }) {
-// 	const url = new URL(`${TEST_BASE_URL}/en/disaster-event/delete/${params.id}`);
-// 	const formData = new FormData();
-// 	formData.append("id", params.id);
-// 	const request = new Request(url.toString(), {
-// 		method: "POST",
-// 		body: formData,
-// 	});
-// 	return await deleteAction({
-// 		request,
-// 		params: { lang: "en", id: params.id },
-// 		context: {},
-// 		userSession: {
-// 			user: {
-// 				id: testIds.userId,
-// 				emailVerified: true,
-// 				totpEnabled: false,
-// 			},
-// 			sessionId: "test-session-id",
-// 			session: { totpAuthed: true },
-// 		},
-// 	} as any);
-// }
+function args(id: string, method: "GET" | "POST") {
+	const url = `${TEST_BASE_URL}/en/disaster-event/delete/${id}`;
+	return {
+		request: new Request(url, { method }),
+		params: { lang: "en", id },
+		context: {},
+	} as any;
+}
 
-// describe("delete.$id.tsx action", () => {
-// 	let testData: Awaited<ReturnType<typeof createTestDisasterEventWithOptions>>;
+async function eventExists(id: string) {
+	const rows = await dr
+		.select({ id: disasterEventTable.id })
+		.from(disasterEventTable)
+		.where(eq(disasterEventTable.id, id));
+	return rows.length === 1;
+}
 
-// 	beforeEach(async () => {
-// 		vi.clearAllMocks();
-// 		await mockSessionValues(testIds);
-// 		await createTestUser(testIds);
+describe("disaster-event delete.$id.tsx", () => {
+	let testData: Awaited<ReturnType<typeof createTestDisasterEventWithOptions>>;
 
-// 		testData = await createTestDisasterEventWithOptions(
-// 			testIds.countryAccountId,
-// 		);
-// 	});
+	beforeEach(async () => {
+		vi.clearAllMocks();
+		await mockSessionValues(testIds);
+		await createTestUser(testIds);
 
-// 	afterEach(async () => {
-// 		await cleanupTestUser(testIds);
-// 	});
+		testData = await createTestDisasterEventWithOptions(
+			testIds.countryAccountId,
+		);
+	});
 
-// 	it("should return 401 for missing session", async () => {
-// 		vi.mocked(requireUser).mockResolvedValueOnce(null as any);
+	afterEach(async () => {
+		await cleanupTestUser(testIds);
+	});
 
-// 		await expect(
-// 			callAction({ id: testData.disasterEventId }),
-// 		).rejects.toMatchObject({ status: 401 });
-// 	});
+	describe("loader", () => {
+		it("should return the event name", async () => {
+			const data = await deleteLoader(args(testData.disasterEventId, "GET"));
 
-// 	it("should return 401 for missing country accounts id", async () => {
-// 		vi.mocked(getCountryAccountsIdFromSession).mockResolvedValueOnce(
-// 			null as any,
-// 		);
+			expect(data.item.id).toBe(testData.disasterEventId);
+			expect(data.item.name).toBe("Test Disaster Event");
+		});
 
-// 		await expect(
-// 			callAction({ id: testData.disasterEventId }),
-// 		).rejects.toMatchObject({ status: 401 });
-// 	});
+		it("should return 401 for missing country accounts id", async () => {
+			vi.mocked(getCountryAccountsIdFromSession).mockResolvedValueOnce(
+				null as any,
+			);
 
-// 	it("should return error for event from different tenant", async () => {
-// 		const otherTenantId = await createOtherTenant();
-// 		const otherData = await createTestDisasterEventWithOptions(otherTenantId);
+			await expect(
+				deleteLoader(args(testData.disasterEventId, "GET")),
+			).rejects.toMatchObject({ status: 401 });
+		});
 
-// 		const result = await callAction({ id: otherData.disasterEventId });
+		it("should return 404 for non-existent event", async () => {
+			await expect(
+				deleteLoader(args(randomUUID(), "GET")),
+			).rejects.toMatchObject({ status: 404 });
+		});
 
-// 		expect(result).toBeDefined();
-// 		expect((result as any).error).toBeDefined();
+		it("should return 404 for event from different tenant", async () => {
+			const otherTenantId = await createOtherTenant();
+			const otherData = await createTestDisasterEventWithOptions(otherTenantId);
 
-// 		await cleanupOtherTenant();
-// 	});
+			await expect(
+				deleteLoader(args(otherData.disasterEventId, "GET")),
+			).rejects.toMatchObject({ status: 404 });
 
-// 	it("should throw error for non-existent event", async () => {
-// 		const nonExistentId = randomUUID();
+			await cleanupOtherTenant();
+		});
+	});
 
-// 		await expect(callAction({ id: nonExistentId })).rejects.toThrow();
-// 	});
+	describe("action", () => {
+		it("should delete the event and redirect", async () => {
+			const response = await deleteAction(
+				args(testData.disasterEventId, "POST"),
+			);
 
-// 	it("should successfully delete disaster event", async () => {
-// 		const result = await callAction({ id: testData.disasterEventId });
+			expect((response as Response).status).toBe(302);
+			expect((response as Response).headers.get("Location")).toBe(
+				"/disaster-event",
+			);
+			expect(await eventExists(testData.disasterEventId)).toBe(false);
+		});
 
-// 		expect(result).toBeDefined();
+		it("should return 401 for missing country accounts id", async () => {
+			vi.mocked(getCountryAccountsIdFromSession).mockResolvedValueOnce(
+				null as any,
+			);
 
-// 		const deletedEvent = await dr
-// 			.select()
-// 			.from(disasterEventTable)
-// 			.where(eq(disasterEventTable.id, testData.disasterEventId));
-// 		expect(deletedEvent).toHaveLength(0);
-// 	});
-// });
+			await expect(
+				deleteAction(args(testData.disasterEventId, "POST")),
+			).rejects.toMatchObject({ status: 401 });
+			expect(await eventExists(testData.disasterEventId)).toBe(true);
+		});
+
+		it("should return 404 for non-existent event", async () => {
+			await expect(
+				deleteAction(args(randomUUID(), "POST")),
+			).rejects.toMatchObject({ status: 404 });
+		});
+
+		it("should return 404 and keep an event from a different tenant", async () => {
+			const otherTenantId = await createOtherTenant();
+			const otherData = await createTestDisasterEventWithOptions(otherTenantId);
+
+			await expect(
+				deleteAction(args(otherData.disasterEventId, "POST")),
+			).rejects.toMatchObject({ status: 404 });
+			expect(await eventExists(otherData.disasterEventId)).toBe(true);
+
+			await cleanupOtherTenant();
+		});
+	});
+});

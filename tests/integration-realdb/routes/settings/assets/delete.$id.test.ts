@@ -68,15 +68,15 @@ describe("delete.$id.tsx action", () => {
 		expect(response).toBeInstanceOf(Response);
 		expect((response as Response).status).toBe(302);
 		const location = (response as Response).headers.get("Location");
-		expect(location).toBe("/settings/assets");
+		expect(location).toBe("/en/settings/assets");
 	});
 
-	it("should throw 403 when deleting asset from different tenant", async () => {
+	it("should throw 404 when deleting asset from different tenant", async () => {
 		const otherTenantId = await createOtherTenant();
 		const asset = await createTestAsset(otherTenantId, { isBuiltIn: false });
 
 		await expect(callAction({ id: asset.id })).rejects.toMatchObject({
-			status: 403,
+			status: 404,
 		});
 	});
 
@@ -98,7 +98,7 @@ describe("delete.$id.tsx action", () => {
 
 		const response = await callAction({ id: asset.id });
 		expect(response).toMatchObject({
-			error: "Cannot delete this asset - it is used in damages",
+			error: "Cannot delete this asset — it is used in damage records",
 		});
 	});
 });

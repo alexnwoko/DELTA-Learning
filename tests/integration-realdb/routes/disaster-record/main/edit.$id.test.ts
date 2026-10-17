@@ -48,8 +48,10 @@ describe("edit.$id.tsx loader", () => {
 		await mockSessionValues(testIds);
 		await createTestUser(testIds);
 
+		// Published and validated records are locked against editing.
 		testData = await createTestDisasterRecordWithEvent(
 			testIds.countryAccountId,
+			{ approvalStatus: "draft" },
 		);
 	});
 
@@ -72,14 +74,24 @@ describe("edit.$id.tsx loader", () => {
 		expect(data.item!.id).toBe(testData.disasterRecordId);
 	});
 
-	it("should return 401 for missing country accounts id", async () => {
+
+	it("should return 403 for a published record", async () => {
+		const published = await createTestDisasterRecordWithEvent(testIds.countryAccountId, {
+			approvalStatus: "published",
+		});
+
+		await expect(
+			callLoader({ id: published.disasterRecordId }),
+		).rejects.toMatchObject({ status: 403 });
+	});
+	it("should return 403 for missing country accounts id", async () => {
 		vi.mocked(getCountryAccountsIdFromSession).mockResolvedValueOnce(
 			null as any,
 		);
 
 		await expect(
 			callLoader({ id: testData.disasterRecordId }),
-		).rejects.toMatchObject({ status: 401 });
+		).rejects.toMatchObject({ status: 403 });
 	});
 
 	it("should return 404 for non-existent record", async () => {
