@@ -70,7 +70,11 @@ import {
 import { authLoaderWithPerm, hasPermission } from "~/utils/auth";
 import { getCountryAccountsIdFromSession } from "~/utils/session";
 import { serializeDeltaQuery, type DeltaQuery } from "~/utils/deltaQuery";
-import { resolveMapState, type MapSymbol } from "~/utils/mapState";
+import {
+	resolveLayeredMapState,
+	resolveMapState,
+	type MapSymbol,
+} from "~/utils/mapState";
 import { GEO_DIMENSION_LABELS, geoMeasureInfo } from "~/utils/geoMeasures";
 import { htmlTitle } from "~/utils/htmlmeta";
 import { PrintButton } from "~/frontend/print/PrintButton";
@@ -109,18 +113,26 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 		url.searchParams.set("level", String(defaultLevel));
 	}
 	const dim = url.searchParams.get("dim") ?? "disaster_impact";
+	// Alex 2026-10-17: the Disaster impact map opens on the number of deaths.
 	if (!url.searchParams.get("measure") && dim === "disaster_impact") {
-		url.searchParams.set("measure", "records");
+		url.searchParams.set("measure", "deaths");
 	}
 	const canReview = await hasPermission(args.request, "ValidateData");
-	// Map style (Alex 2026-10-17): bubbles for counts, rounded bars for the
-	// housing breakdown, shading for density. View state, not delta.query.
-	// The default stays shading until Alex confirms the default pairing.
+	// Map style (Alex 2026-10-17). View state, not delta.query.
+	// - Disaster impact default "bars": areas shaded by the selected count
+	//   (deaths by default) with dwellings destroyed and damaged as rounded
+	//   bars on top (resolveLayeredMapState).
+	// - Event dimensions default "bubble": counts as bubbles.
+	// - "choropleth": density per 1,000 km2 of land area.
 	const symbolParam = url.searchParams.get("symbol");
 	let symbol: MapSymbol =
-		symbolParam === "bubble" || symbolParam === "bars"
+		symbolParam === "bubble" ||
+		symbolParam === "bars" ||
+		symbolParam === "choropleth"
 			? symbolParam
-			: "choropleth";
+			: dim === "disaster_impact"
+				? "bars"
+				: "bubble";
 	if (symbol === "bars" && dim !== "disaster_impact") symbol = "bubble";
 	// Signed-in page: every configured layer (Alex: the reader chooses).
 	const basemaps = selectableBasemaps(
@@ -329,6 +341,45 @@ export default function GeoportalPage() {
 		// Alex 2026-10-17: bubbles carry counts, rounded bars the housing
 		// breakdown, shading a density per 1,000 km2 of true area (never a
 		// raw count). Null stays null; parts are never added.
+		const scope = {
+			tenant: null,
+			fromDate: query.where.time?.from ?? null,
+			toDate: query.where.time?.to ?? null,
+			hazard: null,
+			audience:
+				query.scope.basis === "provisional"
+					? ("reviewer-provisional" as const)
+					: ("signed-in" as const),
+			provisional: choropleth.meta.provisional,
+		};
+		const housingFamily = measureFamily("houses_destroyed");
+		// Layered (Alex's default): shading by the selected count, housing
+		// bars on top, two colour families, never added. A housing measure
+		// cannot shade under housing bars, so it shows the bars alone.
+		if (
+			symbol === "bars" &&
+			data.housing &&
+			measureFamily(measure) !== housingFamily
+		) {
+			const bars = barCells([
+				{
+					key: "houses_destroyed",
+					label: t(geoMeasureInfo("houses_destroyed").label),
+					cells: data.housing.destroyed,
+				},
+				{
+					key: "houses_damaged",
+					label: t(geoMeasureInfo("houses_damaged").label),
+					cells: data.housing.damaged,
+				},
+			]).map((c) => ({ areaId: c.areaId, parts: c.parts ?? [] }));
+			return resolveLayeredMapState(choropleth.cells.map(toMapCell), bars, {
+				family: measureFamily(measure),
+				barsFamily: housingFamily,
+				scope,
+				notApplied: choropleth.meta.notApplied,
+			});
+		}
 		const cells =
 			symbol === "bars" && data.housing
 				? barCells([
@@ -353,18 +404,8 @@ export default function GeoportalPage() {
 					});
 		return resolveMapState(cells, {
 			symbol,
-			family: measureFamily(symbol === "bars" ? "houses_destroyed" : measure),
-			scope: {
-				tenant: null,
-				fromDate: query.where.time?.from ?? null,
-				toDate: query.where.time?.to ?? null,
-				hazard: null,
-				audience:
-					query.scope.basis === "provisional"
-						? "reviewer-provisional"
-						: "signed-in",
-				provisional: choropleth.meta.provisional,
-			},
+			family: symbol === "bars" ? housingFamily : measureFamily(measure),
+			scope,
 			notApplied: choropleth.meta.notApplied,
 		});
 	}, [choropleth, measure, query, areaKm2, symbol, data.housing, t]);
@@ -465,15 +506,25 @@ export default function GeoportalPage() {
 		code: "geoportal.unit.per_1000km2",
 		msg: "per 1,000 km²",
 	});
-	const measureTitle =
-		symbol === "bars"
-			? `${t(GEO_DIMENSION_LABELS[query.dimension])} · ${t({ code: "geoportal.map.housing", msg: "Houses destroyed and damaged" })}`
+	const layered =
+		symbol === "bars" &&
+		Boolean(data.housing) &&
+		measureFamily(measure) !== measureFamily("houses_destroyed");
+	const housingTitle = t({
+		code: "geoportal.map.housing",
+		msg: "Houses destroyed and damaged",
+	});
+	const measureTitle = layered
+		? `${t(GEO_DIMENSION_LABELS[query.dimension])} · ${t(info.label)} · ${t({ code: "geoportal.map.bars_of", msg: "bars: {what}" }, { what: housingTitle })}`
+		: symbol === "bars"
+			? `${t(GEO_DIMENSION_LABELS[query.dimension])} · ${housingTitle}`
 			: symbol === "bubble"
 				? `${t(GEO_DIMENSION_LABELS[query.dimension])} · ${t(info.label)}`
 				: `${t(GEO_DIMENSION_LABELS[query.dimension])} · ${t(info.label)} (${densityNote})`;
+	const housingUnit = t(geoMeasureInfo("houses_destroyed").unit);
 	const unitLabel =
-		symbol === "bars"
-			? t(geoMeasureInfo("houses_destroyed").unit)
+		symbol === "bars" && !layered
+			? housingUnit
 			: symbol === "choropleth"
 				? `${t(info.unit)} ${densityNote}`
 				: t(info.unit);
@@ -821,6 +872,14 @@ export default function GeoportalPage() {
 								<div className="hidden md:block absolute left-2 bottom-9 z-10">
 									<GeoLegend
 										legend={mapState.legend}
+										note={
+											data.level >= 1
+												? t({
+														code: "geoportal.legend.not_sendai",
+														msg: "Sub-national figures. Not a Sendai indicator value.",
+													})
+												: undefined
+										}
 										title={measureTitle}
 										subtitle={`${t({ code: "geoportal.dossier.level", msg: "Admin level {n}" }, { n: data.level })} · ${periodText(query, t)}`}
 										noRecordsAreas={noRecordsAreas}
@@ -840,6 +899,8 @@ export default function GeoportalPage() {
 											name={nameOf.get(readoutId) ?? ""}
 											area={readoutArea}
 											unit={unitLabel}
+											partsUnit={housingUnit}
+											showValue={layered || symbol !== "bars"}
 											reportedNoun={reportedNoun}
 											selected={readoutId === shownId && hoverId === null}
 											t={t}
@@ -932,6 +993,14 @@ export default function GeoportalPage() {
 										<TabPanel id="legend" className="md:hidden">
 											<GeoLegend
 												legend={mapState.legend}
+												note={
+													data.level >= 1
+														? t({
+																code: "geoportal.legend.not_sendai",
+																msg: "Sub-national figures. Not a Sendai indicator value.",
+															})
+														: undefined
+												}
 												title={measureTitle}
 												subtitle={periodText(query, t)}
 												noRecordsAreas={noRecordsAreas}

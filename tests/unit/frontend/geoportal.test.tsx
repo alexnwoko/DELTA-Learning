@@ -747,3 +747,69 @@ describe("bubbles and rounded bars (Alex 2026-10-17)", () => {
 		expect(html).toContain("<circle");
 	});
 });
+
+import { resolveLayeredMapState } from "~/utils/mapState";
+
+describe("Alex's default: deaths shading with housing bars on top", () => {
+	it("shades by deaths and draws housing bars, each with its own unit", () => {
+		const deaths = [
+			cell("p1", {
+				value: 12,
+				value_state: "reported",
+				records_reported: 1,
+				records_total: 1,
+			}),
+			cell("p2", {}),
+		].map(toMapCell);
+		const bars = barCells([
+			{
+				key: "houses_destroyed",
+				label: "Houses destroyed",
+				cells: [
+					cell("p1", {}),
+					cell("p2", { value: 40, value_state: "reported" }),
+				],
+			},
+			{
+				key: "houses_damaged",
+				label: "Houses damaged",
+				cells: [
+					cell("p1", {}),
+					cell("p2", { value: 10, value_state: "reported" }),
+				],
+			},
+		]).map((c) => ({ areaId: c.areaId, parts: c.parts ?? [] }));
+		const s = resolveLayeredMapState(deaths, bars, {
+			family: measureFamily("deaths"),
+			barsFamily: measureFamily("houses_destroyed"),
+			scope: { tenant: null, audience: "signed-in" },
+		});
+		const byId = new Map(s.areas.map((a) => [a.areaId, a]));
+		// Deaths not reported in p2: no shading, but its housing bars still stand.
+		expect(byId.get("p2")?.state).toBe("not_reported");
+		expect(byId.get("p2")?.symbol?.kind).toBe("bars");
+		expect(byId.get("p1")?.symbol).toBeNull();
+		const legend = renderToString(
+			<GeoLegend
+				legend={s.legend}
+				title="Deaths"
+				noRecordsAreas={0}
+				note="Sub-national figures. Not a Sendai indicator value."
+			/>,
+		);
+		expect(legend).toContain("Houses damaged");
+		expect(legend).toContain("Not a Sendai indicator value");
+		const readout = renderToString(
+			<GeoReadout
+				name="P2"
+				area={byId.get("p2")}
+				unit="people"
+				partsUnit="houses"
+				reportedNoun="disaster impacts"
+				selected={true}
+			/>,
+		);
+		expect(readout).toContain("Houses destroyed: 40 houses");
+		expect(readout).not.toContain("40 people");
+	});
+});

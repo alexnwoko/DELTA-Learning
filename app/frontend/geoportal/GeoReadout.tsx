@@ -10,6 +10,10 @@ export function GeoReadout(props: {
 	name: string;
 	area: MapArea | undefined;
 	unit: string;
+	/** Unit of the bar parts when they differ from the shading (layered map). */
+	partsUnit?: string;
+	/** Show the area's own value above the parts (layered map); default true. */
+	showValue?: boolean;
 	/** Noun for what reports the value: "disaster impacts" or "events". */
 	reportedNoun: string;
 	selected: boolean;
@@ -28,13 +32,14 @@ export function GeoReadout(props: {
 			aria-hidden="true"
 		>
 			<p className="font-semibold leading-tight">{props.name}</p>
-			{area?.symbol?.kind === "bars" ? (
+			{(props.showValue ?? true) && <p className="text-base">{value}</p>}
+			{area?.symbol?.kind === "bars" && (
 				<ul className="text-sm">
 					{area.symbol.bars.map((b) => (
 						<li key={b.key}>
 							{b.label}:{" "}
 							{b.valueState === "reported" && typeof b.value === "number"
-								? `${fmt(b.value)} ${props.unit}`.trim()
+								? `${fmt(b.value)} ${props.partsUnit ?? props.unit}`.trim()
 								: t({
 										code: "geoportal.readout.part_not_reported",
 										msg: "not reported",
@@ -42,8 +47,6 @@ export function GeoReadout(props: {
 						</li>
 					))}
 				</ul>
-			) : (
-				<p className="text-base">{value}</p>
 			)}
 			{tip && tip.stateDetail && (
 				<p className="text-xs text-brand-text-muted">{tip.stateDetail}</p>
