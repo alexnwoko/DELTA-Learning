@@ -17,6 +17,7 @@ import type { DashboardPanel } from "~/frontend/analytics/dashboard/types";
 import { ViewContext } from "~/frontend/context";
 import { authLoaderPublicOrWithPerm, hasPermission } from "~/utils/auth";
 import { IMPACT_PANELS_FIXTURE } from "~/utils/dashboard/impactPanels";
+import { IMPACT_PANELS_5TO16_FIXTURE } from "~/utils/dashboard/impactPanels5to16";
 import {
 	parseDeltaQuery,
 	serializeDeltaQuery,
@@ -47,6 +48,7 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request }:
 		signedIn: audience !== "public",
 		example: true,
 		impact: { ...IMPACT_PANELS_FIXTURE, query },
+		impactMore: IMPACT_PANELS_5TO16_FIXTURE,
 		country: "Example country",
 	};
 });
@@ -81,7 +83,10 @@ export default function AnalysisDashboard() {
 
 	const panels =
 		query.dimension === "disaster_impact"
-			? impactDashboardPanels(ctx, ld.impact as typeof IMPACT_PANELS_FIXTURE, source)
+			? impactDashboardPanels(ctx, ld.impact as typeof IMPACT_PANELS_FIXTURE, source, {
+					data: ld.impactMore as typeof IMPACT_PANELS_5TO16_FIXTURE,
+					country: ld.country,
+				})
 			: inBuild(ctx, query.dimension);
 
 	return (

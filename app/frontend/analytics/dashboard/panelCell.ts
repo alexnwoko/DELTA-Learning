@@ -11,9 +11,7 @@ export function cellText(ctx: DContext, cell: PanelCell): string {
 	if (cell.valueState === "reported" && cell.value !== null) {
 		return cell.value.toLocaleString(ctx.lang);
 	}
-	if (cell.valueState === "zero_confirmed") {
-		return ctx.t({ code: "dashboard.zero_confirmed", msg: "0 (confirmed)" });
-	}
+	// The same words as the map legend and the data table (STATE_ENCODING).
 	// A reported state with no value cannot be drawn; say so rather than 0.
 	const state = cell.valueState === "reported" ? "not_reported" : cell.valueState;
 	return STATE_ENCODING[state].label;
