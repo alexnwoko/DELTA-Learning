@@ -220,7 +220,13 @@ export async function getRegionSummary(
 	region: Region,
 ) {
 	const measure = req.query.measure as GeoMeasure;
-	const scoped: GeoRequest = { ...req, regionId: region.regionId };
+	const scoped: GeoRequest = {
+		...req,
+		query: {
+			...req.query,
+			where: { ...req.query.where, region: { regionId: region.regionId } },
+		},
+	};
 	const meta = await baseMeta(countryAccountsId, scoped);
 	meta.boundaryVersion = region.boundaryVintage;
 

@@ -38,8 +38,6 @@ export type GeoRefusalCode =
 	| "PRECISION_BELOW_CEILING"
 	| "GRAIN_CARDINALITY_EXCEEDED"
 	| "MALFORMED_REQUEST"
-	// RG-1: until Analytics adds QUERY_REFUSALS.regionAndDivision (2026-10-17).
-	| "REGION_AND_DIVISION"
 	| (typeof QUERY_REFUSALS)[keyof typeof QUERY_REFUSALS];
 
 /** A resolved geo request: the selection, the map level and the basis. */
@@ -50,15 +48,10 @@ export interface GeoRequest {
 	audience: ApprovalAudience;
 	/** Filters this endpoint could not apply, each named (TR-175). */
 	notApplied: string[];
-	/**
-	 * RG-1 place facet (URL key "region"), resolved to the tenant. Held here
-	 * until delta.query/1 carries where.region (Analytics adds it with I-4).
-	 */
-	regionId?: string;
 }
 
 export interface GeoMeta {
-	query: DeltaQuery & { level?: number; region?: string };
+	query: DeltaQuery & { level?: number };
 	boundaryVersion: string;
 	hazardVocabularyVersion: "HIPs 2025";
 	methodVersion: string;
@@ -128,7 +121,6 @@ export async function baseMeta(
 		query: {
 			...req.query,
 			...(req.level !== undefined && { level: req.level }),
-			...(req.regionId && { region: req.regionId }),
 		},
 		boundaryVersion: "unknown",
 		hazardVocabularyVersion: "HIPs 2025",
@@ -182,12 +174,13 @@ function dateInRange(req: GeoRequest): SQL {
  * together, so at most one applies.
  */
 function inDivision(countryAccountsId: string, req: GeoRequest): SQL {
-	if (req.regionId) {
+	const regionId = req.query.where.region?.regionId;
+	if (regionId) {
 		return sql`a.division_id IN (
 			SELECT da.division_id FROM geo.division_ancestor da
 			JOIN geo.region_member m
 				ON m.division_id = da.ancestor_id AND m.country_accounts_id = da.country_accounts_id
-			WHERE da.country_accounts_id = ${countryAccountsId} AND m.region_id = ${req.regionId}
+			WHERE da.country_accounts_id = ${countryAccountsId} AND m.region_id = ${regionId}
 		)`;
 	}
 	const divisionId = req.query.where.geo?.divisionId;

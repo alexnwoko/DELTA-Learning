@@ -172,7 +172,7 @@ describe("geoportal regions within one country (RG-1)", () => {
 	afterAll(async () => {
 		await cleanupTenant(ids.countryAccountId);
 		await dr.execute(sql`DELETE FROM division WHERE id = ${div.pb}`);
-		await cleanupOtherTenant(tenantB);
+		await cleanupOtherTenant();
 		await cleanupTestUser(ids);
 	});
 
@@ -205,7 +205,7 @@ describe("geoportal regions within one country (RG-1)", () => {
 		expect(body.multiAreaRecords).toBe(1);
 		// Reconciliation (I-4 exit test): members minus shared records = total.
 		expect(body.sumOfMembers! - 4 * body.multiAreaRecords).toBe(14);
-		expect(body.meta.query.region).toBe(regionId);
+		expect(body.meta.query.where.region).toEqual({ regionId });
 	});
 
 	it("restricts the choropleth to the region's members and their descendants", async () => {
@@ -213,13 +213,13 @@ describe("geoportal regions within one country (RG-1)", () => {
 			ids.countryAccountId,
 			`measure=deaths&level=1&region=${regionId}`,
 		);
-		expect(req.regionId).toBe(regionId);
+		expect(req.query.where.region).toEqual({ regionId });
 		const body = await getChoropleth(ids.countryAccountId, req);
 		const values = Object.fromEntries(
 			body.cells.map((c) => [c.division_id, c.value]),
 		);
 		expect(values).toEqual({ [div.p1]: 11, [div.p2]: 7 });
-		expect(body.meta.query.region).toBe(regionId);
+		expect(body.meta.query.where.region).toEqual({ regionId });
 	});
 
 	it("refuses division and region together, a malformed region and another tenant's region", async () => {
@@ -252,7 +252,7 @@ describe("geoportal regions within one country (RG-1)", () => {
 			`measure=deaths&region=${regionId}`,
 			false,
 		);
-		expect(req.regionId).toBeUndefined();
+		expect(req.query.where.region).toBeUndefined();
 		expect(req.notApplied).toContain(
 			"region: this view does not apply regions yet",
 		);
