@@ -26,7 +26,7 @@ import {
 export const SPARKLINE_YEARS = 10;
 
 /** A year or group with no record in scope: not reported, never 0. */
-const EMPTY_CELL: PanelCell = measureValue({
+export const EMPTY_CELL: PanelCell = measureValue({
 	sum: null,
 	reported: 0,
 	zeroConfirmed: 0,
@@ -66,7 +66,7 @@ export function impactFiltersFromQuery(
 	};
 }
 
-function chosenMeasure(query: DeltaQuery): ImpactHeadlineMeasure {
+export function chosenMeasure(query: DeltaQuery): ImpactHeadlineMeasure {
 	return (IMPACT_HEADLINE_MEASURES as readonly string[]).includes(
 		query.measure ?? "",
 	)
@@ -75,11 +75,11 @@ function chosenMeasure(query: DeltaQuery): ImpactHeadlineMeasure {
 }
 
 /** Value used to rank cells: reported values first, then everything else. */
-function rankValue(c: MeasureValue): number {
+export function rankValue(c: MeasureValue): number {
 	return c.value === null ? Number.NEGATIVE_INFINITY : c.value;
 }
 
-async function hipTypeLabels(): Promise<Map<string, string>> {
+export async function hipTypeLabels(): Promise<Map<string, string>> {
 	const res = await dr.execute(
 		sql`SELECT id::text AS id, name_en FROM hip_class`,
 	);
