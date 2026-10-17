@@ -1,23 +1,23 @@
 // /:lang/analytics: the D1 Analysis dashboard, one page for the three
 // dimensions (D1 build brief v0.2). The URL carries delta.query/1, so every
 // view has a shareable link; switching the dimension tab rewrites `dim`.
-//
-// Until the Analytics loader (getImpactPanels1to4) and the shared filter
-// bar (GeoFilterBar) reach this branch, the page draws the labelled example
-// payload, and only outside production: invented figures never reach a
-// live instance.
+// Disaster impact reads the Analytics loaders for panels 1 to 4 and 5 to
+// 16; the two event dimensions follow in D1 steps 3 and 4.
 import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { useLoaderData, useSearchParams } from "react-router";
 import { approvalAudienceForBasis } from "~/backend.server/approvalAudience.server";
+import { getImpactPanels1to4 } from "~/backend.server/models/analytics/dashboard/impactPanels.server";
+import { getImpactPanels5to16 } from "~/backend.server/models/analytics/dashboard/impactPanels5to16.server";
 import { AboutTheData } from "~/frontend/analytics/dashboard/AboutTheData";
 import { DashboardDownload } from "~/frontend/analytics/dashboard/DashboardDownload";
 import { DashboardShell, dimensionLabel } from "~/frontend/analytics/dashboard/DashboardShell";
 import { impactDashboardPanels } from "~/frontend/analytics/dashboard/panels/impact/impactDashboardPanels";
 import type { DashboardPanel } from "~/frontend/analytics/dashboard/types";
 import { ViewContext } from "~/frontend/context";
+import { basisIncludesProvisional } from "~/utils/approvalBasis";
 import { authLoaderPublicOrWithPerm, hasPermission } from "~/utils/auth";
-import { IMPACT_PANELS_FIXTURE } from "~/utils/dashboard/impactPanels";
-import { IMPACT_PANELS_5TO16_FIXTURE } from "~/utils/dashboard/impactPanels5to16";
+import type { ImpactPanels1to4 } from "~/utils/dashboard/impactPanels";
+import type { ImpactPanels5to16 } from "~/utils/dashboard/impactPanels5to16";
 import {
 	parseDeltaQuery,
 	serializeDeltaQuery,
@@ -25,11 +25,9 @@ import {
 	type QueryDimension,
 } from "~/utils/deltaQuery";
 import { htmlTitle } from "~/utils/htmlmeta";
+import { getCountryAccountsIdFromSession, getCountrySettingsFromSession } from "~/utils/session";
 
 export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request }: LoaderFunctionArgs) => {
-	if (process.env.NODE_ENV === "production") {
-		throw new Response("Not found", { status: 404 });
-	}
 	const { query, issues } = parseDeltaQuery(new URL(request.url).searchParams);
 	// A filter that cannot be applied is refused, never silently dropped.
 	if (issues.length > 0) {
@@ -41,15 +39,30 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request }:
 	// 403 for the provisional basis without ValidateData (AB-01, D7).
 	const audience = await approvalAudienceForBasis(request, query.scope.basis);
 	const canReview = audience !== "public" && (await hasPermission(request, "ValidateData"));
+	const countryAccountsId = await getCountryAccountsIdFromSession(request);
+	if (!countryAccountsId) throw new Response("No instance selected", { status: 400 });
+	const settings = await getCountrySettingsFromSession(request);
+	const country = (settings?.countryName as string | undefined) ?? "";
+	const ctx = {
+		countryAccountsId,
+		audience,
+		tenantName: country || null,
+		provisional: basisIncludesProvisional(audience),
+	};
+	// Only the chosen dimension is read; the others load when their tab opens.
+	const impact =
+		query.dimension === "disaster_impact"
+			? await Promise.all([getImpactPanels1to4(query, ctx), getImpactPanels5to16(query, ctx)])
+			: null;
 	return {
 		query,
 		canReview,
 		// The page-level CSV is for signed-in readers (ruling D6).
 		signedIn: audience !== "public",
-		example: true,
-		impact: { ...IMPACT_PANELS_FIXTURE, query },
-		impactMore: IMPACT_PANELS_5TO16_FIXTURE,
-		country: "Example country",
+		provisional: ctx.provisional,
+		country,
+		impact: impact?.[0] ?? null,
+		impactMore: impact?.[1] ?? null,
 	};
 });
 
@@ -76,18 +89,24 @@ export default function AnalysisDashboard() {
 	const ctx = new ViewContext();
 	const [, setSearchParams] = useSearchParams();
 	const query = ld.query as DeltaQuery;
-	const source = ld.example ? "EXAMPLE DATA" : `DELTA ${ld.country}`;
+	const source = `DELTA ${ld.country}`.trim();
+	const impact = ld.impact as ImpactPanels1to4 | null;
 
 	const setQuery = (next: DeltaQuery) =>
 		setSearchParams(serializeDeltaQuery(next), { preventScrollReset: true });
 
-	const panels =
-		query.dimension === "disaster_impact"
-			? impactDashboardPanels(ctx, ld.impact as typeof IMPACT_PANELS_FIXTURE, source, {
-					data: ld.impactMore as typeof IMPACT_PANELS_5TO16_FIXTURE,
-					country: ld.country,
-				})
-			: inBuild(ctx, query.dimension);
+	const panels = impact
+		? impactDashboardPanels(ctx, impact, source, {
+				data: ld.impactMore as ImpactPanels5to16,
+				country: ld.country,
+			})
+		: inBuild(ctx, query.dimension);
+	// Until the shared filter bar arrives, the line names the place and basis.
+	const summary =
+		impact?.scopeText ??
+		[ld.country, ld.provisional ? ctx.t({ code: "dashboard.basis_provisional", msg: "Basis: provisional" }) : ctx.t({ code: "dashboard.basis_published", msg: "Basis: published" })]
+			.filter(Boolean)
+			.join(" · ");
 
 	return (
 		<div className="mg-container py-4">
@@ -95,17 +114,17 @@ export default function AnalysisDashboard() {
 				ctx={ctx}
 				dimension={query.dimension}
 				onDimensionChange={(dimension) => setQuery({ ...query, dimension })}
-				summary={ld.impact.scopeText}
-				provisional={query.scope.basis === "provisional"}
+				summary={summary}
+				provisional={ld.provisional}
 				panels={panels}
 				download={
-					ld.signedIn ? (
+					ld.signedIn && impact ? (
 						<DashboardDownload
 							ctx={ctx}
 							title={`${ctx.t({ code: "dashboard.title", msg: "Analysis" })}: ${dimensionLabel(ctx, query.dimension)}`}
-							scopeLine={ld.impact.scopeText}
+							scopeLine={summary}
 							source={source}
-							basis={query.scope.basis}
+							basis={ld.provisional ? "provisional" : "published"}
 							panels={panels}
 						/>
 					) : undefined
@@ -115,7 +134,7 @@ export default function AnalysisDashboard() {
 						ctx={ctx}
 						country={ld.country}
 						dimension={query.dimension}
-						provisional={query.scope.basis === "provisional"}
+						provisional={ld.provisional}
 					/>
 				}
 			/>
