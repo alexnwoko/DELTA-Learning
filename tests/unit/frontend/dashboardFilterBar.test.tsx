@@ -30,13 +30,9 @@ describe("hazard tree for the bar", () => {
 describe("filters per view (D1 brief section 2)", () => {
 	const tree = flattenHazardTree(NESTED);
 
-	it("event views: HIPs type chips in identity colours, no counts, no measure select", () => {
+	it("event views: no chips (hazard types are on the left rail) and no measure select", () => {
 		for (const v of ["hazardous_event", "disaster_event"] as const) {
-			const chips = chipsFor(v, { hazardTree: tree });
-			expect(chips?.kind).toBe("hip_type");
-			if (chips?.kind !== "hip_type") throw new Error("kind");
-			expect(chips.options[0].colorToken).toBe("var(--delta-data-hazard-meteorological-hydrological)");
-			expect(chips.options.every((o) => o.count === null)).toBe(true);
+			expect(chipsFor(v, { hazardTree: tree })).toBeNull();
 			expect(measuresFor(v)).toBeNull();
 		}
 	});

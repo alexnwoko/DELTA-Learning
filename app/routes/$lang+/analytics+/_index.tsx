@@ -17,6 +17,7 @@ import {
 	getImpactPanels5to16,
 } from "~/backend.server/models/analytics/dashboard/impactPanels5to16.server";
 import { AboutTheData } from "~/frontend/analytics/dashboard/AboutTheData";
+import { HazardRail, withHazardType } from "~/frontend/analytics/dashboard/HazardRail";
 import { chipsFor, measuresFor } from "~/frontend/analytics/dashboard/filterDefinitions";
 import { getDashboardFilterOptions } from "~/frontend/analytics/dashboard/filterOptions.server";
 import { GeoFilterBar } from "~/frontend/geoportal/GeoFilterBar";
@@ -200,6 +201,18 @@ export default function AnalysisDashboard() {
 					) : undefined
 				}
 				summary={summary}
+				rail={
+					<HazardRail
+						ctx={ctx}
+						tree={filterOptions.hazardTree}
+						selected={query.where.hazard?.typeId ?? null}
+						onChange={(typeId) =>
+							setSearchParams(searchForView(withHazardType(query, typeId), view), { preventScrollReset: true })
+						}
+						// The tree counts records: no count on the two event views.
+						showCounts={view === "disaster_impact" || view === "sectors"}
+					/>
+				}
 				filterBar={
 					<GeoFilterBar
 						query={query}
