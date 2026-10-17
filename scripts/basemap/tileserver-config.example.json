@@ -1,0 +1,14 @@
+{
+  "options": {
+    "paths": {
+      "root": "/data",
+      "fonts": "fonts",
+      "sprites": "sprites",
+      "styles": "build",
+      "pmtiles": "pmtiles"
+    },
+    "serveAllFonts": false
+  },
+  "styles": { "moz": { "style": "style-moz.json" } },
+  "data": { "moz": { "pmtiles": "moz-20261015-z12.pmtiles" } }
+}
