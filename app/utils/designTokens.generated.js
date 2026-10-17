@@ -117,5 +117,16 @@ export const dataTokens = {
 			"border": "#d97706",
 			"background": "#fffbeb"
 		}
+	},
+	"hazard": {
+		"meteorologicalHydrological": "#1f6fb2",
+		"geological": "#8c5a2b",
+		"biological": "#2e7d32",
+		"environmental": "#6b7a12",
+		"chemical": "#8e3fa8",
+		"technological": "#c2410c",
+		"societal": "#b0306a",
+		"extraterrestrial": "#0f7c8c",
+		"unclassified": "#6b7280"
 	}
 };

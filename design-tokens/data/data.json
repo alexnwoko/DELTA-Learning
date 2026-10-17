@@ -354,6 +354,86 @@
 					"$value": "#fffbeb"
 				}
 			}
+		},
+		"hazard": {
+			"$description": "Identity colours of the eight HIPs 2025 hazard types (hip_class), for chips, glyphs and legends (NFR-094: a hazard type is never a series colour). Categorical, not a ramp. Each is at least 3:1 against brand surface and surface-subtle (WCAG 1.4.11); a chip always shows the type name too, so colour is never the only signal (1.4.1).",
+			"$type": "color",
+			"meteorological-hydrological": {
+				"$value": "#1f6fb2",
+				"$description": "Meteorological and Hydrological",
+				"$extensions": {
+					"org.undrr.delta": {
+						"hipClassId": "1042"
+					}
+				}
+			},
+			"geological": {
+				"$value": "#8c5a2b",
+				"$description": "Geological",
+				"$extensions": {
+					"org.undrr.delta": {
+						"hipClassId": "1041"
+					}
+				}
+			},
+			"biological": {
+				"$value": "#2e7d32",
+				"$description": "Biological",
+				"$extensions": {
+					"org.undrr.delta": {
+						"hipClassId": "1037"
+					}
+				}
+			},
+			"environmental": {
+				"$value": "#6b7a12",
+				"$description": "Environmental",
+				"$extensions": {
+					"org.undrr.delta": {
+						"hipClassId": "1039"
+					}
+				}
+			},
+			"chemical": {
+				"$value": "#8e3fa8",
+				"$description": "Chemical",
+				"$extensions": {
+					"org.undrr.delta": {
+						"hipClassId": "1038"
+					}
+				}
+			},
+			"technological": {
+				"$value": "#c2410c",
+				"$description": "Technological",
+				"$extensions": {
+					"org.undrr.delta": {
+						"hipClassId": "1044"
+					}
+				}
+			},
+			"societal": {
+				"$value": "#b0306a",
+				"$description": "Societal",
+				"$extensions": {
+					"org.undrr.delta": {
+						"hipClassId": "1043"
+					}
+				}
+			},
+			"extraterrestrial": {
+				"$value": "#0f7c8c",
+				"$description": "Extraterrestrial",
+				"$extensions": {
+					"org.undrr.delta": {
+						"hipClassId": "1040"
+					}
+				}
+			},
+			"unclassified": {
+				"$value": "#6b7280",
+				"$description": "No HIPs type recorded"
+			}
 		}
 	}
 }
