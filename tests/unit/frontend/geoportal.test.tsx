@@ -1004,3 +1004,24 @@ describe("filter bar row layout for the Analysis page (Alex 2026-10-17)", () => 
 		expect(html).not.toContain("Map level");
 	});
 });
+
+describe("region link to Analysis (where.region in the D1 loaders)", () => {
+	it("adds the region link only when the page is filtered to a region", () => {
+		const base = {
+			cumulative: {},
+			level: 1,
+			analysisHref: "/en/analytics?division=p1",
+		};
+		const withRegion = renderToString(
+			<GeoSendai
+				{...base}
+				region={{ name: "South (demo)", href: "/en/analytics?region=r1" }}
+			/>,
+		);
+		expect(withRegion).toContain("Open the region South (demo) in Analysis");
+		expect(withRegion).toContain('href="/en/analytics?region=r1"');
+		expect(renderToString(<GeoSendai {...base} />)).not.toContain(
+			"Open the region",
+		);
+	});
+});

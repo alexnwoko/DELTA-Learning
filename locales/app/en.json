@@ -5610,6 +5610,11 @@
     "description": "File: app/frontend/geoportal/GeoSendai.tsx"
   },
   {
+    "id": "geoportal.sendai.open_region",
+    "translation": "Open the region {name} in Analysis",
+    "description": "File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
     "id": "geoportal.sendai.reported_by",
     "translation": "(reported by {n} of {m})",
     "description": "File: app/frontend/geoportal/GeoSendai.tsx"

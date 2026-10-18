@@ -969,6 +969,19 @@ export default function GeoportalPage() {
 																	divisionId: dossier.division.id,
 																}),
 															).toString()}`}
+															region={
+																query.where.region
+																	? {
+																			name:
+																				data.regions.find(
+																					(r) =>
+																						r.regionId ===
+																						query.where.region?.regionId,
+																				)?.name ?? "",
+																			href: `/${lang}/analytics?${serializeDeltaQuery(query).toString()}`,
+																		}
+																	: null
+															}
 															t={t}
 														/>
 													)}

@@ -558,12 +558,16 @@ export function GeoMap({
 	}, [byId, selectedId]);
 
 	return (
+		// A group, not an image: the map holds real buttons (zoom, attribution),
+		// and an image role may not contain controls (axe nested-interactive).
+		// The table named by aria-describedby carries the figures.
+		// Map buttons are 28 px square: WCAG 2.2 target size is 24 px or more.
 		<div
 			ref={target}
-			role="img"
+			role="group"
 			aria-label={label}
 			aria-describedby={describedBy}
-			className="geo-map print:[&_.ol-zoom]:hidden print:[&_.ol-rotate]:hidden"
+			className="geo-map [&_.ol-zoom_button]:!w-7 [&_.ol-zoom_button]:!h-7 [&_.ol-attribution_button]:!w-7 [&_.ol-attribution_button]:!h-7 print:[&_.ol-zoom]:hidden print:[&_.ol-rotate]:hidden"
 			style={{
 				width: "100%",
 				height,
