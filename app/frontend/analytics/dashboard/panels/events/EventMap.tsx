@@ -12,6 +12,7 @@ import type { MapScopeQuery } from "~/utils/mapState";
 import type { DashboardMapLayers } from "../mapLayers";
 import { RowBars } from "../blocks";
 import { countCell } from "./eventPanels";
+import { DASHBOARD_RAMP } from "~/frontend/charts/sectionPalette";
 
 /** A payload area as a MapChart area: events size the bubble; none, no bubble. */
 export function toEventMapArea(area: EventMapArea, words: { none: string; fromRecords: (n: number) => string }): MapChartArea {
@@ -63,6 +64,8 @@ export function EventMap({
 					dataSource={drawn.map((a) => toEventMapArea(a, words))}
 					legendTitle={legend}
 					measureFamily="events"
+					// The dashboard palette (Alex, 2026-10-18), a module-level constant.
+					ramp={DASHBOARD_RAMP}
 					symbol="bubble"
 					notReportedLabel={t({ code: "analysis.map_no_events_recorded", msg: "No events recorded" })}
 					scope={scope}
