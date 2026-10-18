@@ -678,12 +678,23 @@ export function GeoMap({
 				{ type: "Feature", geometry, properties: {} },
 				{ dataProjection: "EPSG:4326", featureProjection: "EPSG:3857" },
 			)[0];
-		const shapes = world?.lines ? [world.lines] : neighbours.map((n) => n.geojson);
-		for (const g of shapes) {
-			const f = read(g);
-			f.setStyle(border);
-			source.addFeature(f);
-		}
+		// One feature per line, not one world-sized feature: the source's
+		// spatial index then draws only the lines in view, so zooming stays fast.
+		const shapes = world?.lines
+			? world.lines.type === "MultiLineString"
+				? (world.lines.coordinates as unknown[]).map((coordinates) => ({
+						type: "LineString",
+						coordinates,
+					}))
+				: [world.lines]
+			: neighbours.map((n) => n.geojson);
+		source.addFeatures(
+			shapes.map((g) => {
+				const f = read(g);
+				f.setStyle(border);
+				return f;
+			}),
+		);
 	}, [world, neighbours]);
 
 	useEffect(() => {
