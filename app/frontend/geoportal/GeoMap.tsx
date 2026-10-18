@@ -81,6 +81,13 @@ export interface GeoMapProps {
 	} | null;
 	/** "Boundaries and labels" overlay: outline, country name, area names. */
 	showLabels?: boolean;
+	/** Countries around the tenant (neighbourOutlines), drawn under its outline. */
+	neighbours?: {
+		iso3: string;
+		name: string;
+		geojson: { type: string; coordinates: unknown };
+		labelPoint: [number, number];
+	}[];
 	/** The UN map disclaimer, translated; shown in the map credits. */
 	disclaimer?: string;
 	/** Extra right padding (px) when a panel floats over the map's right side. */
@@ -316,6 +323,7 @@ export function GeoMap({
 	symbolColor = null,
 	outline = null,
 	showLabels = true,
+	neighbours = [],
 	disclaimer = UN_MAP_DISCLAIMER,
 	padRight = 0,
 	label,
@@ -567,6 +575,32 @@ export function GeoMap({
 				stroke: new Stroke({ color: tok.areaLabel.halo, width: 3 }),
 				overflow: false,
 			});
+		// Neighbouring countries (geo.admin0): light grey outline and name, under
+		// the tenant's outline; reference data only, never shaded.
+		for (const n of neighbours) {
+			const [nf] = new GeoJSON().readFeatures(
+				{ type: "Feature", geometry: n.geojson, properties: {} },
+				{ dataProjection: "EPSG:4326", featureProjection: "EPSG:3857" },
+			);
+			nf.setStyle(
+				new Style({
+					stroke: new Stroke({
+						color: tok.countryOutline.stroke,
+						width: tok.countryOutline.strokeWidth * 0.75,
+					}),
+					zIndex: -1,
+				}),
+			);
+			source.addFeature(nf);
+			const nl = new Feature({ geometry: new Point(fromLonLat(n.labelPoint)) });
+			nl.setStyle(
+				new Style({
+					text: text(n.name.toUpperCase(), tok.areaLabel.size),
+					zIndex: 0,
+				}),
+			);
+			source.addFeature(nl);
+		}
 		if (outline?.geojson) {
 			const [f] = new GeoJSON().readFeatures(
 				{ type: "Feature", geometry: outline.geojson, properties: {} },
@@ -607,7 +641,7 @@ export function GeoMap({
 			);
 			source.addFeature(cf);
 		}
-	}, [boundaries, outline, showLabels]);
+	}, [boundaries, outline, neighbours, showLabels]);
 
 	useEffect(() => {
 		if (!homeSignal) return;
