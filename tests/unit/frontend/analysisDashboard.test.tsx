@@ -134,12 +134,12 @@ describe("Disaster impact panels 1 to 4 on the example payload", () => {
 	const panels = impactDashboardPanels(ctx, IMPACT_PANELS_FIXTURE, "EXAMPLE DATA");
 
 	it("number panels 1 to 4 alone without the second payload", () => {
-		expect(panels.map((p) => p.n)).toEqual([1, 2, 3, 4]);
+		expect(panels.map((p) => p.n).sort((a, b) => a - b)).toEqual([1, 2, 3, 4]);
 		expect(panels.every((p) => p.render && p.exportData)).toBe(true);
 	});
 
 	it("headline tiles show state words and coverage, and refuse money", () => {
-		const html = text(renderToString(<>{panels[0].render!()}</>));
+		const html = text(renderToString(<>{panels.find((p) => p.n === 1)!.render!()}</>));
 		expect(html).toContain("615");
 		expect(html).toContain("243 of 534 records report this");
 		expect(html).toContain("2 flagged for review");
@@ -150,21 +150,21 @@ describe("Disaster impact panels 1 to 4 on the example payload", () => {
 	});
 
 	it("waffle legend sums to the records in scope", () => {
-		const html = text(renderToString(<>{panels[1].render!()}</>));
+		const html = text(renderToString(<>{panels.find((p) => p.n === 2)!.render!()}</>));
 		expect(html.match(/<rect /g)!.length).toBeGreaterThanOrEqual(100);
 		expect(html).toContain("Reported: <span");
 		expect(html).toContain("Outlined: 2 reported records flagged for review");
 	});
 
 	it("timeline marks a year with no report as a gap, with its caveat", () => {
-		const html = text(renderToString(<>{panels[2].render!()}</>));
+		const html = text(renderToString(<>{panels.find((p) => p.n === 3)!.render!()}</>));
 		expect(html).toContain("2023: No data");
 		expect(html).toContain("Highest year in scope");
 		expect(html).toContain("More records in later years can reflect more reporting, not more impact.");
 	});
 
 	it("hazard ranking gives an unreported hazard its word and no stem", () => {
-		const html = text(renderToString(<>{panels[3].render!()}</>));
+		const html = text(renderToString(<>{panels.find((p) => p.n === 4)!.render!()}</>));
 		expect(html).toMatch(/Geological.*No data/s);
 		expect(html.match(/<circle /g)!.length).toBe(2);
 		expect(html).toContain('fill="#1f6fb2"'); // Meteorological and Hydrological identity colour
@@ -234,7 +234,8 @@ describe("page-level CSV", () => {
 		const csv = dashboardPanelsCsv(panels, "EXAMPLE DATA · Angola", "EXAMPLE DATA", "provisional", new Date("2026-10-17T00:00:00Z"));
 		const lines = csv.replace(/^\ufeff/, "").trim().split("\r\n");
 		const titles = [...new Set(lines.slice(2).map((l) => l.split(",")[0]))];
-		expect(titles).toEqual(["Human effects at a glance", "Coverage of the records", "Human effects by year", "Hazard ranking"]);
+		// Page order (Alex, 2026-10-18): the CSV follows the screen.
+		expect(titles).toEqual(["Human effects at a glance", "Hazard ranking by disaster impact", "Human effects by year", "Coverage of the records"]);
 		expect(csv).toContain("Human effects at a glance,Missing,,,not_reported,");
 		expect(csv).toContain("Human effects by year,2023,,,not_reported,");
 		expect(csv).toContain("PROVISIONAL: includes unpublished records; not for publication");
@@ -247,7 +248,37 @@ describe("page-level CSV", () => {
 		expect(csv).toContain("Sendai Targets A and B counts,A-2 Deaths,,615,reported,");
 		expect(csv).toContain("Houses damaged (input to B-3; no indicator value)");
 		expect(csv).not.toMatch(/,B-3 [A-Z]/);
-		expect(csv).toContain("People moved,Biological,Displaced,,not_reported,");
+		expect(csv).toContain("People displaced,Biological,Displaced,,not_reported,");
+	});
+});
+
+describe("Disaster impact layout (Alex, 2026-10-18)", () => {
+	const all = impactDashboardPanels(ctx, IMPACT_PANELS_FIXTURE, "EXAMPLE DATA", {
+		data: IMPACT_PANELS_5TO16_FIXTURE,
+		country: "Angola",
+	});
+
+	it("shows eleven panels two a row in the agreed order, with the new titles", () => {
+		const shown = all.filter((p) => !p.more && p.id !== "impact-5");
+		expect(shown.map((p) => p.title)).toEqual([
+			"Human effects at a glance", "Ranked by divisions",
+			"Hazard ranking by disaster impact", "Human effects by year",
+			"Hazard by human effect", "Hazard by sector",
+			"Houses destroyed and damaged", "People displaced",
+			"Coverage of the records", "Reporting completeness and precision",
+			"Disaster impact by sex and age disaggregation",
+		]);
+	});
+
+	it("puts the unlisted panels under Show more, in number order", () => {
+		expect(all.filter((p) => p.more).map((p) => p.id)).toEqual(["impact-5", "impact-11", "impact-13", "impact-14", "impact-15"]);
+	});
+
+	it("draws the grid in that order, with only those eleven before Show more", () => {
+		const html = renderToString(<PanelGrid ctx={ctx} panels={all.filter((p) => p.id !== "impact-5")} collapseGaps={false} />);
+		const ids = [...html.matchAll(/id="(impact-\d+)"/g)].map((m) => m[1]);
+		expect(ids.slice(0, 4)).toEqual(["impact-1", "impact-7", "impact-4", "impact-3"]);
+		expect(html).toContain("Show 4 more panels");
 	});
 });
 
@@ -259,7 +290,7 @@ describe("Disaster impact panels 5 to 16 on the example payload", () => {
 	const html = (n: number) => text(renderToString(<>{all.find((p) => p.n === n)!.render!()}</>));
 
 	it("number 16 drawn panels with export data", () => {
-		expect(all.map((p) => p.n)).toEqual(Array.from({ length: 16 }, (_, i) => i + 1));
+		expect(all.map((p) => p.n).sort((a, b) => a - b)).toEqual(Array.from({ length: 16 }, (_, i) => i + 1));
 		expect(all.every((p) => p.render && p.exportData && !p.gap)).toBe(true);
 	});
 

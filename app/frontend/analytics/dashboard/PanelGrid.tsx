@@ -7,7 +7,7 @@ import { Button, Disclosure, DisclosurePanel } from "react-aria-components";
 import { panelIcon } from "~/frontend/charts/dashboardIcons";
 import { PanelIcon, PanelIconContext } from "~/frontend/charts/PanelIcon";
 import type { ViewContext } from "~/frontend/context";
-import { DEFAULT_PANEL_COUNT, type DashboardPanel, type PanelGap } from "./types";
+import { panelPosition, panelUnderMore, type DashboardPanel, type PanelGap } from "./types";
 
 const focusRing =
 	"data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring";
@@ -115,14 +115,14 @@ function Grid({ ctx, panels }: { ctx: ViewContext; panels: DashboardPanel[] }) {
 }
 
 export function PanelGrid({ ctx, panels, collapseGaps }: PanelGridProps) {
-	const sorted = [...panels].sort((a, b) => a.n - b.n);
+	const sorted = [...panels].sort((a, b) => panelPosition(a) - panelPosition(b));
 	// A strip lists several gaps; a lone gap (a whole view with no data, such
 	// as G-01) keeps its own frame across the view.
 	const fold = collapseGaps && sorted.filter((p) => p.gap).length > 1;
 	const visible = fold ? sorted.filter((p) => !p.gap) : sorted;
 	const strip = fold ? sorted.filter((p) => p.gap) : [];
-	const main = visible.filter((p) => p.n <= DEFAULT_PANEL_COUNT);
-	const more = visible.filter((p) => p.n > DEFAULT_PANEL_COUNT);
+	const main = visible.filter((p) => !panelUnderMore(p));
+	const more = visible.filter(panelUnderMore);
 
 	return (
 		<div className="flex flex-col gap-4">
