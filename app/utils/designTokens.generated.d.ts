@@ -22,6 +22,8 @@ export declare const dataTokens: {
 		plausibilityMarker: StrokeTokens;
 		notAppliedNote: { border: string; borderWidth: number; background: string };
 		canvas: { background: string };
+		countryOutline: StrokeTokens;
+		areaLabel: { color: string; halo: string; size: number };
 	};
 	flag: { reviewChip: { background: string; text: string } };
 	chart: { axis: string };

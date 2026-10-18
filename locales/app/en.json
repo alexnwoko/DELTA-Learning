@@ -5450,6 +5450,11 @@
     "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
   },
   {
+    "id": "geoportal.map.labels",
+    "translation": "Boundaries and labels",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
+  },
+  {
     "id": "geoportal.map.shading",
     "translation": "Shading",
     "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
@@ -5617,6 +5622,11 @@
   {
     "id": "geoportal.sendai.open_analysis",
     "translation": "Open this place in Analysis: by year, by hazard and completeness",
+    "description": "File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
+    "id": "geoportal.sendai.open_region",
+    "translation": "Open the region {name} in Analysis",
     "description": "File: app/frontend/geoportal/GeoSendai.tsx"
   },
   {

@@ -83,6 +83,7 @@ import { htmlTitle } from "~/utils/htmlmeta";
 import { PrintButton } from "~/frontend/print/PrintButton";
 import { basemapLayers } from "~/utils/basemap.server";
 import { listRegions } from "~/backend.server/models/geo/regions";
+import { getTenantOutline } from "~/backend.server/models/geo/tenantExtent";
 import { divisionAreasKm2 } from "~/backend.server/models/analytics/divisionAreas";
 import { selectableBasemaps, type BasemapLayerId } from "~/utils/basemap";
 
@@ -170,6 +171,7 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 			// RG-1: the tenant's regions for the Area control.
 			listRegions(countryAccountsId, lang),
 		]);
+		const outline = await getTenantOutline(countryAccountsId);
 		// Bars: the housing breakdown, each part read with the same filters.
 		const housing =
 			symbol === "bars"
@@ -219,6 +221,7 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 			symbol,
 			housing: housing ? { destroyed: housing[0], damaged: housing[1] } : null,
 			areaKm2,
+			outline,
 			refusal: null,
 		};
 	} catch (err) {
@@ -236,6 +239,7 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 				symbol,
 				housing: null,
 				areaKm2: {} as Record<string, number>,
+				outline: null,
 				refusal: refusalBody(err.refusal, err.meta),
 			};
 		}
@@ -317,12 +321,16 @@ export default function GeoportalPage() {
 	const [hoverId, setHoverId] = useState<string | null>(null);
 	const [dossier, setDossier] = useState<DossierData | null>(null);
 	const [copied, setCopied] = useState<string | null>(null);
-	// Basemap off by default (TR-166); the switch is the reader's choice.
-	const [basemapId, setBasemapId] = useState<BasemapLayerId | null>(null);
+	// Basemap ON by default on both maps (Alex, 2026-10-18, amends TR-166):
+	// the first selectable layer; the reader can still choose None.
+	const [basemapId, setBasemapId] = useState<BasemapLayerId | null>(
+		data.basemaps[0]?.id ?? null,
+	);
 	const [basemapStatus, setBasemapStatus] = useState<"ok" | "unavailable">(
 		"ok",
 	);
 	const [homeSignal, setHomeSignal] = useState(0);
+	const [showLabels, setShowLabels] = useState(true);
 	const [printUrl, setPrintUrl] = useState("");
 	useEffect(() => setPrintUrl(window.location.href), [data.query, data.level]);
 
@@ -730,6 +738,8 @@ export default function GeoportalPage() {
 													onBasemapStatus={setBasemapStatus}
 													homeSignal={homeSignal}
 													symbolColor={mapState.legend.symbols?.color ?? null}
+													outline={data.outline}
+													showLabels={showLabels}
 													height="100%"
 													label={`${measureTitle}: ${t({ code: "geoportal.map", msg: "map" })}`}
 													describedBy={tableId}
@@ -785,6 +795,16 @@ export default function GeoportalPage() {
 									>
 										{t({ code: "geoportal.map.home", msg: "Full extent" })}
 									</Button>
+									<ToggleButton
+										isSelected={showLabels}
+										onChange={setShowLabels}
+										className="border border-brand-border-control rounded px-2 py-1 text-xs bg-brand-surface shadow-sm data-[selected]:bg-brand-interactive data-[selected]:text-brand-text-on-interactive data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
+									>
+										{t({
+											code: "geoportal.map.labels",
+											msg: "Boundaries and labels",
+										})}
+									</ToggleButton>
 									{data.basemaps.length > 0 && (
 										<Select
 											aria-label={t({
@@ -969,6 +989,19 @@ export default function GeoportalPage() {
 																	divisionId: dossier.division.id,
 																}),
 															).toString()}`}
+															region={
+																query.where.region
+																	? {
+																			name:
+																				data.regions.find(
+																					(r) =>
+																						r.regionId ===
+																						query.where.region?.regionId,
+																				)?.name ?? "",
+																			href: `/${lang}/analytics?${serializeDeltaQuery(query).toString()}`,
+																		}
+																	: null
+															}
 															t={t}
 														/>
 													)}
