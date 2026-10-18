@@ -62,6 +62,7 @@ const PANEL_ICONS: Record<string, OchaIcon> = {
 	"sectors-empty": "multi-cluster-sector",
 	"sectors-1": "multi-cluster-sector", "sectors-2": "multi-cluster-sector", "sectors-3": "damaged-affected",
 	"sectors-4": "analysis", "sectors-5": "calendar", "sectors-6": "house-destroyed", "sectors-7": "infrastructure",
+	"sectors-divisions": "location", "sectors-completeness": "report",
 	"sfm-s0": "table", "sfm-a1": "dead", "sfm-a2": "missing", "sfm-b1": "injured", "sfm-b2": "house-affected",
 	"sfm-c1": "financing", "sfm-c2": "multi-cluster-sector", "sfm-d1": "health-facility-affected",
 	"sfm-d2": "power-outage",
