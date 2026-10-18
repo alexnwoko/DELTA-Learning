@@ -69,3 +69,19 @@ describe("geo result cache (I-6, option A)", () => {
 		expect(recomputed).toBe(true);
 	});
 });
+
+import { admin0Key, admin0Name } from "../../../scripts/seed-admin0";
+
+describe("admin-0 seed keys (Natural Earth properties)", () => {
+	it("prefers ISO_A3_EH and skips the -99 placeholders", () => {
+		expect(admin0Key({ ISO_A3: "-99", ISO_A3_EH: "FRA", ADM0_A3: "FRA" })).toBe(
+			"FRA",
+		);
+		expect(admin0Key({ ISO_A3: "MOZ" })).toBe("MOZ");
+		expect(admin0Key({ ISO_A3: "-99", ADM0_A3: "KOS" })).toBe("KOS");
+		expect(admin0Key({ ISO_A3: "-99" })).toBeNull();
+		expect(admin0Name({ NAME_EN: "Mozambique", NAME: "Mozambique" })).toBe(
+			"Mozambique",
+		);
+	});
+});

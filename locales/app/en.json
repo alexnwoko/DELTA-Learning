@@ -5375,6 +5375,11 @@
     "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
   },
   {
+    "id": "geoportal.dossier.whole_country",
+    "translation": "Whole country",
+    "description": "File: app/frontend/geoportal/GeoDossier.tsx"
+  },
+  {
     "id": "geoportal.filters.locked",
     "translation": "Fixed by this page: {facet}",
     "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
@@ -5463,6 +5468,31 @@
     "id": "geoportal.map.style",
     "translation": "Map style",
     "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
+  },
+  {
+    "id": "geoportal.map.un_disclaimer",
+    "translation": "The boundaries and names shown and the designations used on this map do not imply official endorsement or acceptance by the United Nations.",
+    "description": "UN short-form map disclaimer; keep the UN wording exactly. File: app/routes/$lang+/geoportal+/_index.tsx"
+  },
+  {
+    "id": "geoportal.picker.admin1",
+    "translation": "Admin 1 area",
+    "description": "File: app/frontend/geoportal/GeoPlacePicker.tsx"
+  },
+  {
+    "id": "geoportal.picker.admin2",
+    "translation": "Admin 2 area",
+    "description": "File: app/frontend/geoportal/GeoPlacePicker.tsx"
+  },
+  {
+    "id": "geoportal.picker.all_admin2",
+    "translation": "All admin 2",
+    "description": "File: app/frontend/geoportal/GeoPlacePicker.tsx"
+  },
+  {
+    "id": "geoportal.picker.whole_country",
+    "translation": "Whole country",
+    "description": "File: app/frontend/geoportal/GeoPlacePicker.tsx"
   },
   {
     "id": "geoportal.place.all",

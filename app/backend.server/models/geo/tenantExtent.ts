@@ -140,3 +140,73 @@ export async function getTenantOutline(
 		},
 	);
 }
+
+export interface NeighbourOutline {
+	iso3: string;
+	name: string;
+	/** GeoJSON geometry (MultiPolygon, EPSG:4326), 4 decimals. */
+	geojson: { type: string; coordinates: unknown };
+	/** [lon, lat] inside the country, where its name stands. */
+	labelPoint: [number, number];
+}
+
+/**
+ * Countries around the tenant (Alex, 2026-10-18: show the countries around
+ * the country of focus): every geo.admin0 country whose outline meets the
+ * tenant's extent widened by `bboxMarginDeg`, the tenant's own country left
+ * out (its outline comes from getTenantOutline). Reference data, drawn in
+ * light grey with the UN disclaimer. Empty until geo.admin0 is loaded.
+ */
+export async function neighbourOutlines(
+	countryAccountsId: string,
+	bboxMarginDeg = 2,
+): Promise<NeighbourOutline[]> {
+	const margin = Math.min(Math.max(Number(bboxMarginDeg) || 0, 0), 30);
+	const version = await dr.execute(
+		sql`SELECT max(loaded_at)::text AS v FROM geo.admin0`,
+	);
+	const admin0Version = (version.rows[0] as { v: string | null }).v;
+	if (!admin0Version) return [];
+	return cachedGeo(
+		"neighbourOutlines",
+		countryAccountsId,
+		await readModelRefreshedAt(countryAccountsId),
+		{ margin, admin0Version },
+		async () => {
+			const res = await dr.execute(sql`
+				WITH box AS (
+					SELECT ST_SetSRID(ST_Expand(ST_Extent(c.geom_z4)::geometry, ${margin}), 4326) AS b
+					FROM geo.division_geom_cache c
+					WHERE c.country_accounts_id = ${countryAccountsId} AND c.geom_z4 IS NOT NULL
+				),
+				own AS (
+					SELECT co.iso3 FROM public.country_accounts ca
+					JOIN public.countries co ON co.id = ca.country_id
+					WHERE ca.id = ${countryAccountsId}
+				)
+				SELECT a.iso3, a.name,
+					ST_AsGeoJSON(a.geom, 4)::jsonb AS geojson,
+					(ST_AsGeoJSON(a.label_point, 5)::jsonb) -> 'coordinates' AS label_point
+				FROM geo.admin0 a, box
+				WHERE box.b IS NOT NULL
+					AND a.geom && box.b
+					AND ST_Intersects(a.geom, box.b)
+					AND a.iso3 IS DISTINCT FROM (SELECT iso3 FROM own)
+				ORDER BY a.name
+			`);
+			return (
+				res.rows as {
+					iso3: string;
+					name: string;
+					geojson: { type: string; coordinates: unknown };
+					label_point: [number, number];
+				}[]
+			).map((r) => ({
+				iso3: r.iso3,
+				name: r.name,
+				geojson: r.geojson,
+				labelPoint: [Number(r.label_point[0]), Number(r.label_point[1])],
+			}));
+		},
+	);
+}

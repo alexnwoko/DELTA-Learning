@@ -184,10 +184,15 @@ export function GeoDossier(props: {
 				)}
 				<h2 className="text-lg font-semibold leading-tight">{division.name}</h2>
 				<p className="text-xs text-brand-text-muted">
-					{t(
-						{ code: "geoportal.dossier.level", msg: "Admin level {n}" },
-						{ n: division.level },
-					)}
+					{division.id === "country"
+						? t({
+								code: "geoportal.dossier.whole_country",
+								msg: "Whole country",
+							})
+						: t(
+								{ code: "geoportal.dossier.level", msg: "Admin level {n}" },
+								{ n: division.level },
+							)}
 					{division.parent && (
 						<>
 							{" · "}

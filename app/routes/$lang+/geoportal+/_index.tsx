@@ -50,6 +50,7 @@ import {
 } from "~/frontend/geoportal/GeoFilterBar";
 import { GeoReadout } from "~/frontend/geoportal/GeoReadout";
 import { GeoSendai } from "~/frontend/geoportal/GeoSendai";
+import { GeoPlacePicker } from "~/frontend/geoportal/GeoPlacePicker";
 import { withPlace } from "~/frontend/geoportal/filterBarState";
 import { GeoDossier, type DossierData } from "~/frontend/geoportal/GeoDossier";
 import {
@@ -68,6 +69,7 @@ import {
 	getBoundaries,
 	getChoropleth,
 	getHazardTree,
+	listPlaceOptions,
 	refusalBody,
 } from "~/backend.server/models/geo/queries";
 import { authLoaderWithPerm, hasPermission } from "~/utils/auth";
@@ -171,7 +173,10 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 			// RG-1: the tenant's regions for the Area control.
 			listRegions(countryAccountsId, lang),
 		]);
-		const outline = await getTenantOutline(countryAccountsId);
+		const [outline, placeOptions] = await Promise.all([
+			getTenantOutline(countryAccountsId),
+			listPlaceOptions(countryAccountsId, lang),
+		]);
 		// Bars: the housing breakdown, each part read with the same filters.
 		const housing =
 			symbol === "bars"
@@ -222,6 +227,7 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 			housing: housing ? { destroyed: housing[0], damaged: housing[1] } : null,
 			areaKm2,
 			outline,
+			placeOptions,
 			refusal: null,
 		};
 	} catch (err) {
@@ -240,6 +246,12 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 				housing: null,
 				areaKm2: {} as Record<string, number>,
 				outline: null,
+				placeOptions: [] as {
+					id: string;
+					name: string;
+					level: number;
+					parentId: string | null;
+				}[],
 				refusal: refusalBody(err.refusal, err.meta),
 			};
 		}
@@ -331,6 +343,16 @@ export default function GeoportalPage() {
 	);
 	const [homeSignal, setHomeSignal] = useState(0);
 	const [showLabels, setShowLabels] = useState(true);
+	// lg breakpoint: the Place panel covers the map's right 380 px, so the map
+	// fits the country into the space left of it.
+	const [isWide, setIsWide] = useState(false);
+	useEffect(() => {
+		const mq = window.matchMedia("(min-width: 1024px)");
+		const on = () => setIsWide(mq.matches);
+		on();
+		mq.addEventListener("change", on);
+		return () => mq.removeEventListener("change", on);
+	}, []);
 	const [printUrl, setPrintUrl] = useState("");
 	useEffect(() => setPrintUrl(window.location.href), [data.query, data.level]);
 
@@ -446,8 +468,14 @@ export default function GeoportalPage() {
 		})[0];
 		return first && first.rank !== null ? first.row.id : null;
 	}, [rows]);
-	const shownId = selectedId ?? (userCleared ? null : topId);
-	const autoChosen = selectedId === null && shownId !== null;
+	// Alex, 2026-10-18: the Place panel opens on the whole country and follows
+	// the area chosen on the map or in the pickers. (The earlier default, the
+	// area with the highest value, is gone; topId stays for the list.)
+	void topId;
+	void userCleared;
+	const shownId = selectedId;
+	const autoChosen = false;
+	const dossierKey = shownId ?? "country";
 
 	useEffect(() => {
 		setSelectedId(null);
@@ -462,16 +490,15 @@ export default function GeoportalPage() {
 
 	useEffect(() => {
 		setDossier(null);
-		if (!shownId) return;
 		let live = true;
-		fetch(`/${lang}/api/geo/place/${shownId}/dossier?${search}`)
+		fetch(`/${lang}/api/geo/place/${dossierKey}/dossier?${search}`)
 			.then((r) => (r.ok ? r.json() : null))
 			.then((d) => live && setDossier(d))
 			.catch(() => live && setDossier(null));
 		return () => {
 			live = false;
 		};
-	}, [shownId, search, lang]);
+	}, [dossierKey, search, lang]);
 
 	const onFilters = (next: { query: DeltaQuery; level: number }) => {
 		const p = serializeDeltaQuery(next.query);
@@ -712,7 +739,9 @@ export default function GeoportalPage() {
 							</div>
 						)}
 
-						<div className="grid gap-3 my-2 lg:grid-cols-[minmax(0,1fr)_380px] print:!block">
+						{/* The Place panel floats over the map's right side on wide
+						    screens (Alex, 2026-10-18) and stacks below it on narrow ones. */}
+						<div className="relative flex flex-col gap-3 my-2 print:!block">
 							<div className="relative min-w-0">
 								<ClientOnly
 									fallback={
@@ -739,6 +768,11 @@ export default function GeoportalPage() {
 													homeSignal={homeSignal}
 													symbolColor={mapState.legend.symbols?.color ?? null}
 													outline={data.outline}
+													padRight={isWide ? 396 : 0}
+													disclaimer={t({
+														code: "geoportal.map.un_disclaimer",
+														msg: "The boundaries and names shown and the designations used on this map do not imply official endorsement or acceptance by the United Nations.",
+													})}
 													showLabels={showLabels}
 													height="100%"
 													label={`${measureTitle}: ${t({ code: "geoportal.map", msg: "map" })}`}
@@ -749,7 +783,7 @@ export default function GeoportalPage() {
 									)}
 								</ClientOnly>
 								<div
-									className="absolute right-2 bottom-8 z-10 flex flex-col items-end gap-1"
+									className="absolute right-2 lg:right-[400px] bottom-8 z-10 flex flex-col items-end gap-1"
 									data-print="hide"
 								>
 									<ToggleButtonGroup
@@ -916,7 +950,7 @@ export default function GeoportalPage() {
 								</div>
 								{readoutId && (
 									<div
-										className="hidden md:block absolute right-2 top-2 z-10 pointer-events-none"
+										className="hidden md:block absolute left-12 top-2 z-10 pointer-events-none"
 										data-print="hide"
 									>
 										<GeoReadout
@@ -933,32 +967,40 @@ export default function GeoportalPage() {
 								)}
 							</div>
 
-							<aside className="min-w-0 lg:h-[calc(100vh-22rem)] lg:min-h-[420px] lg:overflow-auto print:!h-auto print:!overflow-visible border border-brand-border rounded p-2">
+							<aside className="min-w-0 lg:absolute lg:right-2 lg:top-2 lg:bottom-2 lg:w-[380px] lg:z-20 lg:shadow-md lg:overflow-auto bg-brand-surface/95 print:!static print:!w-auto print:!h-auto print:!overflow-visible border border-brand-border rounded p-2">
 								<Tabs defaultSelectedKey="place">
-									<TabList
-										data-print="hide"
-										aria-label={t({ code: "geoportal.panel", msg: "Panel" })}
-										className="flex gap-1 border-b mb-2"
-									>
-										<Tab
-											id="place"
-											className="px-3 py-1 cursor-pointer data-[selected]:border-b-2 data-[selected]:border-brand-interactive data-[selected]:font-semibold data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
+									<div className="flex flex-wrap items-end gap-2 border-b mb-2">
+										<GeoPlacePicker
+											options={data.placeOptions}
+											shownId={shownId}
+											onPick={selectFromList}
+											t={t}
+										/>
+										<TabList
+											data-print="hide"
+											aria-label={t({ code: "geoportal.panel", msg: "Panel" })}
+											className="flex gap-1"
 										>
-											{t({ code: "geoportal.tab.place", msg: "Place" })}
-										</Tab>
-										<Tab
-											id="areas"
-											className="px-3 py-1 cursor-pointer data-[selected]:border-b-2 data-[selected]:border-brand-interactive data-[selected]:font-semibold data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
-										>
-											{t({ code: "geoportal.tab.areas", msg: "Areas" })}
-										</Tab>
-										<Tab
-											id="legend"
-											className="md:hidden px-3 py-1 cursor-pointer data-[selected]:border-b-2 data-[selected]:border-brand-interactive data-[selected]:font-semibold"
-										>
-											{t({ code: "geoportal.tab.legend", msg: "Legend" })}
-										</Tab>
-									</TabList>
+											<Tab
+												id="place"
+												className="px-3 py-1 cursor-pointer data-[selected]:border-b-2 data-[selected]:border-brand-interactive data-[selected]:font-semibold data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
+											>
+												{t({ code: "geoportal.tab.place", msg: "Place" })}
+											</Tab>
+											<Tab
+												id="areas"
+												className="px-3 py-1 cursor-pointer data-[selected]:border-b-2 data-[selected]:border-brand-interactive data-[selected]:font-semibold data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
+											>
+												{t({ code: "geoportal.tab.areas", msg: "Areas" })}
+											</Tab>
+											<Tab
+												id="legend"
+												className="md:hidden px-3 py-1 cursor-pointer data-[selected]:border-b-2 data-[selected]:border-brand-interactive data-[selected]:font-semibold"
+											>
+												{t({ code: "geoportal.tab.legend", msg: "Legend" })}
+											</Tab>
+										</TabList>
+									</div>
 									<TabPanels>
 										<TabPanel
 											id="place"
@@ -985,9 +1027,11 @@ export default function GeoportalPage() {
 															cumulative={dossier.cumulative}
 															level={dossier.division.level}
 															analysisHref={`/${lang}/analytics?${serializeDeltaQuery(
-																withPlace(query, {
-																	divisionId: dossier.division.id,
-																}),
+																dossier.division.id === "country"
+																	? withPlace(query, null)
+																	: withPlace(query, {
+																			divisionId: dossier.division.id,
+																		}),
 															).toString()}`}
 															region={
 																query.where.region
