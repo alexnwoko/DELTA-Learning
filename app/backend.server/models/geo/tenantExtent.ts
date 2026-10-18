@@ -2,6 +2,7 @@
 // every map can open on the country without calling an outside geocoder
 // (NFR-041; replaces the data.undrr.org and Nominatim lookups in the
 // Leaflet maps). Reads the coarsest admin level held in the read model.
+import { createHash } from "node:crypto";
 import { sql } from "drizzle-orm";
 
 import { dr } from "~/db.server";
@@ -73,6 +74,8 @@ export interface TenantOutline {
 	name: string | null;
 	/** Admin level the outline was built from; null when unknown. */
 	adminLevel: number | null;
+	/** The country's ISO 3166-1 alpha-3 code, matching geo.admin0. */
+	iso3?: string | null;
 }
 
 /**
@@ -109,7 +112,10 @@ export async function getTenantOutline(
 					(ST_AsGeoJSON(ST_PointOnSurface(u.g), 5)::jsonb) -> 'coordinates' AS label_point,
 					(SELECT co.name FROM public.country_accounts ca
 						JOIN public.countries co ON co.id = ca.country_id
-						WHERE ca.id = ${countryAccountsId}) AS name
+						WHERE ca.id = ${countryAccountsId}) AS name,
+					(SELECT co.iso3 FROM public.country_accounts ca
+						JOIN public.countries co ON co.id = ca.country_id
+						WHERE ca.id = ${countryAccountsId}) AS iso3
 				FROM u
 				WHERE u.g IS NOT NULL
 			`);
@@ -119,6 +125,7 @@ export async function getTenantOutline(
 						geojson: { type: string; coordinates: unknown };
 						label_point: [number, number] | null;
 						name: string | null;
+						iso3: string | null;
 				  }
 				| undefined;
 			if (!row) {
@@ -127,6 +134,7 @@ export async function getTenantOutline(
 					labelPoint: null,
 					name: null,
 					adminLevel: null,
+					iso3: null,
 				};
 			}
 			return {
@@ -136,6 +144,7 @@ export async function getTenantOutline(
 					: null,
 				name: row.name,
 				adminLevel: Number(row.admin_level),
+				iso3: row.iso3,
 			};
 		},
 	);
@@ -209,4 +218,131 @@ export async function neighbourOutlines(
 			}));
 		},
 	);
+}
+
+/**
+ * Shape of the geometry answers. Raise it whenever a geometry response
+ * changes form, so browsers holding the old answer for a year fetch anew.
+ */
+export const GEOMETRY_FORMAT = 3;
+
+/**
+ * Version of a tenant's map geometry (NFR-113 first paint). It changes when
+ * the tenant's read model is refreshed or the world admin-0 layer is
+ * reloaded, so a geometry URL carrying it can be cached by the browser for
+ * a year. The tenant id is part of the hash: a user who can switch tenants
+ * never gets one tenant's shapes from another tenant's URL.
+ */
+export async function mapDataVersion(
+	countryAccountsId: string,
+): Promise<string | null> {
+	const refreshedAt = await readModelRefreshedAt(countryAccountsId);
+	if (!refreshedAt) return null;
+	const res = await dr.execute(
+		sql`SELECT max(loaded_at)::text AS v FROM geo.admin0`,
+	);
+	const admin0 = (res.rows[0] as { v: string | null } | undefined)?.v ?? "none";
+	return createHash("sha256")
+		.update(`${GEOMETRY_FORMAT}|${countryAccountsId}|${refreshedAt}|${admin0}`)
+		.digest("hex")
+		.slice(0, 16);
+}
+
+/** Version of the world admin-0 layer: changes only when geo.admin0 is reloaded. */
+export async function admin0Version(): Promise<string | null> {
+	const res = await dr.execute(
+		sql`SELECT max(loaded_at)::text AS v FROM geo.admin0`,
+	);
+	const v = (res.rows[0] as { v: string | null } | undefined)?.v ?? null;
+	return v
+		? createHash("sha256").update(`${GEOMETRY_FORMAT}|admin0|${v}`).digest("hex").slice(0, 16)
+		: null;
+}
+
+export interface WorldBoundaries {
+	/** Every country border and coastline as one set of shared lines
+	 * (MultiLineString, EPSG:4326, 3 decimals): two neighbours share one line,
+	 * so no gaps and no doubled strokes after simplification. */
+	lines: { type: string; coordinates: unknown } | null;
+	/** One name per country, at its stored label point. `minZoom` ranks the
+	 * names by country size, so large countries are named first and small
+	 * islands only when the reader zooms in. */
+	labels: {
+		iso3: string;
+		name: string;
+		labelPoint: [number, number];
+		minZoom: number;
+	}[];
+}
+
+/**
+ * The world admin-0 reference layer for the small-scale map (Alex,
+ * 2026-10-18: every country's boundary visible, light grey, inside
+ * transparent, with light grey names), over the shading at every zoom.
+ * Borders are drawn as lines, not filled shapes: the layer has nothing to
+ * shade. The shared linework is simplified once (WORLD_TOLERANCE, about
+ * 1 km, under 2 px at zoom 8) and kept in the geo cache until geo.admin0
+ * changes.
+ * Reference data, the same for every tenant.
+ */
+const WORLD_TOLERANCE = 0.01;
+
+export async function worldBoundaries(): Promise<WorldBoundaries> {
+	const version = await admin0Version();
+	if (!version) return { lines: null, labels: [] };
+	return cachedGeo("worldAdmin0", "*", version, { tolerance: WORLD_TOLERANCE, labels: 2 }, async () => {
+		const [lines, labels] = await Promise.all([
+			dr.execute(sql`
+				SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(
+					ST_LineMerge(ST_Union(ST_Boundary(geom))), ${WORLD_TOLERANCE}), 3)::jsonb AS geojson
+				FROM geo.admin0
+			`),
+			dr.execute(sql`
+				SELECT iso3, name,
+					(ST_AsGeoJSON(label_point, 3)::jsonb) -> 'coordinates' AS label_point,
+					ST_Area(geom::geography) / 1e6 AS area_km2
+				FROM geo.admin0
+				WHERE label_point IS NOT NULL
+				ORDER BY name
+			`),
+		]);
+		return {
+			lines:
+				(lines.rows[0] as { geojson: WorldBoundaries["lines"] } | undefined)
+					?.geojson ?? null,
+			labels: (
+				labels.rows as {
+					iso3: string;
+					name: string;
+					label_point: [number, number];
+					area_km2: number | string;
+				}[]
+			).map((r) => ({
+				iso3: r.iso3,
+				name: r.name,
+				labelPoint: [Number(r.label_point[0]), Number(r.label_point[1])],
+				minZoom: labelMinZoom(Number(r.area_km2)),
+			})),
+		};
+	});
+}
+
+/** Zoom from which a country's name shows: larger countries first. */
+export function labelMinZoom(areaKm2: number): number {
+	if (areaKm2 >= 1_000_000) return 0;
+	if (areaKm2 >= 250_000) return 2;
+	if (areaKm2 >= 50_000) return 3;
+	if (areaKm2 >= 5_000) return 4;
+	return 5;
+}
+
+/**
+ * The versioned URL of the world admin-0 layer, for any page that draws a
+ * map (geoportal, Analytics MapChart). The same for every tenant; null while
+ * geo.admin0 is empty. Fetch it as given: the version keeps it cached for a
+ * year and changes when geo.admin0 is reloaded or the format changes.
+ */
+export async function worldBoundariesUrl(lang: string): Promise<string | null> {
+	const version = await admin0Version();
+	return version ? `/${lang}/api/geo/world?r=1&v=${version}` : null;
 }
