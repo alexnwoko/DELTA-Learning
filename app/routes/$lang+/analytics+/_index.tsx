@@ -7,7 +7,7 @@ import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { useLoaderData, useSearchParams } from "react-router";
 import { approvalAudienceForBasis } from "~/backend.server/approvalAudience.server";
 import { getEventMap } from "~/backend.server/models/analytics/dashboard/eventMap.server";
-import { getTenantOutline, neighbourOutlines } from "~/backend.server/models/geo/tenantExtent";
+import { getTenantOutline, neighbourOutlines, worldBoundariesUrl } from "~/backend.server/models/geo/tenantExtent";
 import { getEventPanels1to7 } from "~/backend.server/models/analytics/dashboard/eventPanels.server";
 import { getRecordsByApproval } from "~/backend.server/models/analytics/dashboard/recordsByApproval.server";
 import { getSendaiSection } from "~/backend.server/models/analytics/dashboard/sendaiPanels.server";
@@ -126,9 +126,14 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request, p
 	const hasMap = impact !== null || eventMap !== null;
 	// Neighbouring countries in thinner grey under the outline; none until
 	// the admin0 layer is seeded.
-	const [outline, neighbours] = hasMap
-		? await Promise.all([getTenantOutline(countryAccountsId), neighbourOutlines(countryAccountsId)])
-		: [null, []];
+	// The world's countries behind them (Geoportal's admin0 layer; null until loaded).
+	const [outline, neighbours, worldUrl] = hasMap
+		? await Promise.all([
+				getTenantOutline(countryAccountsId),
+				neighbourOutlines(countryAccountsId),
+				worldBoundariesUrl(routeParams.lang ?? "en"),
+			])
+		: [null, [], null];
 	const mapLayers = hasMap
 		? {
 				basemaps: selectableBasemaps(
@@ -141,6 +146,7 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request, p
 							countryLabelPoint: outline.labelPoint,
 							countryName: outline.name ?? (country || null),
 							neighbours,
+							world: worldUrl ? { url: worldUrl, iso3: outline.iso3 ?? null } : null,
 						}
 					: undefined,
 			}
