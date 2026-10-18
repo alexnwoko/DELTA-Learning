@@ -1105,3 +1105,200 @@ export async function eventCountsByDivision(
 		() => eventCountsByDivisionUncached(countryAccountsId, req),
 	);
 }
+
+/**
+ * G3 for the whole tenant (Alex, 2026-10-18: "Place" summarises the country
+ * by default). Same shape as the place dossier. Every record in scope counts
+ * once, including records with no area recorded, so the country figure is
+ * never the sum of its areas. Hazard, date, basis and grade filters apply;
+ * the place filters (division, region) do not, as this is the whole country.
+ */
+async function getCountryDossierUncached(
+	countryAccountsId: string,
+	req: GeoRequest,
+	lang: string,
+) {
+	const t = countryAccountsId;
+	const ranged = hasRange(req);
+	const floor = req.query.minAttGrade;
+	const meta = await baseMeta(t, req);
+	const nameRes = await geoRead(sql`
+		SELECT co.name FROM public.country_accounts ca
+		JOIN public.countries co ON co.id = ca.country_id
+		WHERE ca.id = ${t}
+	`);
+	const countryName =
+		(nameRes.rows[0] as { name: string } | undefined)?.name ?? null;
+
+	const res = await geoRead(sql`
+		WITH scope AS (
+			SELECT DISTINCT ON (a.measure, a.disaster_record_id)
+				a.measure, a.disaster_record_id, a.value, a.value_state, a.att_grade,
+				a.geo_precision, a.plausibility_flags, a.record_status,
+				a.migration_run_id, a.start_instant, a.hip_type_id
+			FROM geo.impact_atom a
+			WHERE ${scopeFilters(t, req)}
+				AND a.measure IN (${sql.join(
+					["records", ...GEO_HUMAN_MEASURES].map((m) => sql`${m}`),
+					sql`, `,
+				)})
+				AND ${ranged ? dateInRange(req) : sql`true`}
+				AND ${floor ? sql`(a.att_grade IS NULL OR a.att_grade <= ${floor})` : sql`true`}
+			ORDER BY a.measure, a.disaster_record_id, a.att_grade NULLS LAST
+		),
+		recs AS (SELECT * FROM scope WHERE measure = 'records'),
+		agg AS (
+			SELECT p.measure, ${t}::text AS division_id,
+				SUM(p.value) FILTER (WHERE p.value_state = 'reported') AS sum_reported,
+				COUNT(*) FILTER (WHERE p.value_state = 'reported') AS reported,
+				COUNT(*) FILTER (WHERE p.value_state = 'zero_confirmed') AS zero_confirmed,
+				COUNT(*) FILTER (WHERE p.value_state = 'not_applicable') AS not_applicable,
+				COUNT(*) AS total,
+				COUNT(*) FILTER (WHERE cardinality(p.plausibility_flags) > 0) AS flagged,
+				COUNT(*) FILTER (WHERE p.att_grade = 'A') AS grade_a,
+				COUNT(*) FILTER (WHERE p.att_grade = 'B') AS grade_b,
+				COUNT(*) FILTER (WHERE p.att_grade = 'C') AS grade_c,
+				COUNT(*) FILTER (WHERE p.att_grade = 'D') AS grade_d,
+				NULL::jsonb AS precision
+			FROM scope p WHERE p.measure <> 'records'
+			GROUP BY p.measure
+		)
+		SELECT
+			(SELECT COALESCE(jsonb_agg(to_jsonb(agg)), '[]'::jsonb) FROM agg) AS cells,
+			(SELECT COALESCE(jsonb_agg(jsonb_build_object('year', y, 'recordCount', n) ORDER BY y), '[]'::jsonb)
+				FROM (SELECT extract(year FROM start_instant)::int AS y, COUNT(*) AS n
+					FROM recs WHERE start_instant IS NOT NULL GROUP BY 1) t) AS by_year,
+			(SELECT COUNT(*) FROM recs WHERE start_instant IS NULL) AS undated,
+			(SELECT COALESCE(jsonb_agg(jsonb_build_object('hipTypeId', hip_type_id, 'recordCount', n) ORDER BY n DESC, hip_type_id), '[]'::jsonb)
+				FROM (SELECT hip_type_id, COUNT(*) AS n FROM recs GROUP BY hip_type_id) t) AS hazard_mix,
+			(SELECT COUNT(*) FROM recs) AS record_count,
+			(SELECT COALESCE(jsonb_object_agg(COALESCE(att_grade, 'none'), n), '{}'::jsonb)
+				FROM (SELECT att_grade, COUNT(*) AS n FROM recs GROUP BY att_grade) g) AS grades,
+			(SELECT COALESCE(jsonb_agg(DISTINCT migration_run_id), '[]'::jsonb)
+				FROM scope WHERE migration_run_id IS NOT NULL) AS run_ids,
+			(SELECT COALESCE(bool_or(record_status <> 'published'), false) FROM scope) AS provisional
+	`);
+	const row = res.rows[0] as {
+		cells: CellRow[];
+		by_year: { year: number; recordCount: number }[];
+		undated: string | number;
+		hazard_mix: { hipTypeId: string | null; recordCount: number }[];
+		record_count: string | number;
+		grades: Record<string, number | string>;
+		run_ids: string[];
+		provisional: boolean;
+	};
+
+	const years = row.by_year.map((b) => b.year);
+	const periodsWithNoReporting: string[] = [];
+	if (years.length > 1) {
+		const present = new Set(years);
+		let gapStart: number | null = null;
+		for (let y = years[0]; y <= years[years.length - 1]; y++) {
+			if (!present.has(y)) {
+				if (gapStart === null) gapStart = y;
+			} else if (gapStart !== null) {
+				periodsWithNoReporting.push(
+					gapStart === y - 1 ? `${gapStart}` : `${gapStart}-${y - 1}`,
+				);
+				gapStart = null;
+			}
+		}
+	}
+	const byMeasure = new Map(row.cells.map((c) => [c.measure, toCell(c)]));
+	const cumulative: Record<string, Omit<GeoCell, "division_id">> = {};
+	for (const measure of GEO_HUMAN_MEASURES) {
+		const cell = byMeasure.get(measure);
+		if (cell) {
+			const { division_id: _ignored, ...rest } = cell;
+			cumulative[measure] = rest;
+		} else {
+			cumulative[measure] = {
+				value: null,
+				value_state: "not_reported",
+				records_reported: 0,
+				records_zero_confirmed: 0,
+				records_not_reported: 0,
+				records_not_applicable: 0,
+				records_total: 0,
+				coverage: 0,
+				plausibility_flagged_records: 0,
+				gradeDistribution: { A: 0, B: 0, C: 0, D: 0 },
+				geo_precision: {},
+			};
+		}
+	}
+	meta.migrationRunIds = row.run_ids.slice().sort();
+	meta.provisional = row.provisional && basisIncludesProvisional(req.audience);
+	const grades = Object.fromEntries(
+		ATT_GRADES.map((g) => [g, Number(row.grades[g] ?? 0)]),
+	) as Record<AttGrade, number>;
+	void lang;
+	return {
+		meta,
+		division: {
+			id: "country",
+			name: countryName,
+			nationalId: null,
+			level: 0,
+			parent: null,
+		},
+		recurrence: {
+			recordCount: Number(row.record_count),
+			hazardTypeCount: row.hazard_mix.filter((h) => h.hipTypeId).length,
+			firstYear: years[0] ?? null,
+			lastYear: years[years.length - 1] ?? null,
+			undatedRecordCount: Number(row.undated),
+			periodsWithNoReporting,
+			gradeDistribution: grades,
+			note: "The whole country: every record counts once, including records with no area recorded, so it is not the sum of its areas. Periods with nothing reported are shown as no reporting, never as zero.",
+		},
+		hazardMix: row.hazard_mix,
+		byYear: row.by_year,
+		cumulative,
+	};
+}
+
+/** G3 for the whole tenant, cached until the next refresh. */
+export async function getCountryDossier(
+	countryAccountsId: string,
+	req: GeoRequest,
+	lang: string,
+) {
+	return cachedGeo(
+		"countryDossier",
+		countryAccountsId,
+		await readModelRefreshedAt(countryAccountsId),
+		{ req, lang },
+		() => getCountryDossierUncached(countryAccountsId, req, lang),
+	);
+}
+
+/** Level-1 and level-2 areas for the place pickers (no geometry), names localised. */
+export async function listPlaceOptions(
+	countryAccountsId: string,
+	lang: string,
+): Promise<
+	{ id: string; name: string; level: number; parentId: string | null }[]
+> {
+	const res = await geoRead(sql`
+		SELECT division_id, admin_level, parent_id,
+			COALESCE(name ->> ${lang}, name ->> 'en', '') AS name
+		FROM geo.division_geom_cache
+		WHERE country_accounts_id = ${countryAccountsId} AND admin_level IN (1, 2)
+		ORDER BY admin_level, 4
+	`);
+	return (
+		res.rows as {
+			division_id: string;
+			admin_level: number;
+			parent_id: string | null;
+			name: string;
+		}[]
+	).map((r) => ({
+		id: r.division_id,
+		name: r.name,
+		level: Number(r.admin_level),
+		parentId: r.parent_id,
+	}));
+}

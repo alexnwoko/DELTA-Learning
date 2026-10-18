@@ -1042,3 +1042,17 @@ describe("UN map disclaimer (Alex, 2026-10-18, decision 4)", () => {
 		).toBe(exact);
 	});
 });
+
+import { pickerValues } from "~/frontend/geoportal/GeoPlacePicker";
+
+describe("place pickers beside the Place tab (Alex, 2026-10-18)", () => {
+	const opts = [
+		{ id: "p1", name: "Gaza", level: 1, parentId: null },
+		{ id: "d1", name: "Chokwe", level: 2, parentId: "p1" },
+	];
+	it("shows the whole country by default and the parent of a chosen admin 2", () => {
+		expect(pickerValues(null, opts)).toEqual({ first: null, second: null });
+		expect(pickerValues("p1", opts)).toEqual({ first: "p1", second: null });
+		expect(pickerValues("d1", opts)).toEqual({ first: "p1", second: "d1" });
+	});
+});

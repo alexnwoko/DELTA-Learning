@@ -83,6 +83,8 @@ export interface GeoMapProps {
 	showLabels?: boolean;
 	/** The UN map disclaimer, translated; shown in the map credits. */
 	disclaimer?: string;
+	/** Extra right padding (px) when a panel floats over the map's right side. */
+	padRight?: number;
 	/** Accessible name; the table alternative carries the figures. */
 	label: string;
 	describedBy?: string;
@@ -315,6 +317,7 @@ export function GeoMap({
 	outline = null,
 	showLabels = true,
 	disclaimer = UN_MAP_DISCLAIMER,
+	padRight = 0,
 	label,
 	describedBy,
 }: GeoMapProps) {
@@ -543,7 +546,9 @@ export function GeoMap({
 		}
 		const extent = source.getExtent();
 		if (features.length && extent && extent.every(Number.isFinite)) {
-			map.getView().fit(extent, { padding: [16, 16, 16, 16], maxZoom: 9 });
+			map
+				.getView()
+				.fit(extent, { padding: [16, 16 + padRight, 16, 16], maxZoom: 9 });
 		}
 	}, [boundaries]);
 
@@ -609,9 +614,11 @@ export function GeoMap({
 		const map = mapRef.current;
 		const extent = layerRef.current?.getSource()?.getExtent();
 		if (map && extent && extent.every(Number.isFinite)) {
-			map
-				.getView()
-				.fit(extent, { padding: [16, 16, 16, 16], maxZoom: 9, duration: 250 });
+			map.getView().fit(extent, {
+				padding: [16, 16 + padRight, 16, 16],
+				maxZoom: 9,
+				duration: 250,
+			});
 		}
 	}, [homeSignal]);
 
@@ -625,7 +632,7 @@ export function GeoMap({
 		const extent = feature?.getGeometry()?.getExtent();
 		if (extent && extent.every(Number.isFinite)) {
 			map.getView().fit(extent, {
-				padding: [48, 48, 48, 48],
+				padding: [48, 48 + padRight, 48, 48],
 				maxZoom: 9,
 				duration: 250,
 			});
@@ -661,7 +668,7 @@ export function GeoMap({
 			role="group"
 			aria-label={label}
 			aria-describedby={describedBy}
-			className="geo-map [&_.ol-zoom_button]:!w-7 [&_.ol-zoom_button]:!h-7 [&_.ol-attribution_button]:!w-7 [&_.ol-attribution_button]:!h-7 print:[&_.ol-zoom]:hidden print:[&_.ol-rotate]:hidden"
+			className={`${padRight > 0 ? "[&_.ol-attribution]:!right-[400px] [&_.ol-attribution]:!max-w-[calc(100%-416px)] " : ""}geo-map [&_.ol-zoom_button]:!w-7 [&_.ol-zoom_button]:!h-7 [&_.ol-attribution_button]:!w-7 [&_.ol-attribution_button]:!h-7 print:[&_.ol-zoom]:hidden print:[&_.ol-rotate]:hidden`}
 			style={{
 				width: "100%",
 				height,
