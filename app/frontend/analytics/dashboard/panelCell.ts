@@ -5,6 +5,7 @@ import type { ChartExportRow } from "~/frontend/charts/chartExport";
 import type { DContext } from "~/utils/dcontext";
 import type { PanelCell, PanelMeta } from "~/utils/dashboard/impactPanels";
 import { STATE_ENCODING } from "~/utils/mapState";
+import type { DashboardPanel } from "./types";
 
 /** The figure as the screen shows it: a number or a state word. */
 export function cellText(ctx: DContext, cell: PanelCell): string {
@@ -24,6 +25,8 @@ export function recordsAnswering(cell: PanelCell): number {
 
 /** "243 of 534 records report this", the coverage beside every figure (W-8). */
 export function coverageText(ctx: DContext, cell: PanelCell): string {
+	// No record in scope is no data, never "0 of 0" (Alex, 2026-10-17).
+	if (cell.recordsTotal === 0) return noRecordsText(ctx);
 	return ctx.t(
 		{ code: "dashboard.coverage", msg: "{n} of {total} records report this" },
 		{
@@ -67,4 +70,14 @@ export function panelNotes(meta: PanelMeta, own: (string | undefined)[] = []): s
 	return [...own, meta.coverage, ...meta.notApplied.map((f) => `Not applied: ${f}`)].filter(
 		(n): n is string => Boolean(n),
 	);
+}
+
+/** The words for an empty scope: no data is never shown as 0. */
+export function noRecordsText(ctx: DContext): string {
+	return ctx.t({ code: "dashboard.no_records_in_scope", msg: "No records in scope" });
+}
+
+/** One frame across a view when nothing is in scope (Alex, 2026-10-17). */
+export function emptyViewPanel(id: string, title: string, reason: string): DashboardPanel {
+	return { id: `${id}-empty`, n: 1, title, gap: { text: reason } };
 }

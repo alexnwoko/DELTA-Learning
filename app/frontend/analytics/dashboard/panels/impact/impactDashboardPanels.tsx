@@ -3,6 +3,7 @@
 import type { ViewContext } from "~/frontend/context";
 import type { ImpactPanels1to4 } from "~/utils/dashboard/impactPanels";
 import type { ImpactPanels5to16 } from "~/utils/dashboard/impactPanels5to16";
+import { emptyViewPanel } from "../../panelCell";
 import type { DashboardPanel } from "../../types";
 import { CoverageWaffle, waffleExport } from "./CoverageWaffle";
 import { HazardRanking, rankingExport } from "./HazardRanking";
@@ -18,6 +19,10 @@ export function impactDashboardPanels(
 	later?: { data: ImpactPanels5to16; country: string },
 ): DashboardPanel[] {
 	const t = (code: string, msg: string) => ctx.t({ code, msg });
+	// No record in scope: one frame, never tiles and bars of 0 (Alex, 2026-10-17).
+	if (data.coverage.recordsTotal === 0) {
+		return [emptyViewPanel("impact", t("dashboard.dim_disaster_impact", "Disaster impact"), t("dashboard.impact_empty", "No records in scope for these filters."))];
+	}
 	const common = { ctx, source, scope: data.scopeText, provisional: data.provisional };
 	const ready: DashboardPanel[] = [
 		{

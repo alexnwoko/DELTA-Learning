@@ -4,11 +4,15 @@
 // events with a linked record in the division, because events carry no
 // division links of their own (disaster_event_division is empty).
 
+import { cachedDashboard } from "~/backend.server/models/analytics/dashboard/dashboardCache.server";
 import { sql, type SQL } from "drizzle-orm";
 import {
 	humanEffectMeasuresFromRow,
 	humanEffectMeasuresSelect,
 	humanEffectsFilteredRecords,
+	measurePartsCtes,
+	measurePartsJoins,
+	recordFlagsColumn,
 	type HazardFilters,
 } from "~/backend.server/models/analytics/hazard-analysis";
 import {
@@ -74,6 +78,17 @@ function eventsCte(filters: HazardFilters): SQL {
 			WHERE r."disaster_event_id" = de."id"
 				AND drd."division_id" IN ${divisionAndDescendantsSql(filters.geographicLevelId, filters.countryAccountsId)}
 		)`);
+	if (filters.regionId)
+		conds.push(sql`EXISTS (
+			SELECT 1
+			FROM "disaster_records" r
+			JOIN "disaster_records_division" drd ON drd."disaster_record_id" = r."id"
+			JOIN geo.division_ancestor da
+				ON da.division_id = drd."division_id" AND da.country_accounts_id = ${filters.countryAccountsId}
+			JOIN geo.region_member m
+				ON m.division_id = da.ancestor_id AND m.country_accounts_id = da.country_accounts_id
+			WHERE r."disaster_event_id" = de."id" AND m.region_id = ${filters.regionId}
+		)`);
 	return sql`ev AS (
 		SELECT de."id", ${RULE_SQL} AS rule,
 			NULLIF(de."glide", '') AS glide,
@@ -92,7 +107,7 @@ function eventsCte(filters: HazardFilters): SQL {
  */
 function linkedRecordsCte(filters: HazardFilters): SQL {
 	return sql`filtered_records AS (
-		SELECT r."id" AS record_id, r."disaster_event_id" AS event_id
+		SELECT r."id" AS record_id, r."disaster_event_id" AS event_id, ${recordFlagsColumn("r")} AS pflags
 		FROM "disaster_records" r
 		JOIN ev ON ev."id" = r."disaster_event_id"
 		WHERE ${approvalBasis(filters.audience, basisColumns("r"))}
@@ -105,7 +120,7 @@ const zeroRules = (): Record<EventGroupingRule, number> => ({
 	entered: 0,
 });
 
-export async function getEventPanels1to7(
+async function computeGetEventPanels1to7(
 	query: DeltaQuery,
 	ctx: ImpactPanelsContext,
 ): Promise<EventPanels1to7> {
@@ -122,7 +137,7 @@ export async function getEventPanels1to7(
 	const [events, perEvent, overall, scope, labels] = await Promise.all([
 		rows(sql`WITH ${ev} SELECT * FROM ev`),
 		rows(sql`
-			WITH RECURSIVE ${ev}, ${lr}, ${housesCte},
+			WITH RECURSIVE ${ev}, ${lr}, ${measurePartsCtes}, ${housesCte},
 			l1 AS (
 				SELECT d."id", d."id" AS l1_id FROM "division" d
 				WHERE d."level" = 1 AND d."country_accounts_id" = ${ctx.countryAccountsId}
@@ -139,14 +154,16 @@ export async function getEventPanels1to7(
 					WHERE f2.event_id = fr.event_id) AS divisions
 			FROM filtered_records fr
 			LEFT JOIN "human_category_presence" hcp ON hcp."record_id" = fr.record_id
+			${measurePartsJoins}
 			LEFT JOIN "disaster_records" rec ON rec."id" = fr.record_id
 			LEFT JOIN houses h ON h."record_id" = fr.record_id
 			GROUP BY fr.event_id`),
 		rows(sql`
-			WITH ${ev}, ${lr}
+			WITH ${ev}, ${lr}, ${measurePartsCtes}
 			SELECT ${humanEffectMeasuresSelect()}
 			FROM filtered_records fr
 			LEFT JOIN "human_category_presence" hcp ON hcp."record_id" = fr.record_id
+			${measurePartsJoins}
 			LEFT JOIN "disaster_records" rec ON rec."id" = fr.record_id`),
 		rows(sql`
 			WITH RECURSIVE ${humanEffectsFilteredRecords(filters)}
@@ -348,4 +365,14 @@ export async function getEventPanels1to7(
 			),
 		},
 	};
+}
+
+/** getEventPanels1to7, reused for DASHBOARD_CACHE_TTL_MS per tenant, audience and query. */
+export function getEventPanels1to7(
+	query: DeltaQuery,
+	ctx: ImpactPanelsContext,
+): Promise<EventPanels1to7> {
+	return cachedDashboard("getEventPanels1to7", [ctx, query], () =>
+		computeGetEventPanels1to7(query, ctx),
+	);
 }

@@ -6,8 +6,8 @@ import type { DashboardView } from "./views";
 
 /** Why a panel has nothing to draw yet (panels paper, section 6). */
 export interface PanelGap {
-	/** Gap code, for example "G-01". */
-	code: string;
+	/** Gap code, for example "G-01"; omitted for a plain empty scope. */
+	code?: string;
 	/** Already translated: what the panel shows instead of a chart. */
 	text: string;
 	/**
