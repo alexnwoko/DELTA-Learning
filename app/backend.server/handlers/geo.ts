@@ -373,6 +373,18 @@ export function geoEtag(
 }
 
 /** True when an If-None-Match header names this ETag, or is "*". */
+/**
+ * Cache-Control for geometry (NFR-113). A URL that carries the current map
+ * data version (`v`) never changes content, so the browser keeps it for a
+ * year without asking again; any other URL revalidates with its ETag.
+ * Always private: geometry is read under the user's session.
+ */
+export function geometryCacheControl(url: URL, version: string | null): string {
+	return version !== null && url.searchParams.get("v") === version
+		? "private, max-age=31536000, immutable"
+		: "private, no-cache";
+}
+
 export function etagMatches(request: Request, etag: string): boolean {
 	const header = request.headers.get("If-None-Match");
 	if (!header) return false;

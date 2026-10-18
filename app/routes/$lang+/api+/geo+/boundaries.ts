@@ -1,9 +1,15 @@
-import { etagMatches, geoEtag, geoLoader } from "~/backend.server/handlers/geo";
+import {
+	etagMatches,
+	geoEtag,
+	geoLoader,
+	geometryCacheControl,
+} from "~/backend.server/handlers/geo";
 import {
 	getBoundaries,
 	GeoRefusalError,
 	readModelRefreshedAt,
 } from "~/backend.server/models/geo/queries";
+import { mapDataVersion } from "~/backend.server/models/geo/tenantExtent";
 import { isValidUUID } from "~/utils/id";
 
 function malformed(message: string) {
@@ -41,10 +47,17 @@ export const loader = geoLoader(
 			throw malformed("z must be an integer from 0 to 22.");
 		}
 
-		const refreshedAt = await readModelRefreshedAt(countryAccountsId);
+		const [refreshedAt, version] = await Promise.all([
+			readModelRefreshedAt(countryAccountsId),
+			mapDataVersion(countryAccountsId),
+		]);
 		const etag = geoEtag(countryAccountsId, refreshedAt, url);
+		const cacheControl = geometryCacheControl(url, version);
 		if (etagMatches(request, etag)) {
-			return new Response(null, { status: 304, headers: { ETag: etag } });
+			return new Response(null, {
+				status: 304,
+				headers: { ETag: etag, "Cache-Control": cacheControl },
+			});
 		}
 		const fc = await getBoundaries(countryAccountsId, {
 			level,
@@ -57,7 +70,7 @@ export const loader = geoLoader(
 			headers: {
 				"Content-Type": "application/geo+json",
 				ETag: etag,
-				"Cache-Control": "private, no-cache",
+				"Cache-Control": cacheControl,
 			},
 		});
 	},

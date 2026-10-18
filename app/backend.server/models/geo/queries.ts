@@ -594,7 +594,7 @@ export function geomColumnForZoom(
 }
 
 /** G1. Simplified division geometry as GeoJSON for one level. */
-export async function getBoundaries(
+async function getBoundariesUncached(
 	countryAccountsId: string,
 	params: {
 		level: number;
@@ -624,7 +624,7 @@ export async function getBoundaries(
 			'features', COALESCE(jsonb_agg(jsonb_build_object(
 				'type', 'Feature',
 				'id', c.division_id,
-				'geometry', ST_AsGeoJSON(c.${column}, 6)::jsonb,
+				'geometry', ST_AsGeoJSON(c.${column}, 5)::jsonb,
 				'properties', jsonb_build_object(
 					'divisionId', c.division_id,
 					'nationalId', c.national_id,
@@ -635,7 +635,7 @@ export async function getBoundaries(
 					'boundaryVintage', c.boundary_vintage,
 					-- RV-5: a point always inside the division (bubble anchor), and
 					-- its true area for densities per 1,000 km2.
-					'labelPoint', (ST_AsGeoJSON(ST_PointOnSurface(COALESCE(c.geom_z8, c.geom_z12, c.geom_z4)), 6)::jsonb) -> 'coordinates',
+					'labelPoint', (ST_AsGeoJSON(ST_PointOnSurface(COALESCE(c.geom_z8, c.geom_z12, c.geom_z4)), 5)::jsonb) -> 'coordinates',
 					'areaKm2', round((ST_Area(COALESCE(c.geom_z12, c.geom_z8, c.geom_z4)::geography) / 1e6)::numeric, 3)
 				)
 			) ORDER BY c.division_id), '[]'::jsonb)
@@ -1301,4 +1301,18 @@ export async function listPlaceOptions(
 		level: Number(r.admin_level),
 		parentId: r.parent_id,
 	}));
+}
+
+/** G1, cached until the tenant's next refresh (I-6: 76 ms per page view on Mozambique). */
+export async function getBoundaries(
+	countryAccountsId: string,
+	params: Parameters<typeof getBoundariesUncached>[1],
+) {
+	return cachedGeo(
+		"boundaries",
+		countryAccountsId,
+		await readModelRefreshedAt(countryAccountsId),
+		params,
+		() => getBoundariesUncached(countryAccountsId, params),
+	);
 }
