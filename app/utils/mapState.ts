@@ -289,6 +289,12 @@ export const SYMBOL_BASE_FILL = dataTokens.map.canvas.background;
 
 export interface ResolveMapOptions {
 	family: MeasureFamily;
+	/**
+	 * Five colours, light to dark, in place of the family ramp (a section
+	 * palette). Used only when it holds exactly MAP_CLASS_COUNT hex colours;
+	 * anything else falls back to the family ramp.
+	 */
+	ramp?: readonly string[];
 	/** Default "choropleth"; callers pass defaultSymbolFor(kind) (RV-5 as amended). */
 	symbol?: MapSymbol;
 	scope: MapScopeQuery;
@@ -705,12 +711,25 @@ function referenceValues(scaleMax: number): number[] {
 		.sort((a, b) => b - a);
 }
 
+const HEX_COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+
+/** The ramp when it is MAP_CLASS_COUNT hex colours, else null. */
+export function validRamp(
+	ramp: readonly string[] | undefined,
+): readonly string[] | null {
+	return ramp &&
+		ramp.length === MAP_CLASS_COUNT &&
+		ramp.every((c) => HEX_COLOR.test(c))
+		? ramp
+		: null;
+}
+
 export function resolveMapState(
 	cells: readonly MapCell[],
 	options: ResolveMapOptions,
 ): MapStateResult {
 	const scope = scopeLabel(options.scope);
-	const ramp = FAMILY_RAMPS[options.family];
+	const ramp = validRamp(options.ramp) ?? FAMILY_RAMPS[options.family];
 	const symbol: MapSymbol = options.symbol ?? "choropleth";
 
 	const resolved = cells.map((cell) => ({
