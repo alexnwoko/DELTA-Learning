@@ -9,6 +9,7 @@ import {
 	getAffectedPeopleByHazardFilters,
 	getHumanEffectsGrouped,
 	humanEffectsFilteredRecords,
+	withRecordFacts,
 } from "~/backend.server/models/analytics/hazard-analysis";
 import {
 	EMPTY_CELL,
@@ -53,7 +54,7 @@ function countCell(sum: unknown, reported: unknown, total: unknown): PanelCell {
 	});
 }
 
-async function computeSendai(
+export async function computeSendai(
 	query: DeltaQuery,
 	ctx: ImpactPanelsContext,
 ): Promise<SendaiSection> {
@@ -344,6 +345,8 @@ export function getSendaiSection(
 	ctx: ImpactPanelsContext,
 ): Promise<SendaiSection> {
 	return cachedDashboard("getSendaiSection", [ctx, query], () =>
-		computeSendai(query, ctx),
+		withRecordFacts(impactFiltersFromQuery(query, ctx).filters, () =>
+			computeSendai(query, ctx),
+		),
 	);
 }
