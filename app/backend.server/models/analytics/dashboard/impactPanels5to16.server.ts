@@ -106,7 +106,7 @@ export const housesCte = sql`houses AS (
 )`;
 
 /** Each record's level-1 divisions (a record in several counts in each). */
-function recordDivisionsCte(countryAccountsId: string): SQL {
+export function recordDivisionsCte(countryAccountsId: string): SQL {
 	return sql`div_up AS (
 		SELECT "id", "id" AS l1_id
 		FROM "division"
@@ -145,7 +145,7 @@ function countCell(sum: unknown, reported: unknown, total: unknown): PanelCell {
 }
 
 /** Adds cells of one measure: values of reported cells, and the record counts. */
-function addCells(cells: PanelCell[]): PanelCell {
+export function addCells(cells: PanelCell[]): PanelCell {
 	const reported = cells.filter((c) => c.valueState === "reported");
 	return measureValue({
 		sum: reported.length
@@ -196,7 +196,7 @@ async function groupedMeasures(
 	}));
 }
 
-async function divisionNames(
+export async function divisionNames(
 	countryAccountsId: string,
 ): Promise<Map<string, string>> {
 	const res = await rows(sql`
