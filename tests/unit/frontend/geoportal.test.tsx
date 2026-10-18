@@ -885,3 +885,122 @@ describe("hazard tree from G6 (nested) to the bar's flat lists", () => {
 		expect(html).toContain("MH0600");
 	});
 });
+
+import { GeoSendai } from "~/frontend/geoportal/GeoSendai";
+
+describe("Sendai Framework block in the place panel (I-5)", () => {
+	const cumulative = {
+		deaths: {
+			value: 103894,
+			value_state: "reported",
+			records_reported: 103,
+			records_total: 917,
+		},
+		missing: {
+			value: null,
+			value_state: "not_reported",
+			records_reported: 0,
+			records_total: 917,
+		},
+		injured: {
+			value: 0,
+			value_state: "zero_confirmed",
+			records_reported: 4,
+			records_total: 917,
+		},
+	};
+	const html = (level: number) =>
+		renderToString(
+			<GeoSendai
+				cumulative={cumulative}
+				level={level}
+				analysisHref="/en/analytics?division=abc"
+			/>,
+		);
+
+	it("keeps each figure in its own state and never shows a missing one as zero", () => {
+		const h = html(1);
+		expect(h).toContain("103,894");
+		expect(h).toContain("(reported by 103 of 917)");
+		expect(h).toContain("No data"); // the shared label for not_reported, never 0
+		expect(h).toContain("0 (confirmed)");
+		expect(h).toContain("Directly affected");
+	});
+
+	it("labels the source, refuses Target C and marks sub-national figures", () => {
+		const h = html(1);
+		expect(h).toContain("not the official Sendai Framework submission");
+		expect(h).toContain("MONETARY_CONVENTIONS_PENDING");
+		expect(h).toContain("Sub-national figures. Not a Sendai indicator value.");
+		expect(html(0)).not.toContain("Sub-national figures");
+		expect(h).toContain('href="/en/analytics?division=abc"');
+	});
+});
+
+import { placeLevels, yearOptions } from "~/frontend/geoportal/filterBarState";
+
+describe("filter bar row layout for the Analysis page (Alex 2026-10-17)", () => {
+	const divisions = [
+		{ id: "p1", name: "Gaza", level: 1, parentId: null },
+		{ id: "d1", name: "Chokwe", level: 2, parentId: "p1" },
+		{ id: "d9", name: "Elsewhere", level: 2, parentId: "p2" },
+	];
+
+	it("offers years newest first and shows a level-2 place under its parent", () => {
+		expect(yearOptions({ min: 2020, max: 2023 })).toEqual([
+			2023, 2022, 2021, 2020,
+		]);
+		const q = { ...DEFAULT_QUERY };
+		expect(placeLevels(withPlace(q, { divisionId: "d1" }), divisions)).toEqual({
+			first: "d:p1",
+			second: "d:d1",
+		});
+		expect(placeLevels(withPlace(q, { divisionId: "p1" }), divisions)).toEqual({
+			first: "d:p1",
+			second: null,
+		});
+		expect(placeLevels(withPlace(q, { regionId: "r1" }), divisions)).toEqual({
+			first: "r:r1",
+			second: null,
+		});
+		expect(placeLevels(q, divisions)).toEqual({ first: "all", second: null });
+	});
+
+	it("renders the row in the mock-up's order, with the page's button at the end", () => {
+		const html = renderToString(
+			<GeoFilterBar
+				layout="row"
+				query={withPlace(
+					{ ...DEFAULT_QUERY, measure: "deaths" },
+					{ divisionId: "d1" },
+				)}
+				level={1}
+				levels={[1, 2]}
+				canReview={false}
+				onChange={() => {}}
+				dimensionControl="none"
+				measures={null}
+				levelControl={false}
+				years={{ min: 2000, max: 2024 }}
+				hazardTree={{ types: [], clusters: [], hazards: [] }}
+				place={{ divisions }}
+				end={<button type="button">Sendai Framework Monitoring</button>}
+			/>,
+		);
+		const order = [
+			"From year",
+			"To year",
+			"HIPs type",
+			"HIPs cluster",
+			"Hazard",
+			"Place, level 1",
+			"Level 2",
+			"Sendai Framework Monitoring",
+		];
+		const positions = order.map((label) => html.indexOf(label));
+		expect(positions.every((p) => p >= 0)).toBe(true);
+		expect([...positions].sort((a, b) => a - b)).toEqual(positions);
+		expect(html).not.toContain("Last 10 years"); // no presets in the row
+		expect(html).not.toContain("Map level");
+	});
+});
