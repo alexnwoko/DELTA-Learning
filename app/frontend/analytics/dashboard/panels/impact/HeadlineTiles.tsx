@@ -120,7 +120,7 @@ export function HeadlineTiles({ ctx, title, tiles, meta, source, scope, provisio
 							className="flex min-w-0 flex-col gap-1 rounded border border-brand-border bg-brand-surface-card p-3"
 						>
 							<span className="flex items-center gap-1.5 text-sm text-brand-text-muted">
-								<PanelIcon name={MEASURE_ICONS[tile.measure]} size={16} />
+								<PanelIcon name={MEASURE_ICONS[tile.measure]} size={24} />
 								{label}
 							</span>
 							<span
@@ -147,7 +147,7 @@ export function HeadlineTiles({ ctx, title, tiles, meta, source, scope, provisio
 				})}
 				<li className="flex min-w-0 flex-col gap-1 rounded border border-dashed border-brand-border-control bg-brand-surface-subtle p-3">
 					<span className="flex items-center gap-1.5 text-sm text-brand-text-muted">
-						<PanelIcon name={MEASURE_ICONS.money} size={16} colour="var(--delta-brand-text-muted)" />
+						<PanelIcon name={MEASURE_ICONS.money} size={24} />
 						{ctx.t({ code: "dashboard.measure_money", msg: "Damage and losses" })}
 					</span>
 					<span className="text-sm font-semibold">

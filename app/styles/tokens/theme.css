@@ -55,6 +55,7 @@
 	--color-data-hazard-societal: var(--delta-data-hazard-societal);
 	--color-data-hazard-extraterrestrial: var(--delta-data-hazard-extraterrestrial);
 	--color-data-hazard-unclassified: var(--delta-data-hazard-unclassified);
+	--color-data-icon: var(--delta-data-icon);
 	--color-brand-interactive: var(--delta-brand-interactive);
 	--color-brand-interactive-active: var(--delta-brand-interactive-active);
 	--color-brand-secondary: var(--delta-brand-secondary);

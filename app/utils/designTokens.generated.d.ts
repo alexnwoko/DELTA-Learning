@@ -26,6 +26,7 @@ export declare const dataTokens: {
 	flag: { reviewChip: { background: string; text: string } };
 	chart: { axis: string };
 	notice: { provisional: { border: string; background: string } };
+	icon: string;
 	hazard: Record<"meteorologicalHydrological" | "geological" | "biological" | "environmental" | "chemical" | "technological" | "societal" | "extraterrestrial" | "unclassified", string>;
 	ramp: Record<"people" | "housing" | "money" | "events", readonly string[]>;
 };

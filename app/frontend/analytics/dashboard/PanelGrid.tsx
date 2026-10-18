@@ -47,8 +47,8 @@ function PanelCard({ ctx, panel }: { ctx: ViewContext; panel: DashboardPanel }) 
 				className="flex flex-col gap-2 rounded border border-dashed border-brand-border-control bg-brand-surface-subtle p-4"
 			>
 				<h3 id={headingId} className="m-0 flex items-center gap-2 text-base font-semibold text-brand-text">
-					<span className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-brand-border bg-brand-surface">
-						<PanelIcon name={panelIcon(panel.id)} size={18} colour="var(--delta-brand-text-muted)" />
+					<span className="flex h-12 w-12 shrink-0 items-center justify-center rounded border border-brand-border bg-brand-surface">
+						<PanelIcon name={panelIcon(panel.id)} size={27} />
 					</span>
 					{panel.title}
 				</h3>
@@ -86,7 +86,7 @@ export function NotYetAvailableStrip({ ctx, panels }: { ctx: ViewContext; panels
 					const count = gapCountText(ctx, gap);
 					return (
 						<li key={p.id} id={p.id} className="flex items-start gap-2 text-sm">
-							<PanelIcon name={panelIcon(p.id)} size={16} colour="var(--delta-brand-text-muted)" className="mt-0.5" />
+							<PanelIcon name={panelIcon(p.id)} size={24} />
 							<span>
 							<span className="font-semibold text-brand-text">{p.title}</span>
 							<span className="text-brand-text-muted">

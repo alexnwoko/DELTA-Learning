@@ -128,5 +128,6 @@ export const dataTokens = {
 		"societal": "#b0306a",
 		"extraterrestrial": "#0f7c8c",
 		"unclassified": "#6b7280"
-	}
+	},
+	"icon": "#004f91"
 };

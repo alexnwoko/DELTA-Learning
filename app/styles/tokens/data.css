@@ -75,4 +75,5 @@
   --delta-data-hazard-societal: #b0306a; /** Societal */
   --delta-data-hazard-extraterrestrial: #0f7c8c; /** Extraterrestrial */
   --delta-data-hazard-unclassified: #6b7280; /** No HIPs type recorded */
+  --delta-data-icon: #004f91; /** Dashboard icons: one blue on every brand (Alex, 2026-10-18). At least 3:1 against brand surface and surface-subtle (WCAG 1.4.11); the title beside each icon carries the meaning. */
 }

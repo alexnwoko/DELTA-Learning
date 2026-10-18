@@ -82,7 +82,7 @@ export function AboutTheData({
 			className="flex flex-col gap-3 border-t border-brand-border pt-4 text-sm text-brand-text"
 		>
 			<h2 id={headingId} className="m-0 flex items-center gap-2 text-lg font-semibold">
-				<PanelIcon name={SECTION_ICONS.about} size={20} />
+				<PanelIcon name={SECTION_ICONS.about} size={30} />
 				{t({ code: "dashboard.about_the_data", msg: "About the data" })}
 			</h2>
 			{provisional && (

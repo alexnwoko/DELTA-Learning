@@ -1,9 +1,9 @@
 // Icons beside every data-point title on the Analysis dashboard (Alex,
-// 2026-10-18). All come from the OCHA Humanitarian Icons v2.1 set
+// 2026-10-18). Most come from the OCHA Humanitarian Icons v2.1 set
 // (DELTA_Version_2/80_Frontend_and_Design_System/icons; "Source: OCHA"),
-// self-hosted under public/assets/icons/ocha. A title whose concept has no
-// OCHA icon uses a stand-in and is listed in MISSING_ICONS, so the gap is
-// visible until a proper icon is chosen. Pure module.
+// self-hosted under public/assets/icons/ocha. Eight concepts OCHA does not
+// cover were drawn in OCHA's style by the Frontend lane (DELTA_ICONS,
+// public/assets/icons/delta). Pure module.
 
 /** The OCHA icon file names the dashboard uses (public/assets/icons/ocha/<name>.svg). */
 export const OCHA_ICONS = [
@@ -14,21 +14,29 @@ export const OCHA_ICONS = [
 	"next-item", "notification", "observation-tower", "people-in-need", "power-outage", "report", "selected",
 	"table", "technological-disaster", "top-ranking", "trending", "warning-error",
 ] as const;
-export type OchaIcon = (typeof OCHA_ICONS)[number];
+/** Drawn in OCHA's style for concepts the OCHA set lacks (public/assets/icons/delta). */
+export const DELTA_ICONS = [
+	"extraterrestrial", "chemical", "multi-hazard", "evacuated", "relocated", "compare", "duration", "magnitude",
+] as const;
+export type OchaIcon = (typeof OCHA_ICONS)[number] | (typeof DELTA_ICONS)[number];
 
-/**
- * Titles OCHA has no icon for: the stand-in shown today and what is
- * missing, so a proper icon can be sourced (FE-Inspiration-02, section 4).
- */
-export const MISSING_ICONS: Record<string, { standIn: OchaIcon | null; needed: string }> = {
-	"hazard:extraterrestrial": { standIn: null, needed: "Extraterrestrial hazard (meteor, space weather)" },
-	"hazard:chemical": { standIn: null, needed: "Chemical hazard (flask or hazmat)" },
-	"hazard:all": { standIn: null, needed: "All hazards (multi-hazard)" },
-	"measure:evacuated": { standIn: "internally-displaced", needed: "Evacuated people (evacuation route)" },
-	"measure:relocated": { standIn: "internally-displaced", needed: "Relocated people (relocation)" },
-	"events-15": { standIn: "analysis", needed: "Compare events (side by side)" },
-	"hazard-events-15": { standIn: "calendar", needed: "Duration (clock or stopwatch)" },
-	"hazard-events-16": { standIn: "chart", needed: "Magnitude (gauge or intensity scale)" },
+/** Where an icon file is served from. */
+export function iconUrl(name: OchaIcon): string {
+	return (DELTA_ICONS as readonly string[]).includes(name)
+		? `/assets/icons/delta/${name}.svg`
+		: `/assets/icons/ocha/${name}.svg`;
+}
+
+/** Titles OCHA has no icon for, and the DELTA icon drawn for each (FE-Inspiration-02, section 5). */
+export const DRAWN_FOR: Record<string, (typeof DELTA_ICONS)[number]> = {
+	"hazard:extraterrestrial": "extraterrestrial",
+	"hazard:chemical": "chemical",
+	"hazard:all": "multi-hazard",
+	"measure:evacuated": "evacuated",
+	"measure:relocated": "relocated",
+	"events-15": "compare",
+	"hazard-events-15": "duration",
+	"hazard-events-16": "magnitude",
 };
 
 /** Panel and slot ids to their icon. */
@@ -43,14 +51,14 @@ const PANEL_ICONS: Record<string, OchaIcon> = {
 	"events-1": "alert", "events-2": "link", "events-3": "top-ranking", "events-4": "calendar",
 	"events-5": "analysis", "events-6": "document", "events-7": "warning-error", "events-8": "notification",
 	"events-9": "link", "events-10": "selected", "events-11": "table", "events-12": "monitoring",
-	"events-13": "location", "events-14": "alert", "events-15": "analysis", "events-16": "multi-cluster-sector",
+	"events-13": "location", "events-14": "alert", "events-15": "compare", "events-16": "multi-cluster-sector",
 	"hazard-events-empty": "alert",
 	"hazard-events-1": "alert", "hazard-events-2": "observation-tower", "hazard-events-3": "calendar",
 	"hazard-events-4": "calendar", "hazard-events-5": "top-ranking", "hazard-events-6": "data",
 	"hazard-events-7": "location", "hazard-events-8": "map", "hazard-events-9": "next-item",
 	"hazard-events-10": "link", "hazard-events-11": "table", "hazard-events-12": "monitoring",
-	"hazard-events-13": "menu", "hazard-events-14": "trending", "hazard-events-15": "calendar",
-	"hazard-events-16": "chart",
+	"hazard-events-13": "menu", "hazard-events-14": "trending", "hazard-events-15": "duration",
+	"hazard-events-16": "magnitude",
 	"sectors-empty": "multi-cluster-sector",
 	"sectors-1": "multi-cluster-sector", "sectors-2": "multi-cluster-sector", "sectors-3": "damaged-affected",
 	"sectors-4": "analysis", "sectors-5": "calendar", "sectors-6": "house-destroyed", "sectors-7": "infrastructure",
@@ -72,8 +80,8 @@ export const MEASURE_ICONS: Record<string, OchaIcon> = {
 	affected_direct: "affected-population",
 	affected_indirect: "people-in-need",
 	displaced: "internally-displaced",
-	evacuated: "internally-displaced",
-	relocated: "internally-displaced",
+	evacuated: "evacuated",
+	relocated: "relocated",
 	houses_destroyed: "house-destroyed",
 	houses_damaged: "house-affected",
 	money: "financing",
@@ -88,16 +96,17 @@ export const TARGET_ICONS: Record<"A" | "B" | "C" | "D", OchaIcon> = {
 	D: "infrastructure",
 };
 
-/** HIPs hazard types on the rail; null where OCHA has none (the rail keeps its own glyph). */
-export const HAZARD_ICONS: Record<string, OchaIcon | null> = {
+/** HIPs hazard types on the rail, and "all" for All hazards. */
+export const HAZARD_ICONS: Record<string, OchaIcon> = {
+	all: "multi-hazard",
 	meteorologicalHydrological: "flood",
 	geological: "earthquake",
 	biological: "epidemic",
 	environmental: "environment",
 	technological: "technological-disaster",
 	societal: "conflict",
-	chemical: null,
-	extraterrestrial: null,
+	chemical: "chemical",
+	extraterrestrial: "extraterrestrial",
 	unclassified: "help",
 };
 

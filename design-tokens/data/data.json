@@ -434,6 +434,11 @@
 				"$value": "#6b7280",
 				"$description": "No HIPs type recorded"
 			}
+		},
+		"icon": {
+			"$type": "color",
+			"$value": "#004f91",
+			"$description": "Dashboard icons: one blue on every brand (Alex, 2026-10-18). At least 3:1 against brand surface and surface-subtle (WCAG 1.4.11); the title beside each icon carries the meaning."
 		}
 	}
 }
