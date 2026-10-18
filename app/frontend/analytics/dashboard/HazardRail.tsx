@@ -1,7 +1,8 @@
 // The left hazard rail of the Analysis dashboard (Alex, 2026-10-17: the
 // "Command Rail" of Geoportal mockup option A). One radio button per HIPs
-// hazard type, with its icon (a distinct shape per type, in the dashboard
-// blue, Alex 2026-10-18), a short name and, where it counts records, a count.
+// hazard type, with its icon in the type's identity colour (NFR-094; Alex
+// 2026-10-18), a short name and, where it counts records, a count. "All
+// hazards" stays in the dashboard blue.
 // Choosing a type sets the hazard filter for the whole page; "All hazards"
 // clears it. On a phone the rail becomes a scrolling row above the content.
 import { Label, Radio, RadioGroup } from "react-aria-components";
@@ -10,7 +11,7 @@ import { PanelIcon } from "~/frontend/charts/PanelIcon";
 import type { ViewContext } from "~/frontend/context";
 import type { HazardTree } from "~/frontend/geoportal/GeoFilterBar";
 import type { DeltaQuery } from "~/utils/deltaQuery";
-import { hazardIdentity, type HazardIdentity } from "~/utils/hazardIdentity";
+import { hazardColourVar, hazardIdentity, type HazardIdentity } from "~/utils/hazardIdentity";
 
 export const ALL_HAZARDS = "all";
 
@@ -82,8 +83,8 @@ export function HazardRail({ ctx, tree, selected, onChange, showCounts }: Hazard
 					>
 						{/* The count sits at the glyph's top-right corner, as in the mockup. */}
 						<span className="relative inline-flex">
-							{/* One icon per type, a distinct shape for each, all in the dashboard blue (Alex, 2026-10-18). */}
-							<PanelIcon name={HAZARD_ICONS[identity]} size={40} />
+							{/* Each type in its own identity colour (Alex, 2026-10-18), a distinct icon and its name. */}
+							<PanelIcon name={HAZARD_ICONS[identity]} size={40} colour={hazardColourVar(ty.id)} />
 							{showCounts && !empty && (
 								<span
 									aria-hidden="true"

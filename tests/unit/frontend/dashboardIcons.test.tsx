@@ -58,6 +58,7 @@ describe("dashboard icons (Alex, 2026-10-18)", () => {
 		const panels = impactDashboardPanels(ctx, IMPACT_PANELS_FIXTURE, "EXAMPLE DATA", { data: IMPACT_PANELS_5TO16_FIXTURE, country: "Angola" });
 		const html = renderToString(<PanelGrid ctx={ctx} panels={panels} collapseGaps={false} />);
 		expect(html).toMatch(/h-12 w-12[^>]*><span aria-hidden="true" data-icon="affected-population"[^>]*width:27px;height:27px;background-color:var\(--delta-data-icon\)/);
+		// Panel icons are blue; only the hazard rail uses identity colours.
 		expect(html).not.toMatch(/data-icon="[a-z-]+"[^>]*background-color:var\(--delta-(brand|data-hazard)/);
 	});
 });
