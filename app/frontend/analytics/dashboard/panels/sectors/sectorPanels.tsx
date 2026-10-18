@@ -9,12 +9,12 @@ import { ChartFrame } from "~/frontend/charts/ChartFrame";
 import type { ChartExportRow } from "~/frontend/charts/chartExport";
 import type { ViewContext } from "~/frontend/context";
 import type { SectorGap, SectorPanels1to7 } from "~/utils/dashboard/sectorPanels";
-import { dataTokens } from "~/utils/designTokens.generated";
 import { cellRow, cellText, coverageText, emptyViewPanel, panelNotes, type PanelExport } from "../../panelCell";
 import type { DashboardPanel } from "../../types";
 import { RowBars, ShadedTable, type BarSeries } from "../blocks";
 import { YearColumns } from "../impact/ImpactTimeline";
 import { sendaiNotice } from "../impact/panels5to16";
+import { DASHBOARD_RAMP } from "~/frontend/charts/sectionPalette";
 
 type T = ViewContext["t"];
 const tr = (t: T, code: string, msg: string, r?: Record<string, unknown>) => t({ code, msg }, r);
@@ -84,8 +84,8 @@ export function sectorDashboardPanels(
 				? tr(t, "dashboard.status_money", "Money: not shown (G-06)")
 				: tr(t, "dashboard.status_not_held", "Not held");
 	const houseSeries: BarSeries[] = [
-		{ name: L.destroyed, fill: dataTokens.ramp.housing[4] },
-		{ name: L.damaged, fill: dataTokens.ramp.housing[2] },
+		{ name: L.destroyed, fill: DASHBOARD_RAMP[4] },
+		{ name: L.damaged, fill: DASHBOARD_RAMP[3] },
 	];
 
 	const exports: Record<number, PanelExport> = {

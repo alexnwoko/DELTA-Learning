@@ -23,6 +23,7 @@ import { cellRow, cellText, coverageText, noRecordsText, panelNotes, type PanelE
 import type { DashboardPanel } from "../../types";
 import { ShadedTable } from "../blocks";
 import { sendaiNotice, subnationalNote } from "../impact/panels5to16";
+import { SFM_BAR, SFM_RAMP } from "~/frontend/charts/sectionPalette";
 
 type T = ViewContext["t"];
 const tr = (t: T, code: string, msg: string, r?: Record<string, unknown>) => t({ code, msg }, r);
@@ -101,7 +102,6 @@ function PairedColumns({
 	const slot = Math.min(48, W / Math.max(1, rows.length));
 	const offset = (W - slot * rows.length) / 2;
 	const bar = Math.max(2, (slot * 0.8) / 2);
-	const nr = STATE_ENCODING.not_reported;
 	const y = (v: number) => base - (v / max) * plot;
 	const tickEvery = rows.length > 12 ? Math.ceil(rows.length / 8) : 1;
 	return (
@@ -135,9 +135,10 @@ function PairedColumns({
 								if (c.valueState === "zero_confirmed") {
 									return <rect key={k} x={x} y={base - 2} width={bar - 1} height={2} fill="#fff" stroke={STATE_ENCODING.zero_confirmed.stroke} />;
 								}
-								// Not reported: an outlined empty slot, never a drop to 0 (W-7).
+								// Not reported: left vacant, never a drop to 0 (W-7; Alex,
+								// 2026-10-18). An invisible slot keeps the hover text.
 								return (
-									<rect key={k} x={x + 0.5} y={top} width={bar - 2} height={plot} fill="none" stroke={nr.stroke} strokeDasharray="2 2">
+									<rect key={k} x={x} y={top} width={bar - 1} height={plot} fill="transparent">
 										<title>{`${r.year} ${series[k].name}: ${cellText(ctx, c)}`}</title>
 									</rect>
 								);
@@ -180,7 +181,7 @@ function GapLine({ ctx, label, points }: { ctx: ViewContext; label: string; poin
 		} else current.push(`${x(i)},${y(v)}`);
 	});
 	if (current.length) segments.push(current.join(" "));
-	const ink = dataTokens.ramp.people[4];
+	const ink = SFM_BAR;
 	const tickEvery = points.length > 12 ? Math.ceil(points.length / 8) : 1;
 	return (
 		<svg viewBox={`-8 0 ${W + 16} ${H}`} width="100%" height={H} role="img" aria-label={label} fontSize={10} className="block max-w-full">
@@ -195,7 +196,7 @@ function GapLine({ ctx, label, points }: { ctx: ViewContext; label: string; poin
 						{v !== null ? (
 							<circle cx={x(i)} cy={y(v)} r={3} fill={ink}><title>{`${p.year}: ${cellText(ctx, p.cell)}`}</title></circle>
 						) : (
-							<line x1={x(i)} x2={x(i)} y1={top} y2={base} stroke={STATE_ENCODING.not_reported.stroke} strokeDasharray="2 3"><title>{`${p.year}: ${cellText(ctx, p.cell)}`}</title></line>
+							<line x1={x(i)} x2={x(i)} y1={top} y2={base} stroke="transparent" strokeWidth={8}><title>{`${p.year}: ${cellText(ctx, p.cell)}`}</title></line>
 						)}
 						{i % tickEvery === 0 && (
 							<text x={x(i)} y={H - 4} textAnchor="middle" fill="currentColor">{p.year}</text>
@@ -216,7 +217,7 @@ function PairedDots({ ctx, rows, names }: { ctx: ViewContext; rows: { key: strin
 	const ROW = 26;
 	const max = Math.max(1, ...rows.flatMap((r) => [val(r.a) ?? 0, val(r.b) ?? 0]));
 	const x = (v: number) => L + (v / max) * (W - L - 16);
-	const ink = dataTokens.ramp.people[4];
+	const ink = SFM_BAR;
 	return (
 		<div className="flex flex-col gap-1">
 			<ul className="m-0 flex list-none gap-3 p-0 text-sm">
@@ -275,8 +276,9 @@ export function sendaiSectionPanels(ctx: ViewContext, d: SendaiPayload, opts: Se
 		destroyed: tr(t, "dashboard.houses_destroyed", "Dwellings destroyed"),
 		damaged: tr(t, "dashboard.houses_damaged", "Dwellings damaged"),
 	};
-	const people = dataTokens.ramp.people;
-	const housing = dataTokens.ramp.housing;
+	// The Sendai section's own palette (Alex, 2026-10-18): ink, then accent.
+	const people = SFM_RAMP;
+	const housing = SFM_RAMP;
 
 	// S0 rows: indicators, inputs, directly affected, then refused lines.
 	const s0Rows: ChartExportRow[] = [
@@ -408,7 +410,7 @@ export function sendaiSectionPanels(ctx: ViewContext, d: SendaiPayload, opts: Se
 				<Tags codes={codes(["A-2", "A-3"])} />
 				<PairedColumns ctx={ctx} label={titles.a1}
 					rows={d.a1.years.map((y) => ({ year: y.year, cells: [y.deaths, y.missing] }))}
-					series={[{ name: L.deaths, fill: people[4] }, { name: L.missing, fill: people[2] }]}
+					series={[{ name: L.deaths, fill: people[4] }, { name: L.missing, fill: people[3] }]}
 					reference={d.a1.reference && val(d.a1.reference.deaths) !== null
 						? { value: val(d.a1.reference.deaths) as number, text: tr(t, "dashboard.sfm_reference_short", "{from} to {to} annual average of deaths ({years} years)", d.a1.reference) }
 						: null} />
@@ -426,7 +428,7 @@ export function sendaiSectionPanels(ctx: ViewContext, d: SendaiPayload, opts: Se
 				<Tags codes={codes(["B-3", "B-4"]).map((c) => tr(t, "dashboard.input_to", "Input to {code}", { code: c }))} />
 				<PairedColumns ctx={ctx} label={titles.b2}
 					rows={d.b2.rows.map((r) => ({ year: r.year, cells: [r.destroyed, r.damaged] }))}
-					series={[{ name: L.destroyed, fill: housing[4] }, { name: L.damaged, fill: housing[2] }]} />
+					series={[{ name: L.destroyed, fill: housing[4] }, { name: L.damaged, fill: housing[3] }]} />
 			</Frame>
 		),
 		c1: () => (
@@ -464,7 +466,7 @@ export function sendaiSectionPanels(ctx: ViewContext, d: SendaiPayload, opts: Se
 				{d.c2.rows.length === 0 ? (
 					<p className="m-0 text-sm text-brand-text-muted">{noRecordsText(ctx)}</p>
 				) : (
-					<ShadedTable ctx={ctx} caption={titles.c2} rowHeader={tr(t, "dashboard.decade", "Decade")}
+					<ShadedTable shades={SFM_RAMP.slice(0, 3)} ctx={ctx} caption={titles.c2} rowHeader={tr(t, "dashboard.decade", "Decade")}
 						columns={d.c2.sectors.map((s) => s.label)}
 						rows={d.c2.rows.map((r) => ({ key: String(r.decade), label: `${r.decade}s`, cells: r.cells }))}
 						normalise="table" />

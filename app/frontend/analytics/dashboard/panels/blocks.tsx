@@ -5,8 +5,8 @@
 import type { ViewContext } from "~/frontend/context";
 import { roundedBarPath } from "~/frontend/charts/roundedBar";
 import type { PanelCell } from "~/utils/dashboard/impactPanels";
-import { dataTokens } from "~/utils/designTokens.generated";
 import { cellText } from "../panelCell";
+import { DASHBOARD_BAR, DASHBOARD_RAMP } from "~/frontend/charts/sectionPalette";
 
 const reportedValue = (cell: PanelCell): number | null =>
 	cell.valueState === "reported" && cell.value !== null && cell.value > 0 ? cell.value : null;
@@ -15,13 +15,14 @@ const reportedValue = (cell: PanelCell): number | null =>
  * Shade steps for a table cell: the three lightest steps of the people
  * ramp, so dark text stays readable on every step (WCAG 1.4.3).
  */
-export const SHADE_STEPS = dataTokens.ramp.people.slice(0, 3);
+// Shades only ever sit behind dark text, so the palette's three lightest steps.
+export const SHADE_STEPS = DASHBOARD_RAMP.slice(0, 3);
 
 /** The shade for a reported value against the largest in its group. */
-export function shadeFor(value: number | null, max: number): string | undefined {
+export function shadeFor(value: number | null, max: number, steps: readonly string[] = SHADE_STEPS): string | undefined {
 	if (value === null || max <= 0) return undefined;
-	const step = Math.min(SHADE_STEPS.length - 1, Math.floor((value / max) * SHADE_STEPS.length));
-	return SHADE_STEPS[step];
+	const step = Math.min(steps.length - 1, Math.floor((value / max) * steps.length));
+	return steps[step];
 }
 
 export interface ShadedTableProps {
@@ -33,10 +34,12 @@ export interface ShadedTableProps {
 	rows: { key: string; label: React.ReactNode; cells: PanelCell[] }[];
 	/** Shade against the largest value in each column, or in the whole table. */
 	normalise: "column" | "table";
+	/** Light-to-dark shades: the section palette's (default: main dashboard). */
+	shades?: readonly string[];
 }
 
 /** A matrix as a real table; shading only ever helps the numbers. */
-export function ShadedTable({ ctx, caption, rowHeader, columns, rows, normalise }: ShadedTableProps) {
+export function ShadedTable({ ctx, caption, rowHeader, columns, rows, normalise, shades = SHADE_STEPS }: ShadedTableProps) {
 	const columnMax = columns.map((_, i) => Math.max(0, ...rows.map((r) => reportedValue(r.cells[i]) ?? 0)));
 	const tableMax = Math.max(0, ...columnMax);
 	const th = "border-b border-brand-border bg-brand-surface-subtle px-2 py-1 font-semibold";
@@ -64,7 +67,7 @@ export function ShadedTable({ ctx, caption, rowHeader, columns, rows, normalise 
 							</th>
 							{r.cells.map((cell, i) => {
 								const value = reportedValue(cell);
-								const shade = shadeFor(value, normalise === "column" ? columnMax[i] : tableMax);
+								const shade = shadeFor(value, normalise === "column" ? columnMax[i] : tableMax, shades);
 								return (
 									<td
 										key={i}
@@ -171,7 +174,7 @@ export function RowBars({ ctx, label, rows, series, notReportedText }: RowBarsPr
 								<g key={i}>
 									<path
 										d={roundedBarPath(LABEL_W, by, w, BAR_H, "right")}
-										fill={b.series?.fill ?? dataTokens.chart.axis}
+										fill={b.series?.fill ?? DASHBOARD_BAR}
 									/>
 									<text x={LABEL_W + w + 4} y={by + 10} fill="currentColor" fontSize={10}>
 										{cellText(ctx, b.cell)}

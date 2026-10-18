@@ -37,6 +37,15 @@ import { ImpactMap } from "~/frontend/analytics/dashboard/panels/impact/ImpactMa
 import { sectorDashboardPanels } from "~/frontend/analytics/dashboard/panels/sectors/sectorPanels";
 import { impactDashboardPanels } from "~/frontend/analytics/dashboard/panels/impact/impactDashboardPanels";
 import type { DashboardPanel } from "~/frontend/analytics/dashboard/types";
+import {
+	eventsFromFirstRecord,
+	hazardEventsFromFirstRecord,
+	impact1to4FromFirstRecord,
+	impact5to16FromFirstRecord,
+	sectorsFromFirstRecord,
+	sendaiFromFirstRecord,
+	type FirstYear,
+} from "~/frontend/analytics/dashboard/firstRecord";
 import { ViewContext } from "~/frontend/context";
 import { basisIncludesProvisional } from "~/utils/approvalBasis";
 import { authLoaderPublicOrWithPerm, hasPermission } from "~/utils/auth";
@@ -179,7 +188,15 @@ export default function AnalysisDashboard() {
 	const query = ld.query as DeltaQuery;
 	const view = ld.view as DashboardView;
 	const source = `DELTA ${ld.country}`.trim();
-	const impact = ld.impact as ImpactPanels1to4 | null;
+	const filterOptions = ld.filterOptions as DashboardFilterOptions;
+	// Year charts start at the country's first record year; under a place
+	// filter, at the place's first year with a record (Alex, 2026-10-18).
+	const firstYear: FirstYear = query.where.geo || query.where.region ? null : filterOptions.years.min;
+	const impact = ld.impact ? impact1to4FromFirstRecord(ld.impact as ImpactPanels1to4, firstYear) : null;
+	const impactMore = ld.impactMore ? impact5to16FromFirstRecord(ld.impactMore as ImpactPanels5to16, firstYear) : null;
+	const events = ld.events ? eventsFromFirstRecord(ld.events as EventPanels1to7, firstYear) : null;
+	const hazardEvents = ld.hazardEvents ? hazardEventsFromFirstRecord(ld.hazardEvents as HazardEventPanels1to7, firstYear) : null;
+	const sectors = ld.sectors ? sectorsFromFirstRecord(ld.sectors as SectorPanels1to7, firstYear) : null;
 
 	const setView = (next: DashboardView) =>
 		go(query, next);
@@ -191,7 +208,6 @@ export default function AnalysisDashboard() {
 	// A map click sets the place filter; clicking the selected area clears it.
 	const selectDivision = (divisionId: string) =>
 		go(toggleDivision(query, divisionId), view);
-	const filterOptions = ld.filterOptions as DashboardFilterOptions;
 	// The same words as the geoportal bar's summary (querySummary).
 	const summary = querySummary(query, { scopeLabel: ld.country || undefined, hazardTree: filterOptions.hazardTree }, geoT);
 	// Filters the current view's loader could not apply, named on the bar.
@@ -213,21 +229,21 @@ export default function AnalysisDashboard() {
 		audience: ld.audience,
 		provisional: ld.provisional,
 	};
-	const sendai = ld.sendai as SendaiSection | null;
+	const sendai = ld.sendai ? sendaiFromFirstRecord(ld.sendai as SendaiSection, firstYear) : null;
 	const sendaiPanels = sendai ? sendaiSectionPanels(ctx, sendai, { source, scope: summary, country: ld.country }) : [];
 	const viewPanels: DashboardPanel[] = impact
 		? impactDashboardPanels(ctx, impact, source, {
-				data: ld.impactMore as ImpactPanels5to16,
+				data: impactMore as ImpactPanels5to16,
 				country: ld.country,
 				// A place filter makes every figure sub-national: no Sendai codes (TR-060).
 				subnational: Boolean(query.where.geo || query.where.region),
 			})
-		: ld.events
-			? eventDashboardPanels(ctx, ld.events as EventPanels1to7, opts)
-			: ld.hazardEvents
-				? hazardEventDashboardPanels(ctx, ld.hazardEvents as HazardEventPanels1to7, { ...opts, signedIn: ld.signedIn })
-				: ld.sectors
-					? sectorDashboardPanels(ctx, ld.sectors as SectorPanels1to7, { ...opts, country: ld.country })
+		: events
+			? eventDashboardPanels(ctx, events, opts)
+			: hazardEvents
+				? hazardEventDashboardPanels(ctx, hazardEvents, { ...opts, signedIn: ld.signedIn })
+				: sectors
+					? sectorDashboardPanels(ctx, sectors, { ...opts, country: ld.country })
 					: [];
 	// The Sendai section shows the Targets A and B counts (S0): the impact
 	// panel 5 table would repeat it, so it leaves the view list then.

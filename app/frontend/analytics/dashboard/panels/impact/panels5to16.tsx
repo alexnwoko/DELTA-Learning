@@ -27,11 +27,11 @@ import type {
 	SendaiCountsPanel,
 } from "~/utils/dashboard/impactPanels5to16";
 import type { QueryHumanEffect } from "~/utils/deltaQuery";
-import { dataTokens } from "~/utils/designTokens.generated";
 import { STATE_ENCODING } from "~/utils/mapState";
 import { cellRow, cellText, coverageText, panelNotes, type PanelExport } from "../../panelCell";
 import type { DashboardPanel } from "../../types";
 import { RowBars, ShadedTable, shadeFor, type BarSeries } from "../blocks";
+import { DASHBOARD_BAR, DASHBOARD_RAMP } from "~/frontend/charts/sectionPalette";
 
 type T = ViewContext["t"];
 const tr = (t: T, code: string, msg: string, r?: Record<string, unknown>) => t({ code, msg }, r);
@@ -53,7 +53,7 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 
 // Three series inks from the people ramp: distinct in lightness and named
 // in the legend and beside every bar, so colour is never the only signal.
-const RAMP = dataTokens.ramp.people;
+const RAMP = DASHBOARD_RAMP;
 
 // ---------------------------------------------------------------------------
 // Export functions: one per panel, the single source of each panel's rows.
@@ -572,7 +572,7 @@ function PeriodView({ common, p, exp }: { common: Common; p: PeriodChange; exp: 
 	const W = 380;
 	const L = 130;
 	const x = (v: number) => L + (v / max) * (W - L - 50);
-	const ink = dataTokens.chart.axis;
+	const ink = DASHBOARD_BAR;
 	return (
 		<Frame common={common} exp={exp}>
 			<div className="flex flex-col gap-2 text-sm">
@@ -648,7 +648,7 @@ function ExtensiveView({ common, p, exp }: { common: Common; p: ExtensiveIntensi
 						aria-label={`${names.intensive}: ${pct(share)}; ${names.extensive}: ${pct(1 - share)}`}>
 						<rect x={0} y={0} width={W * share} height={28} fill={RAMP[4]} />
 						{/* Stacked: only the outer segment's far end is rounded. */}
-						<path d={roundedBarPath(W * share, 0, W * (1 - share), 28, "right")} fill={RAMP[1]} />
+						<path d={roundedBarPath(W * share, 0, W * (1 - share), 28, "right")} fill={RAMP[2]} />
 					</svg>
 				) : (
 					<p className="m-0 italic text-brand-text-muted">
@@ -658,7 +658,7 @@ function ExtensiveView({ common, p, exp }: { common: Common; p: ExtensiveIntensi
 				<ul className="m-0 flex list-none flex-col gap-1 p-0">
 					{([
 						[names.intensive, p.intensive, p.intensiveRecords, RAMP[4]],
-						[names.extensive, p.extensive, p.extensiveRecords, RAMP[1]],
+						[names.extensive, p.extensive, p.extensiveRecords, RAMP[2]],
 					] as const).map(([name, cell, n, fill]) => (
 						<li key={name} className="flex items-center gap-2">
 							<span aria-hidden="true" className="inline-block h-3 w-3 shrink-0" style={{ background: fill }} />
@@ -692,12 +692,12 @@ export function impactPanels5to16(
 	const houses = housesNames(t);
 	const movedSeries: BarSeries[] = [
 		{ name: moved.displaced, fill: RAMP[4] },
-		{ name: moved.evacuated, fill: RAMP[2] },
-		{ name: moved.relocated, fill: RAMP[1] },
+		{ name: moved.evacuated, fill: RAMP[3] },
+		{ name: moved.relocated, fill: RAMP[2] },
 	];
 	const houseSeries: BarSeries[] = [
 		{ name: houses.destroyed, fill: RAMP[4] },
-		{ name: houses.damaged, fill: RAMP[2] },
+		{ name: houses.damaged, fill: RAMP[3] },
 	];
 	// "Not disaggregated" counts records, not people: it is a line of text,
 	// never a bar on the people axis.
