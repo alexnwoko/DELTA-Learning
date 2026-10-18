@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { and, eq, gte, lte, SQL, sql } from "drizzle-orm";
 import {
 	displacedHeadlineFromParts,
@@ -228,6 +229,130 @@ export const HUMAN_EFFECT_MEASURES = [
 ] as const;
 export type HumanEffectMeasure = (typeof HUMAN_EFFECT_MEASURES)[number];
 
+// ---------------------------------------------------------------------------
+// Record facts: compute the records in scope once per dashboard view.
+//
+// A Disaster impact view runs about 25 grouped queries. Each used to filter
+// the tenant's records and join the large records and human-effects tables
+// from scratch (about 2 s each on a 130,000-record tenant). withRecordFacts
+// opens one read transaction, copies the records in scope (the columns the
+// dashboard reads, and a slim legacy_data) and their human_category_presence
+// rows into session temporary tables of the same names, which shadow the
+// public tables for that transaction only (pg_temp is searched first), and
+// runs the view's queries on that connection. Figures are unchanged: the
+// queries are the same, over exactly the filtered records. The tables are
+// dropped at commit; nothing is stored.
+
+type FactsTx = {
+	execute: (q: SQL) => Promise<{ rows: Record<string, unknown>[] }>;
+};
+interface RecordFacts {
+	key: string;
+	lanes: { tx: FactsTx; busy: number }[];
+}
+const factsStore = new AsyncLocalStorage<RecordFacts>();
+const factsKey = (f: HazardFilters) => JSON.stringify(f);
+
+/** legacy_data keys the dashboard reads; the slim copy keeps only these. */
+const FACTS_LEGACY_KEYS = [
+	"valorus",
+	"valorloc",
+	"nhectareas",
+	"cabezas",
+	"kmvias",
+	"nhospitales",
+	"nescuelas",
+] as const;
+
+/** Connections that each hold a copy of the records in scope. */
+export const FACTS_LANES = 3;
+
+/** Copies the records in scope, slimmed, into temp tables on this connection. */
+async function buildRecordFacts(tx: FactsTx, filters: HazardFilters) {
+	await tx.execute(sql`SET LOCAL jit = off`);
+	const fr = humanEffectsFilteredRecords(filters);
+	const legacy = sql.join(
+		FACTS_LEGACY_KEYS.map(
+			(k) => sql`${k}::text, r."legacy_data" -> ${k}::text`,
+		),
+		sql`, `,
+	);
+	await tx.execute(sql`
+		CREATE TEMP TABLE "disaster_records" ON COMMIT DROP AS
+		WITH RECURSIVE ${fr}
+		SELECT r."id", r."country_accounts_id", r."approvalStatus",
+			r."start_date", r."end_date", r."hip_type_id", r."hip_cluster_id",
+			r."hip_hazard_id", r."disaster_event_id",
+			jsonb_strip_nulls(jsonb_build_object(
+				'migration', jsonb_strip_nulls(jsonb_build_object(
+					'plausibility_flags', r."legacy_data" -> 'migration' -> 'plausibility_flags',
+					'retired', r."legacy_data" -> 'migration' -> 'retired'
+				)),
+				${legacy}
+			)) AS "legacy_data"
+		FROM public."disaster_records" r
+		JOIN filtered_records f ON f.record_id = r."id"`);
+	await tx.execute(sql`CREATE INDEX ON pg_temp."disaster_records" ("id")`);
+	await tx.execute(sql`
+		CREATE TEMP TABLE "human_category_presence" ON COMMIT DROP AS
+		SELECT h.* FROM public."human_category_presence" h
+		JOIN pg_temp."disaster_records" r ON r."id" = h."record_id"`);
+	await tx.execute(
+		sql`CREATE INDEX ON pg_temp."human_category_presence" ("record_id")`,
+	);
+	await tx.execute(sql`ANALYZE pg_temp."disaster_records"`);
+	await tx.execute(sql`ANALYZE pg_temp."human_category_presence"`);
+}
+
+/**
+ * Runs fn with the records in scope of `filters` computed once per lane: up
+ * to FACTS_LANES read transactions each hold a slim temp copy of the records
+ * (temp tables shadow the public ones), and fn's queries go to the least busy
+ * lane. fn starts on the first lane; the others join when the pool gives
+ * them a connection, so a busy pool slows a view but never blocks it. Every
+ * analytics query inside fn must use the same filters (a different filter set
+ * throws, so a query can never read the reduced tables by mistake).
+ */
+export async function withRecordFacts<T>(
+	filters: HazardFilters,
+	fn: () => Promise<T>,
+): Promise<T> {
+	const facts: RecordFacts = { key: factsKey(filters), lanes: [] };
+	let finished = false;
+	let release!: () => void;
+	const done = new Promise<void>((r) => (release = r));
+	let firstReady!: () => void;
+	let firstFailed!: (e: unknown) => void;
+	const first = new Promise<void>((res, rej) => {
+		firstReady = res;
+		firstFailed = rej;
+	});
+	const lane = (i: number) =>
+		dr
+			.transaction(async (tx) => {
+				if (finished) return;
+				const t = tx as unknown as FactsTx;
+				await buildRecordFacts(t, filters);
+				if (finished) return;
+				facts.lanes.push({ tx: t, busy: 0 });
+				if (i === 0) firstReady();
+				await done;
+			})
+			.catch((e) => {
+				if (i === 0) firstFailed(e);
+			});
+	const firstLane = lane(0);
+	for (let i = 1; i < FACTS_LANES; i++) void lane(i);
+	try {
+		await first;
+		return await factsStore.run(facts, fn);
+	} finally {
+		finished = true;
+		release();
+		await firstLane;
+	}
+}
+
 /**
  * Runs an analytics query with JIT compilation off for that query only
  * (SET LOCAL, inside its own read transaction). The planner's cost estimates
@@ -236,6 +361,16 @@ export type HumanEffectMeasure = (typeof HUMAN_EFFECT_MEASURES)[number];
  * No database-wide setting changes.
  */
 export async function executeAnalytics(query: SQL) {
+	const facts = factsStore.getStore();
+	if (facts) {
+		const lane = facts.lanes.reduce((a, b) => (b.busy < a.busy ? b : a));
+		lane.busy++;
+		try {
+			return await lane.tx.execute(query);
+		} finally {
+			lane.busy--;
+		}
+	}
 	return dr.transaction(async (tx) => {
 		await tx.execute(sql`SET LOCAL jit = off`);
 		return tx.execute(query);
@@ -366,6 +501,20 @@ export function humanEffectsFilteredRecords(
 	filters: HazardFilters,
 	basisOverride?: RecordBasisOverride,
 ): SQL {
+	const facts = factsStore.getStore();
+	if (facts) {
+		// Inside withRecordFacts the records table holds exactly the records
+		// in scope; any other filter set would read the wrong rows.
+		if (basisOverride || facts.key !== factsKey(filters)) {
+			throw new Error(
+				"humanEffectsFilteredRecords: a different filter set inside withRecordFacts",
+			);
+		}
+		return sql`filtered_records AS (
+			SELECT dr."id" AS record_id, ${recordFlagsColumn("dr")} AS pflags
+			FROM "disaster_records" dr
+		)`;
+	}
 	const {
 		countryAccountsId,
 		hazardTypeId,

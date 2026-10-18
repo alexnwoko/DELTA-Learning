@@ -12,6 +12,7 @@ import {
 	humanEffectMeasuresSelect,
 	executeAnalytics,
 	humanEffectsFilteredRecords,
+	withRecordFacts,
 	measurePartsCtes,
 	measurePartsJoins,
 	plausibilityFlagged,
@@ -28,7 +29,11 @@ import {
 } from "~/backend.server/models/analytics/dashboard/impactPanels.server";
 import type { DeltaQuery, QueryHumanEffect } from "~/utils/deltaQuery";
 import { measureValue } from "~/utils/valueState";
-import type { PanelCell, PanelMeta } from "~/utils/dashboard/impactPanels";
+import type {
+	ImpactPanels1to4,
+	PanelCell,
+	PanelMeta,
+} from "~/utils/dashboard/impactPanels";
 import type {
 	CompletenessMatrix,
 	DisaggregationPanel,
@@ -223,7 +228,7 @@ const ALL_DSG_DIMS = [
 	"national_poverty_line",
 ];
 
-async function computeGetImpactPanels5to16(
+export async function computeGetImpactPanels5to16(
 	query: DeltaQuery,
 	ctx: ImpactPanelsContext,
 ): Promise<ImpactPanels5to16> {
@@ -800,7 +805,7 @@ async function computeGetImpactPanels5to16(
  * Every level-1 division is listed, so an area nobody reported reads as not
  * reported, never as absent or 0.
  */
-async function computeGetImpactMap(
+export async function computeGetImpactMap(
 	query: DeltaQuery,
 	ctx: ImpactPanelsContext,
 ): Promise<ImpactMapPayload> {
@@ -907,22 +912,49 @@ export async function levelOneAreas(
 	return { ids, names, points, shapeBy };
 }
 
-/** getImpactPanels5to16, reused for DASHBOARD_CACHE_TTL_MS per tenant, audience and query. */
-export function getImpactPanels5to16(
+/** The Disaster impact view: panels 1 to 4, 5 to 16 and the map. */
+export interface ImpactView {
+	panels1to4: ImpactPanels1to4;
+	panels5to16: ImpactPanels5to16;
+	map: ImpactMapPayload;
+}
+
+/**
+ * The whole Disaster impact view, computed with the records in scope read
+ * once (withRecordFacts) and reused for DASHBOARD_CACHE_TTL_MS. The three
+ * loaders below share it, so a page that asks for all three computes once.
+ */
+export function getImpactView(
+	query: DeltaQuery,
+	ctx: ImpactPanelsContext,
+): Promise<ImpactView> {
+	return cachedDashboard("getImpactView", [ctx, query], async () => {
+		const { filters } = impactFiltersFromQuery(query, ctx);
+		const { computeImpactPanels1to4 } =
+			await import("~/backend.server/models/analytics/dashboard/impactPanels.server");
+		return withRecordFacts(filters, async () => {
+			const [panels1to4, panels5to16, map] = await Promise.all([
+				computeImpactPanels1to4(query, ctx),
+				computeGetImpactPanels5to16(query, ctx),
+				computeGetImpactMap(query, ctx),
+			]);
+			return { panels1to4, panels5to16, map };
+		});
+	});
+}
+
+/** Disaster impact panels 5 to 16, from the shared view. */
+export async function getImpactPanels5to16(
 	query: DeltaQuery,
 	ctx: ImpactPanelsContext,
 ): Promise<ImpactPanels5to16> {
-	return cachedDashboard("getImpactPanels5to16", [ctx, query], () =>
-		computeGetImpactPanels5to16(query, ctx),
-	);
+	return (await getImpactView(query, ctx)).panels5to16;
 }
 
-/** getImpactMap, reused for DASHBOARD_CACHE_TTL_MS per tenant, audience and query. */
-export function getImpactMap(
+/** The Disaster impact map, from the shared view. */
+export async function getImpactMap(
 	query: DeltaQuery,
 	ctx: ImpactPanelsContext,
 ): Promise<ImpactMapPayload> {
-	return cachedDashboard("getImpactMap", [ctx, query], () =>
-		computeGetImpactMap(query, ctx),
-	);
+	return (await getImpactView(query, ctx)).map;
 }
