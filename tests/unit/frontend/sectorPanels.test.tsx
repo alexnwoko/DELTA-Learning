@@ -31,7 +31,9 @@ const D: SectorPanels1to7 = {
 		{ code: "C-3", indicator: "Direct economic loss to productive assets", heldLabel: "Money", held: null, status: "MONEY", gap: money },
 		{ code: "D-5", indicator: "Disruptions to basic services", heldLabel: "Disruption", held: null, status: "NOT_HELD", gap: { code: "G-08", reason: "No disruption rows" } },
 	] },
-	meta: { headline: meta, reporting: meta, effectTypes: meta, hazardBySector: meta, byYear: meta, dwellings: meta, sendai: meta },
+	rankedDivisions: { rows: [{ divisionId: "d1", name: "Luanda", cell: cell(40, "reported", 40, 120) }], rest: null, multiDivisionRecords: 3 },
+	completeness: { recordsTotal: 534, rows: [{ sector: sec("s1", "Agriculture"), damage: { yes: 64, no: 120 }, losses: { yes: 0, no: 0 }, disruption: { yes: 0, no: 0 } }] },
+	meta: { headline: meta, reporting: meta, effectTypes: meta, hazardBySector: meta, byYear: meta, dwellings: meta, sendai: meta, rankedDivisions: meta, completeness: meta },
 };
 const opts = { source: "DELTA Angola", scope: "Angola", provisional: false, country: "Angola" };
 const panels = sectorDashboardPanels(ctx, D, opts);
