@@ -244,6 +244,32 @@
 					"$type": "color",
 					"$value": "#f3f4f6"
 				}
+			},
+			"country-outline": {
+				"$description": "The tenant's outer boundary (union of its level-1 areas), drawn over both maps in light grey (Alex, 2026-10-18). The lightest grey with 3:1 or more against the canvas, white and the lightest ramp class (WCAG 1.4.11).",
+				"stroke": {
+					"$type": "color",
+					"$value": "#7b828c"
+				},
+				"stroke-width": {
+					"$type": "number",
+					"$value": 1.2
+				}
+			},
+			"area-label": {
+				"$description": "Area and country names on both maps in light grey (Alex, 2026-10-18): the lightest grey with 4.5:1 or more against the canvas, white and the lightest ramp class (WCAG 1.4.3), with a white halo over darker classes and the basemap.",
+				"color": {
+					"$type": "color",
+					"$value": "#5f6670"
+				},
+				"halo": {
+					"$type": "color",
+					"$value": "#ffffff"
+				},
+				"size": {
+					"$type": "number",
+					"$value": 12
+				}
 			}
 		},
 		"ramp": {

@@ -21,6 +21,9 @@
 	--color-data-map-not-applied-note-border: var(--delta-data-map-not-applied-note-border);
 	--color-data-map-not-applied-note-background: var(--delta-data-map-not-applied-note-background);
 	--color-data-map-canvas-background: var(--delta-data-map-canvas-background);
+	--color-data-map-country-outline-stroke: var(--delta-data-map-country-outline-stroke);
+	--color-data-map-area-label-color: var(--delta-data-map-area-label-color);
+	--color-data-map-area-label-halo: var(--delta-data-map-area-label-halo);
 	--color-data-ramp-people-1: var(--delta-data-ramp-people-1);
 	--color-data-ramp-people-2: var(--delta-data-ramp-people-2);
 	--color-data-ramp-people-3: var(--delta-data-ramp-people-3);
