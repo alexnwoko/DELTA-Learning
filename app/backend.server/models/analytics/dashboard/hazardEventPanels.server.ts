@@ -2,6 +2,7 @@
 // loader behind ~/utils/dashboard/hazardEventPanels. Events are filtered on
 // their own fields: tenant, approval basis, HIPs, start year and division.
 
+import { cachedDashboard } from "~/backend.server/models/analytics/dashboard/dashboardCache.server";
 import { sql, type SQL } from "drizzle-orm";
 import {
 	hipTypeLabels,
@@ -47,6 +48,15 @@ function hazardEventsCte(filters: HazardFilters): SQL {
 			WHERE hed."hazardous_event_id" = he."id"
 				AND hed."division_id" IN ${divisionAndDescendantsSql(filters.geographicLevelId, filters.countryAccountsId)}
 		)`);
+	if (filters.regionId)
+		conds.push(sql`EXISTS (
+			SELECT 1 FROM "hazardous_event_division" hed
+			JOIN geo.division_ancestor da
+				ON da.division_id = hed."division_id" AND da.country_accounts_id = ${filters.countryAccountsId}
+			JOIN geo.region_member m
+				ON m.division_id = da.ancestor_id AND m.country_accounts_id = da.country_accounts_id
+			WHERE hed."hazardous_event_id" = he."id" AND m.region_id = ${filters.regionId}
+		)`);
 	return sql`hev AS (
 		SELECT he."id", NULLIF(he."hip_type_id", '') AS hip_type_id,
 			NULLIF(he."hip_cluster_id", '') AS hip_cluster_id,
@@ -62,7 +72,7 @@ function hazardEventsCte(filters: HazardFilters): SQL {
 	)`;
 }
 
-export async function getHazardEventPanels1to7(
+async function computeGetHazardEventPanels1to7(
 	query: DeltaQuery,
 	ctx: ImpactPanelsContext,
 ): Promise<HazardEventPanels1to7> {
@@ -218,4 +228,14 @@ export async function getHazardEventPanels1to7(
 			notApplied,
 		},
 	};
+}
+
+/** getHazardEventPanels1to7, reused for DASHBOARD_CACHE_TTL_MS per tenant, audience and query. */
+export function getHazardEventPanels1to7(
+	query: DeltaQuery,
+	ctx: ImpactPanelsContext,
+): Promise<HazardEventPanels1to7> {
+	return cachedDashboard("getHazardEventPanels1to7", [ctx, query], () =>
+		computeGetHazardEventPanels1to7(query, ctx),
+	);
 }
