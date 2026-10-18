@@ -341,6 +341,9 @@ export async function refreshGeoReadModel(
 			FROM rec
 			JOIN attrib a ON a.record_id = rec.id
 			JOIN measured ms ON ms.record_id = rec.id
+			-- One measure's atoms sit together on disk, so a map of one measure
+			-- reads a fraction of the tenant's pages (I-6, NFR-113).
+			ORDER BY ms.measure, a.division_id, rec.id
 		`);
 
 		// Event dimensions (I-1). A division link is used as recorded; an event
