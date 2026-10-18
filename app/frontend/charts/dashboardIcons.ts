@@ -48,7 +48,7 @@ const PANEL_ICONS: Record<string, OchaIcon> = {
 	"impact-12": "monitoring", "impact-13": "calendar", "impact-14": "chart", "impact-15": "warning-error",
 	"impact-16": "gender",
 	"events-empty": "alert",
-	"events-1": "alert", "events-2": "link", "events-3": "top-ranking", "events-4": "calendar",
+	"events-1": "alert", "events-divisions": "location", "events-2": "link", "events-3": "top-ranking", "events-4": "calendar",
 	"events-5": "analysis", "events-6": "document", "events-7": "warning-error", "events-8": "notification",
 	"events-9": "link", "events-10": "selected", "events-11": "table", "events-12": "monitoring",
 	"events-13": "location", "events-14": "alert", "events-15": "compare", "events-16": "multi-cluster-sector",

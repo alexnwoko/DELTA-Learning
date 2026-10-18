@@ -239,7 +239,7 @@ export default function AnalysisDashboard() {
 				subnational: Boolean(query.where.geo || query.where.region),
 			})
 		: events
-			? eventDashboardPanels(ctx, events, opts)
+			? eventDashboardPanels(ctx, events, { ...opts, map: ld.eventMap as EventMapPayload | null })
 			: hazardEvents
 				? hazardEventDashboardPanels(ctx, hazardEvents, { ...opts, signedIn: ld.signedIn })
 				: sectors

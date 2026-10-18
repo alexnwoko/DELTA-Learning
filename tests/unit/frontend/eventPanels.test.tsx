@@ -36,8 +36,9 @@ const html = (n: number) => text(renderToString(<>{panels.find((p) => p.n === n)
 
 describe("Disaster events panels 1 to 7", () => {
 	it("draw 1 to 7 and list 8 to 16 as being built", () => {
-		expect(panels.filter((p) => p.render).map((p) => p.n)).toEqual([1, 2, 3, 4, 5, 6, 7]);
-		expect(panels.filter((p) => p.gap).map((p) => p.n)).toEqual([8, 9, 10, 11, 12, 13, 14, 15, 16]);
+		expect(panels.filter((p) => p.render).map((p) => p.n).sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+		// 14 (official warning) is left out until the flag can say "not reported" (FE-Proposal-02).
+		expect(panels.filter((p) => p.gap).map((p) => p.n).sort((a, b) => a - b)).toEqual([8, 9, 10, 11, 12, 13, 15, 16]);
 	});
 
 	it("print the grouping rule and the ungrouped share on every panel (RV-1)", () => {
@@ -72,7 +73,7 @@ describe("Disaster events panels 1 to 7", () => {
 		expect(years[1].cell.valueState).toBe("not_reported");
 		expect(years[1].cell.value).toBeNull();
 		expect(html(4)).toContain("2020: No events recorded");
-		expect(panels[3].exportData!.notes).toContain("3 events have no start year and are left out.");
+		expect(panels.find((p) => p.n === 4)!.exportData!.notes).toContain("3 events have no start year and are left out.");
 	});
 
 	it("5: keeps 'Hazard not coded' as its own row", () => {
@@ -86,16 +87,49 @@ describe("Disaster events panels 1 to 7", () => {
 	it("7: counts confirmed-zero and not-reported events in words with the GAR note", () => {
 		const h = html(7);
 		expect(h).toContain("Events whose records report neither: <span");
-		expect(panels[6].exportData!.notes).toContain("The GAR threshold is defined on records; it is applied here to events.");
+		expect(panels.find((p) => p.n === 7)!.exportData!.notes).toContain("The GAR threshold is defined on records; it is applied here to events.");
 	});
 
 	it("fold 8 to 16 into the strip on this view, and export only drawn panels", () => {
 		expect(collapsesGaps("disaster_event")).toBe(true);
 		const grid = text(renderToString(<PanelGrid ctx={ctx} panels={panels} collapseGaps />));
 		expect(grid).toContain("Not yet available");
-		expect(grid).toContain("Event register");
+		expect(grid).toContain("Disaster event register");
 		const csv = dashboardPanelsCsv(panels, "Angola", "DELTA Angola", "published", new Date("2026-10-17T00:00:00Z"));
-		expect(csv).toContain("Records grouped into events,Not grouped,,900,reported,records,");
-		expect(csv).not.toContain("Event register");
+		expect(csv).toContain("Records grouped into disaster events,Not grouped,,900,reported,records,");
+		expect(csv).not.toContain("Disaster event register");
+	});
+});
+
+describe("Disaster events layout (FE-Proposal-02, Alex 2026-10-18)", () => {
+	const map = {
+		dimension: "disaster_event" as const,
+		areas: [
+			{ divisionId: "a", name: "Luanda", geojson: null, labelPoint: null, events: 4, fromRecords: 1 },
+			{ divisionId: "b", name: "Cunene", geojson: null, labelPoint: null, events: 0, fromRecords: 0 },
+			{ divisionId: "c", name: "Huila", geojson: null, labelPoint: null, events: 9, fromRecords: 0 },
+		],
+		unplacedEvents: 0,
+		unplacedReasons: {},
+		legend: { symbol: "Number of events" as const, note: "An event in several provinces counts in each, so provinces do not add up." as const },
+		meta: { method: "Events per level-1 division", notApplied: [] },
+	};
+	const laid = eventDashboardPanels(ctx, D, { source: "DELTA Angola", scope: "Angola", provisional: false, map });
+
+	it("opens with the headline and Ranked by divisions, then the agreed rows", () => {
+		expect(laid.filter((p) => !p.more).map((p) => p.id)).toEqual([
+			"events-1", "events-divisions", "events-5", "events-4", "events-3", "events-16",
+			"events-7", "events-13", "events-2", "events-12",
+		]);
+		expect(laid.find((p) => p.id === "events-5")!.title).toBe("Hazard ranking by disaster events");
+	});
+
+	it("ranks divisions from the map's counts, leaving out divisions with none", () => {
+		const rows = laid.find((p) => p.id === "events-divisions")!.exportData!.rows;
+		expect(rows.map((r) => r.label)).toEqual(["Huila", "Luanda"]);
+	});
+
+	it("leaves out the official warning panel until its flag can say not reported", () => {
+		expect(laid.some((p) => p.id === "events-14")).toBe(false);
 	});
 });

@@ -15,6 +15,7 @@ import { RowBars, ShadedTable, type BarSeries } from "../blocks";
 import { YearColumns } from "../impact/ImpactTimeline";
 import { sendaiNotice } from "../impact/panels5to16";
 import { DASHBOARD_RAMP } from "~/frontend/charts/sectionPalette";
+import { arrangeByLayout, SECTORS_LAYOUT } from "../../layout";
 
 type T = ViewContext["t"];
 const tr = (t: T, code: string, msg: string, r?: Record<string, unknown>) => t({ code, msg }, r);
@@ -285,19 +286,22 @@ export function sectorDashboardPanels(
 
 	const titles: Record<number, string> = {
 		1: tr(t, "dashboard.sectors_1", "Sectors at a glance"),
-		2: tr(t, "dashboard.sectors_2", "Records by sector"),
+		2: tr(t, "dashboard.sectors_2", "Sector ranking by records reporting damage"),
 		3: tr(t, "dashboard.sectors_3", "Damage, losses and disruption by sector"),
 		4: tr(t, "dashboard.sectors_4", "Hazard by sector"),
-		5: tr(t, "dashboard.sectors_5", "Sector records by year"),
-		6: tr(t, "dashboard.sectors_6", "Houses damaged and destroyed"),
-		7: tr(t, "dashboard.sectors_7", "Towards Sendai Targets C and D"),
+		5: tr(t, "dashboard.sectors_5", "Sector damage by year"),
+		6: tr(t, "dashboard.sectors_6", "Houses destroyed and damaged"),
+		7: tr(t, "dashboard.sectors_7", "Sector inputs to Sendai Targets C and D"),
 	};
 	const common = (x: string): Common => ({ ctx, title: x, source: opts.source, scope: opts.scope, provisional: opts.provisional });
-	return [1, 2, 3, 4, 5, 6, 7].map((k): DashboardPanel => ({
-		id: `sectors-${k}`,
-		n: k,
-		title: titles[k],
-		exportData: exports[k],
-		render: () => views[k](common(titles[k]), exports[k]),
-	}));
+	return arrangeByLayout(
+		[1, 2, 3, 4, 5, 6, 7].map((k): DashboardPanel => ({
+			id: `sectors-${k}`,
+			n: k,
+			title: titles[k],
+			exportData: exports[k],
+			render: () => views[k](common(titles[k]), exports[k]),
+		})),
+		SECTORS_LAYOUT,
+	);
 }
