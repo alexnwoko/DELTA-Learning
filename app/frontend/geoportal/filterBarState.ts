@@ -230,3 +230,31 @@ export function querySummary(
 		.filter(Boolean)
 		.join(" · ");
 }
+
+/** Row layout (D1, Alex 2026-10-17): the years a From or To select offers, newest first. */
+export function yearOptions(span: { min: number; max: number }): number[] {
+	const out: number[] = [];
+	for (let y = span.max; y >= span.min; y--) out.push(y);
+	return out;
+}
+
+/**
+ * Row layout: the level-1 and level-2 choices that show the query's place.
+ * A level-2 division shows its parent in the first select; a region fills
+ * the first select alone.
+ */
+export function placeLevels(
+	query: DeltaQuery,
+	divisions: PlaceOptions["divisions"] = [],
+): { first: string; second: string | null } {
+	if (query.where.region) {
+		return { first: `r:${query.where.region.regionId}`, second: null };
+	}
+	const id = query.where.geo?.divisionId;
+	if (!id) return { first: PLACE_ALL, second: null };
+	const d = divisions.find((x) => x.id === id);
+	if (d && d.level >= 2 && d.parentId) {
+		return { first: `d:${d.parentId}`, second: `d:${id}` };
+	}
+	return { first: `d:${id}`, second: null };
+}

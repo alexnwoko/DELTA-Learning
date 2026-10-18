@@ -5450,6 +5450,11 @@
     "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
   },
   {
+    "id": "geoportal.map.labels",
+    "translation": "Boundaries and labels",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
+  },
+  {
     "id": "geoportal.map.shading",
     "translation": "Shading",
     "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
@@ -5483,6 +5488,161 @@
     "id": "geoportal.readout.part_not_reported",
     "translation": "not reported",
     "description": "File: app/frontend/geoportal/GeoReadout.tsx"
+  },
+  {
+    "id": "geoportal.row.all_clusters",
+    "translation": "All clusters",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.row.all_hazards",
+    "translation": "All hazards",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.row.all_level_2",
+    "translation": "All",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.row.all_types",
+    "translation": "All types",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.row.any_year",
+    "translation": "Any",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.row.from_year",
+    "translation": "From year",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.row.hip_cluster",
+    "translation": "HIPs cluster",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.row.hip_type",
+    "translation": "HIPs type",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.row.place_1",
+    "translation": "Place, level 1",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.row.place_2",
+    "translation": "Level 2",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.row.region",
+    "translation": "Region: {name}",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.row.to_year",
+    "translation": "To year",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.row.whole_country",
+    "translation": "All of the country",
+    "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.sendai.a",
+    "translation": "Target A: mortality",
+    "description": "File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
+    "id": "geoportal.sendai.a_note",
+    "translation": "Deaths and missing are shown apart, never added. Rates per 100,000 wait for a population denominator.",
+    "description": "File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
+    "id": "geoportal.sendai.affected_direct",
+    "translation": "Directly affected",
+    "description": "File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
+    "id": "geoportal.sendai.b",
+    "translation": "Target B: people affected",
+    "description": "File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
+    "id": "geoportal.sendai.b_note",
+    "translation": "Each part keeps its own state; no combined Target B figure is formed.",
+    "description": "File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
+    "id": "geoportal.sendai.c",
+    "translation": "Target C: economic loss",
+    "description": "File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
+    "id": "geoportal.sendai.c_refused",
+    "translation": "Not shown: money is not totalled until the monetary conventions are ruled (MONETARY_CONVENTIONS_PENDING).",
+    "description": "File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
+    "id": "geoportal.sendai.d",
+    "translation": "Target D: infrastructure and services",
+    "description": "File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
+    "id": "geoportal.sendai.d_waits",
+    "translation": "Not shown yet: DELTA holds no service-disruption records to compute it from.",
+    "description": "File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
+    "id": "geoportal.sendai.deaths",
+    "translation": "Deaths",
+    "description": "File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
+    "id": "geoportal.sendai.displaced",
+    "translation": "Displaced",
+    "description": "File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
+    "id": "geoportal.sendai.injured",
+    "translation": "Injured",
+    "description": "File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
+    "id": "geoportal.sendai.missing",
+    "translation": "Missing",
+    "description": "File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
+    "id": "geoportal.sendai.open_analysis",
+    "translation": "Open this place in Analysis: by year, by hazard and completeness",
+    "description": "File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
+    "id": "geoportal.sendai.open_region",
+    "translation": "Open the region {name} in Analysis",
+    "description": "File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
+    "id": "geoportal.sendai.reported_by",
+    "translation": "(reported by {n} of {m})",
+    "description": "File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
+    "id": "geoportal.sendai.source",
+    "translation": "Computed from DELTA records, not the official Sendai Framework submission.",
+    "description": "File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
+    "id": "geoportal.sendai.title",
+    "translation": "Sendai Framework targets",
+    "description": "File: app/frontend/geoportal/GeoSendai.tsx"
   },
   {
     "id": "geoportal.summary.basis",

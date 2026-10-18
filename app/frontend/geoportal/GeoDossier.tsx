@@ -44,7 +44,7 @@ export interface DossierData {
 const TILES: GeoHumanMeasure[] = ["deaths", "affected_direct", "displaced"];
 const MORE: GeoHumanMeasure[] = ["injured", "missing", "affected_indirect"];
 
-function cellText(c: DossierCell | undefined, t: GeoT): string {
+export function cellText(c: DossierCell | undefined, t: GeoT): string {
 	if (!c) return STATE_ENCODING.not_reported.label;
 	if (c.value === null) {
 		const enc = (STATE_ENCODING as Record<string, { label: string }>)[

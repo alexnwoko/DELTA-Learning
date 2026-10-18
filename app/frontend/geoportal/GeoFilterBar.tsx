@@ -3,7 +3,7 @@
 // cluster, hazard from the HIPs tree, TR-170) and, for reviewers only, the
 // provisional basis (AB-01). Every change rewrites the URL as delta.query/1
 // plus the geo view parameter `level` (TR-175).
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
 	Button,
 	Checkbox,
@@ -36,8 +36,11 @@ import {
 	applyPlace,
 	lockedFacets,
 	periodPresets,
+	withPlace,
+	yearOptions,
 	PLACE_ALL,
 	placeKey,
+	placeLevels,
 	querySummary,
 	selectedChips,
 	type ChipSet,
@@ -138,6 +141,15 @@ export interface GeoFilterBarProps {
 	/** One line of scope and basis; scopeLabel names the instance. */
 	summary?: boolean;
 	scopeLabel?: string;
+	/**
+	 * "row" (D1, Alex 2026-10-17): one wrapping row of labelled selects in
+	 * the order of the Analytics layout mock-up. Default "groups".
+	 */
+	layout?: "groups" | "row";
+	/** Row layout: the tenant's year span for the From and To selects. */
+	years?: { min: number; max: number };
+	/** Row layout: content at the row's end, for example a page button. */
+	end?: ReactNode;
 }
 
 const DATE = /^\d{4}(-\d{2}(-\d{2})?)?$/;
@@ -441,6 +453,282 @@ export function GeoFilterBar(props: GeoFilterBarProps) {
 			? tree?.clusters.find((c) => c.id === clusterId)?.typeId
 			: undefined);
 
+	if (props.layout === "row") {
+		const span = props.years;
+		const years = span ? yearOptions(span) : [];
+		const yFrom = from.slice(0, 4);
+		const yTo = to.slice(0, 4);
+		const anyYear = t({ code: "geoportal.row.any_year", msg: "Any" });
+		const divisions = props.place?.divisions ?? [];
+		const regions = props.place?.regions ?? [];
+		const pl = placeLevels(query, divisions);
+		const firstDivision = pl.first.startsWith("d:") ? pl.first.slice(2) : null;
+		const level2 = firstDivision
+			? divisions.filter((d) => d.level === 2 && d.parentId === firstDivision)
+			: [];
+		const allLabel = (code: string, msg: string) => ({
+			id: ALL,
+			label: t({ code, msg }),
+		});
+		return (
+			<div className="geo-filter-bar geo-filter-row flex flex-col gap-2 py-2">
+				<div className="flex flex-wrap items-end gap-x-3 gap-y-2 border border-brand-border rounded p-2 bg-brand-surface">
+					{props.dimensionControl !== "none" && (
+						<SelectField
+							label={t({ code: "geoportal.group.dimension", msg: "Dimension" })}
+							value={query.dimension}
+							isDisabled={locks.has("dimension")}
+							options={(
+								Object.keys(GEO_DIMENSION_LABELS) as QueryDimension[]
+							).map((d) => ({ id: d, label: t(GEO_DIMENSION_LABELS[d]) }))}
+							onChange={(d) => setDimension(d as QueryDimension)}
+						/>
+					)}
+					{measureOptions && measureOptions.length > 0 && (
+						<SelectField
+							label={t({ code: "geoportal.group.measure", msg: "Measure" })}
+							value={query.measure ?? measureOptions[0].id}
+							options={measureOptions}
+							onChange={(m) => set({ measure: m as DeltaQuery["measure"] })}
+						/>
+					)}
+					{span && (
+						<>
+							<SelectField
+								label={t({ code: "geoportal.row.from_year", msg: "From year" })}
+								value={yFrom || ALL}
+								isDisabled={locks.has("period")}
+								options={[
+									{ id: ALL, label: anyYear },
+									...years.map((y) => ({
+										id: String(y),
+										label: String(y),
+										disabled: Boolean(yTo) && y > Number(yTo),
+									})),
+								]}
+								onChange={(v) =>
+									setTime(v === ALL ? undefined : v, to || undefined)
+								}
+							/>
+							<SelectField
+								label={t({ code: "geoportal.row.to_year", msg: "To year" })}
+								value={yTo || ALL}
+								isDisabled={locks.has("period")}
+								options={[
+									{ id: ALL, label: anyYear },
+									...years.map((y) => ({
+										id: String(y),
+										label: String(y),
+										disabled: Boolean(yFrom) && y < Number(yFrom),
+									})),
+								]}
+								onChange={(v) =>
+									setTime(from || undefined, v === ALL ? undefined : v)
+								}
+							/>
+						</>
+					)}
+					{tree && (
+						<>
+							<SelectField
+								label={t({ code: "geoportal.row.hip_type", msg: "HIPs type" })}
+								value={typeId ?? ALL}
+								isDisabled={locks.has("hazard")}
+								options={[
+									allLabel("geoportal.row.all_types", "All types"),
+									...tree.types.map((n) => ({
+										id: n.id,
+										label: count(n),
+										disabled: n.recordCountSubtree === 0,
+									})),
+								]}
+								onChange={(id) => setHazard(id === ALL ? {} : { typeId: id })}
+							/>
+							<SelectField
+								label={t({
+									code: "geoportal.row.hip_cluster",
+									msg: "HIPs cluster",
+								})}
+								value={clusterId ?? ALL}
+								isDisabled={!typeId || locks.has("hazard")}
+								options={[
+									allLabel("geoportal.row.all_clusters", "All clusters"),
+									...tree.clusters
+										.filter((c) => c.typeId === typeId)
+										.map((n) => ({
+											id: n.id,
+											label: count(n),
+											disabled: n.recordCountSubtree === 0,
+										})),
+								]}
+								onChange={(id) =>
+									setHazard(id === ALL ? { typeId } : { clusterId: id })
+								}
+							/>
+							<SelectField
+								label={t({ code: "geoportal.hazard.hazard", msg: "Hazard" })}
+								value={hz.hazardId ?? ALL}
+								isDisabled={!clusterId || locks.has("hazard")}
+								options={[
+									allLabel("geoportal.row.all_hazards", "All hazards"),
+									...tree.hazards
+										.filter((h) => h.clusterId === clusterId)
+										.map((n) => ({
+											id: n.id,
+											label: `${n.code} ${count(n)}`,
+											disabled: n.recordCountSubtree === 0,
+										})),
+								]}
+								onChange={(id) =>
+									setHazard(id === ALL ? { clusterId } : { hazardId: id })
+								}
+							/>
+						</>
+					)}
+					{props.place && (
+						<>
+							<SelectField
+								label={t({
+									code: "geoportal.row.place_1",
+									msg: "Place, level 1",
+								})}
+								value={pl.first}
+								isDisabled={locks.has("place")}
+								options={[
+									{
+										id: PLACE_ALL,
+										label: t({
+											code: "geoportal.row.whole_country",
+											msg: "All of the country",
+										}),
+									},
+									...divisions
+										.filter((d) => d.level === 1)
+										.map((d) => ({ id: `d:${d.id}`, label: d.name })),
+									...regions.map((r) => ({
+										id: `r:${r.regionId}`,
+										label: t(
+											{ code: "geoportal.row.region", msg: "Region: {name}" },
+											{ name: r.name },
+										),
+									})),
+								]}
+								onChange={(k) =>
+									props.onChange({ query: applyPlace(query, k), level })
+								}
+							/>
+							<SelectField
+								label={t({ code: "geoportal.row.place_2", msg: "Level 2" })}
+								value={pl.second ?? ALL}
+								isDisabled={!firstDivision || locks.has("place")}
+								options={[
+									allLabel("geoportal.row.all_level_2", "All"),
+									...level2.map((d) => ({ id: `d:${d.id}`, label: d.name })),
+								]}
+								onChange={(k) =>
+									props.onChange({
+										query:
+											k === ALL
+												? withPlace(query, {
+														divisionId: firstDivision as string,
+													})
+												: applyPlace(query, k),
+										level,
+									})
+								}
+							/>
+						</>
+					)}
+					{props.canReview && (
+						<Checkbox
+							isSelected={query.scope.basis === "provisional"}
+							onChange={(on) =>
+								set({
+									scope: {
+										...query.scope,
+										basis: on ? "provisional" : "published",
+									},
+								})
+							}
+							className="flex items-center gap-2 text-sm pb-1"
+						>
+							{({ isSelected }) => (
+								<>
+									<span
+										aria-hidden="true"
+										className={`inline-flex items-center justify-center w-4 h-4 border rounded text-xs leading-none ${isSelected ? "bg-brand-interactive border-brand-interactive text-brand-text-on-interactive" : "bg-brand-surface border-brand-border-control"}`}
+									>
+										{isSelected ? "✓" : ""}
+									</span>
+									{t({
+										code: "geoportal.basis.provisional",
+										msg: "Include data not yet published (Provisional)",
+									})}
+								</>
+							)}
+						</Checkbox>
+					)}
+					{props.end && <div className="ms-auto">{props.end}</div>}
+				</div>
+				{props.chips && props.chips.options.length > 0 && (
+					<ChipGroup
+						chips={props.chips}
+						selected={selectedChips(query, props.chips)}
+						isDisabled={
+							(props.chips.kind === "hip_type" && locks.has("hazard")) ||
+							(props.chips.kind === "effect" && locks.has("effect")) ||
+							(props.chips.kind === "sector" && locks.has("sector"))
+						}
+						onChange={(sel) =>
+							props.onChange({
+								query: applyChips(query, props.chips as ChipSet, sel),
+								level,
+							})
+						}
+						t={t}
+					/>
+				)}
+				{(locks.size > 0 || (props.notApplied?.length ?? 0) > 0) && (
+					<ul
+						className="flex flex-wrap gap-1 text-xs"
+						aria-label={t({
+							code: "geoportal.filters.status",
+							msg: "Filter status",
+						})}
+					>
+						{[...locks].map((f) => (
+							<li
+								key={`lock-${f}`}
+								className="rounded-full border border-brand-border-control px-2 py-0.5 bg-brand-surface-subtle"
+							>
+								{t(
+									{
+										code: "geoportal.filters.locked",
+										msg: "Fixed by this page: {facet}",
+									},
+									{ facet: f },
+								)}
+							</li>
+						))}
+						{(props.notApplied ?? []).map((n) => (
+							<li
+								key={`na-${n}`}
+								className="rounded-full border border-brand-border-control px-2 py-0.5"
+							>
+								{t(
+									{
+										code: "geoportal.filters.not_applied",
+										msg: "Not applied: {filter}",
+									},
+									{ filter: n },
+								)}
+							</li>
+						))}
+					</ul>
+				)}
+			</div>
+		);
+	}
 	return (
 		<div className="geo-filter-bar flex flex-wrap items-end gap-x-6 gap-y-2 py-2">
 			{props.summary && (
