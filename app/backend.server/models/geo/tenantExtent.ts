@@ -335,3 +335,14 @@ export function labelMinZoom(areaKm2: number): number {
 	if (areaKm2 >= 5_000) return 4;
 	return 5;
 }
+
+/**
+ * The versioned URL of the world admin-0 layer, for any page that draws a
+ * map (geoportal, Analytics MapChart). The same for every tenant; null while
+ * geo.admin0 is empty. Fetch it as given: the version keeps it cached for a
+ * year and changes when geo.admin0 is reloaded or the format changes.
+ */
+export async function worldBoundariesUrl(lang: string): Promise<string | null> {
+	const version = await admin0Version();
+	return version ? `/${lang}/api/geo/world?r=1&v=${version}` : null;
+}

@@ -87,8 +87,8 @@ import { PrintButton } from "~/frontend/print/PrintButton";
 import { basemapLayers } from "~/utils/basemap.server";
 import { listRegions } from "~/backend.server/models/geo/regions";
 import {
-	admin0Version,
 	mapDataVersion,
+	worldBoundariesUrl,
 } from "~/backend.server/models/geo/tenantExtent";
 import { divisionAreasKm2 } from "~/backend.server/models/analytics/divisionAreas";
 import { selectableBasemaps, type BasemapLayerId } from "~/utils/basemap";
@@ -241,17 +241,17 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 			// RG-1: the tenant's regions for the Area control.
 			listRegions(countryAccountsId, lang),
 		]);
-		const [placeOptions, version, worldVersion] = await Promise.all([
+		const [placeOptions, version, worldSrc] = await Promise.all([
 			listPlaceOptions(countryAccountsId, lang),
 			mapDataVersion(countryAccountsId),
-			admin0Version(),
+			worldBoundariesUrl(lang),
 		]);
 		const v = (ver: string | null) => (ver ? `&v=${ver}` : "");
 		const api = `/${lang}/api/geo`;
 		const geometrySrc = {
 			boundaries: `${api}/boundaries?level=${req.level}&z=8${v(version)}`,
 			context: `${api}/map-context?r=1${v(version)}`,
-			world: worldVersion ? `${api}/world?r=1${v(worldVersion)}` : null,
+			world: worldSrc,
 		};
 		// Bars: the housing breakdown, each part read with the same filters.
 		const housing =
