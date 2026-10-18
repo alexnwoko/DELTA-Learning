@@ -9,6 +9,7 @@ import MapChart, { type MapChartArea } from "~/components/MapChart";
 import type { ViewContext } from "~/frontend/context";
 import type { EventMapArea, EventMapPayload } from "~/utils/dashboard/eventMap";
 import type { MapScopeQuery } from "~/utils/mapState";
+import type { DashboardMapLayers } from "../mapLayers";
 import { RowBars } from "../blocks";
 import { countCell } from "./eventPanels";
 
@@ -30,12 +31,15 @@ export function EventMap({
 	map,
 	scope,
 	onSelectDivision,
+	layers,
 }: {
 	ctx: ViewContext;
 	map: EventMapPayload;
 	scope: MapScopeQuery;
 	/** Selecting an area sets the place filter for the whole page. */
 	onSelectDivision?: (divisionId: string) => void;
+	/** Basemap and country boundary layers, from the route loader. */
+	layers?: DashboardMapLayers;
 }) {
 	const t = ctx.t;
 	const n = (x: number) => x.toLocaleString(ctx.lang);
@@ -65,6 +69,8 @@ export function EventMap({
 					// The map reports the index among the drawn areas.
 					onAreaClick={onSelectDivision ? (i) => onSelectDivision(drawn[i].divisionId) : undefined}
 					notApplied={map.meta.notApplied}
+					basemaps={layers?.basemaps}
+					boundaries={layers?.boundaries}
 				/>
 			</div>
 			<figcaption className="flex flex-col gap-1 text-sm text-brand-text-muted">
