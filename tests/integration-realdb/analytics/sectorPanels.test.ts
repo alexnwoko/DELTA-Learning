@@ -29,6 +29,8 @@ const rec = {
 	d: randomUUID(),
 };
 
+const div = { n1: randomUUID(), n2: randomUUID() };
+
 const ctx = () => ({
 	countryAccountsId: ids.countryAccountId,
 	audience: "public" as const,
@@ -57,6 +59,13 @@ describe("getSectorPanels1to7", () => {
 			INSERT INTO sector_disaster_records_relation (sector_id, disaster_record_id, with_damage, with_losses)
 			VALUES (${SECTOR_IDS.health}, ${rec.b}, true, NULL),
 				(${SECTOR_IDS.industry}, ${rec.c}, true, true)`);
+		await dr.execute(sql`
+			INSERT INTO division (id, country_accounts_id, name, level) VALUES
+			(${div.n1}, ${ids.countryAccountId}, '{"en":"North"}', 1),
+			(${div.n2}, ${ids.countryAccountId}, '{"en":"South"}', 1)`);
+		await dr.execute(sql`
+			INSERT INTO disaster_records_division (disaster_record_id, division_id) VALUES
+			(${rec.a}, ${div.n1}), (${rec.b}, ${div.n1}), (${rec.c}, ${div.n2}), (${rec.c}, ${div.n1})`);
 	});
 
 	afterAll(async () => {
@@ -66,12 +75,40 @@ describe("getSectorPanels1to7", () => {
 		);
 		await dr.execute(sql`DELETE FROM damages WHERE record_id IN (${all})`);
 		await dr.execute(
+			sql`DELETE FROM disaster_records_division WHERE disaster_record_id IN (${all})`,
+		);
+		await dr.execute(
 			sql`DELETE FROM sector_disaster_records_relation WHERE disaster_record_id IN (${all})`,
 		);
 		await dr.execute(
 			sql`DELETE FROM disaster_records WHERE country_accounts_id = ${ids.countryAccountId}`,
 		);
+		await dr.execute(
+			sql`DELETE FROM division WHERE country_accounts_id = ${ids.countryAccountId}`,
+		);
 		await cleanupTestUser(ids);
+	});
+
+	it("ranks divisions by records reporting sector damage, keeping unplaced records apart", async () => {
+		const p = await getSectorPanels1to7(DEFAULT_QUERY, ctx());
+		const by = Object.fromEntries(p.rankedDivisions.rows.map((r) => [r.name, r.cell]));
+		expect(by.North.value).toBe(3);
+		expect(by.South.value).toBe(1);
+		// d is placed nowhere and answers nothing: not reported, never 0.
+		expect(by["No division recorded"].valueState).toBe("not_reported");
+		expect(by["No division recorded"].value).toBeNull();
+		expect(p.rankedDivisions.multiDivisionRecords).toBe(1);
+		expect(p.rankedDivisions.rows[0].name).toBe("North");
+	});
+
+	it("counts per sector the records answering each question", async () => {
+		const p = await getSectorPanels1to7(DEFAULT_QUERY, ctx());
+		expect(p.completeness.recordsTotal).toBe(4);
+		const row = (id: string) => p.completeness.rows.find((r) => r.sector.sectorId === id)!;
+		expect(row(SECTOR_IDS.industry)).toMatchObject({ damage: { yes: 1, no: 0 }, losses: { yes: 1, no: 0 } });
+		expect(row(SECTOR_IDS.health)).toMatchObject({ damage: { yes: 1, no: 0 }, losses: { yes: 0, no: 0 } });
+		expect(row(SECTOR_IDS.housing).damage.yes).toBe(1);
+		expect(row(SECTOR_IDS.agriculture).damage).toEqual({ yes: 0, no: 0 });
 	});
 
 	it("gives headline tiles with damage and losses apart, and money as G-06", async () => {
