@@ -127,3 +127,40 @@ export function relocatedSql(hcpAlias: string): SQL {
 		sql`dsp_r."duration" = 'permanent'`,
 	);
 }
+
+/**
+ * The parts of the displaced figure for every record in `filtered_records`,
+ * in one grouped pass: the relocated-after-the-event subtotal and whether
+ * evacuation before the event is reported. Same rows and rules as
+ * relocatedSubtotal and reportsEvacuation, but set-based, so a query over
+ * 130,000 records reads the displaced rows once instead of running several
+ * subqueries per record. Use with displacedPartsJoin and
+ * displacedHeadlineFromParts; the figure is identical to displacedHeadlineSql.
+ */
+export const displacedPartsCte: SQL = sql`disp_parts AS (
+	SELECT hd_r."record_id",
+		SUM(dsp_r."displaced") FILTER (
+			WHERE dsp_r."timing" = 'reactive' AND dsp_r."duration" = 'permanent'
+		) AS reloc_sub,
+		bool_or(dsp_r."timing" = 'pre-emptive' AND dsp_r."displaced" IS NOT NULL) AS has_evac,
+		SUM(dsp_r."displaced") FILTER (WHERE dsp_r."timing" = 'pre-emptive') AS evac_sum,
+		SUM(dsp_r."displaced") FILTER (WHERE dsp_r."duration" = 'permanent') AS perm_sum
+	FROM filtered_records fr_d
+	JOIN "human_dsg" hd_r ON hd_r."record_id" = fr_d.record_id
+	JOIN "displaced" dsp_r ON dsp_r."dsg_id" = hd_r."id"
+	WHERE ${onlyTimingAndDuration()}
+	GROUP BY 1
+)`;
+
+/** Joins the parts to a query in which human_category_presence is `hcp`. */
+export const displacedPartsJoin: SQL = sql`LEFT JOIN disp_parts dp ON dp.record_id = fr.record_id`;
+// evac_sum and perm_sum equal evacuatedSql and relocatedSql for the record.
+
+/** The displaced headline from the parts (contract O-2), as displacedFigure. */
+export const displacedHeadlineFromParts: SQL = sql`(CASE
+	WHEN COALESCE(dp.reloc_sub, 0) > 0
+		AND hcp."displaced_total" = dp.reloc_sub
+		AND NOT COALESCE(dp.has_evac, FALSE)
+		THEN NULL
+	ELSE hcp."displaced_total" - COALESCE(dp.reloc_sub, 0)
+END)`;

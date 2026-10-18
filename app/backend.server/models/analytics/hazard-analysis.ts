@@ -1,5 +1,10 @@
 import { and, eq, gte, lte, SQL, sql } from "drizzle-orm";
-import { displacedHeadlineSql } from "~/backend.server/models/analytics/displacedHeadline";
+import {
+	displacedHeadlineFromParts,
+	displacedHeadlineSql,
+	displacedPartsCte,
+	displacedPartsJoin,
+} from "~/backend.server/models/analytics/displacedHeadline";
 import { divisionAndDescendantsSql } from "~/backend.server/utils/geographicFilters";
 import {
 	measureValue,
@@ -224,6 +229,20 @@ export const HUMAN_EFFECT_MEASURES = [
 export type HumanEffectMeasure = (typeof HUMAN_EFFECT_MEASURES)[number];
 
 /**
+ * Runs an analytics query with JIT compilation off for that query only
+ * (SET LOCAL, inside its own read transaction). The planner's cost estimates
+ * for these grouped queries are large, so Postgres compiles them with JIT,
+ * which took 3.2 s of a 3.3 s headline query on a 130,000-record tenant.
+ * No database-wide setting changes.
+ */
+export async function executeAnalytics(query: SQL) {
+	return dr.transaction(async (tx) => {
+		await tx.execute(sql`SET LOCAL jit = off`);
+		return tx.execute(query);
+	});
+}
+
+/**
  * True when the record's plausibility flags (legacy_data.migration) name any
  * of the source fields that feed one of the measures (solution pack C30).
  */
@@ -249,11 +268,46 @@ export function plausibilityFlagged(
 }
 
 /**
+ * The plausibility-flagged source fields of every record in
+ * filtered_records, read once (about 5,000 records carry flags), so a
+ * measure's flag check is an array overlap instead of a JSON scan per
+ * record and measure. Same rule as plausibilityFlagged.
+ */
+/**
+ * A record's plausibility flags as a JSON array, or null. Read in the pass
+ * that selects the records, so the flag lookup never scans disaster_records
+ * again (the earlier join re-read all 900,000 rows on every query).
+ */
+export function recordFlagsColumn(alias: string): SQL {
+	const a = sql.raw(`"${alias}"`);
+	return sql`(CASE WHEN jsonb_typeof(${a}."legacy_data" -> 'migration' -> 'plausibility_flags') = 'array'
+		THEN ${a}."legacy_data" -> 'migration' -> 'plausibility_flags' END)`;
+}
+
+const flagFieldsCte = sql`flag_fields AS (
+	SELECT fr_f.record_id, array_agg(DISTINCT f) AS fields
+	FROM filtered_records fr_f
+	CROSS JOIN LATERAL jsonb_array_elements(fr_f.pflags) AS pf
+	CROSS JOIN LATERAL jsonb_array_elements_text(
+		CASE WHEN jsonb_typeof(pf -> 'fields') = 'array' THEN pf -> 'fields' ELSE '[]'::jsonb END
+	) AS f
+	WHERE fr_f.pflags IS NOT NULL
+	GROUP BY 1
+)`;
+
+/** CTEs every query using humanEffectMeasuresSelect needs, after filtered_records. */
+export const measurePartsCtes: SQL = sql`${displacedPartsCte}, ${flagFieldsCte}`;
+/** Joins for those CTEs; the query names filtered_records fr and the presence table hcp. */
+export const measurePartsJoins: SQL = sql`${displacedPartsJoin} LEFT JOIN flag_fields ff ON ff.record_id = fr.record_id`;
+
+/**
  * Per-measure sum and record counts from human_category_presence, for the
  * records in `filtered_records`. A record counts as reported when its total is
  * above 0; as a confirmed zero when its total is 0 with a Yes flag, or when it
  * holds an explicit No with no value; otherwise as not reported. Totals are
  * read from the presence table, so the disaggregation cube is never summed.
+ * The query must include measurePartsCtes after filtered_records and
+ * measurePartsJoins after the human_category_presence join (alias hcp).
  */
 export function humanEffectMeasuresSelect(): SQL {
 	const parts = HUMAN_EFFECT_MEASURES.map((m) => {
@@ -261,7 +315,7 @@ export function humanEffectMeasuresSelect(): SQL {
 		// Displaced leaves out people relocated after the event (contract O-2).
 		const total =
 			m === "displaced"
-				? displacedHeadlineSql("hcp")
+				? displacedHeadlineFromParts
 				: sql.raw(`hcp."${m}_total"`);
 		return sql`
 			SUM(${total}) FILTER (WHERE ${total} > 0) AS ${sql.raw(`"${m}_sum"`)},
@@ -271,7 +325,10 @@ export function humanEffectMeasuresSelect(): SQL {
 					OR (${flag} IS FALSE AND COALESCE(${total}, 0) = 0)
 			) AS ${sql.raw(`"${m}_zero"`)},
 			COUNT(*) FILTER (
-				WHERE ${plausibilityFlagged(sql.raw(`rec."legacy_data"`), [m])}
+				WHERE ff.fields && ARRAY[${sql.join(
+					plausibilitySourceFields(m).map((f) => sql`${f}`),
+					sql`, `,
+				)}]::text[]
 			) AS ${sql.raw(`"${m}_flagged"`)}`;
 	});
 	return sql.join([...parts, sql`COUNT(*) AS records_total`], sql`, `);
@@ -389,7 +446,7 @@ export function humanEffectsFilteredRecords(
 
 	const filteredRecords = sql`
           filtered_records AS (
-            SELECT dr."id" AS record_id
+            SELECT dr."id" AS record_id, ${recordFlagsColumn("dr")} AS pflags
             FROM "disaster_records" dr
             WHERE ${and(...whereConditions)}
           )`;
@@ -420,16 +477,17 @@ export async function getAffectedPeopleByHazardFilters(
 	const filteredRecords = humanEffectsFilteredRecords(filters, basisOverride);
 
 	const rawQuery = sql`
-          WITH RECURSIVE ${filteredRecords}
+          WITH RECURSIVE ${filteredRecords}, ${measurePartsCtes}
           SELECT ${humanEffectMeasuresSelect()}
           FROM filtered_records fr
           LEFT JOIN "human_category_presence" hcp
             ON hcp."record_id" = fr.record_id
+          ${measurePartsJoins}
           LEFT JOIN "disaster_records" rec
             ON rec."id" = fr.record_id
         `;
 
-	const result = await dr.execute(rawQuery);
+	const result = await executeAnalytics(rawQuery);
 	const row: Record<string, unknown> = result.rows[0] || {};
 	const measures = Object.fromEntries(
 		HUMAN_EFFECT_MEASURES.map((m) => [
@@ -490,17 +548,18 @@ export async function getHumanEffectsGrouped(
 				? sql`NULL::int AS year, ${typeExpr} AS hip_type_id`
 				: sql`${yearExpr} AS year, ${typeExpr} AS hip_type_id`;
 	const rawQuery = sql`
-          WITH RECURSIVE ${humanEffectsFilteredRecords(filters, basisOverride)}
+          WITH RECURSIVE ${humanEffectsFilteredRecords(filters, basisOverride)}, ${measurePartsCtes}
           SELECT ${keys}, ${humanEffectMeasuresSelect()}
           FROM filtered_records fr
           LEFT JOIN "human_category_presence" hcp
             ON hcp."record_id" = fr.record_id
+          ${measurePartsJoins}
           LEFT JOIN "disaster_records" rec
             ON rec."id" = fr.record_id
           GROUP BY 1, 2
           ORDER BY 1 NULLS LAST, 2 NULLS LAST
         `;
-	const result = await dr.execute(rawQuery);
+	const result = await executeAnalytics(rawQuery);
 	return (result.rows as Record<string, unknown>[]).map((row) => ({
 		year: row.year === null || row.year === undefined ? null : Number(row.year),
 		hipTypeId: (row.hip_type_id as string | null) ?? null,
@@ -610,7 +669,7 @@ async function getDisaggregationPanel(
             (SELECT COUNT(DISTINCT "record_id") FROM dim_rows WHERE has_value) AS records_with_breakdown,
             (SELECT jsonb_object_agg(category, total) FROM by_category) AS by_category
         `;
-	const result = await dr.execute(rawQuery);
+	const result = await executeAnalytics(rawQuery);
 	const row: Record<string, unknown> = result.rows[0] || {};
 	const raw = (row.by_category ?? {}) as Record<string, unknown>;
 	const byCategory: Record<string, number> = {};
