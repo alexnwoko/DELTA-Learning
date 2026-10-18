@@ -88,6 +88,13 @@ type MapChartProps = {
 	 * legendMaxColor, as before.
 	 */
 	measureFamily?: MeasureFamily;
+	/**
+	 * Five colours, light to dark, replacing the family ramp, for example a
+	 * section palette. Applies with measureFamily set (the family still
+	 * decides the bars and the legend wording). Anything but five hex
+	 * colours is ignored.
+	 */
+	ramp?: readonly string[];
 	/** The query behind the figures, for the scope label (E2 rule 1, C23). */
 	scope?: MapScopeQuery;
 	/** Filters this measure could not apply (E2 rule 2). */
@@ -522,6 +529,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 			basemapUrl,
 			basemapAttribution = BASEMAP_ATTRIBUTION,
 			measureFamily,
+			ramp,
 			scope,
 			notApplied,
 			measureKind,
@@ -657,6 +665,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 							})),
 							{
 								family: currentFamily ?? "people",
+								ramp,
 								scope: scope ?? DEFAULT_SCOPE,
 								notApplied,
 								barsFamily: layered.barsFamily,
@@ -664,6 +673,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 						)
 					: resolveMapState(dataSource.map(toCell), {
 							family: currentFamily ?? "people",
+							ramp,
 							scope: scope ?? DEFAULT_SCOPE,
 							notApplied,
 							symbol: symbol ?? defaultSymbolFor(measureKind ?? "count"),
@@ -917,6 +927,8 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 				isLeafletLoaded,
 				currentLegendMaxColor,
 				currentFamily,
+				// By value, so a new array with the same colours does not redraw.
+				ramp?.join(","),
 				basemapUrl,
 				basemapAttribution,
 				componentId,
