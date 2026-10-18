@@ -143,6 +143,17 @@ type MapChartProps = {
 	 * overlay the reader can switch off.
 	 */
 	boundaries?: {
+		/**
+		 * Neighbouring countries (Geoportal's neighbourOutlines, Natural
+		 * Earth admin-0): drawn as light-grey outlines with their names,
+		 * under the tenant's own outline (Alex, 2026-10-18).
+		 */
+		neighbours?: {
+			iso3: string;
+			name: string;
+			geojson: unknown;
+			labelPoint: [number, number] | null;
+		}[];
 		outline: unknown | null;
 		countryName?: string | null;
 		countryLabelPoint?: [number, number] | null;
@@ -845,6 +856,23 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 					// Boundary layer: the country outline and every area's name, in
 					// light grey above the shading (Alex, 2026-10-18).
 					if (boundaries && boundaryGroupRef.current) {
+						for (const n of boundaries.neighbours ?? []) {
+							L.geoJSON(n.geojson as any, {
+								pane: "deltaBoundaries",
+								interactive: false,
+								style: () => ({
+									color: BOUNDARY_GREY,
+									weight: BOUNDARY_WIDTH * 0.75,
+									opacity: 1,
+									fill: false,
+								}),
+							}).addTo(boundaryGroupRef.current);
+							if (n.labelPoint) {
+								boundaryLabel(L, n.name, n.labelPoint).addTo(
+									boundaryGroupRef.current,
+								);
+							}
+						}
 						if (boundaries.outline) {
 							L.geoJSON(boundaries.outline as any, {
 								pane: "deltaBoundaries",
