@@ -1025,3 +1025,34 @@ describe("region link to Analysis (where.region in the D1 loaders)", () => {
 		);
 	});
 });
+
+import { UN_MAP_DISCLAIMER } from "~/frontend/geoportal/GeoMap";
+
+describe("UN map disclaimer (Alex, 2026-10-18, decision 4)", () => {
+	it("keeps the UN short-form wording exactly, in code and in the locale file", async () => {
+		const exact =
+			"The boundaries and names shown and the designations used on this map do not imply official endorsement or acceptance by the United Nations.";
+		expect(UN_MAP_DISCLAIMER).toBe(exact);
+		const en = (await import("../../../locales/app/en.json")).default as {
+			id: string;
+			translation: string;
+		}[];
+		expect(
+			en.find((e) => e.id === "geoportal.map.un_disclaimer")?.translation,
+		).toBe(exact);
+	});
+});
+
+import { pickerValues } from "~/frontend/geoportal/GeoPlacePicker";
+
+describe("place pickers beside the Place tab (Alex, 2026-10-18)", () => {
+	const opts = [
+		{ id: "p1", name: "Gaza", level: 1, parentId: null },
+		{ id: "d1", name: "Chokwe", level: 2, parentId: "p1" },
+	];
+	it("shows the whole country by default and the parent of a chosen admin 2", () => {
+		expect(pickerValues(null, opts)).toEqual({ first: null, second: null });
+		expect(pickerValues("p1", opts)).toEqual({ first: "p1", second: null });
+		expect(pickerValues("d1", opts)).toEqual({ first: "p1", second: "d1" });
+	});
+});

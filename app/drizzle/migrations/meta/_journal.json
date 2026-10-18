@@ -505,6 +505,13 @@
       "when": 1792314000000,
       "tag": "20261018090000_add_record_start_date_index",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1792317600000,
+      "tag": "20261018120000_geo_admin0",
+      "breakpoints": true
     }
   ]
 }

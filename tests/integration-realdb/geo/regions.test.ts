@@ -10,7 +10,14 @@ import {
 	cleanupOtherTenant,
 } from "../test-helpers";
 import { refreshGeoReadModel } from "~/backend.server/models/geo/refresh";
-import { getTenantOutline } from "~/backend.server/models/geo/tenantExtent";
+import {
+	getTenantOutline,
+	neighbourOutlines,
+} from "~/backend.server/models/geo/tenantExtent";
+import {
+	getCountryDossier,
+	listPlaceOptions,
+} from "~/backend.server/models/geo/queries";
 import {
 	getChoropleth,
 	GeoRefusalError,
@@ -330,5 +337,45 @@ describe("geoportal regions within one country (RG-1)", () => {
 		expect(row.inside).toBe(true);
 		// Tenant B's area (40..50) is never part of A's outline (SEC-22).
 		expect(row.reaches_b).toBe(false);
+	});
+
+	it("summarises the whole country with each record once, and lists the place options", async () => {
+		const req = await resolve(ids.countryAccountId, "measure=deaths");
+		const d = await getCountryDossier(ids.countryAccountId, req, "en");
+		// a 5 + b 4 (in two provinces, counted once) + c 3 + d 100 + e 2.
+		expect(d.cumulative.deaths.value).toBe(114);
+		expect(d.recurrence.recordCount).toBe(5);
+		expect(d.division).toMatchObject({ id: "country", level: 0 });
+		const opts = await listPlaceOptions(ids.countryAccountId, "en");
+		expect(opts.filter((o) => o.level === 1).map((o) => o.name)).toEqual([
+			"Div P1",
+			"Div P2",
+			"Div P3",
+		]);
+		expect(opts.find((o) => o.id === div.c1)).toMatchObject({
+			level: 2,
+			parentId: div.p1,
+		});
+	});
+
+	it("returns the countries around the tenant from geo.admin0, never far ones", async () => {
+		const box = (x0: number, x1: number) =>
+			sql.raw(`ST_Multi(ST_MakeEnvelope(${x0}, 0, ${x1}, 5, 4326))`);
+		await dr.execute(sql`
+			INSERT INTO geo.admin0 (iso3, name, geom, label_point, source, source_version)
+			VALUES ('ZZN', 'Neighbourland', ${box(31, 35)}, ST_SetSRID(ST_MakePoint(33, 2), 4326), 'test', 't'),
+				('ZZF', 'Farland', ${box(80, 85)}, ST_SetSRID(ST_MakePoint(82, 2), 4326), 'test', 't')
+			ON CONFLICT (iso3) DO NOTHING
+		`);
+		try {
+			const near = await neighbourOutlines(ids.countryAccountId, 2);
+			expect(near.map((n) => n.iso3)).toContain("ZZN");
+			expect(near.map((n) => n.iso3)).not.toContain("ZZF");
+			expect(near.find((n) => n.iso3 === "ZZN")?.labelPoint).toEqual([33, 2]);
+		} finally {
+			await dr.execute(
+				sql`DELETE FROM geo.admin0 WHERE iso3 IN ('ZZN', 'ZZF')`,
+			);
+		}
 	});
 });
