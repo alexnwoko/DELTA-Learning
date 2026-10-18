@@ -90,8 +90,8 @@ export interface GeoMapProps {
 	}[];
 	/**
 	 * Every country's border and name (worldBoundaries), drawn in light grey
-	 * under the figures with a transparent inside. The shared lines show below
-	 * zoom 5; from zoom 5 the detailed neighbour outlines take over.
+	 * with a transparent inside over the shading and under the bubbles and
+	 * bars, at every zoom (Alex, 2026-10-18).
 	 */
 	world?: {
 		lines: { type: string; coordinates: unknown } | null;
@@ -113,9 +113,8 @@ export interface GeoMapProps {
 	describedBy?: string;
 }
 
-/** Web Mercator metres per pixel at zoom 0 and zoom 5 (256 px tiles). */
+/** Web Mercator metres per pixel at zoom 0 (256 px tiles). */
 const ZOOM0_RESOLUTION = 156543.03392804097;
-const ZOOM5_RESOLUTION = ZOOM0_RESOLUTION / 2 ** 5;
 
 function dash(dashArray: string | null): number[] | undefined {
 	return dashArray ? dashArray.split(/\s+/).map(Number) : undefined;
@@ -659,8 +658,10 @@ export function GeoMap({
 		}
 	}, [boundaries, outline, world, ownIso3, showLabels]);
 
-	// Country borders: the simplified world lines at small scales, the detailed
-	// neighbour outlines from zoom 5, so a border is never drawn twice.
+	// Country borders (Alex, 2026-10-18): every country, light grey, inside
+	// transparent, over the shading at every zoom. One set of shared lines, so
+	// a border between two countries is drawn once. The neighbour outlines are
+	// only the fallback while geo.admin0 has no world lines.
 	useEffect(() => {
 		const source = worldLayerRef.current?.getSource();
 		if (!source) return;
@@ -677,14 +678,10 @@ export function GeoMap({
 				{ type: "Feature", geometry, properties: {} },
 				{ dataProjection: "EPSG:4326", featureProjection: "EPSG:3857" },
 			)[0];
-		if (world?.lines) {
-			const f = read(world.lines);
-			f.setStyle((_, res) => (res > ZOOM5_RESOLUTION ? border : undefined));
-			source.addFeature(f);
-		}
-		for (const n of neighbours) {
-			const f = read(n.geojson);
-			f.setStyle((_, res) => (res > ZOOM5_RESOLUTION ? undefined : border));
+		const shapes = world?.lines ? [world.lines] : neighbours.map((n) => n.geojson);
+		for (const g of shapes) {
+			const f = read(g);
+			f.setStyle(border);
 			source.addFeature(f);
 		}
 	}, [world, neighbours]);
