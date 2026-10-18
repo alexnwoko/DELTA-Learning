@@ -560,7 +560,7 @@ export function SendaiSectionView({
 	country: string;
 }) {
 	const t = ctx.t;
-	const card = "min-w-0 break-inside-avoid rounded border border-brand-border bg-brand-surface p-4";
+	const card = "delta-panel-card flex min-w-0 break-inside-avoid flex-col rounded border bg-brand-surface p-4";
 	const by = (g: DashboardPanel["group"]) => panels.filter((p) => p.group === g).sort((a, b) => a.n - b.n);
 	const coverage =
 		d.coverage.recordsTotal > 0
@@ -570,11 +570,11 @@ export function SendaiSectionView({
 				})
 			: noRecordsText(ctx);
 	return (
-		<section aria-labelledby={SFM_HEADING_ID} className="flex flex-col gap-4 rounded border border-brand-border bg-brand-surface-subtle p-4">
+		<section aria-labelledby={SFM_HEADING_ID} className="delta-sfm flex flex-col gap-4 rounded border p-4">
 			<header className="flex flex-col gap-1">
 				{/* Focusable by script only: the toggle moves focus here when turned on. */}
-				<h2 id={SFM_HEADING_ID} tabIndex={-1} className="m-0 flex scroll-mt-4 items-center gap-2 text-xl font-semibold outline-none">
-					<PanelIcon name={SECTION_ICONS.sendai} size={33} />
+				<h2 id={SFM_HEADING_ID} tabIndex={-1} className="delta-panel-title m-0 flex scroll-mt-4 items-center gap-2 text-xl outline-none">
+					<PanelIcon name={SECTION_ICONS.sendai} size={43} />
 					{tr(t, "dashboard.sfm_title", "Sendai Framework Monitoring")}
 				</h2>
 				<p role="note" className="m-0 text-sm">{sendaiNotice(t, country)}</p>
@@ -593,8 +593,8 @@ export function SendaiSectionView({
 				const [code, msg] = TARGET_HEADINGS[g];
 				return (
 					<section key={g} aria-label={t({ code, msg })} className="flex flex-col gap-2">
-						<h3 className="m-0 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-brand-interactive">
-							<PanelIcon name={TARGET_ICONS[g]} size={24} />
+						<h3 className="delta-panel-title m-0 flex items-center gap-2 text-sm uppercase tracking-wide">
+							<PanelIcon name={TARGET_ICONS[g]} size={31} />
 							{t({ code, msg })}
 						</h3>
 						{/* Each target is its own grid, so Target B never starts in Target A's row. */}

@@ -463,8 +463,64 @@
 		},
 		"icon": {
 			"$type": "color",
-			"$value": "#004f91",
-			"$description": "Dashboard icons: one blue on every brand (Alex, 2026-10-18). At least 3:1 against brand surface and surface-subtle (WCAG 1.4.11); the title beside each icon carries the meaning."
+			"$value": "#6a8bdc",
+			"$description": "Dashboard icons, same as data.dashboard.icon (Alex, 2026-10-18 palette trial). 3.31:1 on white, 3.05:1 on the dashboard tint (WCAG 1.4.11); the title beside each icon carries the meaning."
+		},
+		"dashboard": {
+			"$description": "Main dashboard palette, energized and clean (Alex, 2026-10-18; a trial, may change). Surfaces, borders, icons and titles only, never data series.",
+			"tint": {
+				"$type": "color",
+				"$value": "#f0f6ff",
+				"$description": "Panel and tile background tint."
+			},
+			"border": {
+				"$type": "color",
+				"$value": "#cfe3ff",
+				"$description": "Panel and tile borders."
+			},
+			"accent": {
+				"$type": "color",
+				"$value": "#9dc3ff",
+				"$description": "Decorative accents only (1.8:1 on white): selected-state fills beside a text cue."
+			},
+			"icon": {
+				"$type": "color",
+				"$value": "#6a8bdc",
+				"$description": "Dashboard icons: 3.31:1 on white, 3.05:1 on tint (WCAG 1.4.11)."
+			},
+			"ink": {
+				"$type": "color",
+				"$value": "#2d3355",
+				"$description": "Chart titles and subtitles, bold: 12.24:1 on white."
+			}
+		},
+		"sfm": {
+			"$description": "Sendai Framework Monitoring section palette, fresh and botanical (Alex, 2026-10-18; a trial, may change). Surfaces, borders, icons and titles only.",
+			"tint": {
+				"$type": "color",
+				"$value": "#f7fbff",
+				"$description": "Section and panel background tint."
+			},
+			"border": {
+				"$type": "color",
+				"$value": "#d6eaf7",
+				"$description": "Section and panel borders."
+			},
+			"accent": {
+				"$type": "color",
+				"$value": "#a8cfe3",
+				"$description": "Decorative accents only (1.65:1 on white)."
+			},
+			"mark": {
+				"$type": "color",
+				"$value": "#76a6c1",
+				"$description": "Decorative rules only: 2.63:1 on white is below 3:1, so never an icon or text."
+			},
+			"ink": {
+				"$type": "color",
+				"$value": "#2f4f5f",
+				"$description": "Sendai titles, subtitles and icons: 8.73:1 on white."
+			}
 		}
 	}
 }

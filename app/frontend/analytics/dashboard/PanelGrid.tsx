@@ -46,9 +46,9 @@ function PanelCard({ ctx, panel }: { ctx: ViewContext; panel: DashboardPanel }) 
 				data-panel-state="gap"
 				className="flex flex-col gap-2 rounded border border-dashed border-brand-border-control bg-brand-surface-subtle p-4"
 			>
-				<h3 id={headingId} className="m-0 flex items-center gap-2 text-base font-semibold text-brand-text">
-					<span className="flex h-12 w-12 shrink-0 items-center justify-center rounded border border-brand-border bg-brand-surface">
-						<PanelIcon name={panelIcon(panel.id)} size={27} />
+				<h3 id={headingId} className="delta-panel-title m-0 flex items-center gap-2 text-base">
+					<span className="delta-panel-iconbox flex h-16 w-16 shrink-0 items-center justify-center rounded border">
+						<PanelIcon name={panelIcon(panel.id)} size={35} />
 					</span>
 					{panel.title}
 				</h3>
@@ -61,7 +61,7 @@ function PanelCard({ ctx, panel }: { ctx: ViewContext; panel: DashboardPanel }) 
 		<div
 			id={panel.id}
 			data-panel-state="ready"
-			className="min-w-0 break-inside-avoid rounded border border-brand-border bg-brand-surface p-4"
+			className="delta-panel-card flex min-w-0 break-inside-avoid flex-col rounded border bg-brand-surface p-4"
 		>
 			<PanelIconContext.Provider value={panelIcon(panel.id)}>{panel.render?.()}</PanelIconContext.Provider>
 		</div>
@@ -75,9 +75,9 @@ export function NotYetAvailableStrip({ ctx, panels }: { ctx: ViewContext; panels
 	return (
 		<section
 			aria-labelledby={headingId}
-			className="rounded border border-dashed border-brand-border-control bg-brand-surface-subtle p-4"
+			className="delta-panel-tile rounded border border-dashed p-4"
 		>
-			<h3 id={headingId} className="m-0 mb-2 text-base font-semibold text-brand-text">
+			<h3 id={headingId} className="delta-panel-title m-0 mb-2 text-base">
 				{ctx.t({ code: "dashboard.not_yet_available", msg: "Not yet available" })}
 			</h3>
 			<ul className="m-0 flex list-none flex-col gap-2 p-0">
@@ -86,9 +86,9 @@ export function NotYetAvailableStrip({ ctx, panels }: { ctx: ViewContext; panels
 					const count = gapCountText(ctx, gap);
 					return (
 						<li key={p.id} id={p.id} className="flex items-start gap-2 text-sm">
-							<PanelIcon name={panelIcon(p.id)} size={24} />
+							<PanelIcon name={panelIcon(p.id)} size={31} />
 							<span>
-							<span className="font-semibold text-brand-text">{p.title}</span>
+							<span className="delta-panel-title">{p.title}</span>
 							<span className="text-brand-text-muted">
 								{": "}
 								{gap.text}

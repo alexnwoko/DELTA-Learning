@@ -61,7 +61,7 @@ export function HazardRail({ ctx, tree, selected, onChange, showCounts }: Hazard
 		>
 			<Label className="sr-only">{t({ code: "dashboard.rail_label", msg: "Hazard type" })}</Label>
 			<Radio value={ALL_HAZARDS} className={item}>
-				<PanelIcon name={HAZARD_ICONS.all} size={40} />
+				<PanelIcon name={HAZARD_ICONS.all} size={52} />
 				<span>{t({ code: "dashboard.rail_all", msg: "All hazards" })}</span>
 			</Radio>
 			{types.map((ty) => {
@@ -84,11 +84,11 @@ export function HazardRail({ ctx, tree, selected, onChange, showCounts }: Hazard
 						{/* The count sits at the glyph's top-right corner, as in the mockup. */}
 						<span className="relative inline-flex">
 							{/* Each type in its own identity colour (Alex, 2026-10-18), a distinct icon and its name. */}
-							<PanelIcon name={HAZARD_ICONS[identity]} size={40} colour={hazardColourVar(ty.id)} />
+							<PanelIcon name={HAZARD_ICONS[identity]} size={52} colour={hazardColourVar(ty.id)} />
 							{showCounts && !empty && (
 								<span
 									aria-hidden="true"
-									className="absolute -top-2 start-7 rounded-full bg-brand-interactive px-1 text-[10px] leading-4 whitespace-nowrap text-brand-text-on-interactive"
+									className="absolute -top-2 start-10 rounded-full bg-brand-interactive px-1 text-[10px] leading-4 whitespace-nowrap text-brand-text-on-interactive"
 								>
 									{n(ty.recordCountSubtree)}
 								</span>

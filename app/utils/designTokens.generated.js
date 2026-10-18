@@ -138,5 +138,19 @@ export const dataTokens = {
 		"extraterrestrial": "#0f7c8c",
 		"unclassified": "#6b7280"
 	},
-	"icon": "#004f91"
+	"icon": "#6a8bdc",
+	"dashboard": {
+		"tint": "#f0f6ff",
+		"border": "#cfe3ff",
+		"accent": "#9dc3ff",
+		"icon": "#6a8bdc",
+		"ink": "#2d3355"
+	},
+	"sfm": {
+		"tint": "#f7fbff",
+		"border": "#d6eaf7",
+		"accent": "#a8cfe3",
+		"mark": "#76a6c1",
+		"ink": "#2f4f5f"
+	}
 };

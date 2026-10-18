@@ -54,16 +54,16 @@ describe("dashboard icons (Alex, 2026-10-18)", () => {
 		expect(HAZARD_ICONS.chemical).toBe("chemical");
 	});
 
-	it("draws panel title icons 50% larger (27 px in a 48 px box) and in the dashboard blue", () => {
+	it("draws panel title icons a further 30% larger (35 px in a 64 px box) in the palette icon colour", () => {
 		const panels = impactDashboardPanels(ctx, IMPACT_PANELS_FIXTURE, "EXAMPLE DATA", { data: IMPACT_PANELS_5TO16_FIXTURE, country: "Angola" });
 		const html = renderToString(<PanelGrid ctx={ctx} panels={panels} collapseGaps={false} />);
-		expect(html).toMatch(/h-12 w-12[^>]*><span aria-hidden="true" data-icon="affected-population"[^>]*width:27px;height:27px;background-color:var\(--delta-data-icon\)/);
+		expect(html).toMatch(/h-16 w-16[^>]*><span aria-hidden="true" data-icon="affected-population"[^>]*width:35px;height:35px;background-color:var\(--panel-icon, var\(--delta-data-icon\)\)/);
 		// Panel icons are blue; only the hazard rail uses identity colours.
 		expect(html).not.toMatch(/data-icon="[a-z-]+"[^>]*background-color:var\(--delta-(brand|data-hazard)/);
 	});
 });
 
-describe("dashboard icon blue (data.icon)", () => {
+describe("palette contrast (Alex, 2026-10-18 trial)", () => {
 	it.each(["neutral", "delta"])("reaches 3:1 on the %s surfaces (WCAG 1.4.11)", (brand) => {
 		const lum = (hex: string) => {
 			const [r, g, b] = [1, 3, 5]
@@ -75,8 +75,19 @@ describe("dashboard icon blue (data.icon)", () => {
 			const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
 			return (x + 0.05) / (y + 0.05);
 		};
-		const blue = JSON.parse(readFileSync(join(ROOT, "design-tokens/data/data.json"), "utf8")).data.icon.$value;
+		const data = JSON.parse(readFileSync(join(ROOT, "design-tokens/data/data.json"), "utf8")).data;
 		const tokens = JSON.parse(readFileSync(join(ROOT, `design-tokens/brand/${brand}.json`), "utf8")).brand;
-		for (const s of ["surface", "surface-subtle"]) expect(ratio(blue, tokens[s].$value), s).toBeGreaterThanOrEqual(3);
+		const v = (x: { $value: string }) => x.$value;
+		// Icons sit on the card surface or the palette tint, never on surface-subtle.
+		for (const bg of [v(tokens.surface), v(data.dashboard.tint)]) {
+			expect(ratio(v(data.icon), bg), `icon on ${bg}`).toBeGreaterThanOrEqual(3);
+			expect(ratio(v(data.dashboard.ink), bg), `title on ${bg}`).toBeGreaterThanOrEqual(4.5);
+		}
+		// The Sendai section draws icons and titles in its ink, on its tint and on cards.
+		for (const bg of [v(tokens.surface), v(data.sfm.tint)]) {
+			expect(ratio(v(data.sfm.ink), bg), `sfm ink on ${bg}`).toBeGreaterThanOrEqual(4.5);
+		}
+		// sfm.mark is below 3:1, which is why it is never an icon.
+		expect(ratio(v(data.sfm.mark), v(tokens.surface))).toBeLessThan(3);
 	});
 });

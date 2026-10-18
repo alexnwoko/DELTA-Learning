@@ -59,6 +59,16 @@
 	--color-data-hazard-extraterrestrial: var(--delta-data-hazard-extraterrestrial);
 	--color-data-hazard-unclassified: var(--delta-data-hazard-unclassified);
 	--color-data-icon: var(--delta-data-icon);
+	--color-data-dashboard-tint: var(--delta-data-dashboard-tint);
+	--color-data-dashboard-border: var(--delta-data-dashboard-border);
+	--color-data-dashboard-accent: var(--delta-data-dashboard-accent);
+	--color-data-dashboard-icon: var(--delta-data-dashboard-icon);
+	--color-data-dashboard-ink: var(--delta-data-dashboard-ink);
+	--color-data-sfm-tint: var(--delta-data-sfm-tint);
+	--color-data-sfm-border: var(--delta-data-sfm-border);
+	--color-data-sfm-accent: var(--delta-data-sfm-accent);
+	--color-data-sfm-mark: var(--delta-data-sfm-mark);
+	--color-data-sfm-ink: var(--delta-data-sfm-ink);
 	--color-brand-interactive: var(--delta-brand-interactive);
 	--color-brand-interactive-active: var(--delta-brand-interactive-active);
 	--color-brand-secondary: var(--delta-brand-secondary);

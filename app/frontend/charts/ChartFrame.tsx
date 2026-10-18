@@ -125,12 +125,12 @@ export function ChartFrame({ ctx, title, meta, rows, formatValue, pictures = tru
 	const t = (code: string, msg: string) => ctx.t({ code, msg });
 
 	return (
-		<figure aria-labelledby={titleId} className="m-0 flex flex-col gap-2">
+		<figure aria-labelledby={titleId} className="m-0 flex flex-1 flex-col gap-2">
 			<div className="flex items-start justify-between gap-2">
-				<h3 id={titleId} className="m-0 flex items-center gap-2 text-base font-semibold text-brand-text">
+				<h3 id={titleId} className="delta-panel-title m-0 flex items-center gap-2 text-base">
 					{icon && (
-						<span className="flex h-12 w-12 shrink-0 items-center justify-center rounded border border-brand-border bg-brand-surface-subtle">
-							<PanelIcon name={icon} size={27} />
+						<span className="delta-panel-iconbox flex h-16 w-16 shrink-0 items-center justify-center rounded border">
+							<PanelIcon name={icon} size={35} />
 						</span>
 					)}
 					{title}
