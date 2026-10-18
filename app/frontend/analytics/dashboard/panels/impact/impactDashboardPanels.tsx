@@ -22,7 +22,7 @@ export const IMPACT_LAYOUT: readonly string[] = [
 	"impact-1", "impact-7", // Human effects at a glance | Ranked by divisions
 	"impact-4", "impact-3", // Hazard ranking by disaster impact | Human effects by year
 	"impact-6", "impact-8", // Hazard by human effect | Hazard by sector
-	"impact-10", "impact-9", // Houses destroyed and damaged | People displaced
+	"impact-10", "impact-9", // Houses destroyed and damaged | People displaced, evacuated and relocated
 	"impact-2", "impact-12", // Coverage of the records | Reporting completeness and precision
 	"impact-16", // Disaster impact by sex and age disaggregation
 ];

@@ -736,7 +736,7 @@ export function impactPanels5to16(
 						normalise="table" />
 				</Frame>
 			)],
-		[9, tr(t, "dashboard.impact_9", "People displaced"), peopleMovedExport(t, data.peopleMoved, m.peopleMoved),
+		[9, tr(t, "dashboard.impact_9", "People displaced, evacuated and relocated"), peopleMovedExport(t, data.peopleMoved, m.peopleMoved),
 			(c, e) => (
 				<Frame common={c} exp={e}>
 					<RowBars ctx={ctx} label={c.title} series={movedSeries}
