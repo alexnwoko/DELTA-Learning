@@ -71,6 +71,15 @@ export const dataTokens = {
 		},
 		"canvas": {
 			"background": "#f3f4f6"
+		},
+		"countryOutline": {
+			"stroke": "#7b828c",
+			"strokeWidth": 1.2
+		},
+		"areaLabel": {
+			"color": "#5f6670",
+			"halo": "#ffffff",
+			"size": 12
 		}
 	},
 	"ramp": {
