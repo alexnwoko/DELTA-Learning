@@ -85,7 +85,10 @@ import { htmlTitle } from "~/utils/htmlmeta";
 import { PrintButton } from "~/frontend/print/PrintButton";
 import { basemapLayers } from "~/utils/basemap.server";
 import { listRegions } from "~/backend.server/models/geo/regions";
-import { getTenantOutline } from "~/backend.server/models/geo/tenantExtent";
+import {
+	getTenantOutline,
+	neighbourOutlines,
+} from "~/backend.server/models/geo/tenantExtent";
 import { divisionAreasKm2 } from "~/backend.server/models/analytics/divisionAreas";
 import { selectableBasemaps, type BasemapLayerId } from "~/utils/basemap";
 
@@ -173,9 +176,10 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 			// RG-1: the tenant's regions for the Area control.
 			listRegions(countryAccountsId, lang),
 		]);
-		const [outline, placeOptions] = await Promise.all([
+		const [outline, placeOptions, neighbours] = await Promise.all([
 			getTenantOutline(countryAccountsId),
 			listPlaceOptions(countryAccountsId, lang),
+			neighbourOutlines(countryAccountsId, 2),
 		]);
 		// Bars: the housing breakdown, each part read with the same filters.
 		const housing =
@@ -228,6 +232,7 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 			areaKm2,
 			outline,
 			placeOptions,
+			neighbours,
 			refusal: null,
 		};
 	} catch (err) {
@@ -246,6 +251,7 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 				housing: null,
 				areaKm2: {} as Record<string, number>,
 				outline: null,
+				neighbours: [],
 				placeOptions: [] as {
 					id: string;
 					name: string;
@@ -768,6 +774,7 @@ export default function GeoportalPage() {
 													homeSignal={homeSignal}
 													symbolColor={mapState.legend.symbols?.color ?? null}
 													outline={data.outline}
+													neighbours={data.neighbours}
 													padRight={isWide ? 396 : 0}
 													disclaimer={t({
 														code: "geoportal.map.un_disclaimer",
