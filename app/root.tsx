@@ -317,6 +317,12 @@ export default function Screen() {
 				>
 					<InactivityWarning ctx={ctx} loggedIn={isLoggedIn} />
 					<div className="min-h-screen flex flex-col bg-white">
+						{/* WCAG 2.4.1: skip the menu bar to the page content. */}
+						{!hideMainNavigation ? (
+							<a href="#main" className="delta-skip-link">
+								{ctx.t({ code: "common.skip_to_main", msg: "Skip to main content" })}
+							</a>
+						) : null}
 						{/* Header */}
 						{!hideMainNavigation ? (
 							<header className="w-full bg-white border-b border-gray-200">
@@ -344,7 +350,7 @@ export default function Screen() {
 						) : null}
 
 						{/* Main Content */}
-						<main className="flex-1 w-full">
+						<main id="main" tabIndex={-1} className="flex-1 w-full">
 							<div className="w-full py-8">
 								<Outlet />
 							</div>
