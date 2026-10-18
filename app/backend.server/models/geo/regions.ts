@@ -8,6 +8,8 @@ import {
 	type GeoRequest,
 } from "~/backend.server/models/geo/queries";
 import { basisIncludesProvisional } from "~/utils/approvalBasis";
+import { cachedGeo } from "~/backend.server/models/geo/cache";
+import { readModelRefreshedAt } from "~/backend.server/models/geo/queries";
 import type { GeoMeasure } from "~/utils/geoMeasures";
 
 // Regions within one country (RG-1, increment I-4; OpenAPI 0.7.0-draft).
@@ -53,7 +55,10 @@ function toRegion(r: RegionRow, lang: string): Region {
 		regionVintage: String(r.region_vintage),
 		boundaryVintage: r.boundary_vintage,
 		members: (r.members ?? [])
-			.map((m) => ({ divisionId: m.division_id, name: localName(m.name, lang) }))
+			.map((m) => ({
+				divisionId: m.division_id,
+				name: localName(m.name, lang),
+			}))
 			.sort((a, b) => a.name.localeCompare(b.name)),
 	};
 }
@@ -214,7 +219,7 @@ export async function saveRegion(
  * counts in each of them, so the plain sum of members can exceed the total:
  * multiAreaRecords discloses how many records that is (I-4 exit test).
  */
-export async function getRegionSummary(
+async function getRegionSummaryUncached(
 	countryAccountsId: string,
 	req: GeoRequest,
 	region: Region,
@@ -280,4 +285,19 @@ export async function getRegionSummary(
 			.filter(Boolean)
 			.join(" "),
 	};
+}
+
+/** Cached (I-6): kept until the tenant's next refresh; keyed on the region's vintage too. */
+export async function getRegionSummary(
+	countryAccountsId: string,
+	req: GeoRequest,
+	region: Region,
+) {
+	return cachedGeo(
+		"regionSummary",
+		countryAccountsId,
+		await readModelRefreshedAt(countryAccountsId),
+		{ req, region },
+		() => getRegionSummaryUncached(countryAccountsId, req, region),
+	);
 }
