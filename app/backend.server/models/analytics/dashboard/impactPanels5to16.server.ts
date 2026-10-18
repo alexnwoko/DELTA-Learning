@@ -4,6 +4,7 @@
 // value state and record counts (TR-076), never a bare 0.
 
 import { cachedDashboard } from "~/backend.server/models/analytics/dashboard/dashboardCache.server";
+import { ABOVE_CEILING_CODE } from "~/utils/plausibility";
 import { sql, type SQL } from "drizzle-orm";
 import {
 	getAffectedPeopleByHazardFilters,
@@ -16,6 +17,7 @@ import {
 	measurePartsCtes,
 	measurePartsJoins,
 	plausibilityFlagged,
+	aboveCeiling,
 	type HazardFilters,
 } from "~/backend.server/models/analytics/hazard-analysis";
 import { displacedHeadlineSql } from "~/backend.server/models/analytics/displacedHeadline";
@@ -153,6 +155,7 @@ function addCells(cells: PanelCell[]): PanelCell {
 		zeroConfirmed: cells.reduce((s, c) => s + c.recordsZeroConfirmed, 0),
 		total: cells.reduce((s, c) => s + c.recordsTotal, 0),
 		flagged: cells.reduce((s, c) => s + c.recordsFlagged, 0),
+		aboveCeiling: cells.reduce((s, c) => s + (c.recordsAboveCeiling ?? 0), 0),
 	});
 }
 
@@ -468,6 +471,7 @@ export async function computeGetImpactPanels5to16(
 			COALESCE(hh."name_en", hc."name_en", ht."name_en", 'No HIPs type') AS hazard_label,
 			v.value,
 			${plausibilityFlagged(sql`rec."legacy_data"`, [measure])} AS flagged,
+			${aboveCeiling(measure, sql`v.value`)} AS above,
 			(SELECT array_agg(DISTINCT pf ->> 'code')
 				FROM jsonb_array_elements(
 					CASE WHEN jsonb_typeof(rec."legacy_data" -> 'migration' -> 'plausibility_flags') = 'array'
@@ -495,11 +499,15 @@ export async function computeGetImpactPanels5to16(
 				reported: 1,
 				zeroConfirmed: 0,
 				total: 1,
-				flagged: r.flagged ? 1 : 0,
+				flagged: r.flagged || r.above ? 1 : 0,
+				aboveCeiling: r.above ? 1 : 0,
 			}),
-			flags: ((r.flags as (string | null)[] | null) ?? []).filter(
-				(f): f is string => !!f,
-			),
+			flags: [
+				...((r.flags as (string | null)[] | null) ?? []).filter(
+					(f): f is string => !!f,
+				),
+				...(r.above ? [ABOVE_CEILING_CODE] : []),
+			],
 		})),
 	};
 
