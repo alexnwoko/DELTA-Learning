@@ -18,8 +18,12 @@ import {
 	type ImpactPanelsContext,
 } from "~/backend.server/models/analytics/dashboard/impactPanels.server";
 import {
+	RANKED_DIVISIONS_TOP,
+	addCells,
+	divisionNames,
 	housesCte,
 	num,
+	recordDivisionsCte,
 	rows,
 } from "~/backend.server/models/analytics/dashboard/impactPanels5to16.server";
 import type { DeltaQuery } from "~/utils/deltaQuery";
@@ -126,6 +130,9 @@ async function computeGetSectorPanels1to7(
 		typeTotals,
 		dwellingsByType,
 		labels,
+		byDivision,
+		multiDivision,
+		divNames,
 	] = await Promise.all([
 		rows(sql`
 				SELECT s."id"::text AS id, COALESCE(s."name" ->> 'en', s."sectorname") AS label,
@@ -186,6 +193,28 @@ async function computeGetSectorPanels1to7(
 				LEFT JOIN houses h ON h."record_id" = fr.record_id
 				GROUP BY 1`),
 		hipTypeLabels(),
+		// Ranked by divisions: each record once per level-1 division.
+		rows(sql`
+				WITH RECURSIVE ${fr}, ${sectorHitsCtes}, ${recordDivisionsCte(ctx.countryAccountsId)},
+				rec_dmg AS (
+					SELECT fr.record_id, bool_or(h.dmg) AS yes, bool_or(h.dmg IS FALSE) AS no
+					FROM filtered_records fr
+					LEFT JOIN hits h ON h.record_id = fr.record_id ${sf}
+					GROUP BY 1
+				)
+				SELECT rl.l1_id::text AS k,
+					COUNT(*) FILTER (WHERE d.yes) AS yes,
+					COUNT(*) FILTER (WHERE d.yes IS NOT TRUE AND d.no) AS no,
+					COUNT(*) AS records
+				FROM rec_dmg d
+				LEFT JOIN rec_l1 rl ON rl.record_id = d.record_id
+				GROUP BY 1`),
+		rows(sql`
+				WITH RECURSIVE ${fr}, ${recordDivisionsCte(ctx.countryAccountsId)}
+				SELECT COUNT(*) AS n FROM (
+					SELECT record_id FROM rec_l1 GROUP BY 1 HAVING COUNT(*) > 1
+				) m`),
+		divisionNames(ctx.countryAccountsId),
 	]);
 
 	const total = num(scope[0]?.records);
@@ -209,6 +238,26 @@ async function computeGetSectorPanels1to7(
 		flagCell(bySector.get(id)?.dmg_yes, bySector.get(id)?.dmg_no, total);
 	const typeLabel = (id: string | null) =>
 		id === null ? "No HIPs type" : (labels.get(id) ?? `HIPs type ${id}`);
+
+	// Ranked by divisions: records reporting sector damage per level-1 division.
+	const divRows = byDivision
+		.map((r) => ({
+			divisionId: (r.k as string | null) ?? "none",
+			name:
+				r.k === null
+					? "No division recorded"
+					: (divNames.get(r.k as string) ?? `Division ${r.k}`),
+			cell: flagCell(r.yes, r.no, num(r.records)),
+		}))
+		.sort((a, b) => rankValue(b.cell) - rankValue(a.cell));
+	const restRows = divRows.slice(RANKED_DIVISIONS_TOP);
+	const rankedDivisions = {
+		rows: divRows.slice(0, RANKED_DIVISIONS_TOP),
+		rest: restRows.length
+			? { divisions: restRows.length, cell: addCells(restRows.map((r) => r.cell)) }
+			: null,
+		multiDivisionRecords: num(multiDivision[0]?.n),
+	};
 
 	// Dwellings, by HIPs type and in total.
 	const dwellingRows = dwellingsByType.map((r) => ({
@@ -312,6 +361,25 @@ async function computeGetSectorPanels1to7(
 		},
 		hazardBySector,
 		byYear: { series, recordsWithoutYear },
+		rankedDivisions,
+		completeness: {
+			recordsTotal: total,
+			rows: level2
+				.map((sector) => {
+					const r = bySector.get(sector.sectorId);
+					return {
+						sector,
+						damage: { yes: num(r?.dmg_yes), no: num(r?.dmg_no) },
+						losses: { yes: num(r?.loss_yes), no: num(r?.loss_no) },
+						disruption: { yes: num(r?.disr_yes), no: num(r?.disr_no) },
+					};
+				})
+				.sort(
+					(a, b) =>
+						b.damage.yes + b.damage.no - (a.damage.yes + a.damage.no) ||
+						a.sector.label.localeCompare(b.sector.label),
+				),
+		},
 		dwellings: { groupBy: "hipType", rows: dwellingRows },
 		sendai: {
 			nationalOnly: national,
@@ -432,6 +500,12 @@ async function computeGetSectorPanels1to7(
 				national
 					? "What DELTA holds towards Sendai Targets C and D, national figures. Sendai-aligned counts from national records, not the official Sendai Framework Monitor submission."
 					: "Sub-national figures. Not a Sendai indicator value (TR-060).",
+			),
+			rankedDivisions: meta(
+				"Records reporting damage in any level-2 sector (or the chosen sectors) per level-1 division; a record with only explicit no answers is a confirmed zero; a record in several divisions counts in each, so rows do not add up",
+			),
+			completeness: meta(
+				"Per level-2 sector, records answering yes or an explicit no for damage, losses and disruption, out of all records in scope; counts of records, not figures",
 			),
 		},
 	};

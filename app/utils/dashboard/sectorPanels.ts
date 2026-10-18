@@ -4,6 +4,7 @@
 // cell, axis or total; money stays gap G-06 until the money convention (D-04).
 
 import type { PanelCell, PanelMeta } from "~/utils/dashboard/impactPanels";
+import type { RankedDivisions } from "~/utils/dashboard/impactPanels5to16";
 
 export interface SectorRef {
 	sectorId: string;
@@ -91,6 +92,30 @@ export interface SectorSendaiCrosswalk {
 }
 
 /**
+ * Ranked by divisions: records reporting damage in any sector (or the chosen
+ * sectors) per level-1 division. A record with only explicit "no" answers is
+ * a confirmed zero; a record that says nothing is not reported. Same shape as
+ * the Disaster impact panel, so one component draws both.
+ */
+export type SectorRankedDivisions = RankedDivisions;
+
+/**
+ * Sector reporting completeness: per level-2 sector, how many records in
+ * scope answer each question (yes or an explicit no) out of all records.
+ * These are counts of records, not figures: 0 answers means no record
+ * answered, which is itself the finding.
+ */
+export interface SectorCompleteness {
+	recordsTotal: number;
+	rows: {
+		sector: SectorRef;
+		damage: { yes: number; no: number };
+		losses: { yes: number; no: number };
+		disruption: { yes: number; no: number };
+	}[];
+}
+
+/**
  * Set when no record is in scope. The view then shows one frame with the
  * reason instead of panels of zeros: no data is never drawn as 0.
  */
@@ -107,6 +132,8 @@ export interface SectorPanels1to7 {
 	byYear: SectorByYear;
 	dwellings: DwellingsPanel;
 	sendai: SectorSendaiCrosswalk;
+	rankedDivisions: SectorRankedDivisions;
+	completeness: SectorCompleteness;
 	meta: Record<
 		| "headline"
 		| "reporting"
@@ -114,7 +141,9 @@ export interface SectorPanels1to7 {
 		| "hazardBySector"
 		| "byYear"
 		| "dwellings"
-		| "sendai",
+		| "sendai"
+		| "rankedDivisions"
+		| "completeness",
 		PanelMeta
 	>;
 }
