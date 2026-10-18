@@ -10,6 +10,8 @@ import type React from "react";
 import { useState } from "react";
 import { ToggleButton } from "react-aria-components";
 import { ChartFrame } from "~/frontend/charts/ChartFrame";
+import { SECTION_ICONS, TARGET_ICONS, panelIcon } from "~/frontend/charts/dashboardIcons";
+import { PanelIcon, PanelIconContext } from "~/frontend/charts/PanelIcon";
 import type { ChartExportRow } from "~/frontend/charts/chartExport";
 import { roundedBarPath } from "~/frontend/charts/roundedBar";
 import type { ViewContext } from "~/frontend/context";
@@ -570,7 +572,8 @@ export function SendaiSectionView({
 	return (
 		<section aria-labelledby="sfm-heading" className="flex flex-col gap-4 rounded border border-brand-border bg-brand-surface-subtle p-4">
 			<header className="flex flex-col gap-1">
-				<h2 id="sfm-heading" className="m-0 text-xl font-semibold">
+				<h2 id="sfm-heading" className="m-0 flex items-center gap-2 text-xl font-semibold">
+					<PanelIcon name={SECTION_ICONS.sendai} size={22} />
 					{tr(t, "dashboard.sfm_title", "Sendai Framework Monitoring")}
 				</h2>
 				<p role="note" className="m-0 text-sm">{sendaiNotice(t, country)}</p>
@@ -581,17 +584,24 @@ export function SendaiSectionView({
 				{!d.nationalOnly && <p className="m-0 text-sm font-semibold">{subnationalNote(t)}</p>}
 			</header>
 			{by("S").map((p) => (
-				<div key={p.id} id={p.id} className={card}>{p.render?.()}</div>
+				<div key={p.id} id={p.id} className={card}>
+					<PanelIconContext.Provider value={panelIcon(p.id)}>{p.render?.()}</PanelIconContext.Provider>
+				</div>
 			))}
 			{(["A", "B", "C", "D"] as const).map((g) => {
 				const [code, msg] = TARGET_HEADINGS[g];
 				return (
 					<section key={g} aria-label={t({ code, msg })} className="flex flex-col gap-2">
-						<h3 className="m-0 text-sm font-semibold uppercase tracking-wide text-brand-interactive">{t({ code, msg })}</h3>
+						<h3 className="m-0 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-brand-interactive">
+							<PanelIcon name={TARGET_ICONS[g]} size={16} />
+							{t({ code, msg })}
+						</h3>
 						{/* Each target is its own grid, so Target B never starts in Target A's row. */}
 						<div className="grid grid-cols-1 gap-4 lg:grid-cols-2 print:grid-cols-1">
 							{by(g).map((p) => (
-								<div key={p.id} id={p.id} className={card}>{p.render?.()}</div>
+								<div key={p.id} id={p.id} className={card}>
+									<PanelIconContext.Provider value={panelIcon(p.id)}>{p.render?.()}</PanelIconContext.Provider>
+								</div>
 							))}
 						</div>
 					</section>

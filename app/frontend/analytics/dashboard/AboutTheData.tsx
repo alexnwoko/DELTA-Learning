@@ -5,6 +5,8 @@
 // submission" sentence and the contact address await UNDRR clearance.
 // Partners show as text only: no logo until written permission is held.
 import { useId } from "react";
+import { SECTION_ICONS } from "~/frontend/charts/dashboardIcons";
+import { PanelIcon } from "~/frontend/charts/PanelIcon";
 import type { ViewContext } from "~/frontend/context";
 import type { QueryDimension } from "~/utils/deltaQuery";
 
@@ -79,7 +81,8 @@ export function AboutTheData({
 			data-print="keep"
 			className="flex flex-col gap-3 border-t border-brand-border pt-4 text-sm text-brand-text"
 		>
-			<h2 id={headingId} className="m-0 text-lg font-semibold">
+			<h2 id={headingId} className="m-0 flex items-center gap-2 text-lg font-semibold">
+				<PanelIcon name={SECTION_ICONS.about} size={20} />
 				{t({ code: "dashboard.about_the_data", msg: "About the data" })}
 			</h2>
 			{provisional && (

@@ -13,6 +13,7 @@ import {
 	Popover,
 } from "react-aria-components";
 import type { ViewContext } from "~/frontend/context";
+import { PanelIcon, usePanelIcon } from "./PanelIcon";
 import { STATE_ENCODING } from "~/utils/mapState";
 import {
 	chartCsv,
@@ -84,6 +85,7 @@ function svgToPng(svg: string, width: number, height: number, scale = 2): Promis
 
 export function ChartFrame({ ctx, title, meta, rows, formatValue, pictures = true, quietNotes = [], children }: ChartFrameProps) {
 	const titleId = useId();
+	const icon = usePanelIcon();
 	const chartRef = useRef<HTMLDivElement>(null);
 	const fullMeta = (): ChartExportMeta => ({ ...meta, title, generatedAt: new Date() });
 	const notes = exportNotes({ ...meta, title, generatedAt: new Date() }, rows).filter(
@@ -125,7 +127,12 @@ export function ChartFrame({ ctx, title, meta, rows, formatValue, pictures = tru
 	return (
 		<figure aria-labelledby={titleId} className="m-0 flex flex-col gap-2">
 			<div className="flex items-start justify-between gap-2">
-				<h3 id={titleId} className="m-0 text-base font-semibold text-brand-text">
+				<h3 id={titleId} className="m-0 flex items-center gap-2 text-base font-semibold text-brand-text">
+					{icon && (
+						<span className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-brand-border bg-brand-surface-subtle">
+							<PanelIcon name={icon} size={18} />
+						</span>
+					)}
 					{title}
 				</h3>
 				<MenuTrigger>

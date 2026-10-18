@@ -4,6 +4,8 @@
 // with the reason, or fold into one "Not yet available" strip (decision 1).
 import { useId } from "react";
 import { Button, Disclosure, DisclosurePanel } from "react-aria-components";
+import { panelIcon } from "~/frontend/charts/dashboardIcons";
+import { PanelIcon, PanelIconContext } from "~/frontend/charts/PanelIcon";
 import type { ViewContext } from "~/frontend/context";
 import { DEFAULT_PANEL_COUNT, type DashboardPanel, type PanelGap } from "./types";
 
@@ -44,7 +46,10 @@ function PanelCard({ ctx, panel }: { ctx: ViewContext; panel: DashboardPanel }) 
 				data-panel-state="gap"
 				className="flex flex-col gap-2 rounded border border-dashed border-brand-border-control bg-brand-surface-subtle p-4"
 			>
-				<h3 id={headingId} className="m-0 text-base font-semibold text-brand-text">
+				<h3 id={headingId} className="m-0 flex items-center gap-2 text-base font-semibold text-brand-text">
+					<span className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-brand-border bg-brand-surface">
+						<PanelIcon name={panelIcon(panel.id)} size={18} colour="var(--delta-brand-text-muted)" />
+					</span>
 					{panel.title}
 				</h3>
 				<GapBody ctx={ctx} gap={panel.gap} />
@@ -58,7 +63,7 @@ function PanelCard({ ctx, panel }: { ctx: ViewContext; panel: DashboardPanel }) 
 			data-panel-state="ready"
 			className="min-w-0 break-inside-avoid rounded border border-brand-border bg-brand-surface p-4"
 		>
-			{panel.render?.()}
+			<PanelIconContext.Provider value={panelIcon(panel.id)}>{panel.render?.()}</PanelIconContext.Provider>
 		</div>
 	);
 }
@@ -80,13 +85,16 @@ export function NotYetAvailableStrip({ ctx, panels }: { ctx: ViewContext; panels
 					const gap = p.gap as PanelGap;
 					const count = gapCountText(ctx, gap);
 					return (
-						<li key={p.id} id={p.id} className="text-sm">
+						<li key={p.id} id={p.id} className="flex items-start gap-2 text-sm">
+							<PanelIcon name={panelIcon(p.id)} size={16} colour="var(--delta-brand-text-muted)" className="mt-0.5" />
+							<span>
 							<span className="font-semibold text-brand-text">{p.title}</span>
 							<span className="text-brand-text-muted">
 								{": "}
 								{gap.text}
 								{gap.code && ` (${gap.code})`}
 								{count && ` · ${count}`}
+							</span>
 							</span>
 						</li>
 					);
