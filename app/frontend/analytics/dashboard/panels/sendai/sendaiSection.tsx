@@ -573,7 +573,7 @@ export function SendaiSectionView({
 		<section aria-labelledby="sfm-heading" className="flex flex-col gap-4 rounded border border-brand-border bg-brand-surface-subtle p-4">
 			<header className="flex flex-col gap-1">
 				<h2 id="sfm-heading" className="m-0 flex items-center gap-2 text-xl font-semibold">
-					<PanelIcon name={SECTION_ICONS.sendai} size={22} />
+					<PanelIcon name={SECTION_ICONS.sendai} size={33} />
 					{tr(t, "dashboard.sfm_title", "Sendai Framework Monitoring")}
 				</h2>
 				<p role="note" className="m-0 text-sm">{sendaiNotice(t, country)}</p>
@@ -593,7 +593,7 @@ export function SendaiSectionView({
 				return (
 					<section key={g} aria-label={t({ code, msg })} className="flex flex-col gap-2">
 						<h3 className="m-0 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-brand-interactive">
-							<PanelIcon name={TARGET_ICONS[g]} size={16} />
+							<PanelIcon name={TARGET_ICONS[g]} size={24} />
 							{t({ code, msg })}
 						</h3>
 						{/* Each target is its own grid, so Target B never starts in Target A's row. */}

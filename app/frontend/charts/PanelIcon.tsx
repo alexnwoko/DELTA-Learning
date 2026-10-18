@@ -2,9 +2,7 @@
 // of a design token rather than the file's own black. Decorative: the title
 // beside it carries the meaning, so the icon is hidden from screen readers.
 import { createContext, useContext, type CSSProperties } from "react";
-import type { OchaIcon } from "./dashboardIcons";
-
-export const ICON_BASE = "/assets/icons/ocha";
+import { iconUrl, type OchaIcon } from "./dashboardIcons";
 
 export function PanelIcon({
 	name,
@@ -14,15 +12,15 @@ export function PanelIcon({
 }: {
 	name: OchaIcon;
 	size?: number;
-	/** A CSS colour or var(); defaults to the brand's interactive colour. */
+	/** A CSS colour or var(); defaults to the dashboard icon blue (data.icon). */
 	colour?: string;
 	className?: string;
 }) {
-	const url = `url(${ICON_BASE}/${name}.svg)`;
+	const url = `url(${iconUrl(name)})`;
 	const style: CSSProperties = {
 		width: size,
 		height: size,
-		backgroundColor: colour ?? "var(--delta-brand-interactive)",
+		backgroundColor: colour ?? "var(--delta-data-icon)",
 		maskImage: url,
 		WebkitMaskImage: url,
 		maskRepeat: "no-repeat",

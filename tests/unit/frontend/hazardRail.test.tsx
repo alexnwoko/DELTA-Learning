@@ -30,11 +30,11 @@ describe("left hazard rail (mockup option A)", () => {
 		expect(html).toContain("Biological");
 	});
 
-	it("draws OCHA's hazard icon in the hazard's identity colour", () => {
+	it("draws each type's icon at 40 px in the dashboard blue (Alex, 2026-10-18)", () => {
 		const html = render(null);
-		expect(html).toMatch(/data-icon="flood"[^>]*background-color:var\(--delta-data-hazard-meteorological-hydrological\)/);
-		expect(html).toMatch(/data-icon="earthquake"[^>]*background-color:var\(--delta-data-hazard-geological\)/);
-		expect(html).toMatch(/data-icon="epidemic"[^>]*background-color:var\(--delta-data-hazard-biological\)/);
+		for (const name of ["multi-hazard", "flood", "earthquake", "epidemic"]) {
+			expect(html).toMatch(new RegExp(`data-icon="${name}"[^>]*width:40px;height:40px;background-color:var\\(--delta-data-icon\\)`));
+		}
 	});
 
 	it("shows record counts on record views, in the accessible name too, and disables a type with none, never a 0", () => {

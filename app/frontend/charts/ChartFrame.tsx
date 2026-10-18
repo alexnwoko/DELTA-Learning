@@ -129,8 +129,8 @@ export function ChartFrame({ ctx, title, meta, rows, formatValue, pictures = tru
 			<div className="flex items-start justify-between gap-2">
 				<h3 id={titleId} className="m-0 flex items-center gap-2 text-base font-semibold text-brand-text">
 					{icon && (
-						<span className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-brand-border bg-brand-surface-subtle">
-							<PanelIcon name={icon} size={18} />
+						<span className="flex h-12 w-12 shrink-0 items-center justify-center rounded border border-brand-border bg-brand-surface-subtle">
+							<PanelIcon name={icon} size={27} />
 						</span>
 					)}
 					{title}
