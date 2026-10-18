@@ -150,6 +150,13 @@ type MapChartProps = {
 };
 
 /**
+ * The UN short-form map disclaimer, word for word, on every map that shows
+ * boundaries (Alex, 2026-10-18; UN Geodata). Shown in the map credits.
+ */
+export const UN_MAP_DISCLAIMER =
+	"The boundaries and names shown and the designations used on this map do not imply official endorsement or acceptance by the United Nations.";
+
+/**
  * Boundary layer colours, the values of Geoportal's dataTokens.map
  * countryOutline (#7b828c, 1.2) and areaLabel (#5f6670, white halo, 12 px):
  * the lightest greys that keep 3:1 for the line and 4.5:1 for the text on
@@ -680,16 +687,24 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 							);
 						}
 						const offered = (basemaps ?? []).filter((b) => b.id !== "google");
-						const hasBasemap = !!tiles || offered.length > 0;
 						// The attribution control is shown exactly when a basemap can be
 						// drawn, and it keeps the data credit (TR-166).
 						mapRef.current = L.map(componentId, {
 							preferCanvas: false,
-							attributionControl: hasBasemap,
+							// Always on: it carries the UN map disclaimer (Alex,
+							// 2026-10-18), with or without a basemap.
+							attributionControl: true,
 						});
-						if (hasBasemap) {
-							mapRef.current.attributionControl?.setPrefix(false);
-						}
+						mapRef.current.attributionControl?.setPrefix(false);
+						mapRef.current.attributionControl?.addAttribution(
+							escapeHtml(UN_MAP_DISCLAIMER),
+						);
+						// The country outline sits above the shading, never filled and
+						// never catching clicks (Alex, 2026-10-18), below the labels
+						// and symbols (marker pane).
+						const outlinePane = mapRef.current.createPane("deltaBoundaries");
+						outlinePane.style.zIndex = "450";
+						outlinePane.style.pointerEvents = "none";
 						const baseLayers: Record<string, any> = {};
 						if (offered.length) {
 							baseLayers[
@@ -832,6 +847,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 					if (boundaries && boundaryGroupRef.current) {
 						if (boundaries.outline) {
 							L.geoJSON(boundaries.outline as any, {
+								pane: "deltaBoundaries",
 								interactive: false,
 								style: () => ({
 									color: BOUNDARY_GREY,

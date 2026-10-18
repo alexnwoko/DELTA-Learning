@@ -10,6 +10,9 @@ import {
 	humanEffectMeasuresFromRow,
 	humanEffectMeasuresSelect,
 	humanEffectsFilteredRecords,
+	measurePartsCtes,
+	measurePartsJoins,
+	recordFlagsColumn,
 	type HazardFilters,
 } from "~/backend.server/models/analytics/hazard-analysis";
 import {
@@ -104,7 +107,7 @@ function eventsCte(filters: HazardFilters): SQL {
  */
 function linkedRecordsCte(filters: HazardFilters): SQL {
 	return sql`filtered_records AS (
-		SELECT r."id" AS record_id, r."disaster_event_id" AS event_id
+		SELECT r."id" AS record_id, r."disaster_event_id" AS event_id, ${recordFlagsColumn("r")} AS pflags
 		FROM "disaster_records" r
 		JOIN ev ON ev."id" = r."disaster_event_id"
 		WHERE ${approvalBasis(filters.audience, basisColumns("r"))}
@@ -134,7 +137,7 @@ async function computeGetEventPanels1to7(
 	const [events, perEvent, overall, scope, labels] = await Promise.all([
 		rows(sql`WITH ${ev} SELECT * FROM ev`),
 		rows(sql`
-			WITH RECURSIVE ${ev}, ${lr}, ${housesCte},
+			WITH RECURSIVE ${ev}, ${lr}, ${measurePartsCtes}, ${housesCte},
 			l1 AS (
 				SELECT d."id", d."id" AS l1_id FROM "division" d
 				WHERE d."level" = 1 AND d."country_accounts_id" = ${ctx.countryAccountsId}
@@ -151,14 +154,16 @@ async function computeGetEventPanels1to7(
 					WHERE f2.event_id = fr.event_id) AS divisions
 			FROM filtered_records fr
 			LEFT JOIN "human_category_presence" hcp ON hcp."record_id" = fr.record_id
+			${measurePartsJoins}
 			LEFT JOIN "disaster_records" rec ON rec."id" = fr.record_id
 			LEFT JOIN houses h ON h."record_id" = fr.record_id
 			GROUP BY fr.event_id`),
 		rows(sql`
-			WITH ${ev}, ${lr}
+			WITH ${ev}, ${lr}, ${measurePartsCtes}
 			SELECT ${humanEffectMeasuresSelect()}
 			FROM filtered_records fr
 			LEFT JOIN "human_category_presence" hcp ON hcp."record_id" = fr.record_id
+			${measurePartsJoins}
 			LEFT JOIN "disaster_records" rec ON rec."id" = fr.record_id`),
 		rows(sql`
 			WITH RECURSIVE ${humanEffectsFilteredRecords(filters)}
