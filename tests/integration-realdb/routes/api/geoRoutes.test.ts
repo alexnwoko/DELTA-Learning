@@ -28,6 +28,9 @@ import { loader as dossier } from "~/routes/$lang+/api+/geo+/place.$divisionId.d
 import { loader as boundaries } from "~/routes/$lang+/api+/geo+/boundaries";
 import { loader as tile } from "~/routes/$lang+/api+/geo+/tiles.divisions.$level.$z.$x.$y";
 import { loader as extent } from "~/routes/$lang+/api+/geo+/extent";
+import { loader as mapContext } from "~/routes/$lang+/api+/geo+/map-context";
+import { loader as world } from "~/routes/$lang+/api+/geo+/world";
+import { mapDataVersion } from "~/backend.server/models/geo/tenantExtent";
 
 const ids = createTestIds();
 ids.userEmail = ids.userEmail.replace("@", "-georoutes@");
@@ -192,6 +195,53 @@ describe("api geo routes", () => {
 		expect(fc.features.map((f: any) => f.properties.divisionId)).toEqual([
 			divB,
 		]);
+	});
+
+	it("versions map geometry per tenant and caches only the current version for a year", async () => {
+		const vA = await mapDataVersion(ids.countryAccountId);
+		const vB = await mapDataVersion(tenantB);
+		expect(vA).toMatch(/^[0-9a-f]{16}$/);
+		expect(vB).not.toBe(vA);
+		const current = await call(boundaries, tenantB, `boundaries?level=1&v=${vB}`);
+		expect(current.headers.get("Cache-Control")).toBe(
+			"private, max-age=31536000, immutable",
+		);
+		// Another tenant's version, or none, never earns the long cache.
+		for (const q of [`boundaries?level=1&v=${vA}`, "boundaries?level=1"]) {
+			const res = await call(boundaries, tenantB, q);
+			expect(res.headers.get("Cache-Control")).toBe("private, no-cache");
+		}
+		const etag = current.headers.get("ETag") as string;
+		const again = await call(boundaries, tenantB, `boundaries?level=1&v=${vB}`, {}, {
+			"If-None-Match": etag,
+		});
+		expect(again.status).toBe(304);
+	});
+
+	it("serves each tenant's own outline in the map context, never another's", async () => {
+		const vB = await mapDataVersion(tenantB);
+		const res = await call(mapContext, tenantB, `map-context?v=${vB}`);
+		expect(res.status).toBe(200);
+		expect(res.headers.get("Cache-Control")).toContain("immutable");
+		const body = await res.json();
+		expect(Array.isArray(body.neighbours)).toBe(true);
+		// Polygon or MultiPolygon: every other number is a longitude.
+		const flat = (body.outline.geojson.coordinates as unknown[]).flat(
+			Infinity,
+		) as number[];
+		const minLon = Math.min(...flat.filter((_, i) => i % 2 === 0));
+		expect(minLon).toBeCloseTo(40, 3);
+	});
+
+	it("serves the world admin-0 layer as shared lines and ranked names", async () => {
+		const res = await call(world, ids.countryAccountId, "world");
+		expect(res.status).toBe(200);
+		const body = await res.json();
+		expect(Array.isArray(body.labels)).toBe(true);
+		if (body.lines) {
+			expect(body.lines.type).toMatch(/LineString/);
+			for (const l of body.labels) expect(l.minZoom).toBeGreaterThanOrEqual(0);
+		}
 	});
 
 	it("serves MVT, 204 for an empty tile and 400 out of range", async () => {

@@ -5470,6 +5470,11 @@
     "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
   },
   {
+    "id": "geoportal.map.shapes_unavailable",
+    "translation": "Area shapes could not be loaded; the table still shows every figure.",
+    "description": "Shown on the map when its shapes fail to download. File: app/routes/$lang+/geoportal+/_index.tsx"
+  },
+  {
     "id": "geoportal.map.un_disclaimer",
     "translation": "The boundaries and names shown and the designations used on this map do not imply official endorsement or acceptance by the United Nations.",
     "description": "UN short-form map disclaimer; keep the UN wording exactly. File: app/routes/$lang+/geoportal+/_index.tsx"
