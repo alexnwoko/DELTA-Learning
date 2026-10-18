@@ -6,9 +6,11 @@
 
 import { sql } from "drizzle-orm";
 import { dr } from "~/db.server";
+import { cachedGeo } from "~/backend.server/models/geo/cache";
+import { readModelRefreshedAt } from "~/backend.server/models/geo/queries";
 
 /** km2 per division id; divisions without geometry are absent, never 0. */
-export async function divisionAreasKm2(
+async function divisionAreasKm2Uncached(
 	divisionIds: readonly (string | number)[],
 	countryAccountsId: string,
 ): Promise<Map<string, number>> {
@@ -31,4 +33,22 @@ export async function divisionAreasKm2(
 		if (Number.isFinite(km2) && km2 > 0) areas.set(row.id, km2);
 	}
 	return areas;
+}
+
+/** Cached until the tenant's next read-model refresh (I-6: 165 ms per page view on Mozambique). */
+export async function divisionAreasKm2(
+	divisionIds: readonly (string | number)[],
+	countryAccountsId: string,
+): Promise<Map<string, number>> {
+	const ids = divisionIds.map(String).sort();
+	const entries = await cachedGeo(
+		"divisionAreasKm2",
+		countryAccountsId,
+		await readModelRefreshedAt(countryAccountsId),
+		ids,
+		async () => [
+			...(await divisionAreasKm2Uncached(ids, countryAccountsId)).entries(),
+		],
+	);
+	return new Map(entries);
 }

@@ -594,7 +594,7 @@ export function geomColumnForZoom(
 }
 
 /** G1. Simplified division geometry as GeoJSON for one level. */
-export async function getBoundaries(
+async function getBoundariesUncached(
 	countryAccountsId: string,
 	params: {
 		level: number;
@@ -1301,4 +1301,18 @@ export async function listPlaceOptions(
 		level: Number(r.admin_level),
 		parentId: r.parent_id,
 	}));
+}
+
+/** G1, cached until the tenant's next refresh (I-6: 76 ms per page view on Mozambique). */
+export async function getBoundaries(
+	countryAccountsId: string,
+	params: Parameters<typeof getBoundariesUncached>[1],
+) {
+	return cachedGeo(
+		"boundaries",
+		countryAccountsId,
+		await readModelRefreshedAt(countryAccountsId),
+		params,
+		() => getBoundariesUncached(countryAccountsId, params),
+	);
 }
