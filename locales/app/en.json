@@ -5440,6 +5440,11 @@
     "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
   },
   {
+    "id": "geoportal.map.labels",
+    "translation": "Boundaries and labels",
+    "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
+  },
+  {
     "id": "geoportal.map.shading",
     "translation": "Shading",
     "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
