@@ -10,6 +10,7 @@ import {
 	cleanupOtherTenant,
 } from "../test-helpers";
 import { refreshGeoReadModel } from "~/backend.server/models/geo/refresh";
+import { getTenantOutline } from "~/backend.server/models/geo/tenantExtent";
 import {
 	getChoropleth,
 	GeoRefusalError,
@@ -309,5 +310,25 @@ describe("geoportal regions within one country (RG-1)", () => {
 		const r = await getRegion(a, regionId, "en");
 		expect(r?.regionVintage).toBe("2");
 		expect(r?.members).toHaveLength(3);
+	});
+
+	it("draws the tenant's outline from its own level-1 areas, with a label point inside", async () => {
+		const o = await getTenantOutline(ids.countryAccountId);
+		expect(o.adminLevel).toBe(1);
+		expect(["Polygon", "MultiPolygon"]).toContain(o.geojson?.type);
+		const res = await dr.execute(sql`
+			SELECT ST_Contains(
+				ST_GeomFromGeoJSON(${JSON.stringify(o.geojson)}),
+				ST_SetSRID(ST_MakePoint(${o.labelPoint![0]}, ${o.labelPoint![1]}), 4326)
+			) AS inside,
+			ST_Intersects(
+				ST_GeomFromGeoJSON(${JSON.stringify(o.geojson)}),
+				ST_MakeEnvelope(41, 1, 49, 9, 4326)
+			) AS reaches_b
+		`);
+		const row = res.rows[0] as { inside: boolean; reaches_b: boolean };
+		expect(row.inside).toBe(true);
+		// Tenant B's area (40..50) is never part of A's outline (SEC-22).
+		expect(row.reaches_b).toBe(false);
 	});
 });

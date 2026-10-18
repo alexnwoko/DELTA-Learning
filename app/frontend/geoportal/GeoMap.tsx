@@ -13,7 +13,7 @@ import XYZ from "ol/source/XYZ";
 import { defaults as defaultControls, ScaleLine } from "ol/control";
 import VectorSource from "ol/source/Vector";
 import GeoJSON from "ol/format/GeoJSON";
-import { Fill, Stroke, Style } from "ol/style";
+import { Fill, Stroke, Style, Text } from "ol/style";
 import Feature from "ol/Feature";
 import Point from "ol/geom/Point";
 import { fromLonLat } from "ol/proj";
@@ -73,6 +73,14 @@ export interface GeoMapProps {
 	homeSignal?: number;
 	/** Colour of bubbles and bars (legend.symbols.color); none in shading mode. */
 	symbolColor?: string | null;
+	/** The tenant's outline and name (getTenantOutline); drawn in light grey. */
+	outline?: {
+		geojson: { type: string; coordinates: unknown } | null;
+		labelPoint: [number, number] | null;
+		name: string | null;
+	} | null;
+	/** "Boundaries and labels" overlay: outline, country name, area names. */
+	showLabels?: boolean;
 	/** Accessible name; the table alternative carries the figures. */
 	label: string;
 	describedBy?: string;
@@ -298,6 +306,8 @@ export function GeoMap({
 	onBasemapStatus,
 	homeSignal = 0,
 	symbolColor = null,
+	outline = null,
+	showLabels = true,
 	label,
 	describedBy,
 }: GeoMapProps) {
@@ -313,6 +323,7 @@ export function GeoMap({
 	const baseRef = useRef(new Map<BasemapLayerId, TileLayer<XYZ>>());
 	const shownRef = useRef<BasemapLayerId | null>(null);
 	const symbolLayerRef = useRef<VectorLayer<VectorSource> | null>(null);
+	const labelLayerRef = useRef<VectorLayer<VectorSource> | null>(null);
 
 	const byId = useMemo(() => new Map(areas.map((a) => [a.areaId, a])), [areas]);
 
@@ -359,9 +370,17 @@ export function GeoMap({
 		// Symbols are never decluttered: hiding a feature would hide data.
 		const symbols = new VectorLayer({ source: new VectorSource(), zIndex: 2 });
 		symbolLayerRef.current = symbols;
+		// Boundaries and labels (Alex, 2026-10-18): light grey outline and names
+		// above the data. Only the label text declutters; data symbols never do.
+		const labels = new VectorLayer({
+			source: new VectorSource(),
+			zIndex: 3,
+			declutter: true,
+		});
+		labelLayerRef.current = labels;
 		const map = new OlMap({
 			target: target.current,
-			layers: [...bases.values(), layer, symbols],
+			layers: [...bases.values(), layer, symbols, labels],
 			controls: defaultControls().extend([new ScaleLine({ units: "metric" })]),
 			// The wheel scrolls the page; Ctrl or Cmd plus the wheel zooms the map.
 			interactions: defaultInteractions({ mouseWheelZoom: false }).extend([
@@ -509,6 +528,63 @@ export function GeoMap({
 			map.getView().fit(extent, { padding: [16, 16, 16, 16], maxZoom: 9 });
 		}
 	}, [boundaries]);
+
+	useEffect(() => {
+		const layer = labelLayerRef.current;
+		const source = layer?.getSource();
+		if (!layer || !source) return;
+		layer.setVisible(showLabels);
+		source.clear();
+		const tok = dataTokens.map;
+		const text = (label: string, size: number, bold = false) =>
+			new Text({
+				text: label,
+				font: `${bold ? "600 " : ""}${size}px system-ui, sans-serif`,
+				fill: new Fill({ color: tok.areaLabel.color }),
+				stroke: new Stroke({ color: tok.areaLabel.halo, width: 3 }),
+				overflow: false,
+			});
+		if (outline?.geojson) {
+			const [f] = new GeoJSON().readFeatures(
+				{ type: "Feature", geometry: outline.geojson, properties: {} },
+				{ dataProjection: "EPSG:4326", featureProjection: "EPSG:3857" },
+			);
+			f.setStyle(
+				new Style({
+					stroke: new Stroke({
+						color: tok.countryOutline.stroke,
+						width: tok.countryOutline.strokeWidth,
+					}),
+					zIndex: 0,
+				}),
+			);
+			source.addFeature(f);
+		}
+		for (const f of boundaries.features as {
+			properties?: { name?: string; labelPoint?: [number, number] };
+		}[]) {
+			const pt = f.properties?.labelPoint;
+			const name = f.properties?.name;
+			if (!pt || !name) continue;
+			const lf = new Feature({ geometry: new Point(fromLonLat(pt)) });
+			lf.setStyle(
+				new Style({ text: text(name, tok.areaLabel.size), zIndex: 1 }),
+			);
+			source.addFeature(lf);
+		}
+		if (outline?.labelPoint && outline.name) {
+			const cf = new Feature({
+				geometry: new Point(fromLonLat(outline.labelPoint)),
+			});
+			cf.setStyle(
+				new Style({
+					text: text(outline.name.toUpperCase(), tok.areaLabel.size + 2, true),
+					zIndex: 2,
+				}),
+			);
+			source.addFeature(cf);
+		}
+	}, [boundaries, outline, showLabels]);
 
 	useEffect(() => {
 		if (!homeSignal) return;
