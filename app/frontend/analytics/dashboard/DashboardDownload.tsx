@@ -18,7 +18,7 @@ export interface DashboardDownloadProps {
 	panels: DashboardPanel[];
 }
 
-/** The CSV for the panels that have data, in panel order. */
+/** The CSV for the panels that have data, in the page's order (the Sendai section first). */
 export function dashboardPanelsCsv(
 	panels: DashboardPanel[],
 	scopeLine: string,
@@ -28,8 +28,7 @@ export function dashboardPanelsCsv(
 ): string {
 	return dashboardCsv(
 		scopeLine,
-		[...panels]
-			.sort((a, b) => a.n - b.n)
+		panels
 			.filter((p) => !p.gap && p.exportData)
 			.map((p) => ({
 				title: p.title,
