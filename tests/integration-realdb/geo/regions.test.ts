@@ -12,6 +12,10 @@ import {
 import { refreshGeoReadModel } from "~/backend.server/models/geo/refresh";
 import { getTenantOutline } from "~/backend.server/models/geo/tenantExtent";
 import {
+	getCountryDossier,
+	listPlaceOptions,
+} from "~/backend.server/models/geo/queries";
+import {
 	getChoropleth,
 	GeoRefusalError,
 } from "~/backend.server/models/geo/queries";
@@ -330,5 +334,24 @@ describe("geoportal regions within one country (RG-1)", () => {
 		expect(row.inside).toBe(true);
 		// Tenant B's area (40..50) is never part of A's outline (SEC-22).
 		expect(row.reaches_b).toBe(false);
+	});
+
+	it("summarises the whole country with each record once, and lists the place options", async () => {
+		const req = await resolve(ids.countryAccountId, "measure=deaths");
+		const d = await getCountryDossier(ids.countryAccountId, req, "en");
+		// a 5 + b 4 (in two provinces, counted once) + c 3 + d 100 + e 2.
+		expect(d.cumulative.deaths.value).toBe(114);
+		expect(d.recurrence.recordCount).toBe(5);
+		expect(d.division).toMatchObject({ id: "country", level: 0 });
+		const opts = await listPlaceOptions(ids.countryAccountId, "en");
+		expect(opts.filter((o) => o.level === 1).map((o) => o.name)).toEqual([
+			"Div P1",
+			"Div P2",
+			"Div P3",
+		]);
+		expect(opts.find((o) => o.id === div.c1)).toMatchObject({
+			level: 2,
+			parentId: div.p1,
+		});
 	});
 });
