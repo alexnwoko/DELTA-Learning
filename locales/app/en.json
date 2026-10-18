@@ -5455,6 +5455,11 @@
     "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
   },
   {
+    "id": "geoportal.map.un_disclaimer",
+    "translation": "The boundaries and names shown and the designations used on this map do not imply official endorsement or acceptance by the United Nations.",
+    "description": "UN short-form map disclaimer; keep the UN wording exactly. File: app/routes/$lang+/geoportal+/_index.tsx"
+  },
+  {
     "id": "geoportal.place.all",
     "translation": "All areas",
     "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
