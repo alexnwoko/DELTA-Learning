@@ -18,6 +18,7 @@ import {
 	notAppliedStrips,
 	q2Grade,
 	quantileBreaks,
+	validRamp,
 	resolveLayeredMapState,
 	resolveMapState,
 	scopeLabel,
@@ -668,5 +669,30 @@ describe("rounded bars over a choropleth (Alex's choice, 2026-10-17)", () => {
 				barsFamily: "people",
 			}),
 		).toThrow();
+	});
+});
+
+describe("section ramp (Frontend section palettes)", () => {
+	const SECTION = ["#e8f1fb", "#b9d3f0", "#7fb0e0", "#3f84c6", "#14569b"];
+	const cells = Array.from({ length: 8 }, (_, i) => reported(`a${i}`, (i + 1) * 10));
+
+	it("replaces the family ramp when given five hex colours", () => {
+		const r = resolveMapState(cells, { family: "people", scope: signedIn, ramp: SECTION });
+		const colours = new Set(r.areas.map((a) => a.color));
+		expect([...colours].every((c) => SECTION.includes(c as string))).toBe(true);
+		expect(r.legend.classes.map((c) => c.color).every((c) => SECTION.includes(c))).toBe(true);
+	});
+
+	it("falls back to the family ramp for anything else", () => {
+		expect(validRamp(SECTION.slice(0, 4))).toBeNull();
+		expect(validRamp([...SECTION.slice(0, 4), "blue"])).toBeNull();
+		expect(validRamp(undefined)).toBeNull();
+		const r = resolveMapState(cells, { family: "people", scope: signedIn, ramp: ["#fff"] });
+		expect(r.areas.every((a) => FAMILY_RAMPS.people.includes(a.color as string))).toBe(true);
+	});
+
+	it("keeps no-data states off the ramp", () => {
+		const r = resolveMapState([...cells, cell("x", "not_reported")], { family: "people", scope: signedIn, ramp: SECTION });
+		expect(SECTION).not.toContain(byId(r, "x").color);
 	});
 });
