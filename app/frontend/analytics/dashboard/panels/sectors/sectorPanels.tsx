@@ -13,7 +13,7 @@ import { cellRow, cellText, coverageText, emptyViewPanel, panelNotes, type Panel
 import type { DashboardPanel } from "../../types";
 import { RowBars, ShadedTable, type BarSeries } from "../blocks";
 import { YearColumns } from "../impact/ImpactTimeline";
-import { sendaiNotice } from "../impact/panels5to16";
+import { rankedDivisionsExport, sendaiNotice } from "../impact/panels5to16";
 import { DASHBOARD_RAMP } from "~/frontend/charts/sectionPalette";
 import { arrangeByLayout, SECTORS_LAYOUT } from "../../layout";
 
@@ -295,13 +295,124 @@ export function sectorDashboardPanels(
 	};
 	const common = (x: string): Common => ({ ctx, title: x, source: opts.source, scope: opts.scope, provisional: opts.provisional });
 	return arrangeByLayout(
-		[1, 2, 3, 4, 5, 6, 7].map((k): DashboardPanel => ({
-			id: `sectors-${k}`,
-			n: k,
-			title: titles[k],
-			exportData: exports[k],
-			render: () => views[k](common(titles[k]), exports[k]),
-		})),
+		[
+			...[1, 2, 3, 4, 5, 6, 7].map((k): DashboardPanel => ({
+				id: `sectors-${k}`,
+				n: k,
+				title: titles[k],
+				exportData: exports[k],
+				render: () => views[k](common(titles[k]), exports[k]),
+			})),
+			sectorDivisionsPanel(ctx, d, common),
+			sectorCompletenessPanel(ctx, d, common),
+		],
 		SECTORS_LAYOUT,
 	);
+}
+
+/**
+ * Ranked by divisions on Sectors (Analytics a7e85e92): records reporting
+ * damage per level-1 division, the same shape and component as on
+ * Disaster impact. An explicit "no" is a confirmed zero; silence is not
+ * reported.
+ */
+function sectorDivisionsPanel(ctx: ViewContext, d: SectorPanels1to7, common: (x: string) => Common): DashboardPanel {
+	const t = ctx.t;
+	const title = tr(t, "dashboard.sectors_divisions", "Ranked by divisions");
+	const p = d.rankedDivisions;
+	const exp = rankedDivisionsExport(t, p, d.meta.rankedDivisions);
+	return {
+		id: "sectors-divisions",
+		n: 8,
+		title,
+		exportData: exp,
+		render: () => (
+			<Frame common={common(title)} exp={exp}>
+				<RowBars ctx={ctx} label={title}
+					rows={[
+						...p.rows.map((r) => ({ key: r.divisionId, label: r.name, bars: [{ cell: r.cell }] })),
+						...(p.rest
+							? [{ key: "rest", label: tr(t, "dashboard.other_divisions", "{n} other divisions", { n: p.rest.divisions }), bars: [{ cell: p.rest.cell }] }]
+							: []),
+					]} />
+			</Frame>
+		),
+	};
+}
+
+type Question = "damage" | "losses" | "disruption";
+const QUESTIONS: Question[] = ["damage", "losses", "disruption"];
+
+/**
+ * Sector reporting completeness (Analytics a7e85e92): per level-2 sector,
+ * how many records answer each question, yes or an explicit no, out of all
+ * records in scope. Counts of records, so "0 of N" is drawn and is the
+ * finding; it is never a measure value.
+ */
+function sectorCompletenessPanel(ctx: ViewContext, d: SectorPanels1to7, common: (x: string) => Common): DashboardPanel {
+	const t = ctx.t;
+	const title = tr(t, "dashboard.sectors_completeness", "Sector reporting completeness");
+	const c = d.completeness;
+	const n = (x: number) => x.toLocaleString(ctx.lang);
+	const names: Record<Question, string> = {
+		damage: tr(t, "dashboard.completeness_damage", "Damage answered"),
+		losses: tr(t, "dashboard.completeness_losses", "Losses answered"),
+		disruption: tr(t, "dashboard.completeness_disruption", "Disruption answered"),
+	};
+	const answered = (q: { yes: number; no: number }) => q.yes + q.no;
+	const unit = tr(t, "dashboard.records_answering_of", "records answering, of {total}", { total: n(c.recordsTotal) });
+	const exp: PanelExport = {
+		rows: c.rows.flatMap((r) =>
+			QUESTIONS.map((q): ChartExportRow => ({ label: r.sector.label, series: names[q], value: answered(r[q]), valueState: "reported", unit })),
+		),
+		method: d.meta.completeness.method,
+		notes: panelNotes(d.meta.completeness, [
+			tr(t, "dashboard.completeness_note", "An answer is yes or an explicit no. A record that says nothing has not answered."),
+		]),
+	};
+	const share = (x: number) => (c.recordsTotal > 0 ? x / c.recordsTotal : 0);
+	const th = "border-b border-brand-border px-2 py-1 font-semibold";
+	return {
+		id: "sectors-completeness",
+		n: 9,
+		title,
+		exportData: exp,
+		render: () => (
+			<Frame common={common(title)} exp={exp} pictures={false}>
+				<div className="max-w-full overflow-x-auto">
+					<table className="w-full border-collapse text-sm">
+						<caption className="sr-only">{title}</caption>
+						<thead>
+							<tr>
+								<th scope="col" className={`${th} text-start`}>{tr(t, "dashboard.sector", "Sector")}</th>
+								{QUESTIONS.map((q) => (
+									<th key={q} scope="col" className={`${th} text-start`}>{names[q]}</th>
+								))}
+							</tr>
+						</thead>
+						<tbody>
+							{c.rows.map((r) => (
+								<tr key={r.sector.sectorId}>
+									<th scope="row" className="border-b border-brand-border px-2 py-1 text-start font-normal">{r.sector.label}</th>
+									{QUESTIONS.map((q) => {
+										const a = answered(r[q]);
+										return (
+											<td key={q} className="border-b border-brand-border px-2 py-1">
+												<span className="tabular-nums">{tr(t, "dashboard.n_of_total", "{n} of {total}", { n: n(a), total: n(c.recordsTotal) })}</span>
+												{/* The share answered, on a track: an empty track is 0 answered, the finding. */}
+												<svg width="100%" height={6} aria-hidden="true" focusable="false" className="mt-1 block">
+													<rect x={0} y={0} width="100%" height={6} rx={3} fill={DASHBOARD_RAMP[1]} />
+													{a > 0 && <rect x={0} y={0} width={`${Math.max(2, share(a) * 100)}%`} height={6} rx={3} fill={DASHBOARD_RAMP[3]} />}
+												</svg>
+											</td>
+										);
+									})}
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</div>
+			</Frame>
+		),
+	};
 }

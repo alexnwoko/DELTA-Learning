@@ -41,7 +41,8 @@ const html = (n: number, p = panels) => text(renderToString(<>{p.find((x) => x.n
 
 describe("Sectors view panels 1 to 7", () => {
 	it("draw seven panels, each framed even without data (Sectors keeps frames)", () => {
-		expect(panels.map((p) => p.n).sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+		// 8 and 9 are Ranked by divisions and Sector reporting completeness (a7e85e92).
+		expect(panels.map((p) => p.n).sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
 		expect(collapsesGaps("sectors")).toBe(false);
 	});
 
@@ -83,7 +84,7 @@ describe("Sectors view panels 1 to 7", () => {
 		const sub = sectorDashboardPanels(ctx, { ...D, sendai: { nationalOnly: false, rows: D.sendai.rows.map((r) => ({ ...r, code: null })) } }, opts);
 		const hs = html(7, sub);
 		expect(hs).not.toMatch(/\b[CD]-\d\b/);
-		expect(sub[6].exportData!.notes).toContain("Sub-national view: indicator codes are not shown (TR-060).");
+		expect(sub.find((p) => p.n === 7)!.exportData!.notes).toContain("Sub-national view: indicator codes are not shown (TR-060).");
 	});
 
 	it("export every panel to the page CSV with value states", () => {
@@ -95,8 +96,18 @@ describe("Sectors view panels 1 to 7", () => {
 
 describe("Sectors layout (FE-Proposal-02, Alex 2026-10-18)", () => {
 	it("follows the agreed rows; the Sendai C and D inputs wait under Show more", () => {
-		expect(panels.filter((p) => !p.more).map((p) => p.id)).toEqual(["sectors-1", "sectors-2", "sectors-5", "sectors-3", "sectors-4", "sectors-6"]);
+		expect(panels.filter((p) => !p.more).map((p) => p.id)).toEqual([
+			"sectors-1", "sectors-divisions", "sectors-2", "sectors-5", "sectors-3", "sectors-4", "sectors-6", "sectors-completeness",
+		]);
 		expect(panels.find((p) => p.id === "sectors-7")!.more).toBe(true);
 		expect(panels.find((p) => p.id === "sectors-6")!.title).toBe("Houses destroyed and damaged");
+	});
+
+	it("draws completeness as answered of total, so 0 answered shows as a finding", () => {
+		const c = panels.find((p) => p.id === "sectors-completeness")!;
+		const html = renderToString(<>{c.render!()}</>).replace(/<!-- -->/g, "");
+		const total = D.completeness.recordsTotal.toLocaleString("en");
+		expect(html).toContain(`of ${total}`);
+		expect(c.exportData!.rows.every((r) => r.valueState === "reported" && r.value !== null)).toBe(true);
 	});
 });
