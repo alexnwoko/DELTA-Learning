@@ -820,6 +820,16 @@
     "description": "Map legend note: areas with a bubble or bar but no shading value, for example no land area recorded. {count} is the number of areas. File: app/components/MapChart.tsx"
   },
   {
+    "id": "analysis.map_basemap_none",
+    "translation": "No basemap",
+    "description": "Map layer switcher: the option that hides the basemap. File: app/components/MapChart.tsx"
+  },
+  {
+    "id": "analysis.map_boundaries_labels",
+    "translation": "Boundaries and labels",
+    "description": "Map layer switcher: the overlay with the country outline and area names, in light grey. File: app/components/MapChart.tsx"
+  },
+  {
     "id": "analysis.map_bars_scale",
     "translation": "Longest bar: {value}. A dashed slot is not reported.",
     "description": "Map legend note in bars mode: the longest bar and what a dashed slot means. {value} is the largest figure. File: app/components/MapChart.tsx"

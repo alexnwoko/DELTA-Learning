@@ -99,12 +99,13 @@ describe("getImpactPanels1to4", () => {
 		).toBe(4);
 	});
 
-	it("names a filter it cannot apply instead of dropping it", async () => {
+	it("applies the region filter instead of naming it as not applied", async () => {
 		const p = await getImpactPanels1to4(
 			{ ...DEFAULT_QUERY, where: { region: { regionId: randomUUID() } } },
 			ctx(),
 		);
-		expect(p.meta.tiles.notApplied).toContain("region");
+		expect(p.meta.tiles.notApplied).not.toContain("region");
+		expect(p.coverage.recordsTotal).toBe(0);
 	});
 
 	it("names the effect chips as not applied instead of ignoring them", async () => {

@@ -16,7 +16,7 @@ import {
 	type EventPanels1to7,
 } from "~/utils/dashboard/eventPanels";
 import { dataTokens } from "~/utils/designTokens.generated";
-import { cellRow, cellText, coverageText, panelNotes, type PanelExport } from "../../panelCell";
+import { cellRow, cellText, coverageText, emptyViewPanel, panelNotes, type PanelExport } from "../../panelCell";
 import type { DashboardPanel } from "../../types";
 import { RowBars } from "../blocks";
 import { waffleShares } from "../impact/CoverageWaffle";
@@ -69,14 +69,17 @@ export function eventContextNotes(t: T, d: EventPanels1to7): string[] {
 		tr(t, "dashboard.rule_count", "{rule} ({n} events)", { rule: ruleLabel(t, r), n: h.byRule[r] }),
 	).join("; ");
 	const notGrouped = d.linkage.notLinked;
-	const pct = d.linkage.recordsInScope > 0 ? Math.round((notGrouped / d.linkage.recordsInScope) * 1000) / 10 : 0;
+	const total = d.linkage.recordsInScope;
 	return [
 		tr(t, "dashboard.grouping_rule", "Grouping rule: {rules}.", { rules }),
-		tr(t, "dashboard.not_grouped", "{n} of {total} records ({pct}%) are not grouped into an event.", {
-			n: notGrouped,
-			total: d.linkage.recordsInScope,
-			pct,
-		}),
+		// With no record in scope there is no share to state, never "0 of 0".
+		total > 0
+			? tr(t, "dashboard.not_grouped", "{n} of {total} records ({pct}%) are not grouped into an event.", {
+					n: notGrouped,
+					total,
+					pct: Math.round((notGrouped / total) * 1000) / 10,
+				})
+			: tr(t, "dashboard.no_records_in_scope", "No records in scope"),
 	];
 }
 
@@ -415,6 +418,9 @@ export function eventDashboardPanels(
 	opts: { source: string; scope: string; provisional: boolean },
 ): DashboardPanel[] {
 	const t = ctx.t;
+	if (d.empty) {
+		return [emptyViewPanel("events", tr(t, "dashboard.dim_disaster_events", "Disaster events"), tr(t, "dashboard.events_empty", d.empty.reason))];
+	}
 	const m = d.meta;
 	const common = (title: string): Common => ({ ctx, title, ...opts });
 	const noEvents = tr(t, "dashboard.no_events_year", "No events recorded");

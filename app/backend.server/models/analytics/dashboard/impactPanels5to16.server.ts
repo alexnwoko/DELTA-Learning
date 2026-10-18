@@ -3,22 +3,21 @@
 // panels 1 to 4: one delta.query/1 object in, every figure a cell with its
 // value state and record counts (TR-076), never a bare 0.
 
+import { cachedDashboard } from "~/backend.server/models/analytics/dashboard/dashboardCache.server";
 import { sql, type SQL } from "drizzle-orm";
-import { dr } from "~/db.server";
 import {
 	getAffectedPeopleByHazardFilters,
 	getHumanEffectsGrouped,
 	humanEffectMeasuresFromRow,
 	humanEffectMeasuresSelect,
+	executeAnalytics,
 	humanEffectsFilteredRecords,
+	measurePartsCtes,
+	measurePartsJoins,
 	plausibilityFlagged,
 	type HazardFilters,
 } from "~/backend.server/models/analytics/hazard-analysis";
-import {
-	displacedHeadlineSql,
-	evacuatedSql,
-	relocatedSql,
-} from "~/backend.server/models/analytics/displacedHeadline";
+import { displacedHeadlineSql } from "~/backend.server/models/analytics/displacedHeadline";
 import {
 	chosenMeasure,
 	EMPTY_CELL,
@@ -122,7 +121,7 @@ const yearExpr = sql`NULLIF(substring(rec."start_date" from '^[0-9]{4}'), '')::i
 const monthExpr = sql`NULLIF(substring(rec."start_date" from '^[0-9]{4}-([0-9]{2})'), '')::int`;
 
 export async function rows(query: SQL): Promise<Record<string, unknown>[]> {
-	return (await dr.execute(query)).rows as Record<string, unknown>[];
+	return (await executeAnalytics(query)).rows as Record<string, unknown>[];
 }
 
 export const num = (v: unknown): number =>
@@ -173,11 +172,12 @@ async function groupedMeasures(
 		: sql``;
 	return (
 		await rows(sql`
-		WITH RECURSIVE ${humanEffectsFilteredRecords(filters)}${divs}
+		WITH RECURSIVE ${humanEffectsFilteredRecords(filters)}${divs}, ${measurePartsCtes}
 		SELECT ${keys}, ${humanEffectMeasuresSelect()}
 		FROM filtered_records fr
 		${divJoin}
 		LEFT JOIN "human_category_presence" hcp ON hcp."record_id" = fr.record_id
+		${measurePartsJoins}
 		LEFT JOIN "disaster_records" rec ON rec."id" = fr.record_id
 		GROUP BY 1, 2
 		ORDER BY 1 NULLS LAST, 2 NULLS LAST`)
@@ -223,7 +223,7 @@ const ALL_DSG_DIMS = [
 	"national_poverty_line",
 ];
 
-export async function getImpactPanels5to16(
+async function computeGetImpactPanels5to16(
 	query: DeltaQuery,
 	ctx: ImpactPanelsContext,
 ): Promise<ImpactPanels5to16> {
@@ -258,7 +258,7 @@ export async function getImpactPanels5to16(
 
 	// Houses, people moved and the per-record figures, by HIPs type.
 	const typeExtras = await rows(sql`
-		WITH RECURSIVE ${fr}, ${housesCte}
+		WITH RECURSIVE ${fr}, ${measurePartsCtes}, ${housesCte}
 		SELECT NULLIF(rec."hip_type_id", '') AS hip_type_id,
 			SUM(h.td) FILTER (WHERE h.td > 0) AS td_sum,
 			COUNT(*) FILTER (WHERE h.td > 0) AS td_reported,
@@ -272,9 +272,9 @@ export async function getImpactPanels5to16(
 		FROM filtered_records fr
 		JOIN "disaster_records" rec ON rec."id" = fr.record_id
 		LEFT JOIN houses h ON h."record_id" = fr.record_id
-		CROSS JOIN LATERAL (
-			SELECT ${evacuatedSql("fr")} AS evac, ${relocatedSql("fr")} AS reloc
-		) x
+		LEFT JOIN "human_category_presence" hcp ON hcp."record_id" = fr.record_id
+		${measurePartsJoins}
+		CROSS JOIN LATERAL (SELECT dp.evac_sum AS evac, dp.perm_sum AS reloc) x
 		GROUP BY 1`);
 	const extrasByType = new Map(
 		typeExtras.map((r) => [(r.hip_type_id as string | null) ?? null, r]),
@@ -800,7 +800,7 @@ export async function getImpactPanels5to16(
  * Every level-1 division is listed, so an area nobody reported reads as not
  * reported, never as absent or 0.
  */
-export async function getImpactMap(
+async function computeGetImpactMap(
 	query: DeltaQuery,
 	ctx: ImpactPanelsContext,
 ): Promise<ImpactMapPayload> {
@@ -905,4 +905,24 @@ export async function levelOneAreas(
 		shapes.map((r) => [r.id as string, r.geojson ?? null]),
 	);
 	return { ids, names, points, shapeBy };
+}
+
+/** getImpactPanels5to16, reused for DASHBOARD_CACHE_TTL_MS per tenant, audience and query. */
+export function getImpactPanels5to16(
+	query: DeltaQuery,
+	ctx: ImpactPanelsContext,
+): Promise<ImpactPanels5to16> {
+	return cachedDashboard("getImpactPanels5to16", [ctx, query], () =>
+		computeGetImpactPanels5to16(query, ctx),
+	);
+}
+
+/** getImpactMap, reused for DASHBOARD_CACHE_TTL_MS per tenant, audience and query. */
+export function getImpactMap(
+	query: DeltaQuery,
+	ctx: ImpactPanelsContext,
+): Promise<ImpactMapPayload> {
+	return cachedDashboard("getImpactMap", [ctx, query], () =>
+		computeGetImpactMap(query, ctx),
+	);
 }

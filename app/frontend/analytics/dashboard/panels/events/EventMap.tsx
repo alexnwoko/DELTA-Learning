@@ -25,7 +25,18 @@ export function toEventMapArea(area: EventMapArea, words: { none: string; fromRe
 	};
 }
 
-export function EventMap({ ctx, map, scope }: { ctx: ViewContext; map: EventMapPayload; scope: MapScopeQuery }) {
+export function EventMap({
+	ctx,
+	map,
+	scope,
+	onSelectDivision,
+}: {
+	ctx: ViewContext;
+	map: EventMapPayload;
+	scope: MapScopeQuery;
+	/** Selecting an area sets the place filter for the whole page. */
+	onSelectDivision?: (divisionId: string) => void;
+}) {
 	const t = ctx.t;
 	const n = (x: number) => x.toLocaleString(ctx.lang);
 	const none = t({ code: "dashboard.no_events_year", msg: "No events recorded" });
@@ -51,6 +62,8 @@ export function EventMap({ ctx, map, scope }: { ctx: ViewContext; map: EventMapP
 					symbol="bubble"
 					notReportedLabel={t({ code: "analysis.map_no_events_recorded", msg: "No events recorded" })}
 					scope={scope}
+					// The map reports the index among the drawn areas.
+					onAreaClick={onSelectDivision ? (i) => onSelectDivision(drawn[i].divisionId) : undefined}
 					notApplied={map.meta.notApplied}
 				/>
 			</div>

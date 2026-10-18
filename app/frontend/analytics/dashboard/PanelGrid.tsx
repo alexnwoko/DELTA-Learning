@@ -27,7 +27,8 @@ function GapBody({ ctx, gap }: { ctx: ViewContext; gap: PanelGap }) {
 	const count = gapCountText(ctx, gap);
 	return (
 		<p className="m-0 text-sm text-brand-text-muted">
-			{gap.text} <span className="whitespace-nowrap">({gap.code})</span>
+			{gap.text}
+			{gap.code && <span className="whitespace-nowrap"> ({gap.code})</span>}
 			{count && <span className="block">{count}</span>}
 		</p>
 	);
@@ -83,7 +84,9 @@ export function NotYetAvailableStrip({ ctx, panels }: { ctx: ViewContext; panels
 							<span className="font-semibold text-brand-text">{p.title}</span>
 							<span className="text-brand-text-muted">
 								{": "}
-								{gap.text} ({gap.code}){count && ` · ${count}`}
+								{gap.text}
+								{gap.code && ` (${gap.code})`}
+								{count && ` · ${count}`}
 							</span>
 						</li>
 					);
