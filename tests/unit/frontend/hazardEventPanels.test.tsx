@@ -32,7 +32,8 @@ describe("Hazardous events, G-01", () => {
 	};
 	it("shows the reason across the view, then all 16 panels as grey placeholders with no figures", () => {
 		const panels = hazardEventDashboardPanels(ctx, empty, { ...opts, signedIn: true });
-		expect(panels.map((p) => p.n)).toEqual([0, ...Array.from({ length: 16 }, (_, i) => i + 1)]);
+		// The notice first, then the placeholders in the agreed layout (FE-Proposal-02); the rest under Show more.
+		expect(panels.map((p) => p.n)).toEqual([0, 1, 7, 5, 3, 8, 9, 2, 4, 6, 12, 10, 11, 13, 14, 15, 16]);
 		expect(panels[0]).toMatchObject({ wide: true, gap: { code: "G-01" } });
 		expect(panels.slice(1).every((p) => p.gap?.ghost && !p.render && !p.exportData)).toBe(true);
 		const raw = renderToString(<PanelGrid ctx={ctx} panels={panels} collapseGaps />);
@@ -56,7 +57,7 @@ describe("Hazardous events panels 1 to 7", () => {
 	const html = (n: number) => text(renderToString(<>{panels.find((p) => p.n === n)!.render!()}</>));
 
 	it("draw 1 to 7; 8 to 15 being built and 16 held at G-19", () => {
-		expect(panels.filter((p) => p.render).map((p) => p.n)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+		expect(panels.filter((p) => p.render).map((p) => p.n).sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7]);
 		expect(panels.find((p) => p.n === 16)!.gap!.code).toBe("G-19");
 	});
 
@@ -72,9 +73,9 @@ describe("Hazardous events panels 1 to 7", () => {
 		expect(h).toContain("Recorded as ongoing");
 		expect(h).not.toContain("Tropical cyclone");
 		expect(h).not.toMatch(/>\s*Warning/i);
-		expect(panels[1].exportData!.notes).toContain("DELTA Resilience issues no warnings.");
+		expect(panels.find((p) => p.n === 2)!.exportData!.notes).toContain("DELTA Resilience issues no warnings.");
 		const signedIn = hazardEventDashboardPanels(ctx, D, { ...opts, signedIn: true });
-		expect(text(renderToString(<>{signedIn[1].render!()}</>))).toContain("Recorded as forecasted (recorded status, not a forecast)");
+		expect(text(renderToString(<>{signedIn.find((p) => p.n === 2)!.render!()}</>))).toContain("Recorded as forecasted (recorded status, not a forecast)");
 	});
 
 	it("3: a year with no event is a gap", () => {
@@ -85,13 +86,24 @@ describe("Hazardous events panels 1 to 7", () => {
 	});
 
 	it("4 and 7: count what they leave out, never as zero bars", () => {
-		expect(panels[3].exportData!.notes).toContain("6 hazardous events have no month and are left out.");
-		expect(panels[6].exportData!.notes).toContain("17 divisions: no events recorded.");
-		expect(panels[6].exportData!.notes).toContain("4 hazardous events touch several divisions and count in each.");
+		expect(panels.find((p) => p.n === 4)!.exportData!.notes).toContain("6 hazardous events have no month and are left out.");
+		expect(panels.find((p) => p.n === 7)!.exportData!.notes).toContain("17 divisions: no events recorded.");
+		expect(panels.find((p) => p.n === 7)!.exportData!.notes).toContain("4 hazardous events touch several divisions and count in each.");
 		expect(html(7)).not.toContain(">0<");
 	});
 
 	it("5: keeps 'Hazard not coded' as its own row", () => {
 		expect(html(5)).toContain("Hazard not coded");
+	});
+});
+
+describe("Hazardous events layout (FE-Proposal-02, Alex 2026-10-18)", () => {
+	it("follows the agreed rows, the rest under Show more", () => {
+		const laid = hazardEventDashboardPanels(ctx, D, { ...opts, signedIn: true });
+		expect(laid.filter((p) => !p.more).map((p) => p.id)).toEqual([
+			"hazard-events-1", "hazard-events-7", "hazard-events-5", "hazard-events-3", "hazard-events-8",
+			"hazard-events-9", "hazard-events-2", "hazard-events-4", "hazard-events-6", "hazard-events-12",
+		]);
+		expect(laid.find((p) => p.id === "hazard-events-7")!.title).toBe("Ranked by divisions");
 	});
 });

@@ -23,6 +23,8 @@ import { waffleShares } from "../impact/CoverageWaffle";
 import { YearColumns } from "../impact/ImpactTimeline";
 import { effectLabel } from "../impact/panels5to16";
 import { DASHBOARD_RAMP } from "~/frontend/charts/sectionPalette";
+import type { EventMapPayload } from "~/utils/dashboard/eventMap";
+import { arrangeByLayout, EVENTS_DROPPED, EVENTS_LAYOUT } from "../../layout";
 
 type T = ViewContext["t"];
 const tr = (t: T, code: string, msg: string, r?: Record<string, unknown>) => t({ code, msg }, r);
@@ -416,7 +418,7 @@ function EventSizeView({ common, d, exp }: { common: Common; d: EventPanels1to7;
 export function eventDashboardPanels(
 	ctx: ViewContext,
 	d: EventPanels1to7,
-	opts: { source: string; scope: string; provisional: boolean },
+	opts: { source: string; scope: string; provisional: boolean; map?: EventMapPayload | null },
 ): DashboardPanel[] {
 	const t = ctx.t;
 	if (d.empty) {
@@ -427,21 +429,21 @@ export function eventDashboardPanels(
 	const noEvents = tr(t, "dashboard.no_events_year", "No events recorded");
 	const spec: [number, string, PanelExport, (c: Common, e: PanelExport) => React.ReactNode][] = [
 		[1, tr(t, "dashboard.events_1", "Disaster events at a glance"), headlineExport(t, d, m.headline), (c, e) => <HeadlineView common={c} d={d} exp={e} />],
-		[2, tr(t, "dashboard.events_2", "Records grouped into events"), linkageExport(t, d, m.linkage), (c, e) => <LinkageView common={c} d={d} exp={e} />],
-		[3, tr(t, "dashboard.events_3", "Largest events"), largestEventsExport(t, d, m.largest), (c, e) => <LargestView common={c} d={d} exp={e} />],
-		[4, tr(t, "dashboard.events_4", "Events by year"), byYearExport(t, d, m.byYear),
+		[2, tr(t, "dashboard.events_2", "Records grouped into disaster events"), linkageExport(t, d, m.linkage), (c, e) => <LinkageView common={c} d={d} exp={e} />],
+		[3, tr(t, "dashboard.events_3", "Largest disaster events by disaster impact"), largestEventsExport(t, d, m.largest), (c, e) => <LargestView common={c} d={d} exp={e} />],
+		[4, tr(t, "dashboard.events_4", "Disaster events by year"), byYearExport(t, d, m.byYear),
 			(c, e) => (
 				<Frame common={c} exp={e}>
 					<YearColumns years={continuousYears(d.byYear.years)} height={180} width={480} label={c.title} noDataText={noEvents} />
 				</Frame>
 			)],
-		[5, tr(t, "dashboard.events_5", "Events by hazard"), byHazardExport(t, d, m.byHazard),
+		[5, tr(t, "dashboard.events_5", "Hazard ranking by disaster events"), byHazardExport(t, d, m.byHazard),
 			(c, e) => (
 				<Frame common={c} exp={e}>
 					<RowBars ctx={ctx} label={c.title} rows={d.byHazard.rows.map((r) => ({ key: r.hipTypeId, label: r.label, bars: [{ cell: countCell(r.events) }] }))} />
 				</Frame>
 			)],
-		[6, tr(t, "dashboard.events_6", "Records per event"), recordsPerEventExport(t, d, m.recordsPerEvent),
+		[6, tr(t, "dashboard.events_6", "Records per disaster event"), recordsPerEventExport(t, d, m.recordsPerEvent),
 			(c, e) => (
 				<Frame common={c} exp={e}>
 					<span className="text-sm text-brand-text-muted">{tr(t, "dashboard.events_by_records", "Events by number of linked records")}</span>
@@ -452,7 +454,7 @@ export function eventDashboardPanels(
 					</p>
 				</Frame>
 			)],
-		[7, tr(t, "dashboard.events_7", "Event size and extensive risk"), eventSizeExport(t, d, m.eventSize), (c, e) => <EventSizeView common={c} d={d} exp={e} />],
+		[7, tr(t, "dashboard.events_7", "Extensive and intensive risk by disaster event"), eventSizeExport(t, d, m.eventSize), (c, e) => <EventSizeView common={c} d={d} exp={e} />],
 	];
 	const drawn = spec.map(([n, title, exp, view]): DashboardPanel => ({ id: `events-${n}`, n, title, exportData: exp, render: () => view(common(title), exp) }));
 	// Panels 8 to 16 follow; on this view they fold into the strip (decision 1).
@@ -460,20 +462,64 @@ export function eventDashboardPanels(
 		[8, tr(t, "dashboard.events_8", "Declaration, warning and response timeline")],
 		[9, tr(t, "dashboard.events_9", "Event chain")],
 		[10, tr(t, "dashboard.events_10", "Approval and assessment status")],
-		[11, tr(t, "dashboard.events_11", "Event register")],
-		[12, tr(t, "dashboard.events_12", "Event field completeness")],
-		[13, tr(t, "dashboard.events_13", "Divisions per event")],
-		[14, tr(t, "dashboard.events_14", "Official warning by hazard")],
-		[15, tr(t, "dashboard.events_15", "Compare events")],
-		[16, tr(t, "dashboard.events_16", "Event by sector")],
+		[11, tr(t, "dashboard.events_11", "Disaster event register")],
+		[12, tr(t, "dashboard.events_12", "Reporting completeness of disaster events")],
+		[13, tr(t, "dashboard.events_13", "Divisions per disaster event")],
+		[14, tr(t, "dashboard.events_14", "Official warning recorded, by hazard")],
+		[15, tr(t, "dashboard.events_15", "Compare disaster events")],
+		[16, tr(t, "dashboard.events_16", "Disaster events by sector")],
 	];
-	return [
-		...drawn,
-		...later.map(([n, title]): DashboardPanel => ({
-			id: `events-${n}`,
-			n,
-			title,
-			gap: { code: "D1 events", text: tr(t, "dashboard.panel_in_build", "This panel is being built.") },
-		})),
-	];
+	const divisions = opts.map ? [eventDivisionsPanel(ctx, opts.map, common)] : [];
+	return arrangeByLayout(
+		[
+			...drawn,
+			...divisions,
+			...later.map(([n, title]): DashboardPanel => ({
+				id: `events-${n}`,
+				n,
+				title,
+				gap: { code: "D1 events", text: tr(t, "dashboard.panel_in_build", "This panel is being built.") },
+			})),
+		],
+		EVENTS_LAYOUT,
+		EVENTS_DROPPED,
+	);
+}
+
+/** How many divisions Ranked by divisions lists before "n other divisions". */
+const TOP_DIVISIONS = 10;
+
+/**
+ * Ranked by divisions on Disaster events (FE-Proposal-02): the event map's
+ * own counts per level-1 division, so the panel and the map agree. An event
+ * in several divisions counts in each, so the rows do not add up.
+ */
+export function eventDivisionsPanel(ctx: ViewContext, map: EventMapPayload, common: (title: string) => Common): DashboardPanel {
+	const t = ctx.t;
+	const title = tr(t, "dashboard.events_divisions", "Ranked by divisions");
+	const ranked = map.areas.filter((a) => a.events > 0).sort((a, b) => b.events - a.events || a.name.localeCompare(b.name));
+	const shown = ranked.slice(0, TOP_DIVISIONS);
+	const rest = ranked.length - shown.length;
+	const note = tr(t, "dashboard.map_events_note", "An event in several provinces counts in each, so provinces do not add up.");
+	const exp: PanelExport = {
+		rows: ranked.map((a) => countRow(a.name, a.events, "events")),
+		method: map.meta.method,
+		notes: panelNotes(map.meta, [note]),
+	};
+	return {
+		id: "events-divisions",
+		n: 17,
+		title,
+		exportData: exp,
+		render: () => (
+			<Frame common={common(title)} exp={exp}>
+				<RowBars ctx={ctx} label={title} rows={shown.map((a) => ({ key: a.divisionId, label: a.name, bars: [{ cell: countCell(a.events) }] }))} />
+				{rest > 0 && (
+					<p className="m-0 text-sm text-brand-text-muted">
+						{tr(t, "dashboard.other_divisions_with_events", "{n} other divisions with events", { n: rest.toLocaleString(ctx.lang) })}
+					</p>
+				)}
+			</Frame>
+		),
+	};
 }

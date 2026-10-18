@@ -39,7 +39,7 @@ const html = (n: number, p = panels) => text(renderToString(<>{p.find((x) => x.n
 
 describe("Sectors view panels 1 to 7", () => {
 	it("draw seven panels, each framed even without data (Sectors keeps frames)", () => {
-		expect(panels.map((p) => p.n)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+		expect(panels.map((p) => p.n).sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7]);
 		expect(collapsesGaps("sectors")).toBe(false);
 	});
 
@@ -62,11 +62,11 @@ describe("Sectors view panels 1 to 7", () => {
 	it("3: damage in money shows only its gap code", () => {
 		const h = html(3);
 		expect(h).toContain("G-06");
-		expect(panels[2].exportData!.rows.find((r) => r.series === "Damage (money)")!.value).toBeNull();
+		expect(panels.find((p) => p.n === 3)!.exportData!.rows.find((r) => r.series === "Damage (money)")!.value).toBeNull();
 	});
 
 	it("5 and 6: count what is left out; two dwelling bars, never added", () => {
-		expect(panels[4].exportData!.notes).toContain("5 sector-linked records have no start year and are left out.");
+		expect(panels.find((p) => p.n === 5)!.exportData!.notes).toContain("5 sector-linked records have no start year and are left out.");
 		const h = html(6);
 		expect(h).toContain("7,900");
 		expect(h).toContain("29,000");
@@ -86,7 +86,15 @@ describe("Sectors view panels 1 to 7", () => {
 
 	it("export every panel to the page CSV with value states", () => {
 		const csv = dashboardPanelsCsv(panels, "Angola", "DELTA Angola", "published", new Date("2026-10-17T00:00:00Z"));
-		expect(csv).toContain("Records by sector,Fisheries,Productive,,not_reported,records,");
-		expect(csv).toContain("Towards Sendai Targets C and D,C-2 Direct agricultural loss,");
+		expect(csv).toContain("Sector ranking by records reporting damage,Fisheries,Productive,,not_reported,records,");
+		expect(csv).toContain("Sector inputs to Sendai Targets C and D,C-2 Direct agricultural loss,");
+	});
+});
+
+describe("Sectors layout (FE-Proposal-02, Alex 2026-10-18)", () => {
+	it("follows the agreed rows; the Sendai C and D inputs wait under Show more", () => {
+		expect(panels.filter((p) => !p.more).map((p) => p.id)).toEqual(["sectors-1", "sectors-2", "sectors-5", "sectors-3", "sectors-4", "sectors-6"]);
+		expect(panels.find((p) => p.id === "sectors-7")!.more).toBe(true);
+		expect(panels.find((p) => p.id === "sectors-6")!.title).toBe("Houses destroyed and damaged");
 	});
 });

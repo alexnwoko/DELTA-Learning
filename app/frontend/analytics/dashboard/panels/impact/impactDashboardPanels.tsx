@@ -4,7 +4,8 @@ import type { ViewContext } from "~/frontend/context";
 import type { ImpactPanels1to4 } from "~/utils/dashboard/impactPanels";
 import type { ImpactPanels5to16 } from "~/utils/dashboard/impactPanels5to16";
 import { emptyViewPanel } from "../../panelCell";
-import { panelPosition, type DashboardPanel } from "../../types";
+import { arrangeByLayout } from "../../layout";
+import type { DashboardPanel } from "../../types";
 import { CoverageWaffle, waffleExport } from "./CoverageWaffle";
 import { HazardRanking, rankingExport } from "./HazardRanking";
 import { HeadlineTiles, headlineExport } from "./HeadlineTiles";
@@ -29,12 +30,7 @@ export const IMPACT_LAYOUT: readonly string[] = [
 
 /** Places each panel by IMPACT_LAYOUT; the rest follow, under "Show more". */
 export function arrangeImpactPanels(panels: DashboardPanel[]): DashboardPanel[] {
-	return panels
-		.map((p) => {
-			const at = IMPACT_LAYOUT.indexOf(p.id);
-			return at >= 0 ? { ...p, order: at + 1, more: false } : { ...p, order: 100 + p.n, more: true };
-		})
-		.sort((a, b) => panelPosition(a) - panelPosition(b));
+	return arrangeByLayout(panels, IMPACT_LAYOUT);
 }
 
 export function impactDashboardPanels(
