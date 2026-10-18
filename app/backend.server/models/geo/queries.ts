@@ -1,5 +1,6 @@
 import { sql, type SQL } from "drizzle-orm";
 import { dr } from "~/db.server";
+import { cachedGeo } from "~/backend.server/models/geo/cache";
 import {
 	basisIncludesProvisional,
 	basisStatuses,
@@ -516,7 +517,7 @@ async function tenantMaxLevel(
 }
 
 /** G2. One measure aggregated by division at one admin level. */
-export async function getChoropleth(
+async function getChoroplethUncached(
 	countryAccountsId: string,
 	req: GeoRequest,
 ) {
@@ -677,7 +678,7 @@ export async function getDivisionTile(
 }
 
 /** G3. Recurrence, hazard mix, counts by year and cumulative human effects. */
-export async function getPlaceDossier(
+async function getPlaceDossierUncached(
 	countryAccountsId: string,
 	divisionId: string,
 	req: GeoRequest,
@@ -830,7 +831,7 @@ export async function getPlaceDossier(
  * so records coded at the chapeau never vanish from the tree. Counts follow
  * the approval basis; no date, division or grade filter applies.
  */
-export async function getHazardTree(
+async function getHazardTreeUncached(
 	countryAccountsId: string,
 	req: GeoRequest,
 	lang: string,
@@ -964,7 +965,7 @@ export interface DivisionEventCount {
  * be placed at the level is counted in unplaced with its reason, never
  * dropped. Division counts do not add up to a total.
  */
-export async function eventCountsByDivision(
+async function eventCountsByDivisionUncached(
 	countryAccountsId: string,
 	req: GeoRequest & { level: number },
 ): Promise<{
@@ -1041,4 +1042,66 @@ export async function eventCountsByDivision(
 			Object.entries(row.reasons).map(([k, v]) => [k, Number(v)]),
 		),
 	};
+}
+
+// Cached entry points (I-6, Alex: option A). Each answer is kept until the
+// tenant's next read-model refresh; the key includes the whole request.
+
+/** G2. One measure aggregated by division at one admin level. */
+export async function getChoropleth(
+	countryAccountsId: string,
+	req: GeoRequest,
+) {
+	return cachedGeo(
+		"choropleth",
+		countryAccountsId,
+		await readModelRefreshedAt(countryAccountsId),
+		req,
+		() => getChoroplethUncached(countryAccountsId, req),
+	);
+}
+
+/** G3. Place dossier for one division. */
+export async function getPlaceDossier(
+	countryAccountsId: string,
+	divisionId: string,
+	req: GeoRequest,
+	lang: string,
+) {
+	return cachedGeo(
+		"dossier",
+		countryAccountsId,
+		await readModelRefreshedAt(countryAccountsId),
+		{ divisionId, req, lang },
+		() => getPlaceDossierUncached(countryAccountsId, divisionId, req, lang),
+	);
+}
+
+/** G6. HIPs tree with record counts. */
+export async function getHazardTree(
+	countryAccountsId: string,
+	req: GeoRequest,
+	lang: string,
+) {
+	return cachedGeo(
+		"hazardTree",
+		countryAccountsId,
+		await readModelRefreshedAt(countryAccountsId),
+		{ req, lang },
+		() => getHazardTreeUncached(countryAccountsId, req, lang),
+	);
+}
+
+/** Event counts per division (shared with the analytics maps). */
+export async function eventCountsByDivision(
+	countryAccountsId: string,
+	req: GeoRequest & { level: number },
+) {
+	return cachedGeo(
+		"eventCounts",
+		countryAccountsId,
+		await readModelRefreshedAt(countryAccountsId),
+		req,
+		() => eventCountsByDivisionUncached(countryAccountsId, req),
+	);
 }
