@@ -1,6 +1,7 @@
 // The D1 Analysis dashboard shell (D1 build brief, section 2): title and
 // scope line, Print at the top right, the dimension tabs, then the shared
-// filter bar, map M0, the panel grid and "About the data". The shell owns
+// filter bar, map M0, the panel grid, the Sendai section (FR-AN-024) and
+// "About the data". With the Sendai toggle on, only the Sendai section shows. The shell owns
 // no data and no URL: the route passes the query and writes the next one
 // to the URL (delta.query/1), so every view has a shareable link.
 import React from "react";
@@ -42,7 +43,7 @@ export interface DashboardShellProps {
 	provisional: boolean;
 	/** The left hazard rail (mockup option A); beside everything below the notices. */
 	rail?: React.ReactNode;
-	/** The Sendai Framework Monitoring section, the same on every view (FR-AN-024). */
+	/** The Sendai Framework Monitoring section, the same on every view; after the view's panels, or alone when on (FR-AN-024). */
 	sendai?: React.ReactNode;
 	/** Toggle on: only the Sendai section shows; the view buttons are disabled (FR-AN-022, 023). */
 	sfmOn?: boolean;
@@ -152,8 +153,9 @@ export function DashboardShell({
 				)}
 				{/* Filters and the Sendai section are the same on every view. */}
 				{filterBar}
-				{sendai}
-				{/* Only the selected panel mounts; the others hold nothing. */}
+				{/* Only the selected panel mounts; the others hold nothing. With
+				    the Sendai toggle on, no panel mounts, so the Sendai section
+				    below sits directly under the filter bar (FR-AN-024). */}
 				{!sfmOn &&
 					DASHBOARD_VIEWS.map((v) => (
 					<TabPanel key={v} id={v} className="flex flex-col gap-4 outline-none">
@@ -166,6 +168,8 @@ export function DashboardShell({
 						<PanelGrid ctx={ctx} panels={panels} collapseGaps={collapsesGaps(v)} />
 					</TabPanel>
 				))}
+				{/* Toggle off: after the view's map and panels. Toggle on: alone, at the top. */}
+				{sendai}
 			</Tabs>
 			</div>
 
