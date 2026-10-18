@@ -1,10 +1,12 @@
 // The panel grid of the D1 dashboard: two columns on wide screens, one on
 // phones and on paper. Panels 1 to 12 show; 13 to 16 wait under "Show
 // more", and print open. Panels with no data either keep their own frame
-// with the reason, or fold into one "Not yet available" strip (decision 1).
+// with the reason, or fold into one "Not yet available" strip (decision 1);
+// a panel with a grey placeholder chart (ghost) always keeps its frame.
 import { useId } from "react";
 import { Button, Disclosure, DisclosurePanel } from "react-aria-components";
 import type { ViewContext } from "~/frontend/context";
+import { GhostChart } from "./GhostChart";
 import { DEFAULT_PANEL_COUNT, type DashboardPanel, type PanelGap } from "./types";
 
 const focusRing =
@@ -41,12 +43,13 @@ function PanelCard({ ctx, panel }: { ctx: ViewContext; panel: DashboardPanel }) 
 			<section
 				id={panel.id}
 				aria-labelledby={headingId}
-				data-panel-state="gap"
-				className="flex flex-col gap-2 rounded border border-dashed border-brand-border-control bg-brand-surface-subtle p-4"
+				data-panel-state={panel.gap.ghost ? "ghost" : "gap"}
+				className={`flex min-w-0 flex-col gap-2 rounded border border-dashed border-brand-border-control bg-brand-surface-subtle p-4${panel.wide ? " lg:col-span-2" : ""}`}
 			>
 				<h3 id={headingId} className="m-0 text-base font-semibold text-brand-text">
 					{panel.title}
 				</h3>
+				{panel.gap.ghost && <GhostChart ctx={ctx} shape={panel.gap.ghost} />}
 				<GapBody ctx={ctx} gap={panel.gap} />
 			</section>
 		);
@@ -56,7 +59,7 @@ function PanelCard({ ctx, panel }: { ctx: ViewContext; panel: DashboardPanel }) 
 		<div
 			id={panel.id}
 			data-panel-state="ready"
-			className="min-w-0 break-inside-avoid rounded border border-brand-border bg-brand-surface p-4"
+			className={`min-w-0 break-inside-avoid rounded border border-brand-border bg-brand-surface p-4${panel.wide ? " lg:col-span-2" : ""}`}
 		>
 			{panel.render?.()}
 		</div>
@@ -110,9 +113,11 @@ export function PanelGrid({ ctx, panels, collapseGaps }: PanelGridProps) {
 	const sorted = [...panels].sort((a, b) => a.n - b.n);
 	// A strip lists several gaps; a lone gap (a whole view with no data, such
 	// as G-01) keeps its own frame across the view.
-	const fold = collapseGaps && sorted.filter((p) => p.gap).length > 1;
-	const visible = fold ? sorted.filter((p) => !p.gap) : sorted;
-	const strip = fold ? sorted.filter((p) => p.gap) : [];
+	// Ghost panels and full-width notices keep their own place.
+	const foldable = (p: DashboardPanel) => !!p.gap && !p.gap.ghost && !p.wide;
+	const fold = collapseGaps && sorted.filter(foldable).length > 1;
+	const visible = fold ? sorted.filter((p) => !foldable(p)) : sorted;
+	const strip = fold ? sorted.filter(foldable) : [];
 	const main = visible.filter((p) => p.n <= DEFAULT_PANEL_COUNT);
 	const more = visible.filter((p) => p.n > DEFAULT_PANEL_COUNT);
 

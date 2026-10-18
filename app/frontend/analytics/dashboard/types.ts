@@ -1,6 +1,7 @@
 // The D1 Analysis dashboard's building blocks (D1 build brief, sections 2
 // and 3): one panel per question, numbered 1 to 16 per dimension.
 import type React from "react";
+import type { GhostShape } from "./GhostChart";
 import type { PanelExport } from "./panelCell";
 import type { DashboardView } from "./views";
 
@@ -17,6 +18,11 @@ export interface PanelGap {
 	count?: number | null;
 	/** Already translated: what the count counts, for example "draft records". */
 	countLabel?: string;
+	/**
+	 * Draw a grey placeholder in the chart's future shape. A panel with a
+	 * ghost keeps its own place in the grid; it never folds into the strip.
+	 */
+	ghost?: GhostShape;
 }
 
 export interface DashboardPanel {
@@ -26,6 +32,8 @@ export interface DashboardPanel {
 	n: number;
 	/** Already translated. */
 	title: string;
+	/** Spans both columns on wide screens (a notice across the view). */
+	wide?: boolean;
 	/** Set when the panel has no data yet; the panel then shows its gap. */
 	gap?: PanelGap | null;
 	/** Draws the panel (normally a ChartFrame). Not called for a gap panel. */

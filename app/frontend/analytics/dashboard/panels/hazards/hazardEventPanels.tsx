@@ -11,6 +11,7 @@ import type { ViewContext } from "~/frontend/context";
 import type { HazardEventPanels1to7 } from "~/utils/dashboard/hazardEventPanels";
 import type { PanelCell } from "~/utils/dashboard/impactPanels";
 import { panelNotes, type PanelExport } from "../../panelCell";
+import type { GhostShape } from "../../GhostChart";
 import type { DashboardPanel } from "../../types";
 import { RowBars, ShadedTable, shadeFor } from "../blocks";
 import { countCell } from "../events/eventPanels";
@@ -72,6 +73,30 @@ function Frame({ common, exp, pictures = true, children }: { common: Common; exp
 	);
 }
 
+/**
+ * The 16 Hazardous events panels (panels paper v0.3, section 4.1): the
+ * question each answers and the shape its chart takes. With no hazardous
+ * events recorded, each shows that shape in grey (Alex, 2026-10-18).
+ */
+export const HAZARD_EVENT_PANELS: { n: number; title: string; question: string; ghost: GhostShape }[] = [
+	{ n: 1, title: "Hazardous events at a glance", question: "How many hazardous events are recorded, and how many are linked, mapped and fully coded?", ghost: "tiles" },
+	{ n: 2, title: "Recorded as ongoing or forecasted", question: "Which hazards are recorded as ongoing or forecasted now, and in how many places?", ghost: "table" },
+	{ n: 3, title: "Hazardous events by year", question: "How many hazardous events start each year?", ghost: "columns" },
+	{ n: 4, title: "Season of onset", question: "In which months do hazardous events start?", ghost: "heatmap" },
+	{ n: 5, title: "Hazard ranking", question: "Which hazard types are recorded most often?", ghost: "bars" },
+	{ n: 6, title: "Classification depth", question: "How many events are coded to hazard type, cluster and specific hazard?", ghost: "bars" },
+	{ n: 7, title: "Ranked divisions", question: "Which places record the most hazardous events?", ghost: "map" },
+	{ n: 8, title: "Multi-hazard places", question: "Which places are hit by more than one type of hazard?", ghost: "map" },
+	{ n: 9, title: "From hazard to disaster", question: "How many hazardous events led to a recorded disaster event?", ghost: "flow" },
+	{ n: 10, title: "Cascade and multi-hazard links", question: "Which hazards trigger or coincide with others?", ghost: "flow" },
+	{ n: 11, title: "Hazardous event register", question: "Which events are recorded, with their dates, hazard and places?", ghost: "table" },
+	{ n: 12, title: "Field completeness", question: "How complete is each field across the recorded events?", ghost: "bars" },
+	{ n: 13, title: "Hazard hierarchy", question: "How do recorded events spread across hazard types, clusters and hazards?", ghost: "boxes" },
+	{ n: 14, title: "Trends per hazard type", question: "Is each hazard type recorded more or less often over time?", ghost: "line" },
+	{ n: 15, title: "Duration by onset class", question: "How long do sudden-onset and slow-onset events last?", ghost: "boxplot" },
+	{ n: 16, title: "Magnitude by hazard", question: "How strong were the recorded events of each hazard?", ghost: "dots" },
+];
+
 const th = "border-b border-brand-border bg-brand-surface-subtle px-2 py-1 font-semibold";
 const td = "border-b border-brand-border px-2 py-1";
 
@@ -84,15 +109,32 @@ export function hazardEventDashboardPanels(
 	const n = (x: number) => x.toLocaleString(ctx.lang);
 	const title = (k: number, msg: string) => tr(t, `dashboard.hazard_events_${k}`, msg);
 
-	// G-01: one frame across the view, with the reason.
+	const question = (k: number) =>
+		tr(t, `dashboard.hazard_events_q${k}`, HAZARD_EVENT_PANELS[k - 1].question);
+
+	// G-01: a notice across the view, then every panel as a grey placeholder
+	// in the shape it will take, so the view shows what it will carry.
 	if (d.empty) {
+		const needs = tr(t, "dashboard.needs_hazard_events", "No data yet: needs hazardous-event records.");
 		return [
 			{
 				id: "hazard-events-empty",
-				n: 1,
-				title: tr(t, "dashboard.dim_hazardous_events", "Hazardous events"),
-				gap: { code: d.empty.code, text: tr(t, "dashboard.hazard_events_empty", d.empty.reason) },
+				n: 0,
+				wide: true,
+				title: tr(t, "dashboard.no_hazard_events_title", "No hazardous events recorded yet"),
+				gap: {
+					code: d.empty.code,
+					text: `${tr(t, "dashboard.hazard_events_empty", d.empty.reason)} ${tr(t, "dashboard.ghost_note", "The grey panels below show the analyses this view will carry; they hold no figures.")}`,
+				},
 			},
+			...HAZARD_EVENT_PANELS.map(
+				(p): DashboardPanel => ({
+					id: `hazard-events-${p.n}`,
+					n: p.n,
+					title: title(p.n, p.title),
+					gap: { text: `${question(p.n)} ${needs}`, ghost: p.ghost },
+				}),
+			),
 		];
 	}
 
@@ -279,15 +321,9 @@ export function hazardEventDashboardPanels(
 		),
 	};
 
-	const titles: Record<number, string> = {
-		1: title(1, "Hazardous events at a glance"),
-		2: title(2, "Recorded as ongoing or forecasted"),
-		3: title(3, "Hazardous events by year"),
-		4: title(4, "Season of onset"),
-		5: title(5, "Hazard ranking"),
-		6: title(6, "Classification depth"),
-		7: title(7, "Ranked divisions"),
-	};
+	const titles: Record<number, string> = Object.fromEntries(
+		HAZARD_EVENT_PANELS.map((p) => [p.n, title(p.n, p.title)]),
+	);
 	const drawn = [1, 2, 3, 4, 5, 6, 7].map((k): DashboardPanel => ({
 		id: `hazard-events-${k}`,
 		n: k,
@@ -295,27 +331,16 @@ export function hazardEventDashboardPanels(
 		exportData: exports[k],
 		render: () => views[k](common(titles[k]), exports[k]),
 	}));
-	const later: [number, string][] = [
-		[8, title(8, "Multi-hazard places")],
-		[9, title(9, "From hazard to disaster")],
-		[10, title(10, "Cascade and multi-hazard links")],
-		[11, title(11, "Hazardous event register")],
-		[12, title(12, "Field completeness")],
-		[13, title(13, "Hazard hierarchy")],
-		[14, title(14, "Trends per hazard type")],
-		[15, title(15, "Duration by onset class")],
-		[16, title(16, "Magnitude by hazard")],
-	];
 	return [
 		...drawn,
-		...later.map(([k, x]): DashboardPanel => ({
-			id: `hazard-events-${k}`,
-			n: k,
-			title: x,
+		...HAZARD_EVENT_PANELS.filter((p) => p.n > 7).map((p): DashboardPanel => ({
+			id: `hazard-events-${p.n}`,
+			n: p.n,
+			title: titles[p.n],
 			gap:
-				k === 16
-					? { code: "G-19", text: tr(t, "dashboard.g19", "Magnitude is free text with no unit field.") }
-					: { code: "D1 hazardous events", text: tr(t, "dashboard.panel_in_build", "This panel is being built.") },
+				p.n === 16
+					? { code: "G-19", text: tr(t, "dashboard.g19", "Magnitude is free text with no unit field."), ghost: p.ghost }
+					: { code: "D1 hazardous events", text: `${question(p.n)} ${tr(t, "dashboard.panel_in_build", "This panel is being built.")}`, ghost: p.ghost },
 		})),
 	];
 }
