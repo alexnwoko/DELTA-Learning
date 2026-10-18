@@ -81,6 +81,8 @@ StyleDictionary.registerFormat({
 			"\ticon: string;\n" +
 			"\thazard: Record<\"meteorologicalHydrological\" | \"geological\" | \"biological\" | \"environmental\" | \"chemical\" | \"technological\" | \"societal\" | \"extraterrestrial\" | \"unclassified\", string>;\n" +
 			"\tramp: Record<\"people\" | \"housing\" | \"money\" | \"events\", readonly string[]>;\n" +
+			"\tdashboard: Record<\"tint\" | \"border\" | \"accent\" | \"icon\" | \"ink\", string>;\n" +
+			"\tsfm: Record<\"tint\" | \"border\" | \"accent\" | \"mark\" | \"ink\", string>;\n" +
 			"};\n"
 		);
 	},

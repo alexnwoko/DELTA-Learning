@@ -22,6 +22,7 @@ import { RowBars } from "../blocks";
 import { waffleShares } from "../impact/CoverageWaffle";
 import { YearColumns } from "../impact/ImpactTimeline";
 import { effectLabel } from "../impact/panels5to16";
+import { DASHBOARD_RAMP } from "~/frontend/charts/sectionPalette";
 
 type T = ViewContext["t"];
 const tr = (t: T, code: string, msg: string, r?: Record<string, unknown>) => t({ code, msg }, r);
@@ -57,9 +58,9 @@ export function ruleLabel(t: T, rule: EventGroupingRule): string {
 
 // Grouping rules in distinct steps of the events ramp, always named.
 const RULE_FILL: Record<EventGroupingRule, string> = {
-	glide: dataTokens.ramp.events[4],
-	serial: dataTokens.ramp.events[3],
-	entered: dataTokens.ramp.events[1],
+	glide: DASHBOARD_RAMP[4],
+	serial: DASHBOARD_RAMP[3],
+	entered: DASHBOARD_RAMP[2],
 };
 
 /** The lines every Disaster events panel carries (RV-1). */
@@ -378,7 +379,7 @@ function EventSizeView({ common, d, exp }: { common: Common; d: EventPanels1to7;
 	const total = s.intensive + s.extensive;
 	const share = total > 0 ? s.intensive / total : 0;
 	const W = 380;
-	const R = dataTokens.ramp.people;
+	const R = DASHBOARD_RAMP;
 	return (
 		<Frame common={common} exp={exp}>
 			<div className="flex flex-col gap-2 text-sm">
@@ -386,13 +387,13 @@ function EventSizeView({ common, d, exp }: { common: Common; d: EventPanels1to7;
 					<svg viewBox={`0 0 ${W} 28`} width="100%" height={28} preserveAspectRatio="none" role="img" className="block max-w-full"
 						aria-label={`${names.intensive}: ${s.intensive}; ${names.extensive}: ${s.extensive}`}>
 						<rect x={0} y={0} width={W * share} height={28} fill={R[4]} />
-						<path d={roundedBarPath(W * share, 0, W * (1 - share), 28, "right")} fill={R[1]} />
+						<path d={roundedBarPath(W * share, 0, W * (1 - share), 28, "right")} fill={R[2]} />
 					</svg>
 				)}
 				<ul className="m-0 flex list-none flex-col gap-1 p-0">
 					{([
 						[names.intensive, s.intensive, R[4]],
-						[names.extensive, s.extensive, R[1]],
+						[names.extensive, s.extensive, R[2]],
 						[names.zero, s.zeroConfirmed, null],
 						[names.notReported, s.notReported, null],
 					] as const).map(([label, n, fill]) => (

@@ -7,10 +7,10 @@ import { ChartFrame } from "~/frontend/charts/ChartFrame";
 import type { ChartExportRow } from "~/frontend/charts/chartExport";
 import type { ViewContext } from "~/frontend/context";
 import type { CoverageWaffle as CoverageWafflePayload, PanelMeta } from "~/utils/dashboard/impactPanels";
-import { dataTokens } from "~/utils/designTokens.generated";
 import { PLAUSIBILITY_MARKER, STATE_ENCODING } from "~/utils/mapState";
 import { panelNotes, type PanelExport } from "../../panelCell";
 import { impactMeasureLabel } from "./measureLabels";
+import { DASHBOARD_RAMP } from "~/frontend/charts/sectionPalette";
 
 export const WAFFLE_CELLS = 100;
 
@@ -89,8 +89,8 @@ export function CoverageWaffle({ ctx, title, coverage, meta, source, scope, prov
 			key: "reported" as const,
 			label: t({ code: "dashboard.state_reported", msg: "Reported" }),
 			count: coverage.recordsReported,
-			fill: dataTokens.ramp.people[3],
-			stroke: dataTokens.ramp.people[4],
+			fill: DASHBOARD_RAMP[3],
+			stroke: DASHBOARD_RAMP[4],
 			dash: undefined as string | undefined,
 		},
 		{

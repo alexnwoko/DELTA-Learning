@@ -15,6 +15,7 @@ import { hazardColour } from "~/utils/hazardIdentity";
 import { STATE_ENCODING } from "~/utils/mapState";
 import { cellRow, panelNotes, type PanelExport } from "../../panelCell";
 import { impactMeasureLabel } from "./measureLabels";
+import { DASHBOARD_BAR } from "~/frontend/charts/sectionPalette";
 
 type YearCell = { year: number; cell: PanelCell };
 
@@ -28,7 +29,10 @@ export function YearColumns({
 	width,
 	label,
 	noDataText,
+	fill = DASHBOARD_BAR,
 }: {
+	/** Bar colour: the section palette's bar (Alex, 2026-10-18). */
+	fill?: string;
 	years: YearCell[];
 	annotations?: { year: number; label: string }[];
 	height: number;
@@ -46,7 +50,6 @@ export function YearColumns({
 	);
 	const bar = Math.max(3, slot * 0.7);
 	const base = PAD_TOP + plot;
-	const nr = STATE_ENCODING.not_reported;
 	const zero = STATE_ENCODING.zero_confirmed;
 	const tickEvery = years.length > 12 ? Math.ceil(years.length / 8) : 1;
 	return (
@@ -70,7 +73,7 @@ export function YearColumns({
 				if (valueState === "reported" && value !== null && value > 0) {
 					const h = Math.max(1, (value / max) * plot);
 					top = base - h;
-					mark = <path d={roundedBarPath(x, top, bar, h, "up")} fill={dataTokens.chart.axis} />;
+					mark = <path d={roundedBarPath(x, top, bar, h, "up")} fill={fill} />;
 				} else if (valueState === "zero_confirmed") {
 					mark = (
 						<rect
@@ -85,17 +88,10 @@ export function YearColumns({
 					);
 				} else {
 					top = PAD_TOP;
+					// No record that year: left vacant (Alex, 2026-10-18), never a 0
+					// bar. An invisible slot keeps the year's hover text.
 					mark = (
-						<rect
-							x={x + 0.5}
-							y={PAD_TOP + 0.5}
-							width={bar - 1}
-							height={plot - 1}
-							fill={nr.fill}
-							fillOpacity={0.35}
-							stroke={nr.stroke}
-							strokeDasharray="3 2"
-						>
+						<rect x={x} y={PAD_TOP} width={bar} height={plot} fill="transparent">
 							<title>{`${y.year}: ${noDataText}`}</title>
 						</rect>
 					);

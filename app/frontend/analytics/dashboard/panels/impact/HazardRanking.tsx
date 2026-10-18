@@ -5,9 +5,9 @@
 import { ChartFrame } from "~/frontend/charts/ChartFrame";
 import type { ViewContext } from "~/frontend/context";
 import type { HazardRankingRow, PanelMeta } from "~/utils/dashboard/impactPanels";
-import { dataTokens } from "~/utils/designTokens.generated";
 import { hazardColour } from "~/utils/hazardIdentity";
 import { cellRow, cellText, coverageText, panelNotes, type PanelExport } from "../../panelCell";
+import { DASHBOARD_RAMP } from "~/frontend/charts/sectionPalette";
 
 /** Splits a hazard name over at most two lines of about `max` characters. */
 export function wrapLabel(label: string, max = 22): [string, string?] {
@@ -105,7 +105,7 @@ export function HazardRanking({
 								</text>
 								{value !== null && value > 0 ? (
 									<>
-										<line x1={LABEL_W + 4} x2={stemEnd} y1={y + 12} y2={y + 12} stroke={dataTokens.chart.axis} strokeWidth={2} />
+										<line x1={LABEL_W + 4} x2={stemEnd} y1={y + 12} y2={y + 12} stroke={DASHBOARD_RAMP[2]} strokeWidth={2} />
 										<circle cx={stemEnd} cy={y + 12} r={5} fill={hazardColour(r.hipTypeId)} />
 										<text x={stemEnd + 9} y={y + 16} fill="currentColor">
 											{cellText(ctx, r.cell)}

@@ -9,17 +9,17 @@ import { PanelIcon } from "~/frontend/charts/PanelIcon";
 import { roundedBarPath } from "~/frontend/charts/roundedBar";
 import type { ViewContext } from "~/frontend/context";
 import type { HeadlineTile, PanelCell, PanelMeta } from "~/utils/dashboard/impactPanels";
-import { dataTokens } from "~/utils/designTokens.generated";
 import { STATE_ENCODING } from "~/utils/mapState";
 import { cellRow, cellText, coverageText, flaggedText, panelNotes, type PanelExport } from "../../panelCell";
 import { impactMeasureLabel } from "./measureLabels";
+import { DASHBOARD_BAR } from "~/frontend/charts/sectionPalette";
 
 // The sparkline stretches to its tile (Alex, 2026-10-18: panel 1 is as
 // tall as Ranked by divisions beside it); strokes keep their width.
 const SPARK_W = 120;
 const SPARK_H = 48;
 
-/** Column sparkline: a missing year is an empty dashed slot, never a 0 bar. */
+/** Column sparkline: a missing year is left vacant, never a 0 bar (Alex, 2026-10-18). */
 export function Sparkline({ points }: { points: { year: number; cell: PanelCell }[] }) {
 	if (points.length === 0) return null;
 	const max = Math.max(
@@ -28,7 +28,6 @@ export function Sparkline({ points }: { points: { year: number; cell: PanelCell 
 	);
 	const slot = SPARK_W / points.length;
 	const bar = Math.max(2, slot - 2);
-	const nr = STATE_ENCODING.not_reported;
 	const zero = STATE_ENCODING.zero_confirmed;
 	return (
 		<svg
@@ -44,7 +43,7 @@ export function Sparkline({ points }: { points: { year: number; cell: PanelCell 
 				if (valueState === "reported" && value !== null && value > 0) {
 					const h = Math.max(1, (value / max) * (SPARK_H - 2));
 					return (
-						<path key={p.year} d={roundedBarPath(x, SPARK_H - h, bar, h, "up", 3)} fill={dataTokens.chart.axis}>
+						<path key={p.year} d={roundedBarPath(x, SPARK_H - h, bar, h, "up", 3)} fill={DASHBOARD_BAR}>
 							<title>{`${p.year}: ${value}`}</title>
 						</path>
 					);
@@ -63,21 +62,8 @@ export function Sparkline({ points }: { points: { year: number; cell: PanelCell 
 						/>
 					);
 				}
-				// Not reported, or any other state: an outlined empty slot.
-				return (
-					<rect
-						key={p.year}
-						x={x + 0.5}
-						y={0.5}
-						width={bar - 1}
-						height={SPARK_H - 1}
-						fill="none"
-						stroke={nr.stroke}
-						strokeWidth={1}
-						strokeDasharray="2 2"
-						vectorEffect="non-scaling-stroke"
-					/>
-				);
+				// Not reported, or any other state: left vacant.
+				return null;
 			})}
 		</svg>
 	);
