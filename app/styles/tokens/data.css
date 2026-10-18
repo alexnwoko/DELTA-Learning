@@ -80,5 +80,15 @@
   --delta-data-hazard-societal: #b0306a; /** Societal */
   --delta-data-hazard-extraterrestrial: #0f7c8c; /** Extraterrestrial */
   --delta-data-hazard-unclassified: #6b7280; /** No HIPs type recorded */
-  --delta-data-icon: #004f91; /** Dashboard icons: one blue on every brand (Alex, 2026-10-18). At least 3:1 against brand surface and surface-subtle (WCAG 1.4.11); the title beside each icon carries the meaning. */
+  --delta-data-icon: #6a8bdc; /** Dashboard icons, same as data.dashboard.icon (Alex, 2026-10-18 palette trial). 3.31:1 on white, 3.05:1 on the dashboard tint (WCAG 1.4.11); the title beside each icon carries the meaning. */
+  --delta-data-dashboard-tint: #f0f6ff; /** Panel and tile background tint. */
+  --delta-data-dashboard-border: #cfe3ff; /** Panel and tile borders. */
+  --delta-data-dashboard-accent: #9dc3ff; /** Decorative accents only (1.8:1 on white): selected-state fills beside a text cue. */
+  --delta-data-dashboard-icon: #6a8bdc; /** Dashboard icons: 3.31:1 on white, 3.05:1 on tint (WCAG 1.4.11). */
+  --delta-data-dashboard-ink: #2d3355; /** Chart titles and subtitles, bold: 12.24:1 on white. */
+  --delta-data-sfm-tint: #f7fbff; /** Section and panel background tint. */
+  --delta-data-sfm-border: #d6eaf7; /** Section and panel borders. */
+  --delta-data-sfm-accent: #a8cfe3; /** Decorative accents only (1.65:1 on white). */
+  --delta-data-sfm-mark: #76a6c1; /** Decorative rules only: 2.63:1 on white is below 3:1, so never an icon or text. */
+  --delta-data-sfm-ink: #2f4f5f; /** Sendai titles, subtitles and icons: 8.73:1 on white. */
 }

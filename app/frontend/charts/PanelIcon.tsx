@@ -12,7 +12,7 @@ export function PanelIcon({
 }: {
 	name: OchaIcon;
 	size?: number;
-	/** A CSS colour or var(); defaults to the dashboard icon blue (data.icon). */
+	/** A CSS colour or var(); defaults to the palette icon colour (--panel-icon, else data.icon). */
 	colour?: string;
 	className?: string;
 }) {
@@ -20,7 +20,7 @@ export function PanelIcon({
 	const style: CSSProperties = {
 		width: size,
 		height: size,
-		backgroundColor: colour ?? "var(--delta-data-icon)",
+		backgroundColor: colour ?? "var(--panel-icon, var(--delta-data-icon))",
 		maskImage: url,
 		WebkitMaskImage: url,
 		maskRepeat: "no-repeat",

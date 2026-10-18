@@ -7,4 +7,5 @@
 @import "./tokens/data.css";
 @import "./tokens/theme.css";
 @import "./shell.css";
+@import "./dashboard.css";
 @import "./print.css";

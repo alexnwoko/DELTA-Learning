@@ -1,0 +1,39 @@
+/* Dashboard palette (Alex, 2026-10-18; a trial, may change): the panels read
+   these variables, so one token swap recolours them. The main dashboard
+   uses data.dashboard.*; the Sendai section (.delta-sfm) uses data.sfm.*.
+   Surfaces, borders, icons and titles only: data series keep their own
+   tokens, and hazard identity colours stay on the rail (NFR-094). */
+:root {
+	--panel-ink: var(--delta-data-dashboard-ink);
+	--panel-icon: var(--delta-data-dashboard-icon);
+	--panel-tint: var(--delta-data-dashboard-tint);
+	--panel-border: var(--delta-data-dashboard-border);
+	--panel-accent: var(--delta-data-dashboard-accent);
+}
+.delta-sfm {
+	--panel-ink: var(--delta-data-sfm-ink);
+	/* sfm.mark is 2.63:1, below the 3:1 icons need: icons take the ink. */
+	--panel-icon: var(--delta-data-sfm-ink);
+	--panel-tint: var(--delta-data-sfm-tint);
+	--panel-border: var(--delta-data-sfm-border);
+	--panel-accent: var(--delta-data-sfm-accent);
+	background-color: var(--panel-tint);
+	border-color: var(--panel-border);
+}
+
+/* Chart titles and subtitles: bold, in the palette's blue ink. */
+.delta-panel-title {
+	color: var(--panel-ink);
+	font-weight: 700;
+}
+.delta-panel-card {
+	border-color: var(--panel-border);
+}
+.delta-panel-iconbox {
+	border-color: var(--panel-border);
+	background-color: var(--panel-tint);
+}
+.delta-panel-tile {
+	border-color: var(--panel-border);
+	background-color: var(--panel-tint);
+}

@@ -14,8 +14,10 @@ import { STATE_ENCODING } from "~/utils/mapState";
 import { cellRow, cellText, coverageText, flaggedText, panelNotes, type PanelExport } from "../../panelCell";
 import { impactMeasureLabel } from "./measureLabels";
 
+// The sparkline stretches to its tile (Alex, 2026-10-18: panel 1 is as
+// tall as Ranked by divisions beside it); strokes keep their width.
 const SPARK_W = 120;
-const SPARK_H = 28;
+const SPARK_H = 48;
 
 /** Column sparkline: a missing year is an empty dashed slot, never a 0 bar. */
 export function Sparkline({ points }: { points: { year: number; cell: PanelCell }[] }) {
@@ -30,12 +32,11 @@ export function Sparkline({ points }: { points: { year: number; cell: PanelCell 
 	const zero = STATE_ENCODING.zero_confirmed;
 	return (
 		<svg
-			width={SPARK_W}
-			height={SPARK_H}
 			viewBox={`0 0 ${SPARK_W} ${SPARK_H}`}
+			preserveAspectRatio="none"
 			aria-hidden="true"
 			focusable="false"
-			className="block overflow-visible"
+			className="absolute inset-0 block h-full w-full overflow-visible"
 		>
 			{points.map((p, i) => {
 				const x = i * slot + (slot - bar) / 2;
@@ -58,6 +59,7 @@ export function Sparkline({ points }: { points: { year: number; cell: PanelCell 
 							y2={SPARK_H - 0.5}
 							stroke={zero.stroke}
 							strokeWidth={zero.strokeWidth}
+							vectorEffect="non-scaling-stroke"
 						/>
 					);
 				}
@@ -73,6 +75,7 @@ export function Sparkline({ points }: { points: { year: number; cell: PanelCell 
 						stroke={nr.stroke}
 						strokeWidth={1}
 						strokeDasharray="2 2"
+						vectorEffect="non-scaling-stroke"
 					/>
 				);
 			})}
@@ -108,7 +111,7 @@ export function HeadlineTiles({ ctx, title, tiles, meta, source, scope, provisio
 			rows={rows}
 			meta={{ source, scope, method: meta.method, basis: provisional ? "provisional" : "published", notes }}
 		>
-			<ul className="m-0 grid list-none grid-cols-2 gap-3 p-0 sm:grid-cols-3">
+			<ul className="m-0 grid flex-1 list-none auto-rows-fr grid-cols-2 gap-3 p-0 sm:grid-cols-3">
 				{tiles.map((tile) => {
 					const label = impactMeasureLabel(ctx, tile.measure);
 					const value = cellText(ctx, tile.cell);
@@ -117,10 +120,10 @@ export function HeadlineTiles({ ctx, title, tiles, meta, source, scope, provisio
 					return (
 						<li
 							key={tile.measure}
-							className="flex min-w-0 flex-col gap-1 rounded border border-brand-border bg-brand-surface-card p-3"
+							className="delta-panel-tile flex min-w-0 flex-col gap-1 rounded border p-3"
 						>
-							<span className="flex items-center gap-1.5 text-sm text-brand-text-muted">
-								<PanelIcon name={MEASURE_ICONS[tile.measure]} size={24} />
+							<span className="delta-panel-title flex items-center gap-1.5 text-sm">
+								<PanelIcon name={MEASURE_ICONS[tile.measure]} size={31} />
 								{label}
 							</span>
 							<span
@@ -135,8 +138,10 @@ export function HeadlineTiles({ ctx, title, tiles, meta, source, scope, provisio
 								</span>
 							)}
 							{tile.sparkline.length > 0 && (
-								<span className="mt-1 flex flex-col gap-0.5">
-									<Sparkline points={tile.sparkline} />
+								<span className="mt-1 flex flex-1 flex-col gap-0.5">
+									<span className="relative block min-h-7 flex-1">
+										<Sparkline points={tile.sparkline} />
+									</span>
 									<span className="text-xs text-brand-text-muted">
 										{tile.sparkline[0].year} to {tile.sparkline[tile.sparkline.length - 1].year}
 									</span>
@@ -145,9 +150,9 @@ export function HeadlineTiles({ ctx, title, tiles, meta, source, scope, provisio
 						</li>
 					);
 				})}
-				<li className="flex min-w-0 flex-col gap-1 rounded border border-dashed border-brand-border-control bg-brand-surface-subtle p-3">
-					<span className="flex items-center gap-1.5 text-sm text-brand-text-muted">
-						<PanelIcon name={MEASURE_ICONS.money} size={24} />
+				<li className="delta-panel-tile flex min-w-0 flex-col gap-1 rounded border border-dashed p-3">
+					<span className="delta-panel-title flex items-center gap-1.5 text-sm">
+						<PanelIcon name={MEASURE_ICONS.money} size={31} />
 						{ctx.t({ code: "dashboard.measure_money", msg: "Damage and losses" })}
 					</span>
 					<span className="text-sm font-semibold">
