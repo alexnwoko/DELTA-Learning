@@ -164,8 +164,58 @@ type MapChartProps = {
 		outline: unknown | null;
 		countryName?: string | null;
 		countryLabelPoint?: [number, number] | null;
+		/**
+		 * Every country's border and name (Geoportal /api/geo/world, Alex,
+		 * 2026-10-18): lines at every zoom above the shading, names from each
+		 * country's minZoom. The URL is fetched as given (it carries its
+		 * version). The tenant's own name (iso3) is left out of the world
+		 * names. While the world lines are null or absent, the neighbours
+		 * above are drawn instead.
+		 */
+		world?: { url: string; iso3?: string | null } | null;
 	};
 };
+
+/** The /api/geo/world payload (Geoportal). */
+export interface WorldBoundaries {
+	lines: unknown | null;
+	labels: {
+		iso3: string;
+		name: string;
+		labelPoint: [number, number] | null;
+		minZoom: number;
+	}[];
+}
+
+/**
+ * The world names to show at a zoom: each from its minZoom, never the
+ * tenant's own (its name is drawn separately), never one without a point.
+ */
+export function worldNamesAt(
+	labels: WorldBoundaries["labels"],
+	zoom: number,
+	tenantIso3?: string | null,
+): { name: string; labelPoint: [number, number] }[] {
+	return labels
+		.filter((l) => l.labelPoint && l.iso3 !== tenantIso3 && l.minZoom <= zoom)
+		.map((l) => ({
+			name: l.name,
+			labelPoint: l.labelPoint as [number, number],
+		}));
+}
+
+// One fetch per URL per page: the URL is versioned and cached a year.
+const worldCache = new Map<string, Promise<WorldBoundaries | null>>();
+function loadWorld(url: string): Promise<WorldBoundaries | null> {
+	let p = worldCache.get(url);
+	if (!p) {
+		p = fetch(url, { credentials: "same-origin" })
+			.then((r) => (r.ok ? (r.json() as Promise<WorldBoundaries>) : null))
+			.catch(() => null);
+		worldCache.set(url, p);
+	}
+	return p;
+}
 
 /**
  * The UN short-form map disclaimer, word for word, on every map that shows
@@ -589,6 +639,13 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 
 		const mapRef = useRef<any>(null);
 		const boundaryGroupRef = useRef<any>(null);
+		// Bumped on every boundary draw, so a late world fetch draws only once.
+		const worldDrawRef = useRef(0);
+		// World names shown at the current zoom, redrawn on zoomend.
+		const worldLabelsRef = useRef<{
+			group: any;
+			labels: WorldBoundaries["labels"];
+		} | null>(null);
 
 		const makeLegendDraggable = () => {
 			const legend = document.getElementById(`${componentId}_map-legend`);
@@ -866,22 +923,69 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 					// Boundary layer: the country outline and every area's name, in
 					// light grey above the shading (Alex, 2026-10-18).
 					if (boundaries && boundaryGroupRef.current) {
-						for (const n of boundaries.neighbours ?? []) {
-							L.geoJSON(n.geojson as any, {
-								pane: "deltaBoundaries",
-								interactive: false,
-								style: () => ({
-									color: BOUNDARY_GREY,
-									weight: BOUNDARY_WIDTH * 0.75,
-									opacity: 1,
-									fill: false,
-								}),
-							}).addTo(boundaryGroupRef.current);
-							if (n.labelPoint) {
-								boundaryLabel(L, n.name, n.labelPoint).addTo(
-									boundaryGroupRef.current,
-								);
+						const group = boundaryGroupRef.current;
+						const map = mapRef.current;
+						const drawNeighbours = () => {
+							for (const n of boundaries.neighbours ?? []) {
+								L.geoJSON(n.geojson as any, {
+									pane: "deltaBoundaries",
+									interactive: false,
+									style: () => ({
+										color: BOUNDARY_GREY,
+										weight: BOUNDARY_WIDTH * 0.75,
+										opacity: 1,
+										fill: false,
+									}),
+								}).addTo(group);
+								if (n.labelPoint) {
+									boundaryLabel(L, n.name, n.labelPoint).addTo(group);
+								}
 							}
+						};
+						const world = boundaries.world;
+						const drawToken = ++worldDrawRef.current;
+						if (!world?.url) drawNeighbours();
+						else {
+							void loadWorld(world.url).then((w) => {
+								// A later render replaced this group: draw nothing.
+								if (
+									boundaryGroupRef.current !== group ||
+									worldDrawRef.current !== drawToken
+								)
+									return;
+								if (!w?.lines) return drawNeighbours();
+								L.geoJSON(w.lines as any, {
+									pane: "deltaBoundaries",
+									interactive: false,
+									style: () => ({
+										color: BOUNDARY_GREY,
+										weight: BOUNDARY_WIDTH * 0.75,
+										opacity: 1,
+										fill: false,
+									}),
+								}).addTo(group);
+								const labelGroup = L.layerGroup().addTo(group);
+								worldLabelsRef.current = {
+									group: labelGroup,
+									labels: w.labels,
+								};
+								const showNames = () => {
+									const cur = worldLabelsRef.current;
+									if (!cur) return;
+									cur.group.clearLayers();
+									for (const l of worldNamesAt(
+										cur.labels,
+										map.getZoom(),
+										world.iso3,
+									)) {
+										boundaryLabel(L, l.name, l.labelPoint).addTo(cur.group);
+									}
+								};
+								map.off("zoomend", map._deltaWorldNames);
+								map._deltaWorldNames = showNames;
+								map.on("zoomend", showNames);
+								showNames();
+							});
 						}
 						if (boundaries.outline) {
 							L.geoJSON(boundaries.outline as any, {
