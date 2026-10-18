@@ -12,6 +12,7 @@ import type { ViewContext } from "~/frontend/context";
 import type { PanelCell } from "~/utils/dashboard/impactPanels";
 import type { ImpactMapArea, ImpactMapPayload } from "~/utils/dashboard/impactMap";
 import type { MapScopeQuery } from "~/utils/mapState";
+import type { DashboardMapLayers } from "../mapLayers";
 import { cellText } from "../../panelCell";
 import { ShadedTable } from "../blocks";
 
@@ -49,9 +50,11 @@ export interface ImpactMapProps {
 	scope: MapScopeQuery;
 	/** Selecting an area sets the place filter for the whole page (brief section 2). */
 	onSelectDivision?: (divisionId: string) => void;
+	/** Basemap and country boundary layers, from the route loader. */
+	layers?: DashboardMapLayers;
 }
 
-export function ImpactMap({ ctx, map, scope, onSelectDivision }: ImpactMapProps) {
+export function ImpactMap({ ctx, map, scope, onSelectDivision, layers }: ImpactMapProps) {
 	const t = ctx.t;
 	const labels = {
 		destroyed: t({ code: "dashboard.map_dwellings_destroyed", msg: "Dwellings destroyed" }),
@@ -76,6 +79,8 @@ export function ImpactMap({ ctx, map, scope, onSelectDivision }: ImpactMapProps)
 					// The map reports the index among the drawn areas.
 					onAreaClick={onSelectDivision ? (i) => onSelectDivision(drawn[i].divisionId) : undefined}
 					notApplied={map.meta.notApplied}
+					basemaps={layers?.basemaps}
+					boundaries={layers?.boundaries}
 				/>
 			</div>
 			<figcaption className="flex flex-col gap-1 text-sm text-brand-text-muted">

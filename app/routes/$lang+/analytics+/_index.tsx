@@ -7,6 +7,7 @@ import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { useLoaderData, useSearchParams } from "react-router";
 import { approvalAudienceForBasis } from "~/backend.server/approvalAudience.server";
 import { getEventMap } from "~/backend.server/models/analytics/dashboard/eventMap.server";
+import { getTenantOutline } from "~/backend.server/models/geo/tenantExtent";
 import { getEventPanels1to7 } from "~/backend.server/models/analytics/dashboard/eventPanels.server";
 import { getRecordsByApproval } from "~/backend.server/models/analytics/dashboard/recordsByApproval.server";
 import { getSendaiSection } from "~/backend.server/models/analytics/dashboard/sendaiPanels.server";
@@ -52,11 +53,14 @@ import {
 	parseDeltaQuery,
 	type DeltaQuery,
 } from "~/utils/deltaQuery";
+import { selectableBasemaps } from "~/utils/basemap";
+import { basemapLayers } from "~/utils/basemap.server";
 import { htmlTitle } from "~/utils/htmlmeta";
 import { getCountryAccountsIdFromSession, getCountrySettingsFromSession } from "~/utils/session";
 
 export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request, params: routeParams }: LoaderFunctionArgs) => {
-	const params = new URL(request.url).searchParams;
+	const url = new URL(request.url);
+	const params = url.searchParams;
 	const { query, issues } = parseDeltaQuery(params);
 	const view = viewFromSearch(params, query);
 	// The Sendai Framework Monitoring toggle (sfm=1), outside delta.query/1.
@@ -103,6 +107,22 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request, p
 		view === "disaster_event" || (view === "hazardous_event" && !hazardEvents?.empty)
 			? await getEventMap(query, ctx, view)
 			: null;
+	// Under every map (Alex, 2026-10-18): the basemaps, the first on by
+	// default (TR-166 amended; public pages get self-hosted layers only), and
+	// the country outline with its name. Read only when a map is drawn.
+	const hasMap = impact !== null || eventMap !== null;
+	const outline = hasMap ? await getTenantOutline(countryAccountsId) : null;
+	const mapLayers = hasMap
+		? {
+				basemaps: selectableBasemaps(
+					basemapLayers(url.origin, routeParams.lang ?? "en"),
+					audience === "public" ? "public" : "signed-in",
+				),
+				boundaries: outline
+					? { outline: outline.geojson, countryLabelPoint: outline.labelPoint, countryName: outline.name ?? (country || null) }
+					: undefined,
+			}
+		: null;
 	// The shared filter bar's options: hazard tree, divisions and regions.
 	const filterOptions = await getDashboardFilterOptions(countryAccountsId, query, audience, routeParams.lang ?? "en");
 	// For the G-00 notice: only the published basis can be empty this way.
@@ -114,6 +134,7 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request, p
 		hazardEvents,
 		sectors,
 		eventMap,
+		mapLayers,
 		filterOptions,
 		sendai,
 		sfm,
@@ -262,9 +283,9 @@ export default function AnalysisDashboard() {
 				map={
 					// An empty view shows its one frame, with no map of empty areas.
 					panels.some((p) => p.id.endsWith("-empty")) ? undefined : ld.impactMap ? (
-						<ImpactMap ctx={ctx} map={ld.impactMap as ImpactMapPayload} scope={mapScope} onSelectDivision={selectDivision} />
+						<ImpactMap ctx={ctx} map={ld.impactMap as ImpactMapPayload} scope={mapScope} onSelectDivision={selectDivision} layers={ld.mapLayers ?? undefined} />
 					) : ld.eventMap ? (
-						<EventMap ctx={ctx} map={ld.eventMap as EventMapPayload} scope={mapScope} onSelectDivision={selectDivision} />
+						<EventMap ctx={ctx} map={ld.eventMap as EventMapPayload} scope={mapScope} onSelectDivision={selectDivision} layers={ld.mapLayers ?? undefined} />
 					) : undefined
 				}
 				sendai={sendai ? <SendaiSectionView ctx={ctx} d={sendai} panels={sendaiPanels} country={ld.country} /> : undefined}
