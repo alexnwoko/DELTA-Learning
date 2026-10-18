@@ -7,7 +7,11 @@ import {
 	useCallback,
 } from "react";
 import type { ValueState } from "~/utils/valueState";
-import { BASEMAP_ATTRIBUTION, isSelfHostedTileUrl } from "~/utils/basemap";
+import {
+	BASEMAP_ATTRIBUTION,
+	isSelfHostedTileUrl,
+	type BasemapLayer,
+} from "~/utils/basemap";
 import { dataTokens } from "~/utils/designTokens.generated";
 import { LEAFLET_CSS, LEAFLET_JS } from "~/utils/leafletAssets";
 import { ViewContext } from "~/frontend/context";
@@ -126,7 +130,53 @@ type MapChartProps = {
 	 * the area's index in dataSource; for example to set the place filter.
 	 */
 	onAreaClick?: (index: number, area: MapChartArea) => void;
+	/**
+	 * Basemap layers the reader may pick (selectableBasemaps(basemapLayers(...))
+	 * for the audience). The first is drawn when the map opens (Alex,
+	 * 2026-10-18: basemap on by default, amending TR-166); "None" turns it off.
+	 * Google needs a tile session and is not offered here yet.
+	 */
+	basemaps?: readonly BasemapLayer[];
+	/**
+	 * The country boundary and labels layer (Alex, 2026-10-18): the tenant's
+	 * outline and every area's name at its anchor point, in light grey, as an
+	 * overlay the reader can switch off.
+	 */
+	boundaries?: {
+		outline: unknown | null;
+		countryName?: string | null;
+		countryLabelPoint?: [number, number] | null;
+	};
 };
+
+/**
+ * Boundary layer colours, the values of Geoportal's dataTokens.map
+ * countryOutline (#7b828c, 1.2) and areaLabel (#5f6670, white halo, 12 px):
+ * the lightest greys that keep 3:1 for the line and 4.5:1 for the text on
+ * the canvas, white and the lightest ramp class (WCAG 1.4.11, 1.4.3).
+ * Switch to the tokens once Geoportal's f797cdb7 is merged.
+ */
+const BOUNDARY_GREY = "#7b828c";
+const BOUNDARY_WIDTH = 1.2;
+const BOUNDARY_LABEL_GREY = "#5f6670";
+
+/** One label as a non-interactive text marker. */
+function boundaryLabel(
+	L: any,
+	name: string,
+	at: [number, number],
+	strong = false,
+) {
+	return L.marker(L.latLng(at[1], at[0]), {
+		interactive: false,
+		keyboard: false,
+		icon: L.divIcon({
+			className: "",
+			html: `<span style="color:${BOUNDARY_LABEL_GREY};font-size:${strong ? 14 : 12}px;font-weight:${strong ? 600 : 400};${strong ? "text-transform:uppercase;letter-spacing:0.04em;" : ""}white-space:nowrap;-webkit-text-stroke:3px #ffffff;paint-order:stroke fill;transform:translate(-50%,-50%);display:inline-block">${escapeHtml(name)}</span>`,
+			iconSize: [0, 0],
+		}),
+	});
+}
 
 type DataSourceType = MapChartArea[];
 
@@ -462,6 +512,8 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 			layered,
 			notReportedLabel,
 			onAreaClick,
+			basemaps,
+			boundaries,
 		},
 		ref,
 	) => {
@@ -510,6 +562,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 		const [isMapRendered, setIsMapRendered] = useState(false);
 
 		const mapRef = useRef<any>(null);
+		const boundaryGroupRef = useRef<any>(null);
 
 		const makeLegendDraggable = () => {
 			const legend = document.getElementById(`${componentId}_map-legend`);
@@ -626,21 +679,61 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 								"MapChart: basemap ignored, not on the DELTA origin (SEC-20)",
 							);
 						}
-						// The attribution control is shown exactly when a basemap is
+						const offered = (basemaps ?? []).filter((b) => b.id !== "google");
+						const hasBasemap = !!tiles || offered.length > 0;
+						// The attribution control is shown exactly when a basemap can be
 						// drawn, and it keeps the data credit (TR-166).
 						mapRef.current = L.map(componentId, {
 							preferCanvas: false,
-							attributionControl: !!tiles,
+							attributionControl: hasBasemap,
 						});
-						if (tiles) {
+						if (hasBasemap) {
 							mapRef.current.attributionControl?.setPrefix(false);
+						}
+						const baseLayers: Record<string, any> = {};
+						if (offered.length) {
+							baseLayers[
+								ctx.t({ code: "analysis.map_basemap_none", msg: "No basemap" })
+							] = L.layerGroup();
+							offered.forEach((b, i) => {
+								const layer = L.tileLayer(b.url, {
+									minZoom: b.minZoom,
+									maxZoom: 20,
+									maxNativeZoom: b.maxZoom,
+									tileSize: b.tileSize,
+									attribution: b.attribution,
+								});
+								baseLayers[ctx.t(b.label)] = layer;
+								// Basemap on by default (Alex, 2026-10-18).
+								if (i === 0) layer.addTo(mapRef.current);
+							});
+						} else if (tiles) {
 							L.tileLayer(tiles, {
 								maxZoom: 20,
 								attribution: basemapAttribution,
 							}).addTo(mapRef.current);
 						}
+						boundaryGroupRef.current = L.layerGroup();
+						if (offered.length || boundaries) {
+							L.control
+								.layers(
+									offered.length ? baseLayers : {},
+									boundaries
+										? {
+												[ctx.t({
+													code: "analysis.map_boundaries_labels",
+													msg: "Boundaries and labels",
+												})]: boundaryGroupRef.current,
+											}
+										: {},
+									{ position: "topright", collapsed: true },
+								)
+								.addTo(mapRef.current);
+						}
+						if (boundaries) boundaryGroupRef.current.addTo(mapRef.current);
 					} else {
 						console.log("Clearing previous layers...");
+						boundaryGroupRef.current?.clearLayers();
 						mapRef.current.eachLayer((layer: any) => {
 							if (layer instanceof L.GeoJSON || layer.options?.deltaSymbol) {
 								mapRef.current.removeLayer(layer);
@@ -734,6 +827,36 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 							console.error("Error parsing GeoJSON:", error);
 						}
 					});
+					// Boundary layer: the country outline and every area's name, in
+					// light grey above the shading (Alex, 2026-10-18).
+					if (boundaries && boundaryGroupRef.current) {
+						if (boundaries.outline) {
+							L.geoJSON(boundaries.outline as any, {
+								interactive: false,
+								style: () => ({
+									color: BOUNDARY_GREY,
+									weight: BOUNDARY_WIDTH,
+									opacity: 1,
+									fill: false,
+								}),
+							}).addTo(boundaryGroupRef.current);
+						}
+						dataSource.forEach((region) => {
+							if (region.labelPoint && region.name) {
+								boundaryLabel(L, region.name, region.labelPoint).addTo(
+									boundaryGroupRef.current,
+								);
+							}
+						});
+						if (boundaries.countryName && boundaries.countryLabelPoint) {
+							boundaryLabel(
+								L,
+								boundaries.countryName,
+								boundaries.countryLabelPoint,
+								true,
+							).addTo(boundaryGroupRef.current);
+						}
+					}
 					ensurePatternDefs(mapRef.current);
 
 					setTimeout(() => {
@@ -761,6 +884,8 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 				layered,
 				notReportedLabel,
 				onAreaClick,
+				basemaps,
+				boundaries,
 			],
 		);
 
@@ -826,7 +951,8 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 							padding: "10px",
 							borderRadius: "5px",
 							boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.3)",
-							fontSize: "14px",
+							// Alex, 2026-10-18: two points smaller (14px is 10.5pt).
+							fontSize: "8.5pt",
 							lineHeight: "1.5",
 							whiteSpace: "nowrap",
 						}}
