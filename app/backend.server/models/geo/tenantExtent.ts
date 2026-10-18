@@ -224,7 +224,7 @@ export async function neighbourOutlines(
  * Shape of the geometry answers. Raise it whenever a geometry response
  * changes form, so browsers holding the old answer for a year fetch anew.
  */
-export const GEOMETRY_FORMAT = 2;
+export const GEOMETRY_FORMAT = 3;
 
 /**
  * Version of a tenant's map geometry (NFR-113 first paint). It changes when
@@ -278,21 +278,23 @@ export interface WorldBoundaries {
 /**
  * The world admin-0 reference layer for the small-scale map (Alex,
  * 2026-10-18: every country's boundary visible, light grey, inside
- * transparent, with light grey names). Borders are drawn as lines, not
- * filled shapes: the layer has nothing to shade and sits under the
- * tenant's figures. The shared linework is simplified once (0.05 degrees,
- * about 5 km; the map shows it below zoom 5, where the detailed neighbour
- * outlines take over) and kept in the geo cache until geo.admin0 changes.
+ * transparent, with light grey names), over the shading at every zoom.
+ * Borders are drawn as lines, not filled shapes: the layer has nothing to
+ * shade. The shared linework is simplified once (WORLD_TOLERANCE, about
+ * 1 km, under 2 px at zoom 8) and kept in the geo cache until geo.admin0
+ * changes.
  * Reference data, the same for every tenant.
  */
+const WORLD_TOLERANCE = 0.01;
+
 export async function worldBoundaries(): Promise<WorldBoundaries> {
 	const version = await admin0Version();
 	if (!version) return { lines: null, labels: [] };
-	return cachedGeo("worldAdmin0", "*", version, { tolerance: 0.05, labels: 2 }, async () => {
+	return cachedGeo("worldAdmin0", "*", version, { tolerance: WORLD_TOLERANCE, labels: 2 }, async () => {
 		const [lines, labels] = await Promise.all([
 			dr.execute(sql`
 				SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(
-					ST_LineMerge(ST_Union(ST_Boundary(geom))), 0.05), 3)::jsonb AS geojson
+					ST_LineMerge(ST_Union(ST_Boundary(geom))), ${WORLD_TOLERANCE}), 3)::jsonb AS geojson
 				FROM geo.admin0
 			`),
 			dr.execute(sql`
