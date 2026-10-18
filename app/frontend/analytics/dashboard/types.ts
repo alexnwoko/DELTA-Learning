@@ -34,7 +34,17 @@ export interface DashboardPanel {
 	exportData?: PanelExport;
 	/** Sendai section only: the target row it sits in ("S" is the full-width counts row). */
 	group?: "S" | "A" | "B" | "C" | "D";
+	/** Place on the page when it differs from the panel number (left, right, left...). */
+	order?: number;
+	/** Under "Show more"; by default the panels numbered above DEFAULT_PANEL_COUNT. */
+	more?: boolean;
 }
+
+/** Page position of a panel: its order, else its number. */
+export const panelPosition = (p: DashboardPanel): number => p.order ?? p.n;
+
+/** Whether a panel waits under "Show more". */
+export const panelUnderMore = (p: DashboardPanel): boolean => p.more ?? p.n > DEFAULT_PANEL_COUNT;
 
 /** Panels shown by default; the rest wait under "Show more". */
 export const DEFAULT_PANEL_COUNT = 12;

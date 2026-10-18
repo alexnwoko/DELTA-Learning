@@ -715,7 +715,7 @@ export function impactPanels5to16(
 						normalise="column" />
 				</Frame>
 			)],
-		[7, tr(t, "dashboard.impact_7", "Ranked divisions"), rankedDivisionsExport(t, data.rankedDivisions, m.rankedDivisions),
+		[7, tr(t, "dashboard.impact_7", "Ranked by divisions"), rankedDivisionsExport(t, data.rankedDivisions, m.rankedDivisions),
 			(c, e) => (
 				<Frame common={c} exp={e}>
 					<RowBars ctx={ctx} label={c.title}
@@ -736,7 +736,7 @@ export function impactPanels5to16(
 						normalise="table" />
 				</Frame>
 			)],
-		[9, tr(t, "dashboard.impact_9", "People moved"), peopleMovedExport(t, data.peopleMoved, m.peopleMoved),
+		[9, tr(t, "dashboard.impact_9", "People displaced"), peopleMovedExport(t, data.peopleMoved, m.peopleMoved),
 			(c, e) => (
 				<Frame common={c} exp={e}>
 					<RowBars ctx={ctx} label={c.title} series={movedSeries}
@@ -775,7 +775,7 @@ export function impactPanels5to16(
 			(c, e) => <PeriodView common={c} p={data.periodChange} exp={e} />],
 		[15, tr(t, "dashboard.impact_15", "Extensive and intensive risk"), extensiveExport(t, data.extensiveIntensive, m.extensiveIntensive),
 			(c, e) => <ExtensiveView common={c} p={data.extensiveIntensive} exp={e} />],
-		[16, tr(t, "dashboard.impact_16", "Disaggregation"), disaggregationExport(t, disaggSeries, m.disaggregation),
+		[16, tr(t, "dashboard.impact_16", "Disaster impact by sex and age disaggregation"), disaggregationExport(t, disaggSeries, m.disaggregation),
 			(c, e) => (
 				<Frame common={c} exp={e}>
 					<span className="text-sm text-brand-text-muted">{effectLabel(t, disaggSeries.effect)}</span>

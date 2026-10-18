@@ -4,13 +4,38 @@ import type { ViewContext } from "~/frontend/context";
 import type { ImpactPanels1to4 } from "~/utils/dashboard/impactPanels";
 import type { ImpactPanels5to16 } from "~/utils/dashboard/impactPanels5to16";
 import { emptyViewPanel } from "../../panelCell";
-import type { DashboardPanel } from "../../types";
+import { panelPosition, type DashboardPanel } from "../../types";
 import { CoverageWaffle, waffleExport } from "./CoverageWaffle";
 import { HazardRanking, rankingExport } from "./HazardRanking";
 import { HeadlineTiles, headlineExport } from "./HeadlineTiles";
 import { ImpactTimeline, timelineExport } from "./ImpactTimeline";
 import { impactMeasureLabel } from "./measureLabels";
 import { impactPanels5to16 } from "./panels5to16";
+
+/**
+ * The Disaster impact layout (Alex, 2026-10-18), two panels a row, left
+ * then right. Panels not listed (largest records, season, period change,
+ * extensive and intensive risk) wait under "Show more", in number order.
+ * Panel 5 (Sendai counts) is not listed: the Sendai section carries it.
+ */
+export const IMPACT_LAYOUT: readonly string[] = [
+	"impact-1", "impact-7", // Human effects at a glance | Ranked by divisions
+	"impact-4", "impact-3", // Hazard ranking by disaster impact | Human effects by year
+	"impact-6", "impact-8", // Hazard by human effect | Hazard by sector
+	"impact-10", "impact-9", // Houses destroyed and damaged | People displaced
+	"impact-2", "impact-12", // Coverage of the records | Reporting completeness and precision
+	"impact-16", // Disaster impact by sex and age disaggregation
+];
+
+/** Places each panel by IMPACT_LAYOUT; the rest follow, under "Show more". */
+export function arrangeImpactPanels(panels: DashboardPanel[]): DashboardPanel[] {
+	return panels
+		.map((p) => {
+			const at = IMPACT_LAYOUT.indexOf(p.id);
+			return at >= 0 ? { ...p, order: at + 1, more: false } : { ...p, order: 100 + p.n, more: true };
+		})
+		.sort((a, b) => panelPosition(a) - panelPosition(b));
+}
 
 export function impactDashboardPanels(
 	ctx: ViewContext,
@@ -71,11 +96,11 @@ export function impactDashboardPanels(
 			id: "impact-4",
 			n: 4,
 			exportData: rankingExport(data.hazardRanking, data.meta.hazardRanking),
-			title: t("dashboard.impact_4", "Hazard ranking"),
+			title: t("dashboard.impact_4", "Hazard ranking by disaster impact"),
 			render: () => (
 				<HazardRanking
 					{...common}
-					title={t("dashboard.impact_4", "Hazard ranking")}
+					title={t("dashboard.impact_4", "Hazard ranking by disaster impact")}
 					measureLabel={impactMeasureLabel(ctx, data.timeline.measure)}
 					rows={data.hazardRanking}
 					meta={data.meta.hazardRanking}
@@ -92,5 +117,5 @@ export function impactDashboardPanels(
 				subnational: later.subnational,
 			})
 		: [];
-	return [...ready, ...rest];
+	return arrangeImpactPanels([...ready, ...rest]);
 }
