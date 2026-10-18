@@ -19,7 +19,9 @@ const { createMockTranslator } = await import("~/utils/translator");
 const ctx = { t: createMockTranslator(), lang: "en", url: (p: string) => `/en/${p}` } as never;
 const scope = {} as never;
 const basemaps = [{ id: "osm", label: "OpenStreetMap", url: "/tiles/basemap/{z}/{x}/{y}.png", thirdParty: false }] as never;
-const boundaries = { outline: { type: "Polygon", coordinates: [] }, countryLabelPoint: [35, -18] as [number, number], countryName: "Mozambique" };
+const boundaries = { outline: { type: "Polygon", coordinates: [] }, countryLabelPoint: [35, -18] as [number, number], countryName: "Mozambique",
+	neighbours: [{ iso3: "MWI", name: "Malawi", geojson: { type: "Polygon", coordinates: [] }, labelPoint: [34, -13] as [number, number] }],
+};
 const layers = { basemaps, boundaries };
 
 describe("Analysis map layers", () => {
@@ -29,6 +31,7 @@ describe("Analysis map layers", () => {
 		renderToString(<ImpactMap ctx={ctx} map={map} scope={scope} layers={layers} />);
 		expect(seen[0]?.basemaps).toBe(basemaps);
 		expect(seen[0]?.boundaries).toBe(boundaries);
+		expect((seen[0]?.boundaries as typeof boundaries).neighbours[0].name).toBe("Malawi");
 	});
 
 	it("EventMap hands basemaps and boundaries to MapChart", () => {

@@ -7,7 +7,7 @@ import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { useLoaderData, useSearchParams } from "react-router";
 import { approvalAudienceForBasis } from "~/backend.server/approvalAudience.server";
 import { getEventMap } from "~/backend.server/models/analytics/dashboard/eventMap.server";
-import { getTenantOutline } from "~/backend.server/models/geo/tenantExtent";
+import { getTenantOutline, neighbourOutlines } from "~/backend.server/models/geo/tenantExtent";
 import { getEventPanels1to7 } from "~/backend.server/models/analytics/dashboard/eventPanels.server";
 import { getRecordsByApproval } from "~/backend.server/models/analytics/dashboard/recordsByApproval.server";
 import { getSendaiSection } from "~/backend.server/models/analytics/dashboard/sendaiPanels.server";
@@ -112,9 +112,14 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request, p
 			: null;
 	// Under every map (Alex, 2026-10-18): the basemaps, the first on by
 	// default (TR-166 amended; public pages get self-hosted layers only), and
-	// the country outline with its name. Read only when a map is drawn.
+	// the country outline with its name and its neighbours. Read only when a
+	// map is drawn.
 	const hasMap = impact !== null || eventMap !== null;
-	const outline = hasMap ? await getTenantOutline(countryAccountsId) : null;
+	// Neighbouring countries in thinner grey under the outline; none until
+	// the admin0 layer is seeded.
+	const [outline, neighbours] = hasMap
+		? await Promise.all([getTenantOutline(countryAccountsId), neighbourOutlines(countryAccountsId)])
+		: [null, []];
 	const mapLayers = hasMap
 		? {
 				basemaps: selectableBasemaps(
@@ -122,7 +127,12 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request, p
 					audience === "public" ? "public" : "signed-in",
 				),
 				boundaries: outline
-					? { outline: outline.geojson, countryLabelPoint: outline.labelPoint, countryName: outline.name ?? (country || null) }
+					? {
+							outline: outline.geojson,
+							countryLabelPoint: outline.labelPoint,
+							countryName: outline.name ?? (country || null),
+							neighbours,
+						}
 					: undefined,
 			}
 		: null;
