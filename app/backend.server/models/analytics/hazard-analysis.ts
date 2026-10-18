@@ -13,6 +13,7 @@ import {
 	type MeasureValue,
 } from "~/utils/valueState";
 import {
+	PLAUSIBILITY_CEILINGS,
 	plausibilitySourceFields,
 	type PlausibilityMeasure,
 } from "~/utils/plausibility";
@@ -403,6 +404,17 @@ export function plausibilityFlagged(
 }
 
 /**
+ * True when the value is above the measure's plausibility ceiling ("Under
+ * review"; the value stays as recorded).
+ */
+export function aboveCeiling(
+	measure: PlausibilityMeasure,
+	value: SQL,
+): SQL {
+	return sql`COALESCE(${value} > ${sql.raw(String(PLAUSIBILITY_CEILINGS[measure]))}, false)`;
+}
+
+/**
  * The plausibility-flagged source fields of every record in
  * filtered_records, read once (about 5,000 records carry flags), so a
  * measure's flag check is an array overlap instead of a JSON scan per
@@ -464,7 +476,9 @@ export function humanEffectMeasuresSelect(): SQL {
 					plausibilitySourceFields(m).map((f) => sql`${f}`),
 					sql`, `,
 				)}]::text[]
-			) AS ${sql.raw(`"${m}_flagged"`)}`;
+					OR ${aboveCeiling(m, total)}
+			) AS ${sql.raw(`"${m}_flagged"`)},
+			COUNT(*) FILTER (WHERE ${aboveCeiling(m, total)}) AS ${sql.raw(`"${m}_above"`)}`;
 	});
 	return sql.join([...parts, sql`COUNT(*) AS records_total`], sql`, `);
 }
@@ -483,6 +497,7 @@ export function humanEffectMeasuresFromRow(
 					zeroConfirmed: row[`${m}_zero`] as number | string,
 					total: row.records_total as number | string,
 					flagged: row[`${m}_flagged`] as number | string,
+					aboveCeiling: row[`${m}_above`] as number | string,
 				},
 				PROVISIONAL_ZERO_COVERAGE,
 			),
@@ -648,6 +663,7 @@ export async function getAffectedPeopleByHazardFilters(
 					zeroConfirmed: row[`${m}_zero`] as number | string,
 					total: row.records_total as number | string,
 					flagged: row[`${m}_flagged`] as number | string,
+					aboveCeiling: row[`${m}_above`] as number | string,
 				},
 				PROVISIONAL_ZERO_COVERAGE,
 			),
@@ -722,6 +738,7 @@ export async function getHumanEffectsGrouped(
 						zeroConfirmed: row[`${m}_zero`] as number | string,
 						total: row.records_total as number | string,
 						flagged: row[`${m}_flagged`] as number | string,
+						aboveCeiling: row[`${m}_above`] as number | string,
 					},
 					PROVISIONAL_ZERO_COVERAGE,
 				),
@@ -1878,7 +1895,8 @@ export async function getTotalDeathsByDivision(
 			OR (hcp."deaths" IS FALSE AND COALESCE(hcp."deaths_total", 0) = 0),
 			false
 		  ) AS is_zero
-		  ,${plausibilityFlagged(sql.raw(`rec."legacy_data"`), ["deaths"])} AS is_flagged
+		  ,(${plausibilityFlagged(sql.raw(`rec."legacy_data"`), ["deaths"])} OR ${aboveCeiling("deaths", sql.raw(`hcp."deaths_total"`))}) AS is_flagged
+		  ,${aboveCeiling("deaths", sql.raw(`hcp."deaths_total"`))} AS is_above
 		FROM filtered_records fr
 		LEFT JOIN "human_category_presence" hcp ON hcp."record_id" = fr.record_id
 		LEFT JOIN "disaster_records" rec ON rec."id" = fr.record_id
@@ -1921,6 +1939,7 @@ export async function getTotalDeathsByDivision(
 		COUNT(*) FILTER (WHERE rv.is_zero AND NOT rv.is_reported) AS zero_confirmed,
 		COUNT(*) AS records_total,
 		COUNT(*) FILTER (WHERE rv.is_flagged) AS flagged_records,
+		COUNT(*) FILTER (WHERE rv.is_above) AS above_records,
 		COUNT(*) FILTER (WHERE rlc.level1_count > 1) AS shared_records
 	  FROM record_level1 rl
 	  INNER JOIN record_level1_counts rlc
@@ -1941,6 +1960,7 @@ export async function getTotalDeathsByDivision(
 				zeroConfirmed: row.zero_confirmed,
 				total: row.records_total,
 				flagged: row.flagged_records,
+				aboveCeiling: row.above_records,
 			},
 			PROVISIONAL_ZERO_COVERAGE,
 		);
@@ -1965,6 +1985,10 @@ interface AffectedPeopleByDivision {
 export async function getTotalAffectedPeopleByDivision(
 	filters: HazardFilters,
 ): Promise<AffectedPeopleByDivision[]> {
+	const affectedAbove = sql`(${aboveCeiling("injured", sql.raw(`hcp."injured_total"`))}
+		OR ${aboveCeiling("missing", sql.raw(`hcp."missing_total"`))}
+		OR ${aboveCeiling("displaced", displacedHeadlineSql("hcp"))}
+		OR ${aboveCeiling("affected_direct", sql.raw(`hcp."affected_direct_total"`))})`;
 	const {
 		countryAccountsId,
 		hazardTypeId,
@@ -2078,7 +2102,8 @@ export async function getTotalAffectedPeopleByDivision(
 			(hcp."affected_direct_total" = 0 AND hcp."affected_direct" IS TRUE) OR (hcp."affected_direct" IS FALSE AND COALESCE(hcp."affected_direct_total", 0) = 0),
 			false
 		  ) AS is_zero
-		  ,${plausibilityFlagged(sql.raw(`rec."legacy_data"`), ["injured", "missing", "displaced", "affected_direct"])} AS is_flagged
+		  ,(${plausibilityFlagged(sql.raw(`rec."legacy_data"`), ["injured", "missing", "displaced", "affected_direct"])} OR ${affectedAbove}) AS is_flagged
+		  ,${affectedAbove} AS is_above
 		FROM filtered_records fr
 		LEFT JOIN "human_category_presence" hcp ON hcp."record_id" = fr.record_id
 		LEFT JOIN "disaster_records" rec ON rec."id" = fr.record_id
@@ -2119,6 +2144,7 @@ export async function getTotalAffectedPeopleByDivision(
 		COUNT(*) FILTER (WHERE rv.is_zero AND NOT rv.is_reported) AS zero_confirmed,
 		COUNT(*) AS records_total,
 		COUNT(*) FILTER (WHERE rv.is_flagged) AS flagged_records,
+		COUNT(*) FILTER (WHERE rv.is_above) AS above_records,
 		COUNT(*) FILTER (WHERE rlc.level1_count > 1) AS shared_records
 	  FROM record_level1 rl
 	  INNER JOIN record_level1_counts rlc
@@ -2139,6 +2165,7 @@ export async function getTotalAffectedPeopleByDivision(
 				zeroConfirmed: row.zero_confirmed,
 				total: row.records_total,
 				flagged: row.flagged_records,
+				aboveCeiling: row.above_records,
 			},
 			PROVISIONAL_ZERO_COVERAGE,
 		);
