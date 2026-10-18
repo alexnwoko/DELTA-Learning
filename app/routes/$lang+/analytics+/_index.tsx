@@ -28,7 +28,7 @@ import type { GeoT } from "~/frontend/geoportal/i18n";
 import { BasisSwitch, PublishedBasisNotice, type ApprovalCounts } from "~/frontend/analytics/dashboard/BasisControls";
 import { DashboardDownload } from "~/frontend/analytics/dashboard/DashboardDownload";
 import { DashboardShell, viewLabel } from "~/frontend/analytics/dashboard/DashboardShell";
-import { searchFor, sfmFromSearch, toggleDivision, viewFromSearch, type DashboardView } from "~/frontend/analytics/dashboard/views";
+import { hasSendai, searchFor, sfmFromSearch, toggleDivision, viewFromSearch, type DashboardView } from "~/frontend/analytics/dashboard/views";
 import { SendaiSectionView, SendaiToggle, downloadPanels, sendaiSectionPanels } from "~/frontend/analytics/dashboard/panels/sendai/sendaiSection";
 import { EventMap } from "~/frontend/analytics/dashboard/panels/events/EventMap";
 import { eventDashboardPanels } from "~/frontend/analytics/dashboard/panels/events/eventPanels";
@@ -64,7 +64,8 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request, p
 	const { query, issues } = parseDeltaQuery(params);
 	const view = viewFromSearch(params, query);
 	// The Sendai Framework Monitoring toggle (sfm=1), outside delta.query/1.
-	const sfm = sfmFromSearch(params);
+	// Ignored on a view without the Sendai section.
+	const sfm = sfmFromSearch(params) && hasSendai(view);
 	// A filter that cannot be applied is refused, never silently dropped.
 	if (issues.length > 0) {
 		throw new Response(JSON.stringify({ refused: issues }), {
@@ -99,8 +100,10 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request, p
 	const events = view === "disaster_event" ? await getEventPanels1to7(query, ctx) : null;
 	const hazardEvents = view === "hazardous_event" ? await getHazardEventPanels1to7(query, ctx) : null;
 	const sectors = view === "sectors" ? await getSectorPanels1to7(query, ctx) : null;
-	// The Sendai section is the same on every view (FR-AN-024).
-	const sendai = await getSendaiSection(query, ctx);
+	// The Sendai section, the same on Disaster events and Disaster impact, and
+	// absent (no section, no toggle) on the other views (Alex, 2026-10-18;
+	// FR-AN-020, FR-AN-024).
+	const sendai = hasSendai(view) ? await getSendaiSection(query, ctx) : null;
 	// Every dimension has a map (Alex, 2026-10-17). A view with no hazardous
 	// event at all (G-01) shows its one frame instead.
 	const eventMap =
