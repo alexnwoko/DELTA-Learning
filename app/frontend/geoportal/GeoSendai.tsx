@@ -15,6 +15,8 @@ export function GeoSendai(props: {
 	level: number;
 	/** Link to the Analysis dashboard with the same filters and place. */
 	analysisHref: string;
+	/** When the page is filtered to a region: the same link for the whole region. */
+	region?: { name: string; href: string } | null;
 	t?: GeoT;
 }) {
 	const t = props.t ?? plainT;
@@ -151,6 +153,20 @@ export function GeoSendai(props: {
 					"Open this place in Analysis: by year, by hazard and completeness",
 				)}
 			</a>
+			{props.region && (
+				<a
+					href={props.region.href}
+					className="block underline text-brand-interactive"
+				>
+					{t(
+						{
+							code: "geoportal.sendai.open_region",
+							msg: "Open the region {name} in Analysis",
+						},
+						{ name: props.region.name },
+					)}
+				</a>
+			)}
 		</section>
 	);
 }
