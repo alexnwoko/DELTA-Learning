@@ -30,14 +30,24 @@ describe("Hazardous events, G-01", () => {
 		...D,
 		empty: { code: "G-01", reason: "No hazardous events recorded. Migrated data holds none; only events entered in DELTA appear here." },
 	};
-	it("shows one frame with the reason across the view, never panels of zeros", () => {
+	it("shows the reason across the view, then all 16 panels as grey placeholders with no figures", () => {
 		const panels = hazardEventDashboardPanels(ctx, empty, { ...opts, signedIn: true });
-		expect(panels).toHaveLength(1);
-		const html = text(renderToString(<PanelGrid ctx={ctx} panels={panels} collapseGaps />));
+		expect(panels.map((p) => p.n)).toEqual([0, ...Array.from({ length: 16 }, (_, i) => i + 1)]);
+		expect(panels[0]).toMatchObject({ wide: true, gap: { code: "G-01" } });
+		expect(panels.slice(1).every((p) => p.gap?.ghost && !p.render && !p.exportData)).toBe(true);
+		const raw = renderToString(<PanelGrid ctx={ctx} panels={panels} collapseGaps />);
+		const html = text(raw);
 		expect(html).toContain("No hazardous events recorded. Migrated data holds none");
 		expect(html).toContain("(G-01)");
-		expect(html).toContain('data-panel-state="gap"');
+		expect(html).toContain("needs hazardous-event records");
+		expect(raw.match(/data-panel-state="ghost"/g)).toHaveLength(16);
+		expect(raw).toContain('aria-hidden="true"');
 		expect(html).not.toContain("Not yet available");
+		// Placeholders carry no figure: no digit in their text, no count.
+		for (const p of panels.slice(1)) {
+			expect(p.title + p.gap!.text).not.toMatch(/\d/);
+			expect(p.gap!.count).toBeUndefined();
+		}
 	});
 });
 

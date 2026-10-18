@@ -1,12 +1,14 @@
 // The panel grid of the D1 dashboard: two columns on wide screens, one on
 // phones and on paper. Panels 1 to 12 show; 13 to 16 wait under "Show
 // more", and print open. Panels with no data either keep their own frame
-// with the reason, or fold into one "Not yet available" strip (decision 1).
+// with the reason, or fold into one "Not yet available" strip (decision 1);
+// a panel with a grey placeholder chart (ghost) always keeps its frame.
 import { useId } from "react";
 import { Button, Disclosure, DisclosurePanel } from "react-aria-components";
 import { panelIcon } from "~/frontend/charts/dashboardIcons";
 import { PanelIcon, PanelIconContext } from "~/frontend/charts/PanelIcon";
 import type { ViewContext } from "~/frontend/context";
+import { GhostChart } from "./GhostChart";
 import { panelPosition, panelUnderMore, type DashboardPanel, type PanelGap } from "./types";
 
 const focusRing =
@@ -43,8 +45,8 @@ function PanelCard({ ctx, panel }: { ctx: ViewContext; panel: DashboardPanel }) 
 			<section
 				id={panel.id}
 				aria-labelledby={headingId}
-				data-panel-state="gap"
-				className="flex flex-col gap-2 rounded border border-dashed border-brand-border-control bg-brand-surface-subtle p-4"
+				data-panel-state={panel.gap.ghost ? "ghost" : "gap"}
+				className={`flex min-w-0 flex-col gap-2 rounded border border-dashed border-brand-border-control bg-brand-surface-subtle p-4${panel.wide ? " lg:col-span-2" : ""}`}
 			>
 				<h3 id={headingId} className="delta-panel-title m-0 flex items-center gap-2 text-base">
 					<span className="delta-panel-iconbox flex h-16 w-16 shrink-0 items-center justify-center rounded border">
@@ -52,6 +54,7 @@ function PanelCard({ ctx, panel }: { ctx: ViewContext; panel: DashboardPanel }) 
 					</span>
 					{panel.title}
 				</h3>
+				{panel.gap.ghost && <GhostChart ctx={ctx} shape={panel.gap.ghost} />}
 				<GapBody ctx={ctx} gap={panel.gap} />
 			</section>
 		);
@@ -61,7 +64,7 @@ function PanelCard({ ctx, panel }: { ctx: ViewContext; panel: DashboardPanel }) 
 		<div
 			id={panel.id}
 			data-panel-state="ready"
-			className="delta-panel-card flex min-w-0 break-inside-avoid flex-col rounded border bg-brand-surface p-4"
+			className={`delta-panel-card flex min-w-0 break-inside-avoid flex-col rounded border bg-brand-surface p-4${panel.wide ? " lg:col-span-2" : ""}`}
 		>
 			<PanelIconContext.Provider value={panelIcon(panel.id)}>{panel.render?.()}</PanelIconContext.Provider>
 		</div>
@@ -118,9 +121,11 @@ export function PanelGrid({ ctx, panels, collapseGaps }: PanelGridProps) {
 	const sorted = [...panels].sort((a, b) => panelPosition(a) - panelPosition(b));
 	// A strip lists several gaps; a lone gap (a whole view with no data, such
 	// as G-01) keeps its own frame across the view.
-	const fold = collapseGaps && sorted.filter((p) => p.gap).length > 1;
-	const visible = fold ? sorted.filter((p) => !p.gap) : sorted;
-	const strip = fold ? sorted.filter((p) => p.gap) : [];
+	// Ghost panels and full-width notices keep their own place.
+	const foldable = (p: DashboardPanel) => !!p.gap && !p.gap.ghost && !p.wide;
+	const fold = collapseGaps && sorted.filter(foldable).length > 1;
+	const visible = fold ? sorted.filter((p) => !foldable(p)) : sorted;
+	const strip = fold ? sorted.filter(foldable) : [];
 	const main = visible.filter((p) => !panelUnderMore(p));
 	const more = visible.filter(panelUnderMore);
 
