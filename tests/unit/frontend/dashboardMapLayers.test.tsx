@@ -21,6 +21,7 @@ const scope = {} as never;
 const basemaps = [{ id: "osm", label: "OpenStreetMap", url: "/tiles/basemap/{z}/{x}/{y}.png", thirdParty: false }] as never;
 const boundaries = { outline: { type: "Polygon", coordinates: [] }, countryLabelPoint: [35, -18] as [number, number], countryName: "Mozambique",
 	neighbours: [{ iso3: "MWI", name: "Malawi", geojson: { type: "Polygon", coordinates: [] }, labelPoint: [34, -13] as [number, number] }],
+	world: { url: "/en/api/geo/world", iso3: "MOZ" },
 };
 const layers = { basemaps, boundaries };
 
@@ -32,6 +33,7 @@ describe("Analysis map layers", () => {
 		expect(seen[0]?.basemaps).toBe(basemaps);
 		expect(seen[0]?.boundaries).toBe(boundaries);
 		expect((seen[0]?.boundaries as typeof boundaries).neighbours[0].name).toBe("Malawi");
+		expect((seen[0]?.boundaries as typeof boundaries).world).toEqual({ url: "/en/api/geo/world", iso3: "MOZ" });
 	});
 
 	it("EventMap hands basemaps and boundaries to MapChart", () => {
