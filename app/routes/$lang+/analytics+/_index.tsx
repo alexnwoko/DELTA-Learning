@@ -9,6 +9,7 @@ import { approvalAudienceForBasis } from "~/backend.server/approvalAudience.serv
 import { getEventMap } from "~/backend.server/models/analytics/dashboard/eventMap.server";
 import { getEventPanels1to7 } from "~/backend.server/models/analytics/dashboard/eventPanels.server";
 import { getRecordsByApproval } from "~/backend.server/models/analytics/dashboard/recordsByApproval.server";
+import { getSendaiSection } from "~/backend.server/models/analytics/dashboard/sendaiPanels.server";
 import { getHazardEventPanels1to7 } from "~/backend.server/models/analytics/dashboard/hazardEventPanels.server";
 import { getSectorPanels1to7 } from "~/backend.server/models/analytics/dashboard/sectorPanels.server";
 import { getImpactPanels1to4 } from "~/backend.server/models/analytics/dashboard/impactPanels.server";
@@ -26,7 +27,8 @@ import type { GeoT } from "~/frontend/geoportal/i18n";
 import { BasisSwitch, PublishedBasisNotice, type ApprovalCounts } from "~/frontend/analytics/dashboard/BasisControls";
 import { DashboardDownload } from "~/frontend/analytics/dashboard/DashboardDownload";
 import { DashboardShell, viewLabel } from "~/frontend/analytics/dashboard/DashboardShell";
-import { searchForView, toggleDivision, viewFromSearch, type DashboardView } from "~/frontend/analytics/dashboard/views";
+import { searchFor, sfmFromSearch, toggleDivision, viewFromSearch, type DashboardView } from "~/frontend/analytics/dashboard/views";
+import { SendaiSectionView, SendaiToggle, sendaiSectionPanels } from "~/frontend/analytics/dashboard/panels/sendai/sendaiSection";
 import { EventMap } from "~/frontend/analytics/dashboard/panels/events/EventMap";
 import { eventDashboardPanels } from "~/frontend/analytics/dashboard/panels/events/eventPanels";
 import { hazardEventDashboardPanels } from "~/frontend/analytics/dashboard/panels/hazards/hazardEventPanels";
@@ -43,6 +45,7 @@ import type { EventPanels1to7 } from "~/utils/dashboard/eventPanels";
 import type { HazardEventPanels1to7 } from "~/utils/dashboard/hazardEventPanels";
 import type { ImpactMapPayload } from "~/utils/dashboard/impactMap";
 import type { SectorPanels1to7 } from "~/utils/dashboard/sectorPanels";
+import type { SendaiSection } from "~/utils/dashboard/sendaiPanels";
 import type { DashboardFilterOptions } from "~/frontend/analytics/dashboard/filterOptions.server";
 import type { ImpactPanels5to16 } from "~/utils/dashboard/impactPanels5to16";
 import {
@@ -56,6 +59,8 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request, p
 	const params = new URL(request.url).searchParams;
 	const { query, issues } = parseDeltaQuery(params);
 	const view = viewFromSearch(params, query);
+	// The Sendai Framework Monitoring toggle (sfm=1), outside delta.query/1.
+	const sfm = sfmFromSearch(params);
 	// A filter that cannot be applied is refused, never silently dropped.
 	if (issues.length > 0) {
 		throw new Response(JSON.stringify({ refused: issues }), {
@@ -90,6 +95,8 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request, p
 	const events = view === "disaster_event" ? await getEventPanels1to7(query, ctx) : null;
 	const hazardEvents = view === "hazardous_event" ? await getHazardEventPanels1to7(query, ctx) : null;
 	const sectors = view === "sectors" ? await getSectorPanels1to7(query, ctx) : null;
+	// The Sendai section is the same on every view (FR-AN-024).
+	const sendai = await getSendaiSection(query, ctx);
 	// Every dimension has a map (Alex, 2026-10-17). A view with no hazardous
 	// event at all (G-01) shows its one frame instead.
 	const eventMap =
@@ -108,6 +115,8 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request, p
 		sectors,
 		eventMap,
 		filterOptions,
+		sendai,
+		sfm,
 		approvalCounts: approvalCounts as ApprovalCounts | null,
 		canReview,
 		canOpenReviewQueue,
@@ -126,23 +135,25 @@ export default function AnalysisDashboard() {
 	const ld = useLoaderData<typeof loader>();
 	const ctx = new ViewContext();
 	const [, setSearchParams] = useSearchParams();
+	const sfm = ld.sfm as boolean;
+	// Every move keeps the view, the filters and the Sendai toggle in the URL.
+	const go = (q: DeltaQuery, v: DashboardView, sfmOn = sfm) =>
+		setSearchParams(searchFor(q, v, sfmOn), { preventScrollReset: true });
 	const query = ld.query as DeltaQuery;
 	const view = ld.view as DashboardView;
 	const source = `DELTA ${ld.country}`.trim();
 	const impact = ld.impact as ImpactPanels1to4 | null;
 
 	const setView = (next: DashboardView) =>
-		setSearchParams(searchForView(query, next), { preventScrollReset: true });
+		go(query, next);
 	const setBasis = (basis: DeltaQuery["scope"]["basis"]) =>
-		setSearchParams(searchForView({ ...query, scope: { ...query.scope, basis } }, view), {
-			preventScrollReset: true,
-		});
+		go({ ...query, scope: { ...query.scope, basis } }, view);
 
 	// Until the shared filter bar arrives, the line names the place and basis.
 	const geoT = ctx.t as unknown as GeoT;
 	// A map click sets the place filter; clicking the selected area clears it.
 	const selectDivision = (divisionId: string) =>
-		setSearchParams(searchForView(toggleDivision(query, divisionId), view), { preventScrollReset: true });
+		go(toggleDivision(query, divisionId), view);
 	const filterOptions = ld.filterOptions as DashboardFilterOptions;
 	// The same words as the geoportal bar's summary (querySummary).
 	const summary = querySummary(query, { scopeLabel: ld.country || undefined, hazardTree: filterOptions.hazardTree }, geoT);
@@ -165,7 +176,9 @@ export default function AnalysisDashboard() {
 		audience: ld.audience,
 		provisional: ld.provisional,
 	};
-	const panels: DashboardPanel[] = impact
+	const sendai = ld.sendai as SendaiSection | null;
+	const sendaiPanels = sendai ? sendaiSectionPanels(ctx, sendai, { source, scope: summary, country: ld.country }) : [];
+	const viewPanels: DashboardPanel[] = impact
 		? impactDashboardPanels(ctx, impact, source, {
 				data: ld.impactMore as ImpactPanels5to16,
 				country: ld.country,
@@ -179,6 +192,9 @@ export default function AnalysisDashboard() {
 				: ld.sectors
 					? sectorDashboardPanels(ctx, ld.sectors as SectorPanels1to7, { ...opts, country: ld.country })
 					: [];
+	// The Sendai section shows the Targets A and B counts (S0): the impact
+	// panel 5 table would repeat it, so it leaves the view list then.
+	const panels = sendai ? viewPanels.filter((p) => p.id !== "impact-5") : viewPanels;
 
 	return (
 		<div className="mg-container py-4">
@@ -207,7 +223,7 @@ export default function AnalysisDashboard() {
 						tree={filterOptions.hazardTree}
 						selected={query.where.hazard?.typeId ?? null}
 						onChange={(typeId) =>
-							setSearchParams(searchForView(withHazardType(query, typeId), view), { preventScrollReset: true })
+							go(withHazardType(query, typeId), view)
 						}
 						// The tree counts records: no count on the two event views.
 						showCounts={view === "disaster_impact" || view === "sectors"}
@@ -221,7 +237,7 @@ export default function AnalysisDashboard() {
 						// The header's Basis switch is the one basis control on this page.
 						canReview={false}
 						onChange={({ query: next }) =>
-							setSearchParams(searchForView(next, view), { preventScrollReset: true })
+							go(next, view)
 						}
 						hazardTree={filterOptions.hazardTree}
 						dimensionControl="none"
@@ -229,9 +245,13 @@ export default function AnalysisDashboard() {
 						chips={chipsFor(view, { hazardTree: filterOptions.hazardTree, sectors: sectorChips })}
 						place={filterOptions.place}
 						levelControl={false}
-						presets={[1, 3, 5, 10]}
 						notApplied={notApplied}
 						summary={false}
+						layout="row"
+						years={filterOptions.years}
+						end={
+							sendai ? <SendaiToggle ctx={ctx} on={sfm} onChange={(on) => go(query, view, on)} /> : undefined
+						}
 						t={geoT}
 					/>
 				}
@@ -244,16 +264,18 @@ export default function AnalysisDashboard() {
 						<EventMap ctx={ctx} map={ld.eventMap as EventMapPayload} scope={mapScope} onSelectDivision={selectDivision} />
 					) : undefined
 				}
+				sendai={sendai ? <SendaiSectionView ctx={ctx} d={sendai} panels={sendaiPanels} country={ld.country} /> : undefined}
+				sfmOn={sfm && Boolean(sendai)}
 				panels={panels}
 				download={
-					ld.signedIn && panels.some((p) => p.exportData) ? (
+					ld.signedIn && [...sendaiPanels, ...panels].some((p) => p.exportData) ? (
 						<DashboardDownload
 							ctx={ctx}
 							title={`${ctx.t({ code: "dashboard.title", msg: "Analysis" })}: ${viewLabel(ctx, view)}`}
 							scopeLine={summary}
 							source={source}
 							basis={ld.provisional ? "provisional" : "published"}
-							panels={panels}
+							panels={[...sendaiPanels, ...(sfm ? [] : panels)]}
 						/>
 					) : undefined
 				}
