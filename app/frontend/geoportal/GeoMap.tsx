@@ -81,6 +81,8 @@ export interface GeoMapProps {
 	} | null;
 	/** "Boundaries and labels" overlay: outline, country name, area names. */
 	showLabels?: boolean;
+	/** The UN map disclaimer, translated; shown in the map credits. */
+	disclaimer?: string;
 	/** Accessible name; the table alternative carries the figures. */
 	label: string;
 	describedBy?: string;
@@ -175,6 +177,10 @@ function styleFor(area: MapArea | undefined, selected: boolean): Style {
 	}
 	return styles;
 }
+
+/** UN short-form map disclaimer (UN Geodata and Clear Map metadata). */
+export const UN_MAP_DISCLAIMER =
+	"The boundaries and names shown and the designations used on this map do not imply official endorsement or acceptance by the United Nations.";
 
 const RING_GAP_PX = 2;
 const RING_WIDTH_PX = 2;
@@ -308,6 +314,7 @@ export function GeoMap({
 	symbolColor = null,
 	outline = null,
 	showLabels = true,
+	disclaimer = UN_MAP_DISCLAIMER,
 	label,
 	describedBy,
 }: GeoMapProps) {
@@ -324,6 +331,8 @@ export function GeoMap({
 	const shownRef = useRef<BasemapLayerId | null>(null);
 	const symbolLayerRef = useRef<VectorLayer<VectorSource> | null>(null);
 	const labelLayerRef = useRef<VectorLayer<VectorSource> | null>(null);
+	const disclaimerRef = useRef(disclaimer);
+	disclaimerRef.current = disclaimer;
 
 	const byId = useMemo(() => new Map(areas.map((a) => [a.areaId, a])), [areas]);
 
@@ -341,7 +350,13 @@ export function GeoMap({
 
 	useEffect(() => {
 		if (!target.current) return;
-		const layer = new VectorLayer({ source: new VectorSource() });
+		// UN short-form disclaimer in the map credits, always visible, whatever
+		// the basemap (Alex, 2026-10-18, decision 4; text as on UN Geodata).
+		const layer = new VectorLayer({
+			source: new VectorSource({
+				attributions: disclaimerRef.current,
+			}),
+		});
 		const bases = new Map<BasemapLayerId, TileLayer<XYZ>>();
 		for (const b of basemaps) {
 			// Google's URL needs a session; its source is set when first picked.
@@ -381,7 +396,10 @@ export function GeoMap({
 		const map = new OlMap({
 			target: target.current,
 			layers: [...bases.values(), layer, symbols, labels],
-			controls: defaultControls().extend([new ScaleLine({ units: "metric" })]),
+			// Credits never fold away: the UN disclaimer must stay visible.
+			controls: defaultControls({
+				attributionOptions: { collapsible: false },
+			}).extend([new ScaleLine({ units: "metric" })]),
 			// The wheel scrolls the page; Ctrl or Cmd plus the wheel zooms the map.
 			interactions: defaultInteractions({ mouseWheelZoom: false }).extend([
 				new MouseWheelZoom({ condition: platformModifierKeyOnly }),

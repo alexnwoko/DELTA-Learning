@@ -739,6 +739,10 @@ export default function GeoportalPage() {
 													homeSignal={homeSignal}
 													symbolColor={mapState.legend.symbols?.color ?? null}
 													outline={data.outline}
+													disclaimer={t({
+														code: "geoportal.map.un_disclaimer",
+														msg: "The boundaries and names shown and the designations used on this map do not imply official endorsement or acceptance by the United Nations.",
+													})}
 													showLabels={showLabels}
 													height="100%"
 													label={`${measureTitle}: ${t({ code: "geoportal.map", msg: "map" })}`}
