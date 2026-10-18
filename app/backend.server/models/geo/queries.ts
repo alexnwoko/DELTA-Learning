@@ -102,10 +102,24 @@ export function refusalBody(
 	};
 }
 
+/**
+ * Runs one geo read with session settings fit for short interactive reads
+ * (I-6, NFR-113): no JIT compilation (it cost about 0.35 s per query and
+ * saved nothing at this size) and enough work_mem that sorts and hashes over
+ * a large tenant's atoms stay in memory. SET LOCAL ends with the transaction.
+ */
+async function geoRead(query: SQL) {
+	return dr.transaction(async (tx) => {
+		await tx.execute(sql`SET LOCAL jit = off`);
+		await tx.execute(sql`SET LOCAL work_mem = '64MB'`);
+		return tx.execute(query);
+	});
+}
+
 export async function readModelRefreshedAt(
 	countryAccountsId: string,
 ): Promise<string | null> {
-	const res = await dr.execute(sql`
+	const res = await geoRead(sql`
 		SELECT refreshed_at FROM geo.refresh_log
 		WHERE country_accounts_id = ${countryAccountsId}
 	`);
@@ -343,7 +357,7 @@ export async function aggregate(
 				${restrict}
 			ORDER BY g.measure, da.ancestor_id, g.disaster_record_id, g.att_grade`;
 
-	const res = await dr.execute(sql`
+	const res = await geoRead(sql`
 		WITH scope AS (
 			SELECT a.* FROM ${atomSource(req)} a
 			WHERE ${scopeFilters(t, req)}
@@ -492,7 +506,7 @@ export async function aggregate(
 async function tenantMaxLevel(
 	countryAccountsId: string,
 ): Promise<number | null> {
-	const res = await dr.execute(sql`
+	const res = await geoRead(sql`
 		SELECT max(admin_level) AS max_level FROM geo.division_geom_cache
 		WHERE country_accounts_id = ${countryAccountsId}
 	`);
@@ -602,7 +616,7 @@ export async function getBoundaries(
 			sql`c.bbox && ST_MakeEnvelope(${minx}, ${miny}, ${maxx}, ${maxy}, 4326)`,
 		);
 	}
-	const res = await dr.execute(sql`
+	const res = await geoRead(sql`
 		SELECT jsonb_build_object(
 			'type', 'FeatureCollection',
 			'boundaryVersion', 'unknown',
@@ -641,7 +655,7 @@ export async function getDivisionTile(
 	lang: string,
 ): Promise<Buffer> {
 	const column = sql.raw(geomColumnForZoom(z));
-	const res = await dr.execute(sql`
+	const res = await geoRead(sql`
 		WITH bounds AS (SELECT ST_TileEnvelope(${z}, ${x}, ${y}) AS env),
 		mvt AS (
 			SELECT
@@ -670,7 +684,7 @@ export async function getPlaceDossier(
 	lang: string,
 ) {
 	const t = countryAccountsId;
-	const divRes = await dr.execute(sql`
+	const divRes = await geoRead(sql`
 		SELECT c.division_id, c.admin_level, c.national_id, c.name,
 			p.division_id AS parent_id, p.name AS parent_name
 		FROM geo.division_geom_cache c
@@ -699,7 +713,7 @@ export async function getPlaceDossier(
 	const floor = req.query.minAttGrade;
 
 	// Records placed in this division or below it: one row per record.
-	const yearsRes = await dr.execute(sql`
+	const yearsRes = await geoRead(sql`
 		WITH placed AS (
 			SELECT DISTINCT ON (a.disaster_record_id)
 				a.disaster_record_id, a.start_instant, a.hip_type_id, a.att_grade
@@ -833,7 +847,7 @@ export async function getHazardTree(
 				`${name}: the hazard tree counts all disaster impacts`,
 			);
 	}
-	const res = await dr.execute(sql`
+	const res = await geoRead(sql`
 		WITH recs AS (
 			SELECT DISTINCT a.disaster_record_id, a.hip_type_id, a.hip_cluster_id, a.hip_hazard_id
 			FROM geo.impact_atom a
@@ -963,7 +977,7 @@ export async function eventCountsByDivision(
 	}
 	const t = countryAccountsId;
 	const ranged = hasRange(req);
-	const res = await dr.execute(sql`
+	const res = await geoRead(sql`
 		WITH scope AS (
 			SELECT a.* FROM ${atomSource(req)} a WHERE ${scopeFilters(t, req)}
 		),
