@@ -7,7 +7,7 @@
 // (TR-060, FR-AN-009). Figures are Sendai-aligned counts from national
 // records, never the country's official SFM submission (FR-AN-026).
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ToggleButton } from "react-aria-components";
 import { ChartFrame } from "~/frontend/charts/ChartFrame";
 import { SECTION_ICONS, TARGET_ICONS, panelIcon } from "~/frontend/charts/dashboardIcons";
@@ -570,9 +570,10 @@ export function SendaiSectionView({
 				})
 			: noRecordsText(ctx);
 	return (
-		<section aria-labelledby="sfm-heading" className="flex flex-col gap-4 rounded border border-brand-border bg-brand-surface-subtle p-4">
+		<section aria-labelledby={SFM_HEADING_ID} className="flex flex-col gap-4 rounded border border-brand-border bg-brand-surface-subtle p-4">
 			<header className="flex flex-col gap-1">
-				<h2 id="sfm-heading" className="m-0 flex items-center gap-2 text-xl font-semibold">
+				{/* Focusable by script only: the toggle moves focus here when turned on. */}
+				<h2 id={SFM_HEADING_ID} tabIndex={-1} className="m-0 flex scroll-mt-4 items-center gap-2 text-xl font-semibold outline-none">
 					<PanelIcon name={SECTION_ICONS.sendai} size={33} />
 					{tr(t, "dashboard.sfm_title", "Sendai Framework Monitoring")}
 				</h2>
@@ -611,20 +612,66 @@ export function SendaiSectionView({
 	);
 }
 
+/** The id of the Sendai section heading, the focus target when the toggle turns on. */
+export const SFM_HEADING_ID = "sfm-heading";
+
+/**
+ * Moves focus to the Sendai heading and scrolls it to the top of the
+ * window. The toggle replaces the page's content, so focus goes to the new
+ * content's heading: the screen reader reads it once, with no live region
+ * to announce it twice (WCAG 2.2 SC 2.4.3, 4.1.3). Returns false when the
+ * heading is not on the page.
+ */
+export function focusSendaiHeading(doc: Pick<Document, "getElementById"> = document): boolean {
+	const heading = doc.getElementById(SFM_HEADING_ID);
+	if (!heading) return false;
+	heading.focus({ preventScroll: true });
+	// "auto" follows the page's scroll-behavior, so reduced motion is kept.
+	heading.scrollIntoView({ block: "start" });
+	return true;
+}
+
 /**
  * The "Sendai Framework Monitoring" button (FR-AN-020, 021): a toggle with
- * aria-pressed, at the end of the filter row. Its state is the page
- * parameter sfm=1, outside delta.query/1.
+ * aria-pressed and a fixed label, at the end of the filter row. Its state is
+ * the page parameter sfm=1, outside delta.query/1.
+ *
+ * Focus moves only after a press on this button, once the new URL has
+ * loaded: on, to the Sendai heading at the top; off, back to this button,
+ * which stays where it was, so the reader keeps their place. A page opened
+ * with sfm=1, or reached with Back, moves no focus.
  */
 export function SendaiToggle({ ctx, on, onChange }: { ctx: ViewContext; on: boolean; onChange: (on: boolean) => void }) {
+	const button = useRef<HTMLButtonElement>(null);
+	// The state this button asked for, until the page shows it.
+	const asked = useRef<boolean | null>(null);
+	useEffect(() => {
+		if (asked.current !== on) return;
+		asked.current = null;
+		if (on) focusSendaiHeading();
+		else button.current?.focus({ preventScroll: true });
+	}, [on]);
 	return (
 		<ToggleButton
+			ref={button}
 			isSelected={on}
-			onChange={onChange}
+			onChange={(next) => {
+				asked.current = next;
+				onChange(next);
+			}}
 			data-print="hide"
 			className="rounded border-2 border-brand-interactive bg-brand-surface px-3 py-1.5 text-sm font-semibold text-brand-interactive data-[hovered]:bg-brand-surface-subtle data-[selected]:bg-brand-interactive data-[selected]:text-brand-text-on-interactive data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
 		>
 			{ctx.t({ code: "dashboard.sfm_title", msg: "Sendai Framework Monitoring" })}
 		</ToggleButton>
 	);
+}
+
+/**
+ * The panels of the page-level CSV, in the on-screen order (FR-AN-024):
+ * the view's panels, then the Sendai slots; only the Sendai slots when the
+ * toggle is on.
+ */
+export function downloadPanels(sendai: DashboardPanel[], view: DashboardPanel[], sfmOn: boolean): DashboardPanel[] {
+	return sfmOn ? sendai : [...view, ...sendai];
 }

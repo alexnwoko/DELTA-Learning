@@ -28,7 +28,7 @@ import { BasisSwitch, PublishedBasisNotice, type ApprovalCounts } from "~/fronte
 import { DashboardDownload } from "~/frontend/analytics/dashboard/DashboardDownload";
 import { DashboardShell, viewLabel } from "~/frontend/analytics/dashboard/DashboardShell";
 import { searchFor, sfmFromSearch, toggleDivision, viewFromSearch, type DashboardView } from "~/frontend/analytics/dashboard/views";
-import { SendaiSectionView, SendaiToggle, sendaiSectionPanels } from "~/frontend/analytics/dashboard/panels/sendai/sendaiSection";
+import { SendaiSectionView, SendaiToggle, downloadPanels, sendaiSectionPanels } from "~/frontend/analytics/dashboard/panels/sendai/sendaiSection";
 import { EventMap } from "~/frontend/analytics/dashboard/panels/events/EventMap";
 import { eventDashboardPanels } from "~/frontend/analytics/dashboard/panels/events/eventPanels";
 import { hazardEventDashboardPanels } from "~/frontend/analytics/dashboard/panels/hazards/hazardEventPanels";
@@ -137,6 +137,9 @@ export default function AnalysisDashboard() {
 	const [, setSearchParams] = useSearchParams();
 	const sfm = ld.sfm as boolean;
 	// Every move keeps the view, the filters and the Sendai toggle in the URL.
+	// Each move, the Sendai toggle included, pushes a history entry: the
+	// toggle swaps the whole content like the view buttons do, so Back
+	// returns the reader to the page as they last saw it.
 	const go = (q: DeltaQuery, v: DashboardView, sfmOn = sfm) =>
 		setSearchParams(searchFor(q, v, sfmOn), { preventScrollReset: true });
 	const query = ld.query as DeltaQuery;
@@ -275,7 +278,7 @@ export default function AnalysisDashboard() {
 							scopeLine={summary}
 							source={source}
 							basis={ld.provisional ? "provisional" : "published"}
-							panels={[...sendaiPanels, ...(sfm ? [] : panels)]}
+							panels={downloadPanels(sendaiPanels, panels, sfm && Boolean(sendai))}
 						/>
 					) : undefined
 				}

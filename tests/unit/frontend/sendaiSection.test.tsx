@@ -2,7 +2,7 @@ import { renderToString } from "react-dom/server";
 import { createRoutesStub } from "react-router";
 import { describe, expect, it } from "vitest";
 import { DashboardShell } from "~/frontend/analytics/dashboard/DashboardShell";
-import { SendaiSectionView, SendaiToggle, sendaiSectionPanels } from "~/frontend/analytics/dashboard/panels/sendai/sendaiSection";
+import { SFM_HEADING_ID, SendaiSectionView, SendaiToggle, downloadPanels, focusSendaiHeading, sendaiSectionPanels } from "~/frontend/analytics/dashboard/panels/sendai/sendaiSection";
 import { searchFor, sfmFromSearch } from "~/frontend/analytics/dashboard/views";
 import type { ViewContext } from "~/frontend/context";
 import type { PanelCell } from "~/utils/dashboard/impactPanels";
@@ -134,6 +134,62 @@ describe("Sendai toggle (FR-AN-020 to 023)", () => {
 		expect(next.get("sfm")).toBe("1");
 		expect(next.get("from")).toBe("2015");
 		expect(searchFor(parseDeltaQuery(params).query, "disaster_impact", false).get("sfm")).toBeNull();
+	});
+
+	const shell = (sfmOn: boolean) => {
+		const Stub = createRoutesStub([{ path: "/", Component: () => (
+			<DashboardShell ctx={ctx} view="disaster_impact" onViewChange={() => {}} summary="Angola" provisional={false}
+				sfmOn={sfmOn} sendai={<p>SENDAI SECTION</p>} filterBar={<p>FILTERS</p>} map={<p>MAP</p>}
+				panels={[{ id: "x", n: 1, title: "X", render: () => <p>VIEW PANEL</p> }]} about={<p>ABOUT</p>} />
+		) }]);
+		return text(renderToString(<Stub />));
+	};
+
+	it("toggle off: filters, then the view's map and panels, then the Sendai section, then About the data (FR-AN-024)", () => {
+		const html = shell(false);
+		// React Aria's server render puts a hidden copy of the Tabs children
+		// first; the last occurrence of each marker is the visible one.
+		const at = (s: string) => html.lastIndexOf(s);
+		for (const s of ["FILTERS", "MAP", "VIEW PANEL", "SENDAI SECTION", "ABOUT"]) expect(at(s), s).toBeGreaterThan(-1);
+		expect(at("FILTERS")).toBeLessThan(at("MAP"));
+		expect(at("MAP")).toBeLessThan(at("VIEW PANEL"));
+		expect(at("VIEW PANEL")).toBeLessThan(at("SENDAI SECTION"));
+		expect(at("SENDAI SECTION")).toBeLessThan(at("ABOUT"));
+		expect(html).not.toContain("The Sendai view reads disaster records of all dimensions");
+	});
+
+	it("toggle on: the Sendai section sits directly under the filter bar (FR-AN-024)", () => {
+		const html = shell(true);
+		const filters = html.lastIndexOf("FILTERS");
+		const sendai = html.lastIndexOf("SENDAI SECTION");
+		expect(filters).toBeGreaterThan(-1);
+		expect(filters).toBeLessThan(sendai);
+		expect(html.slice(filters, sendai)).not.toMatch(/role="tabpanel"|MAP|VIEW PANEL/);
+	});
+
+	it("the Sendai heading is focusable by script only", () => {
+		const html = section(D);
+		expect(html).toMatch(new RegExp(`<h2 id="${SFM_HEADING_ID}" tabindex="-1"`));
+	});
+
+	it("toggle on moves focus to the Sendai heading and scrolls it into view", () => {
+		const calls: string[] = [];
+		const heading = {
+			focus: (o?: FocusOptions) => calls.push(`focus preventScroll=${o?.preventScroll}`),
+			scrollIntoView: (o?: ScrollIntoViewOptions) => calls.push(`scroll ${o?.block}`),
+		};
+		const doc = { getElementById: (id: string) => (id === "sfm-heading" ? heading : null) } as unknown as Document;
+		expect(focusSendaiHeading(doc)).toBe(true);
+		expect(calls).toEqual(["focus preventScroll=true", "scroll start"]);
+		expect(focusSendaiHeading({ getElementById: () => null } as unknown as Document)).toBe(false);
+	});
+
+	it("the CSV follows the screen: view panels then Sendai slots when off, only Sendai slots when on", () => {
+		const p = (id: string) => ({ id, n: 1, title: id });
+		const sendai = [p("sfm-s0"), p("sfm-a1")];
+		const view = [p("impact-1"), p("impact-2")];
+		expect(downloadPanels(sendai, view, false).map((x) => x.id)).toEqual(["impact-1", "impact-2", "sfm-s0", "sfm-a1"]);
+		expect(downloadPanels(sendai, view, true).map((x) => x.id)).toEqual(["sfm-s0", "sfm-a1"]);
 	});
 
 	it("toggle on: tabs disabled with the note, no view panels or map; the Sendai section stays", () => {
