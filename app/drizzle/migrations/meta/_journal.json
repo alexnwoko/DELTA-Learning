@@ -498,6 +498,13 @@
       "when": 1792152000000,
       "tag": "20261017090000_geo_region",
       "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1792314000000,
+      "tag": "20261018090000_add_record_start_date_index",
+      "breakpoints": true
     }
   ]
 }
