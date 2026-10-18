@@ -1735,6 +1735,11 @@
     "description": "Label for the timestamp of the audit log entry File: app/components/AuditLogHistory.tsx:139"
   },
   {
+    "id": "common.skip_to_main",
+    "translation": "Skip to main content",
+    "description": "File: app/root.tsx"
+  },
+  {
     "id": "common_err_msg.approval_status_not_set_to_needs_revision",
     "translation": "Approval status not set to 'needs-revision'",
     "description": "File: app/services/validationWorkflowRejectionService.ts:37"

@@ -1,0 +1,41 @@
+/* App shell accessibility (Geoportal keyboard walk-through, 2026-10-18). */
+
+/* WCAG 2.4.1 Bypass Blocks: the first Tab stop, hidden until focused. */
+.delta-skip-link {
+	position: absolute;
+	inset-inline-start: 1rem;
+	top: -100px;
+	z-index: 10000;
+	padding: 0.5rem 1rem;
+	background: #ffffff;
+	color: var(--delta-brand-interactive, #004f91);
+	font-weight: 600;
+	border-radius: 0.25rem;
+	text-decoration: underline;
+}
+.delta-skip-link:focus {
+	top: 0.5rem;
+	outline: var(--delta-brand-focus-ring-width) solid var(--delta-brand-focus-ring);
+	outline-offset: var(--delta-brand-focus-ring-offset);
+}
+/* The skip target takes focus without drawing a ring round the page. */
+#main:focus {
+	outline: none;
+}
+
+/* WCAG 2.4.7 Focus Visible: PrimeReact's unstyled menubar shows no ring.
+   The list holds focus and marks the current item with .p-focus; ring the
+   item while the list has keyboard focus, and the list itself as fallback. */
+.p-menubar .p-menubar-root-list:focus-visible {
+	outline: var(--delta-brand-focus-ring-width) solid var(--delta-brand-focus-ring);
+	outline-offset: var(--delta-brand-focus-ring-offset);
+}
+.p-menubar .p-menubar-root-list:focus-visible:has(.p-focus) {
+	outline: none;
+}
+.p-menubar .p-menubar-root-list:focus-visible .p-menuitem.p-focus > .p-menuitem-content,
+.p-menubar .p-submenu-list:focus-visible .p-menuitem.p-focus > .p-menuitem-content {
+	outline: var(--delta-brand-focus-ring-width) solid var(--delta-brand-focus-ring);
+	outline-offset: var(--delta-brand-focus-ring-offset);
+	border-radius: 0.25rem;
+}

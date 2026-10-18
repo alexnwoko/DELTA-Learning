@@ -6,4 +6,5 @@
 @import "./tokens/brand.css";
 @import "./tokens/data.css";
 @import "./tokens/theme.css";
+@import "./shell.css";
 @import "./print.css";
