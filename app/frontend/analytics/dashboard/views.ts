@@ -67,13 +67,24 @@ export function toggleDivision(query: DeltaQuery, divisionId: string): DeltaQuer
 /** The Sendai Framework Monitoring toggle: a page parameter, outside delta.query/1 (FR-AN-021). */
 export const SFM_PARAM = "sfm";
 
+/**
+ * Views that carry the Sendai Framework Monitoring section and its toggle:
+ * Disaster events and Disaster impact only, not Hazardous events or Sectors
+ * (Alex, 2026-10-18; FR-AN-020, FR-AN-024).
+ */
+export const SENDAI_VIEWS: readonly DashboardView[] = ["disaster_event", "disaster_impact"];
+
+export function hasSendai(view: DashboardView): boolean {
+	return SENDAI_VIEWS.includes(view);
+}
+
 export function sfmFromSearch(params: URLSearchParams): boolean {
 	return params.get(SFM_PARAM) === "1";
 }
 
-/** A view's URL with the Sendai toggle kept as it is. */
+/** A view's URL with the Sendai toggle kept as it is; dropped on a view without the section. */
 export function searchFor(query: DeltaQuery, view: DashboardView, sfm: boolean): URLSearchParams {
 	const params = searchForView(query, view);
-	if (sfm) params.set(SFM_PARAM, "1");
+	if (sfm && hasSendai(view)) params.set(SFM_PARAM, "1");
 	return params;
 }

@@ -3,7 +3,7 @@ import { createRoutesStub } from "react-router";
 import { describe, expect, it } from "vitest";
 import { DashboardShell } from "~/frontend/analytics/dashboard/DashboardShell";
 import { SFM_HEADING_ID, SendaiSectionView, SendaiToggle, downloadPanels, focusSendaiHeading, sendaiSectionPanels } from "~/frontend/analytics/dashboard/panels/sendai/sendaiSection";
-import { searchFor, sfmFromSearch } from "~/frontend/analytics/dashboard/views";
+import { SENDAI_VIEWS, hasSendai, searchFor, sfmFromSearch } from "~/frontend/analytics/dashboard/views";
 import type { ViewContext } from "~/frontend/context";
 import type { PanelCell } from "~/utils/dashboard/impactPanels";
 import type { SendaiSection } from "~/utils/dashboard/sendaiPanels";
@@ -134,6 +134,19 @@ describe("Sendai toggle (FR-AN-020 to 023)", () => {
 		expect(next.get("sfm")).toBe("1");
 		expect(next.get("from")).toBe("2015");
 		expect(searchFor(parseDeltaQuery(params).query, "disaster_impact", false).get("sfm")).toBeNull();
+	});
+
+	it("belongs to Disaster events and Disaster impact only (Alex, 2026-10-18)", () => {
+		expect(SENDAI_VIEWS).toEqual(["disaster_event", "disaster_impact"]);
+		expect(hasSendai("disaster_event")).toBe(true);
+		expect(hasSendai("disaster_impact")).toBe(true);
+		expect(hasSendai("hazardous_event")).toBe(false);
+		expect(hasSendai("sectors")).toBe(false);
+		// Moving to a view without the section drops sfm=1 from the URL.
+		const q = parseDeltaQuery(new URLSearchParams("sfm=1&dim=disaster_impact")).query;
+		expect(searchFor(q, "hazardous_event", true).get("sfm")).toBeNull();
+		expect(searchFor(q, "sectors", true).get("sfm")).toBeNull();
+		expect(searchFor(q, "disaster_event", true).get("sfm")).toBe("1");
 	});
 
 	const shell = (sfmOn: boolean) => {
