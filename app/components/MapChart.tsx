@@ -204,6 +204,60 @@ export function worldNamesAt(
 		}));
 }
 
+/** A boundary name waiting for a place on the map. */
+export interface LabelCandidate {
+	name: string;
+	at: [number, number];
+	strong?: boolean;
+	/** Lower draws first: 0 the tenant, 1 its areas, 2 other countries. */
+	priority: number;
+}
+
+/**
+ * Below this zoom the tenant is a few pixels wide: its area names would sit
+ * on the symbols, so only country names show (Geoportal, 2026-10-18).
+ */
+export const AREA_NAMES_MIN_ZOOM = 4;
+
+/** Rough box of a label in screen pixels (12 px text, 14 px for the tenant). */
+export function labelBox(name: string, strong = false) {
+	return { w: name.length * (strong ? 9 : 6.8) + 8, h: strong ? 20 : 16 };
+}
+
+/**
+ * Leaflet does not declutter labels: place them in priority order and skip
+ * any whose box would overlap one already placed (Geoportal, 2026-10-18:
+ * names piled up at world zoom). project maps [lng, lat] to screen pixels.
+ */
+export function declutterLabels(
+	candidates: readonly LabelCandidate[],
+	project: (at: [number, number]) => { x: number; y: number },
+): LabelCandidate[] {
+	const placed: { x0: number; y0: number; x1: number; y1: number }[] = [];
+	const out: LabelCandidate[] = [];
+	const ordered = [...candidates].sort((a, b) => a.priority - b.priority);
+	for (const c of ordered) {
+		const p = project(c.at);
+		const { w, h } = labelBox(c.name, c.strong);
+		const box = {
+			x0: p.x - w / 2,
+			y0: p.y - h / 2,
+			x1: p.x + w / 2,
+			y1: p.y + h / 2,
+		};
+		if (
+			placed.some(
+				(b) => box.x0 < b.x1 && box.x1 > b.x0 && box.y0 < b.y1 && box.y1 > b.y0,
+			)
+		) {
+			continue;
+		}
+		placed.push(box);
+		out.push(c);
+	}
+	return out;
+}
+
 // One fetch per URL per page: the URL is versioned and cached a year.
 const worldCache = new Map<string, Promise<WorldBoundaries | null>>();
 function loadWorld(url: string): Promise<WorldBoundaries | null> {
@@ -641,10 +695,12 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 		const boundaryGroupRef = useRef<any>(null);
 		// Bumped on every boundary draw, so a late world fetch draws only once.
 		const worldDrawRef = useRef(0);
-		// World names shown at the current zoom, redrawn on zoomend.
-		const worldLabelsRef = useRef<{
+		// Every boundary name, placed again on each zoomend without overlaps.
+		const labelsRef = useRef<{
 			group: any;
-			labels: WorldBoundaries["labels"];
+			fixed: LabelCandidate[];
+			world: WorldBoundaries["labels"];
+			iso3?: string | null;
 		} | null>(null);
 
 		const makeLegendDraggable = () => {
@@ -925,27 +981,88 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 					if (boundaries && boundaryGroupRef.current) {
 						const group = boundaryGroupRef.current;
 						const map = mapRef.current;
+						const lineStyle = (weight: number) => () => ({
+							color: BOUNDARY_GREY,
+							weight,
+							opacity: 1,
+							fill: false,
+						});
+						// Names: the tenant first, then its areas, then other countries.
+						const fixed: LabelCandidate[] = [];
+						if (boundaries.countryName && boundaries.countryLabelPoint) {
+							fixed.push({
+								name: boundaries.countryName,
+								at: boundaries.countryLabelPoint,
+								strong: true,
+								priority: 0,
+							});
+						}
+						dataSource.forEach((region) => {
+							if (region.labelPoint && region.name) {
+								fixed.push({
+									name: region.name,
+									at: region.labelPoint,
+									priority: 1,
+								});
+							}
+						});
+						const labelGroup = L.layerGroup().addTo(group);
+						labelsRef.current = {
+							group: labelGroup,
+							fixed,
+							world: [],
+							iso3: boundaries.world?.iso3,
+						};
+						const placeNames = () => {
+							const cur = labelsRef.current;
+							// Before the first view is set, points cannot be projected.
+							if (!cur || !map._loaded) return;
+							cur.group.clearLayers();
+							const z = map.getZoom();
+							const candidates = [
+								...cur.fixed.filter(
+									(l) => l.priority !== 1 || z >= AREA_NAMES_MIN_ZOOM,
+								),
+								...worldNamesAt(cur.world, z, cur.iso3).map((l) => ({
+									name: l.name,
+									at: l.labelPoint,
+									priority: 2,
+								})),
+							];
+							const shown = declutterLabels(candidates, (at) =>
+								map.latLngToContainerPoint(L.latLng(at[1], at[0])),
+							);
+							for (const l of shown) {
+								boundaryLabel(L, l.name, l.at, l.strong).addTo(cur.group);
+							}
+						};
+						map.off("zoomend", map._deltaPlaceNames);
+						map._deltaPlaceNames = placeNames;
+						map.on("zoomend", placeNames);
+
 						const drawNeighbours = () => {
 							for (const n of boundaries.neighbours ?? []) {
 								L.geoJSON(n.geojson as any, {
 									pane: "deltaBoundaries",
 									interactive: false,
-									style: () => ({
-										color: BOUNDARY_GREY,
-										weight: BOUNDARY_WIDTH * 0.75,
-										opacity: 1,
-										fill: false,
-									}),
+									style: lineStyle(BOUNDARY_WIDTH * 0.75),
 								}).addTo(group);
-								if (n.labelPoint) {
-									boundaryLabel(L, n.name, n.labelPoint).addTo(group);
+								if (n.labelPoint && labelsRef.current) {
+									labelsRef.current.world.push({
+										iso3: n.iso3,
+										name: n.name,
+										labelPoint: n.labelPoint,
+										minZoom: 0,
+									});
 								}
 							}
+							placeNames();
 						};
 						const world = boundaries.world;
 						const drawToken = ++worldDrawRef.current;
 						if (!world?.url) drawNeighbours();
 						else {
+							placeNames();
 							void loadWorld(world.url).then((w) => {
 								// A later render replaced this group: draw nothing.
 								if (
@@ -957,62 +1074,18 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 								L.geoJSON(w.lines as any, {
 									pane: "deltaBoundaries",
 									interactive: false,
-									style: () => ({
-										color: BOUNDARY_GREY,
-										weight: BOUNDARY_WIDTH * 0.75,
-										opacity: 1,
-										fill: false,
-									}),
+									style: lineStyle(BOUNDARY_WIDTH * 0.75),
 								}).addTo(group);
-								const labelGroup = L.layerGroup().addTo(group);
-								worldLabelsRef.current = {
-									group: labelGroup,
-									labels: w.labels,
-								};
-								const showNames = () => {
-									const cur = worldLabelsRef.current;
-									if (!cur) return;
-									cur.group.clearLayers();
-									for (const l of worldNamesAt(
-										cur.labels,
-										map.getZoom(),
-										world.iso3,
-									)) {
-										boundaryLabel(L, l.name, l.labelPoint).addTo(cur.group);
-									}
-								};
-								map.off("zoomend", map._deltaWorldNames);
-								map._deltaWorldNames = showNames;
-								map.on("zoomend", showNames);
-								showNames();
+								if (labelsRef.current) labelsRef.current.world = w.labels;
+								placeNames();
 							});
 						}
 						if (boundaries.outline) {
 							L.geoJSON(boundaries.outline as any, {
 								pane: "deltaBoundaries",
 								interactive: false,
-								style: () => ({
-									color: BOUNDARY_GREY,
-									weight: BOUNDARY_WIDTH,
-									opacity: 1,
-									fill: false,
-								}),
-							}).addTo(boundaryGroupRef.current);
-						}
-						dataSource.forEach((region) => {
-							if (region.labelPoint && region.name) {
-								boundaryLabel(L, region.name, region.labelPoint).addTo(
-									boundaryGroupRef.current,
-								);
-							}
-						});
-						if (boundaries.countryName && boundaries.countryLabelPoint) {
-							boundaryLabel(
-								L,
-								boundaries.countryName,
-								boundaries.countryLabelPoint,
-								true,
-							).addTo(boundaryGroupRef.current);
+								style: lineStyle(BOUNDARY_WIDTH),
+							}).addTo(group);
 						}
 					}
 					ensurePatternDefs(mapRef.current);
