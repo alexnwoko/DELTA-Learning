@@ -1,9 +1,8 @@
+import type { Translation } from "~/utils/translator";
+
 export function createTranslationScript(
 	lang: string,
-	translations: Record<
-		string,
-		{ msg: string } | { msgs: Record<string, string> }
-	>,
+	translations: Record<string, Translation>,
 ): string {
 	return `
     window.DTS_TRANSLATIONS = ${JSON.stringify(translations)};

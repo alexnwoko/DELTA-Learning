@@ -32,8 +32,7 @@ import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 import { PrimeReactProvider } from "primereact/api";
 
-import { loadTranslations } from "./backend.server/translations";
-import { createTranslationScript } from "./frontend/translations";
+import { translationsScriptSrc } from "./backend.server/translationsScript.server";
 import { getLanguageAllowDefault } from "./utils/lang.backend";
 import { ViewContext } from "./frontend/context";
 import { isAdminRoute } from "./utils/url.backend";
@@ -140,7 +139,8 @@ export const loader = async (
 			: null
 		: await authLoaderGetOptionalUserForFrontend(routeArgs);
 
-	const translations = loadTranslations(lang);
+	// The dictionary loads as a cached, versioned script, not inline data.
+	const translationsSrc = translationsScriptSrc(lang);
 
 	return Response.json(
 		{
@@ -148,7 +148,7 @@ export const loader = async (
 				lang,
 				user: userForFrontend,
 			},
-			translations,
+			translationsSrc,
 			isLoggedIn: onAdminRoute ? isSuperAdmin : !!userForRoute,
 			isCountryAccountSelected,
 			activeInstanceCount,
@@ -201,8 +201,7 @@ export default function Screen() {
 		userRole,
 		// isSuperAdmin,
 		// isFormAuthSupported,
-		lang,
-		translations,
+		translationsSrc,
 		isCountryAccountSelected,
 		activeInstanceCount,
 	} = loaderData;
@@ -258,11 +257,8 @@ export default function Screen() {
 				<link rel="icon" type="image/x-icon" href="/favicon.ico" />
 				<Meta />
 				<Links />
-				<script
-					dangerouslySetInnerHTML={{
-						__html: createTranslationScript(lang, translations),
-					}}
-				/>
+				{/* Blocking on purpose: t() needs the dictionary before hydration. */}
+				<script src={translationsSrc} />
 				<script
 					type="application/json"
 					id="i18n-resource-bundle"
