@@ -117,6 +117,9 @@ export function GeoTable(props: {
 				selectionBehavior="replace"
 				selectedKeys={props.selectedId ? [props.selectedId] : []}
 				onSelectionChange={onSelectionChange}
+				// Enter chooses a row as Space does (keyboard walk-through, I-6):
+				// with "replace" selection, Enter is the row action.
+				onRowAction={(key) => props.onSelect(String(key))}
 				sortDescriptor={sort}
 				onSortChange={setSort}
 				className="geo-table w-full text-sm"
