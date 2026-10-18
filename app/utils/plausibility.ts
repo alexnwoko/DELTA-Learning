@@ -62,3 +62,28 @@ export function plausibilitySourceFields(
 		.filter(([, ms]) => ms.includes(measure))
 		.map(([field]) => field);
 }
+
+/**
+ * Read-time ceilings (Alex, 2026-10-18): a single record above its measure's
+ * ceiling is marked "Under review" and counted as flagged, like a C30 flag.
+ * The value is not changed and stays in the total; the mark says the total
+ * holds a figure no single record can plausibly carry. The levels sit well
+ * above the largest real single events, so only gross errors cross them
+ * (on 2026-10-18 one record: 538,191,750 missing persons). PROVISIONAL until
+ * the Migration lane folds an equivalent rule into C30.
+ */
+export const PLAUSIBILITY_CEILINGS: Record<PlausibilityMeasure, number> = {
+	deaths: 500_000,
+	injured: 5_000_000,
+	missing: 1_000_000,
+	displaced: 50_000_000,
+	evacuated: 50_000_000,
+	relocated: 50_000_000,
+	affected_direct: 200_000_000,
+	affected_indirect: 1_000_000_000,
+	houses_destroyed: 10_000_000,
+	houses_damaged: 10_000_000,
+};
+
+/** Flag code for a figure above its ceiling, listed with the C30 codes. */
+export const ABOVE_CEILING_CODE = "ABOVE_CEILING";

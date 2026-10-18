@@ -36,8 +36,20 @@ export function coverageText(ctx: DContext, cell: PanelCell): string {
 	);
 }
 
-/** "2 flagged for review", or null when none is (C30). */
+/**
+ * "Under review: a figure above the plausible ceiling (1)" when a figure crosses
+ * its ceiling, else "2 flagged for review", or null when none is (C30).
+ */
 export function flaggedText(ctx: DContext, cell: PanelCell): string | null {
+	if (cell.recordsAboveCeiling) {
+		return ctx.t(
+			{
+				code: "dashboard.above_ceiling",
+				msg: "Under review: a figure above the plausible ceiling ({n})",
+			},
+			{ n: cell.recordsAboveCeiling.toLocaleString(ctx.lang) },
+		);
+	}
 	if (!cell.recordsFlagged) return null;
 	return ctx.t(
 		{ code: "dashboard.flagged", msg: "{n} flagged for review" },

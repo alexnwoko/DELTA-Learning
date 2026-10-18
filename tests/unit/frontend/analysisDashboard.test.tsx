@@ -50,6 +50,11 @@ describe("panel figures (TR-076)", () => {
 		expect(flaggedText(ctx, cell({}))).toBeNull();
 	});
 
+	it("say 'Under review' when a record is above the plausibility ceiling", () => {
+		const c = cell({ value: 539450606, valueState: "reported", recordsReported: 3, recordsTotal: 9, recordsFlagged: 2, recordsAboveCeiling: 1 });
+		expect(flaggedText(ctx, c)).toBe("Under review: a figure above the plausible ceiling (1)");
+	});
+
 	it("export a missing figure as blank, not zero", () => {
 		expect(cellRow("Floods", cell({})).value).toBeNull();
 		expect(cellRow("Floods", cell({ valueState: "zero_confirmed", value: 0 })).value).toBe(0);

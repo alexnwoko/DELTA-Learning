@@ -24,6 +24,11 @@ export interface MeasureValue {
 	recordsTotal: number;
 	/** Records whose plausibility flags concern this measure (C30); 0 if none. */
 	recordsFlagged: number;
+	/**
+	 * Of those, records above the measure's plausibility ceiling ("Under
+	 * review"); present only when above 0.
+	 */
+	recordsAboveCeiling?: number;
 }
 
 export interface MeasureCounts {
@@ -35,8 +40,10 @@ export interface MeasureCounts {
 	zeroConfirmed: number | string;
 	/** All records in scope, whatever their state. */
 	total: number | string;
-	/** Records flagged for review on this measure (C30). */
+	/** Records flagged for review on this measure (C30), ceiling included. */
 	flagged?: number | string;
+	/** Records above the measure's plausibility ceiling. */
+	aboveCeiling?: number | string;
 }
 
 export interface CoverageRule {
@@ -110,6 +117,9 @@ export function measureValue(
 		recordsNotReported,
 		recordsTotal,
 		recordsFlagged: toCount(counts.flagged),
+		...(toCount(counts.aboveCeiling) > 0
+			? { recordsAboveCeiling: toCount(counts.aboveCeiling) }
+			: {}),
 	};
 
 	const sum = toValue(counts.sum);
