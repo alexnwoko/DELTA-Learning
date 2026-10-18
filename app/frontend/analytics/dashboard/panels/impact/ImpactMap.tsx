@@ -15,6 +15,7 @@ import type { MapScopeQuery } from "~/utils/mapState";
 import type { DashboardMapLayers } from "../mapLayers";
 import { cellText } from "../../panelCell";
 import { ShadedTable } from "../blocks";
+import { DASHBOARD_RAMP } from "~/frontend/charts/sectionPalette";
 
 const known = (c: PanelCell) => c.valueState === "reported" || c.valueState === "zero_confirmed";
 
@@ -74,6 +75,8 @@ export function ImpactMap({ ctx, map, scope, onSelectDivision, layers }: ImpactM
 					dataSource={drawn.map((a) => toMapArea(a, labels))}
 					legendTitle={deathsLabel}
 					measureFamily="people"
+					// The dashboard palette (Alex, 2026-10-18), a module-level constant.
+					ramp={DASHBOARD_RAMP}
 					layered={{ barsFamily: "housing" }}
 					scope={scope}
 					// The map reports the index among the drawn areas.

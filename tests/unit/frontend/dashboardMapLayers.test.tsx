@@ -50,3 +50,13 @@ describe("Analysis map layers", () => {
 		expect(seen[0]?.boundaries).toBeUndefined();
 	});
 });
+
+describe("Analysis maps take the dashboard palette (Alex, 2026-10-18)", () => {
+	it("passes DASHBOARD_RAMP to MapChart on both maps", async () => {
+		const { DASHBOARD_RAMP } = await import("~/frontend/charts/sectionPalette");
+		seen.length = 0;
+		renderToString(<ImpactMap ctx={ctx} map={{ areas: [], recordsWithoutDivision: 0, multiDivisionRecords: 0, legend: {}, meta: { method: "", notApplied: [] } } as never} scope={scope} />);
+		renderToString(<EventMap ctx={ctx} map={{ areas: [], unplacedReasons: {}, meta: { method: "", notApplied: [] } } as never} scope={scope} />);
+		expect(seen.map((p) => p.ramp)).toEqual([DASHBOARD_RAMP, DASHBOARD_RAMP]);
+	});
+});
