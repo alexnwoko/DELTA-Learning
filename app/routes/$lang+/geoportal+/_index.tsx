@@ -5,6 +5,7 @@
 // API does (resolveGeoRequest), so the page and the API never disagree.
 // Signed-in only until the public routes (TR-181, TR-236) land in R1.
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
+import { preload } from "react-dom";
 import {
 	useLoaderData,
 	useNavigate,
@@ -86,8 +87,8 @@ import { PrintButton } from "~/frontend/print/PrintButton";
 import { basemapLayers } from "~/utils/basemap.server";
 import { listRegions } from "~/backend.server/models/geo/regions";
 import {
-	getTenantOutline,
-	neighbourOutlines,
+	admin0Version,
+	mapDataVersion,
 } from "~/backend.server/models/geo/tenantExtent";
 import { divisionAreasKm2 } from "~/backend.server/models/analytics/divisionAreas";
 import { selectableBasemaps, type BasemapLayerId } from "~/utils/basemap";
@@ -96,6 +97,65 @@ import { selectableBasemaps, type BasemapLayerId } from "~/utils/basemap";
 const GeoMap = lazy(() =>
 	import("~/frontend/geoportal/GeoMap").then((m) => ({ default: m.GeoMap })),
 );
+
+/**
+ * Map geometry is fetched by the browser, not inlined in the page (NFR-113
+ * first paint): the page carries only the URLs, each with a version so the
+ * browser can keep the answer for a year. The fetch starts from a preload
+ * hint in the page head, in parallel with the map's JavaScript.
+ */
+function useGeometry<T>(src: string | null): { data: T | null; failed: boolean } {
+	if (src) preload(src, { as: "fetch", crossOrigin: "anonymous" });
+	const [state, setState] = useState<{ src: string | null; data: T | null; failed: boolean }>(
+		{ src: null, data: null, failed: false },
+	);
+	useEffect(() => {
+		if (!src) return;
+		const ctrl = new AbortController();
+		fetch(src, { signal: ctrl.signal })
+			.then((r) => {
+				if (!r.ok) throw new Error(String(r.status));
+				return r.json() as Promise<T>;
+			})
+			.then((data) => setState({ src, data, failed: false }))
+			.catch((err: unknown) => {
+				if ((err as { name?: string })?.name !== "AbortError") {
+					setState({ src, data: null, failed: true });
+				}
+			});
+		return () => ctrl.abort();
+	}, [src]);
+	return state.src === src ? state : { data: null, failed: false };
+}
+
+type BoundaryCollection = {
+	features: {
+		properties: {
+			divisionId: string;
+			name: string;
+			labelPoint?: [number, number];
+			areaKm2?: number | string;
+		};
+	}[];
+};
+type MapContext = {
+	outline: {
+		geojson: { type: string; coordinates: unknown } | null;
+		labelPoint: [number, number] | null;
+		name: string | null;
+		iso3?: string | null;
+	} | null;
+	neighbours: {
+		iso3: string;
+		name: string;
+		geojson: { type: string; coordinates: unknown };
+		labelPoint: [number, number];
+	}[];
+};
+type WorldLayer = {
+	lines: { type: string; coordinates: unknown } | null;
+	labels: { iso3: string; name: string; labelPoint: [number, number] }[];
+};
 
 async function adminLevels(countryAccountsId: string): Promise<number[]> {
 	const res = await dr.execute(sql`
@@ -165,8 +225,13 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 		});
 		const [choropleth, boundaries, tree, regions] = await Promise.all([
 			getChoropleth(countryAccountsId, req),
+			// The same request as the boundaries URL below, so both share one
+			// cache entry; the page keeps only the names, the browser fetches
+			// the shapes.
 			getBoundaries(countryAccountsId, {
 				level: req.level as number,
+				parentId: null,
+				bbox: null,
 				z: 8,
 				lang,
 			}),
@@ -176,11 +241,18 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 			// RG-1: the tenant's regions for the Area control.
 			listRegions(countryAccountsId, lang),
 		]);
-		const [outline, placeOptions, neighbours] = await Promise.all([
-			getTenantOutline(countryAccountsId),
+		const [placeOptions, version, worldVersion] = await Promise.all([
 			listPlaceOptions(countryAccountsId, lang),
-			neighbourOutlines(countryAccountsId, 2),
+			mapDataVersion(countryAccountsId),
+			admin0Version(),
 		]);
+		const v = (ver: string | null) => (ver ? `&v=${ver}` : "");
+		const api = `/${lang}/api/geo`;
+		const geometrySrc = {
+			boundaries: `${api}/boundaries?level=${req.level}&z=8${v(version)}`,
+			context: `${api}/map-context?r=1${v(version)}`,
+			world: worldVersion ? `${api}/world?r=1${v(worldVersion)}` : null,
+		};
 		// Bars: the housing breakdown, each part read with the same filters.
 		const housing =
 			symbol === "bars"
@@ -209,16 +281,12 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 			levels,
 			canReview,
 			choropleth,
-			boundaries: boundaries as {
-				features: {
-					properties: {
-						divisionId: string;
-						name: string;
-						labelPoint?: [number, number];
-						areaKm2?: number | string;
-					};
-				}[];
-			},
+			// Names only (the table, the readout); the shapes come from geometrySrc.
+			areas: (boundaries as BoundaryCollection).features.map((f) => ({
+				divisionId: f.properties.divisionId,
+				name: f.properties.name,
+			})),
+			geometrySrc,
 			// G6 is nested; the bar reads three flat lists (Frontend, 2026-10-17).
 			hazardTree: flattenHazardTree(tree as NestedHazardTree | null),
 			regions: regions.map((r) => ({
@@ -230,9 +298,7 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 			symbol,
 			housing: housing ? { destroyed: housing[0], damaged: housing[1] } : null,
 			areaKm2,
-			outline,
 			placeOptions,
-			neighbours,
 			refusal: null,
 		};
 	} catch (err) {
@@ -243,15 +309,14 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 				levels,
 				canReview,
 				choropleth: null,
-				boundaries: null,
+				areas: [] as { divisionId: string; name: string }[],
+				geometrySrc: null,
 				hazardTree: null,
 				regions: [],
 				basemaps,
 				symbol,
 				housing: null,
 				areaKm2: {} as Record<string, number>,
-				outline: null,
-				neighbours: [],
 				placeOptions: [] as {
 					id: string;
 					name: string;
@@ -326,8 +391,13 @@ const UNPLACED_REASONS: Record<string, { code: string; msg: string }> = {
 	},
 };
 
+const EMPTY_BOUNDARIES: BoundaryCollection = { features: [] };
+
 export default function GeoportalPage() {
 	const data = useLoaderData<typeof loader>();
+	const boundaries = useGeometry<BoundaryCollection>(data.geometrySrc?.boundaries ?? null);
+	const mapContext = useGeometry<MapContext>(data.geometrySrc?.context ?? null);
+	const world = useGeometry<WorldLayer>(data.geometrySrc?.world ?? null);
 	const ctx = new ViewContext();
 	const t: GeoT = (l, r) => ctx.t(l, r);
 	const navigate = useNavigate();
@@ -451,14 +521,14 @@ export default function GeoportalPage() {
 	}, [choropleth, measure, query, areaKm2, symbol, data.housing, t]);
 
 	const rows: GeoTableRow[] = useMemo(() => {
-		if (!data.boundaries || !mapState) return [];
+		if (!mapState) return [];
 		const byId = new Map(mapState.areas.map((a) => [a.areaId, a]));
-		return data.boundaries.features.map((f) => ({
-			id: f.properties.divisionId,
-			name: f.properties.name,
-			area: byId.get(f.properties.divisionId),
+		return data.areas.map((a) => ({
+			id: a.divisionId,
+			name: a.name,
+			area: byId.get(a.divisionId),
 		}));
-	}, [data.boundaries, mapState]);
+	}, [data.areas, mapState]);
 	const nameOf = useMemo(
 		() => new Map(rows.map((r) => [r.id, r.name])),
 		[rows],
@@ -762,7 +832,7 @@ export default function GeoportalPage() {
 												}
 											>
 												<GeoMap
-													boundaries={data.boundaries ?? { features: [] }}
+													boundaries={boundaries.data ?? EMPTY_BOUNDARIES}
 													areas={mapState.areas}
 													selectedId={shownId}
 													onSelect={selectFromMap}
@@ -773,8 +843,10 @@ export default function GeoportalPage() {
 													onBasemapStatus={setBasemapStatus}
 													homeSignal={homeSignal}
 													symbolColor={mapState.legend.symbols?.color ?? null}
-													outline={data.outline}
-													neighbours={data.neighbours}
+													outline={mapContext.data?.outline ?? null}
+													neighbours={mapContext.data?.neighbours ?? []}
+													world={world.data}
+													ownIso3={mapContext.data?.outline?.iso3 ?? null}
 													padRight={isWide ? 396 : 0}
 													disclaimer={t({
 														code: "geoportal.map.un_disclaimer",
@@ -786,6 +858,17 @@ export default function GeoportalPage() {
 													describedBy={tableId}
 												/>
 											</Suspense>
+											{boundaries.failed && (
+												<p
+													role="status"
+													className="absolute left-12 top-2 z-10 rounded bg-brand-surface px-2 py-1 text-sm shadow-sm"
+												>
+													{t({
+														code: "geoportal.map.shapes_unavailable",
+														msg: "Area shapes could not be loaded; the table still shows every figure.",
+													})}
+												</p>
+											)}
 										</div>
 									)}
 								</ClientOnly>

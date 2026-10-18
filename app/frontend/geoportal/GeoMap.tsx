@@ -88,6 +88,22 @@ export interface GeoMapProps {
 		geojson: { type: string; coordinates: unknown };
 		labelPoint: [number, number];
 	}[];
+	/**
+	 * Every country's border and name (worldBoundaries), drawn in light grey
+	 * under the figures with a transparent inside. The shared lines show below
+	 * zoom 5; from zoom 5 the detailed neighbour outlines take over.
+	 */
+	world?: {
+		lines: { type: string; coordinates: unknown } | null;
+		labels: {
+			iso3: string;
+			name: string;
+			labelPoint: [number, number];
+			minZoom?: number;
+		}[];
+	} | null;
+	/** The tenant's own ISO3, so its name is not drawn twice. */
+	ownIso3?: string | null;
 	/** The UN map disclaimer, translated; shown in the map credits. */
 	disclaimer?: string;
 	/** Extra right padding (px) when a panel floats over the map's right side. */
@@ -96,6 +112,10 @@ export interface GeoMapProps {
 	label: string;
 	describedBy?: string;
 }
+
+/** Web Mercator metres per pixel at zoom 0 and zoom 5 (256 px tiles). */
+const ZOOM0_RESOLUTION = 156543.03392804097;
+const ZOOM5_RESOLUTION = ZOOM0_RESOLUTION / 2 ** 5;
 
 function dash(dashArray: string | null): number[] | undefined {
 	return dashArray ? dashArray.split(/\s+/).map(Number) : undefined;
@@ -324,6 +344,8 @@ export function GeoMap({
 	outline = null,
 	showLabels = true,
 	neighbours = [],
+	world = null,
+	ownIso3 = null,
 	disclaimer = UN_MAP_DISCLAIMER,
 	padRight = 0,
 	label,
@@ -342,6 +364,7 @@ export function GeoMap({
 	const shownRef = useRef<BasemapLayerId | null>(null);
 	const symbolLayerRef = useRef<VectorLayer<VectorSource> | null>(null);
 	const labelLayerRef = useRef<VectorLayer<VectorSource> | null>(null);
+	const worldLayerRef = useRef<VectorLayer<VectorSource> | null>(null);
 	const disclaimerRef = useRef(disclaimer);
 	disclaimerRef.current = disclaimer;
 
@@ -404,9 +427,13 @@ export function GeoMap({
 			declutter: true,
 		});
 		labelLayerRef.current = labels;
+		// Country borders (geo.admin0): above the area shading, under the bubbles
+		// and bars, never decluttered and never hit by a click.
+		const world = new VectorLayer({ source: new VectorSource(), zIndex: 1.5 });
+		worldLayerRef.current = world;
 		const map = new OlMap({
 			target: target.current,
-			layers: [...bases.values(), layer, symbols, labels],
+			layers: [...bases.values(), layer, world, symbols, labels],
 			// Credits never fold away: the UN disclaimer must stay visible.
 			controls: defaultControls({
 				attributionOptions: { collapsible: false },
@@ -417,16 +444,17 @@ export function GeoMap({
 			]),
 			view: new View({ center: [0, 0], zoom: 2 }),
 		});
+		const onlyAreas = { layerFilter: (l: unknown) => l === layer || l === symbols };
 		map.on("singleclick", (e) => {
-			const hit = map.forEachFeatureAtPixel(e.pixel, (f) => f);
-			const id = hit ? (hit.get("divisionId") as string) : null;
+			const hit = map.forEachFeatureAtPixel(e.pixel, (f) => f, onlyAreas);
+			const id = hit ? ((hit.get("divisionId") as string | undefined) ?? null) : null;
 			onSelectRef.current(id);
 		});
 		let hovered: string | null = null;
 		map.on("pointermove", (e) => {
 			if (e.dragging) return;
-			const hit = map.forEachFeatureAtPixel(e.pixel, (f) => f);
-			const id = hit ? (hit.get("divisionId") as string) : null;
+			const hit = map.forEachFeatureAtPixel(e.pixel, (f) => f, onlyAreas);
+			const id = hit ? ((hit.get("divisionId") as string | undefined) ?? null) : null;
 			map.getTargetElement().style.cursor = id ? "pointer" : "";
 			if (id !== hovered) {
 				hovered = id;
@@ -575,30 +603,18 @@ export function GeoMap({
 				stroke: new Stroke({ color: tok.areaLabel.halo, width: 3 }),
 				overflow: false,
 			});
-		// Neighbouring countries (geo.admin0): light grey outline and name, under
-		// the tenant's outline; reference data only, never shaded.
-		for (const n of neighbours) {
-			const [nf] = new GeoJSON().readFeatures(
-				{ type: "Feature", geometry: n.geojson, properties: {} },
-				{ dataProjection: "EPSG:4326", featureProjection: "EPSG:3857" },
-			);
-			nf.setStyle(
-				new Style({
-					stroke: new Stroke({
-						color: tok.countryOutline.stroke,
-						width: tok.countryOutline.strokeWidth * 0.75,
-					}),
-					zIndex: -1,
-				}),
-			);
-			source.addFeature(nf);
+		// Country names (geo.admin0), light grey like the borders; the tenant's
+		// own name is drawn larger below. Names declutter; borders never do.
+		for (const n of world?.labels ?? []) {
+			if (n.iso3 === ownIso3) continue;
 			const nl = new Feature({ geometry: new Point(fromLonLat(n.labelPoint)) });
-			nl.setStyle(
-				new Style({
-					text: text(n.name.toUpperCase(), tok.areaLabel.size),
-					zIndex: 0,
-				}),
-			);
+			const style = new Style({
+				text: text(n.name.toUpperCase(), tok.areaLabel.size - 1),
+				zIndex: 0,
+			});
+			// Small countries are named only once the reader zooms in.
+			const maxRes = ZOOM0_RESOLUTION / 2 ** (n.minZoom ?? 0);
+			nl.setStyle((_, res) => (res <= maxRes * 1.0001 ? style : undefined));
 			source.addFeature(nl);
 		}
 		if (outline?.geojson) {
@@ -641,7 +657,37 @@ export function GeoMap({
 			);
 			source.addFeature(cf);
 		}
-	}, [boundaries, outline, neighbours, showLabels]);
+	}, [boundaries, outline, world, ownIso3, showLabels]);
+
+	// Country borders: the simplified world lines at small scales, the detailed
+	// neighbour outlines from zoom 5, so a border is never drawn twice.
+	useEffect(() => {
+		const source = worldLayerRef.current?.getSource();
+		if (!source) return;
+		source.clear();
+		const tok = dataTokens.map;
+		const border = new Style({
+			stroke: new Stroke({
+				color: tok.countryOutline.stroke,
+				width: tok.countryOutline.strokeWidth * 0.75,
+			}),
+		});
+		const read = (geometry: { type: string; coordinates: unknown }) =>
+			new GeoJSON().readFeatures(
+				{ type: "Feature", geometry, properties: {} },
+				{ dataProjection: "EPSG:4326", featureProjection: "EPSG:3857" },
+			)[0];
+		if (world?.lines) {
+			const f = read(world.lines);
+			f.setStyle((_, res) => (res > ZOOM5_RESOLUTION ? border : undefined));
+			source.addFeature(f);
+		}
+		for (const n of neighbours) {
+			const f = read(n.geojson);
+			f.setStyle((_, res) => (res > ZOOM5_RESOLUTION ? undefined : border));
+			source.addFeature(f);
+		}
+	}, [world, neighbours]);
 
 	useEffect(() => {
 		if (!homeSignal) return;
