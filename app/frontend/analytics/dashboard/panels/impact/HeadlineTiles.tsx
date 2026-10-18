@@ -4,6 +4,8 @@
 // the monetary convention is ruled (G-06, MONETARY_CONVENTIONS_PENDING).
 // No green-up or red-down: the sparkline is one neutral ink.
 import { ChartFrame } from "~/frontend/charts/ChartFrame";
+import { MEASURE_ICONS } from "~/frontend/charts/dashboardIcons";
+import { PanelIcon } from "~/frontend/charts/PanelIcon";
 import { roundedBarPath } from "~/frontend/charts/roundedBar";
 import type { ViewContext } from "~/frontend/context";
 import type { HeadlineTile, PanelCell, PanelMeta } from "~/utils/dashboard/impactPanels";
@@ -117,7 +119,10 @@ export function HeadlineTiles({ ctx, title, tiles, meta, source, scope, provisio
 							key={tile.measure}
 							className="flex min-w-0 flex-col gap-1 rounded border border-brand-border bg-brand-surface-card p-3"
 						>
-							<span className="text-sm text-brand-text-muted">{label}</span>
+							<span className="flex items-center gap-1.5 text-sm text-brand-text-muted">
+								<PanelIcon name={MEASURE_ICONS[tile.measure]} size={16} />
+								{label}
+							</span>
 							<span
 								className={isNumber ? "text-2xl font-semibold tabular-nums" : "text-base font-semibold"}
 							>
@@ -141,7 +146,8 @@ export function HeadlineTiles({ ctx, title, tiles, meta, source, scope, provisio
 					);
 				})}
 				<li className="flex min-w-0 flex-col gap-1 rounded border border-dashed border-brand-border-control bg-brand-surface-subtle p-3">
-					<span className="text-sm text-brand-text-muted">
+					<span className="flex items-center gap-1.5 text-sm text-brand-text-muted">
+						<PanelIcon name={MEASURE_ICONS.money} size={16} colour="var(--delta-brand-text-muted)" />
 						{ctx.t({ code: "dashboard.measure_money", msg: "Damage and losses" })}
 					</span>
 					<span className="text-sm font-semibold">

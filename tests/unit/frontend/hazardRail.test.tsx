@@ -30,10 +30,11 @@ describe("left hazard rail (mockup option A)", () => {
 		expect(html).toContain("Biological");
 	});
 
-	it("draws each glyph in the hazard's identity colour", () => {
+	it("draws OCHA's hazard icon in the hazard's identity colour", () => {
 		const html = render(null);
-		expect(html).toContain("fill:var(--delta-data-hazard-meteorological-hydrological)");
-		expect(html).toContain("fill:var(--delta-data-hazard-geological)");
+		expect(html).toMatch(/data-icon="flood"[^>]*background-color:var\(--delta-data-hazard-meteorological-hydrological\)/);
+		expect(html).toMatch(/data-icon="earthquake"[^>]*background-color:var\(--delta-data-hazard-geological\)/);
+		expect(html).toMatch(/data-icon="epidemic"[^>]*background-color:var\(--delta-data-hazard-biological\)/);
 	});
 
 	it("shows record counts on record views, in the accessible name too, and disables a type with none, never a 0", () => {

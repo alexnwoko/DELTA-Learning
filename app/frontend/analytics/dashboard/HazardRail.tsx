@@ -6,6 +6,8 @@
 // clears it. On a phone the rail becomes a scrolling row above the content.
 import type React from "react";
 import { Label, Radio, RadioGroup } from "react-aria-components";
+import { HAZARD_ICONS } from "~/frontend/charts/dashboardIcons";
+import { PanelIcon } from "~/frontend/charts/PanelIcon";
 import type { ViewContext } from "~/frontend/context";
 import type { HazardTree } from "~/frontend/geoportal/GeoFilterBar";
 import type { DeltaQuery } from "~/utils/deltaQuery";
@@ -106,7 +108,16 @@ export function HazardRail({ ctx, tree, selected, onChange, showCounts }: Hazard
 					>
 						{/* The count sits at the glyph's top-right corner, as in the mockup. */}
 						<span className="relative inline-flex">
-							<Glyph identity={identity} />
+							{/* OCHA's hazard icon in the identity colour; our own shape where OCHA has none. */}
+							{HAZARD_ICONS[identity] ? (
+								<PanelIcon
+									name={HAZARD_ICONS[identity] as NonNullable<(typeof HAZARD_ICONS)[string]>}
+									size={20}
+									colour={`var(--delta-data-hazard-${identity.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)})`}
+								/>
+							) : (
+								<Glyph identity={identity} />
+							)}
 							{showCounts && !empty && (
 								<span
 									aria-hidden="true"
