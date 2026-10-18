@@ -248,7 +248,7 @@ describe("page-level CSV", () => {
 		expect(csv).toContain("Sendai Targets A and B counts,A-2 Deaths,,615,reported,");
 		expect(csv).toContain("Houses damaged (input to B-3; no indicator value)");
 		expect(csv).not.toMatch(/,B-3 [A-Z]/);
-		expect(csv).toContain("People displaced,Biological,Displaced,,not_reported,");
+		expect(csv).toContain('"People displaced, evacuated and relocated",Biological,Displaced,,not_reported,');
 	});
 });
 
@@ -264,7 +264,7 @@ describe("Disaster impact layout (Alex, 2026-10-18)", () => {
 			"Human effects at a glance", "Ranked by divisions",
 			"Hazard ranking by disaster impact", "Human effects by year",
 			"Hazard by human effect", "Hazard by sector",
-			"Houses destroyed and damaged", "People displaced",
+			"Houses destroyed and damaged", "People displaced, evacuated and relocated",
 			"Coverage of the records", "Reporting completeness and precision",
 			"Disaster impact by sex and age disaggregation",
 		]);
