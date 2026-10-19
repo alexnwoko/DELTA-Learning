@@ -101,7 +101,7 @@ describe("getHazardMonth", () => {
 			const p = await getHazardMonth(Q, ctx(), "disaster_record");
 			expect(p.placeholderDates).toBe(10);
 			expect(p.rows.find((x) => x.hipClusterId === "1046")!.cells[0].count).toBe(0);
-			expect(p.meta.method).toContain("Placeholder dates");
+			expect(p.meta.method).toContain("placeholder dates");
 		} finally {
 			const all = sql.join(extra.map((x) => sql`${x}`), sql`, `);
 			await dr.execute(sql`DELETE FROM disaster_records WHERE id IN (${all})`);
@@ -131,5 +131,35 @@ describe("getHazardMonth", () => {
 		const p = await getHazardMonth(DEFAULT_QUERY, ctx(), "disaster_record");
 		expect(p.measure).toBe("affected_direct");
 		expect(p.meta.method).toContain("affected_direct");
+	});
+
+	it("names specific hazards and keeps a hazard whose dates are mostly a source default", async () => {
+		// Ten drought records on 7 September (a source default) and two dated in August.
+		const drought = Array.from({ length: 12 }, () => randomUUID());
+		for (const [i, id] of drought.entries()) {
+			const start = i < 10 ? `${2000 + i}-09-07` : `${2010 + i}-08-15`;
+			await dr.execute(sql`
+				INSERT INTO disaster_records (id, country_accounts_id, "approvalStatus", start_date, hip_cluster_id, hip_hazard_id)
+				VALUES (${id}, ${ids.countryAccountId}, 'published', ${start}, '1076', '78600')`);
+			await dr.execute(sql`INSERT INTO human_category_presence (record_id, affected_direct, affected_direct_total) VALUES (${id}, true, 1000)`);
+		}
+		clearDashboardCache(ids.countryAccountId);
+		try {
+			const p = await getHazardMonth(DEFAULT_QUERY, ctx(), "disaster_record");
+			const d = p.rows.find((x) => x.key === "78600")!;
+			expect(d).toMatchObject({ level: "hazard", label: "Drought", hipClusterId: "1076", total: 2, allOccurrences: 12 });
+			expect(d.unplaced).toEqual({ placeholder: 10, noMonth: 0 });
+			expect(d.cells[7]).toMatchObject({ month: 8, count: 2 });
+			expect(d.cells[7].people.value).toBe(2000);
+			expect(d.people.value).toBe(2000);
+			expect(p.placeholderDays[0]).toEqual({ day: "09-07", occurrences: 10 });
+			// Records coded only to a cluster keep a cluster row.
+			expect(p.rows.find((x) => x.key === "cluster:1053")!.level).toBe("cluster");
+		} finally {
+			const all = sql.join(drought.map((x) => sql`${x}`), sql`, `);
+			await dr.execute(sql`DELETE FROM human_category_presence WHERE record_id IN (${all})`);
+			await dr.execute(sql`DELETE FROM disaster_records WHERE id IN (${all})`);
+			clearDashboardCache(ids.countryAccountId);
+		}
 	});
 });
