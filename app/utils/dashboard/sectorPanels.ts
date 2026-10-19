@@ -116,6 +116,17 @@ export interface SectorCompleteness {
 }
 
 /**
+ * Records with several sectors (reassessment SEC-10): among records reporting
+ * damage in at least one level-2 sector, how many sectors each reports, and
+ * the sector pairs reported together most often. Counts of records.
+ */
+export interface MultiSectorRecords {
+	recordsWithSector: number;
+	bins: { label: string; records: number }[];
+	pairs: { a: SectorRef; b: SectorRef; records: number }[];
+}
+
+/**
  * Set when no record is in scope. The view then shows one frame with the
  * reason instead of panels of zeros: no data is never drawn as 0.
  */
@@ -134,6 +145,7 @@ export interface SectorPanels1to7 {
 	sendai: SectorSendaiCrosswalk;
 	rankedDivisions: SectorRankedDivisions;
 	completeness: SectorCompleteness;
+	multiSector: MultiSectorRecords;
 	meta: Record<
 		| "headline"
 		| "reporting"
@@ -143,7 +155,8 @@ export interface SectorPanels1to7 {
 		| "dwellings"
 		| "sendai"
 		| "rankedDivisions"
-		| "completeness",
+		| "completeness"
+		| "multiSector",
 		PanelMeta
 	>;
 }
