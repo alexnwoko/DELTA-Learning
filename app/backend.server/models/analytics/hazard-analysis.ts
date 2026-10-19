@@ -404,6 +404,27 @@ export function plausibilityFlagged(
 }
 
 /**
+ * True when a record is under review for the measure: one of its
+ * plausibility flags (the pflags array carried by filtered_records) names a
+ * source field that feeds the measure (C30), or its value is above the
+ * measure's ceiling. An empty flags array is not a flag.
+ */
+export function underReviewFor(
+	measure: PlausibilityMeasure,
+	pflags: SQL,
+	value: SQL,
+): SQL {
+	return sql`(EXISTS (
+		SELECT 1 FROM jsonb_array_elements(COALESCE(${pflags}, '[]'::jsonb)) AS pf
+		WHERE jsonb_typeof(pf -> 'fields') = 'array'
+			AND pf -> 'fields' ?| ARRAY[${sql.join(
+				plausibilitySourceFields(measure).map((f) => sql`${f}`),
+				sql`, `,
+			)}]::text[]
+	) OR ${aboveCeiling(measure, value)})`;
+}
+
+/**
  * True when the value is above the measure's plausibility ceiling ("Under
  * review"; the value stays as recorded).
  */
