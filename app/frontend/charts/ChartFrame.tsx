@@ -65,6 +65,29 @@ export function saveBlob(blob: Blob, fileName: string) {
 	setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
+/** Where the DELTA Resilience logo is served (RegularMenuBar uses the same file). */
+export const LOGO_URL = "/assets/images/delta-resilience-logo.png";
+const LOGO_SIZE = { width: 705, height: 130 };
+let logoData: Promise<string | null> | null = null;
+
+/** The logo as a data URI, fetched once; null when it cannot be read, so a download never fails for it. */
+function logoDataUri(): Promise<string | null> {
+	logoData ??= fetch(LOGO_URL)
+		.then((r) => (r.ok ? r.blob() : null))
+		.then(
+			(b) =>
+				b &&
+				new Promise<string | null>((resolve) => {
+					const reader = new FileReader();
+					reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : null);
+					reader.onerror = () => resolve(null);
+					reader.readAsDataURL(b);
+				}),
+		)
+		.catch(() => null);
+	return logoData;
+}
+
 function svgToPng(svg: string, width: number, height: number, scale = 2): Promise<Blob> {
 	return new Promise((resolve, reject) => {
 		const image = new Image();
@@ -106,12 +129,14 @@ export function ChartFrame({ ctx, title, meta, rows, formatValue, pictures = tru
 		const styles = getComputedStyle(document.documentElement);
 		const text = styles.getPropertyValue("--delta-brand-text").trim();
 		const background = styles.getPropertyValue("--delta-brand-surface").trim();
+		const logo = await logoDataUri();
 		const svg = standaloneChartSvg(
 			chart.outerHTML,
 			{ width: box.width, height: box.height },
 			m,
 			rows,
 			text && background ? { text, background } : undefined,
+			logo ? { href: logo, ...LOGO_SIZE } : undefined,
 		);
 		if (kind === "svg") {
 			saveBlob(new Blob([svg], { type: "image/svg+xml" }), chartFileName(title, "svg", m.generatedAt));
