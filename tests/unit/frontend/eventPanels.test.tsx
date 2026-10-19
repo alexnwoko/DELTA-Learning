@@ -138,3 +138,38 @@ describe("Disaster events layout (FE-Proposal-02, Alex 2026-10-18)", () => {
 		expect(w.gap!.chartType).toBe("Bar chart");
 	});
 });
+
+describe("Disaster events panels 11, 12, 13 and 16 (Analytics ee73e61f)", () => {
+	const more = {
+		register: {
+			rows: [{ eventId: "e1", name: "Floods 2024", startDate: "2024-02-01", endDate: null, hazardLabel: "Hazard not coded", rule: "glide" as never, glide: "FL-2024-000001-AGO", nationalId: null, records: 12, divisions: 3 }],
+			eventsInScope: 40,
+		},
+		completeness: { eventsInScope: 40, rows: [{ key: "glide" as const, label: "GLIDE number", events: 10 }, { key: "specific_hazard" as const, label: "Specific hazard", events: 0 }] },
+		divisionsPerEvent: { bins: [{ label: "1", events: 20 }, { label: "2 to 4", events: 5 }], eventsWithoutDivision: 15 },
+		bySector: { rows: [{ sectorId: "s1", label: "Housing", events: 7 }], eventsWithoutSector: 33 },
+		meta: Object.fromEntries(["register", "completeness", "divisionsPerEvent", "bySector"].map((k) => [k, { method: "m", notApplied: [] }])) as never,
+	};
+	const withMore = eventDashboardPanels(ctx, D, { source: "DELTA Angola", scope: "Angola", provisional: false, more });
+
+	it("draws the four panels, so they leave Features Coming Soon and their grey slots", () => {
+		for (const id of ["events-11", "events-12", "events-13", "events-16"]) {
+			const p = withMore.find((x) => x.id === id)!;
+			expect(p.gap).toBeUndefined();
+			expect(p.render).toBeDefined();
+		}
+		expect(withMore.filter((p) => p.gap?.ghost)).toHaveLength(0);
+	});
+
+	it("shows completeness as n of the events in scope, 0 included", () => {
+		const html = renderToString(<>{withMore.find((p) => p.id === "events-12")!.render!()}</>).replace(/<!-- -->/g, "");
+		expect(html).toContain("10 of 40");
+		expect(html).toContain("0 of 40");
+	});
+
+	it("says how many events the register lists, and counts what panels 13 and 16 leave out", () => {
+		expect(withMore.find((p) => p.id === "events-11")!.exportData!.notes).toContain("Newest 1 of 40 events in scope.");
+		expect(withMore.find((p) => p.id === "events-13")!.exportData!.notes).toContain("15 events name no division and are left out.");
+		expect(withMore.find((p) => p.id === "events-16")!.exportData!.notes).toContain("33 events have no linked record reporting sector damage.");
+	});
+});
