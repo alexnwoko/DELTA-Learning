@@ -40,6 +40,26 @@
 		padding: 0 !important;
 	}
 
+	/* Layout columns print as plain blocks, one section after another.
+	   Chrome does not pass the height that page breaks add inside a nested
+	   flex item (a card pushed to the next page) up to the flex container
+	   around it, so the next section was drawn over the one before it:
+	   "About the data" over the Sendai section. The margin stands in for
+	   the flex gap. */
+	[data-print="flow"] {
+		display: block !important;
+	}
+
+	[data-print="flow"] > * + * {
+		margin-top: 1rem;
+	}
+
+	/* A section's own header prints whole and stays with what follows it. */
+	[data-print="flow"] > header:first-child {
+		break-inside: avoid;
+		break-after: avoid;
+	}
+
 	/* Do not split a figure, a table row or a report section mid-way. */
 	figure,
 	tr,

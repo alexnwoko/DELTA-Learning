@@ -572,7 +572,7 @@ export function SendaiSectionView({
 				})
 			: noRecordsText(ctx);
 	return (
-		<section aria-labelledby={SFM_HEADING_ID} className="delta-sfm flex flex-col gap-4 rounded border p-4">
+		<section aria-labelledby={SFM_HEADING_ID} data-print="flow" className="delta-sfm flex flex-col gap-4 rounded border p-4">
 			<header className="flex flex-col gap-1">
 				{/* Focusable by script only: the toggle moves focus here when turned on. */}
 				<h2 id={SFM_HEADING_ID} tabIndex={-1} className="delta-panel-title m-0 flex scroll-mt-4 items-center gap-2 text-xl outline-none">
@@ -594,7 +594,7 @@ export function SendaiSectionView({
 			{(["A", "B", "C", "D"] as const).map((g) => {
 				const [code, msg] = TARGET_HEADINGS[g];
 				return (
-					<section key={g} aria-label={t({ code, msg })} className="flex flex-col gap-2">
+					<section key={g} aria-label={t({ code, msg })} data-print="flow" className="flex flex-col gap-2">
 						<h3 className="delta-panel-title m-0 flex items-center gap-2 text-sm uppercase tracking-wide">
 							<PanelIcon name={TARGET_ICONS[g]} size={31} />
 							{t({ code, msg })}
