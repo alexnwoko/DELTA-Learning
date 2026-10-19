@@ -50,7 +50,7 @@ const RULE_SQL = sql`CASE
 END`;
 
 /** Events in scope: tenant, approval basis, HIPs, start year and place. */
-function eventsCte(filters: HazardFilters): SQL {
+export function eventsCte(filters: HazardFilters): SQL {
 	const conds: SQL[] = [
 		sql`de."country_accounts_id" = ${filters.countryAccountsId}`,
 		approvalBasis(filters.audience, basisColumns("de")),
@@ -94,6 +94,10 @@ function eventsCte(filters: HazardFilters): SQL {
 			NULLIF(de."glide", '') AS glide,
 			COALESCE(NULLIF(de."name_national", ''), NULLIF(de."name_global_or_regional", ''), NULLIF(de."glide", ''), de."id"::text) AS name,
 			NULLIF(de."start_date", '') AS start_date,
+			NULLIF(de."end_date", '') AS end_date,
+			(NULLIF(de."name_national", '') IS NOT NULL OR NULLIF(de."name_global_or_regional", '') IS NOT NULL) AS has_name,
+			NULLIF(de."national_disaster_id", '') AS national_id,
+			NULLIF(de."hip_hazard_id", '') AS hip_hazard_id,
 			${year} AS year,
 			NULLIF(de."hip_type_id", '') AS hip_type_id
 		FROM "disaster_event" de
@@ -105,7 +109,7 @@ function eventsCte(filters: HazardFilters): SQL {
  * Records linked to the events in scope, in the approval basis. Named
  * filtered_records so the shared measure and houses builders apply to it.
  */
-function linkedRecordsCte(filters: HazardFilters): SQL {
+export function linkedRecordsCte(filters: HazardFilters): SQL {
 	return sql`filtered_records AS (
 		SELECT r."id" AS record_id, r."disaster_event_id" AS event_id, ${recordFlagsColumn("r")} AS pflags
 		FROM "disaster_records" r
