@@ -33,7 +33,8 @@ const D: SectorPanels1to7 = {
 	] },
 	rankedDivisions: { rows: [{ divisionId: "d1", name: "Luanda", cell: cell(40, "reported", 40, 120) }], rest: null, multiDivisionRecords: 3 },
 	completeness: { recordsTotal: 534, rows: [{ sector: sec("s1", "Agriculture"), damage: { yes: 64, no: 120 }, losses: { yes: 0, no: 0 }, disruption: { yes: 0, no: 0 } }] },
-	meta: { headline: meta, reporting: meta, effectTypes: meta, hazardBySector: meta, byYear: meta, dwellings: meta, sendai: meta, rankedDivisions: meta, completeness: meta },
+	multiSector: { recordsWithSector: 260, bins: [{ label: "1 sector", records: 200 }, { label: "2", records: 60 }], pairs: [] },
+	meta: { headline: meta, reporting: meta, effectTypes: meta, hazardBySector: meta, byYear: meta, dwellings: meta, sendai: meta, rankedDivisions: meta, completeness: meta, multiSector: meta },
 };
 const opts = { source: "DELTA Angola", scope: "Angola", provisional: false, country: "Angola" };
 const panels = sectorDashboardPanels(ctx, D, opts);

@@ -99,6 +99,24 @@ export interface EventSeason {
 	eventsWithoutMonth: number;
 }
 
+/**
+ * Hazards within disaster events (reassessment DE-20): the HIPs clusters
+ * carried by each event's linked disaster records (clusters, not the eight
+ * types, so flood and landslide stay apart). Hazards recorded in the same event
+ * co-occur; that is not evidence that one triggered the other (no cascade is
+ * implied).
+ */
+export interface EventHazardMix {
+	/** Events by how many distinct HIPs clusters their linked records carry. */
+	bins: { label: string; events: number }[];
+	/** Events with linked records but no HIPs cluster on any of them. */
+	eventsWithoutHazard: number;
+	/** HIPs cluster pairs found in the same event, most events first. */
+	pairs: { a: string; b: string; events: number }[];
+	/** Per HIPs cluster: events where its records appear. */
+	byCluster: { hipClusterId: string; label: string; events: number }[];
+}
+
 export interface EventPanels8to16 {
 	register: EventRegister;
 	completeness: EventCompleteness;
@@ -106,13 +124,15 @@ export interface EventPanels8to16 {
 	bySector: EventsBySector;
 	exceedance: EventExceedance;
 	season: EventSeason;
+	hazardMix: EventHazardMix;
 	meta: Record<
 		| "register"
 		| "completeness"
 		| "divisionsPerEvent"
 		| "bySector"
 		| "exceedance"
-		| "season",
+		| "season"
+		| "hazardMix",
 		PanelMeta
 	>;
 }

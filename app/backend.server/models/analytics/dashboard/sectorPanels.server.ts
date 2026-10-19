@@ -133,6 +133,7 @@ async function computeGetSectorPanels1to7(
 		byDivision,
 		multiDivision,
 		divNames,
+		recordSectors,
 	] = await Promise.all([
 		rows(sql`
 				SELECT s."id"::text AS id, COALESCE(s."name" ->> 'en', s."sectorname") AS label,
@@ -215,6 +216,13 @@ async function computeGetSectorPanels1to7(
 					SELECT record_id FROM rec_l1 GROUP BY 1 HAVING COUNT(*) > 1
 				) m`),
 		divisionNames(ctx.countryAccountsId),
+		// Records with several sectors: the sorted level-2 sectors per record.
+		rows(sql`
+				WITH RECURSIVE ${fr}, ${sectorHitsCtes}
+				SELECT array_agg(h.top_id::text ORDER BY h.top_id::text) AS sectors
+				FROM hits h
+				WHERE h.dmg ${sf}
+				GROUP BY h.record_id`),
 	]);
 
 	const total = num(scope[0]?.records);
@@ -254,9 +262,50 @@ async function computeGetSectorPanels1to7(
 	const rankedDivisions = {
 		rows: divRows.slice(0, RANKED_DIVISIONS_TOP),
 		rest: restRows.length
-			? { divisions: restRows.length, cell: addCells(restRows.map((r) => r.cell)) }
+			? {
+					divisions: restRows.length,
+					cell: addCells(restRows.map((r) => r.cell)),
+				}
 			: null,
 		multiDivisionRecords: num(multiDivision[0]?.n),
+	};
+
+	// Records with several sectors: counts per record, and pairs.
+	const sectorLists = recordSectors.map((r) => (r.sectors as string[]) ?? []);
+	const pairCounts = new Map<string, number>();
+	for (const l of sectorLists)
+		for (let i = 0; i < l.length; i++)
+			for (let j = i + 1; j < l.length; j++) {
+				const k = `${l[i]}|${l[j]}`;
+				pairCounts.set(k, (pairCounts.get(k) ?? 0) + 1);
+			}
+	const ref = (id: string): SectorRef =>
+		refs.get(id) ?? {
+			sectorId: id,
+			label: `Sector ${id}`,
+			level: 2,
+			parentId: null,
+		};
+	const multiSector = {
+		recordsWithSector: sectorLists.length,
+		bins: [
+			{ label: "1 sector", test: (n: number) => n === 1 },
+			{ label: "2", test: (n: number) => n === 2 },
+			{ label: "3", test: (n: number) => n === 3 },
+			{ label: "4 or more", test: (n: number) => n >= 4 },
+		].map((b) => ({
+			label: b.label,
+			records: sectorLists.filter((l) => b.test(l.length)).length,
+		})),
+		pairs: [...pairCounts]
+			.map(([k, records]) => {
+				const [a, b] = k.split("|");
+				return { a: ref(a), b: ref(b), records };
+			})
+			.sort(
+				(x, y) => y.records - x.records || x.a.label.localeCompare(y.a.label),
+			)
+			.slice(0, 15),
 	};
 
 	// Dwellings, by HIPs type and in total.
@@ -362,6 +411,7 @@ async function computeGetSectorPanels1to7(
 		hazardBySector,
 		byYear: { series, recordsWithoutYear },
 		rankedDivisions,
+		multiSector,
 		completeness: {
 			recordsTotal: total,
 			rows: level2
@@ -503,6 +553,9 @@ async function computeGetSectorPanels1to7(
 			),
 			rankedDivisions: meta(
 				"Records reporting damage in any level-2 sector (or the chosen sectors) per level-1 division; a record with only explicit no answers is a confirmed zero; a record in several divisions counts in each, so rows do not add up",
+			),
+			multiSector: meta(
+				"Among disaster records reporting damage in at least one level-2 sector (or the chosen sectors), how many sectors each reports, and the sector pairs reported together most often; counts of records",
 			),
 			completeness: meta(
 				"Per level-2 sector, records answering yes or an explicit no for damage, losses and disruption, out of all records in scope; counts of records, not figures",
