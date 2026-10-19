@@ -107,3 +107,16 @@ describe("Hazardous events layout (FE-Proposal-02, Alex 2026-10-18)", () => {
 		expect(laid.find((p) => p.id === "hazard-events-7")!.title).toBe("Ranked by divisions");
 	});
 });
+
+describe("placeholder description (Alex, 2026-10-19)", () => {
+	it("is small print on a grey placeholder, and normal size on a plain gap", async () => {
+		const { PanelGrid } = await import("~/frontend/analytics/dashboard/PanelGrid");
+		const panels = [
+			{ id: "hazard-events-3", n: 3, title: "Ghost", gap: { text: "What it will show.", ghost: "columns" as const } },
+			{ id: "hazard-events-11", n: 11, title: "Gap", gap: { text: "Being built." } },
+		];
+		const html = renderToString(<PanelGrid ctx={ctx} panels={panels} collapseGaps={false} />);
+		expect(html).toMatch(/<p class="m-0 text-xs text-brand-text-muted">What it will show\./);
+		expect(html).toMatch(/<p class="m-0 text-sm text-brand-text-muted">Being built\./);
+	});
+});

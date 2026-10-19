@@ -29,8 +29,9 @@ function gapCountText(ctx: ViewContext, gap: PanelGap): string | null {
 
 function GapBody({ ctx, gap }: { ctx: ViewContext; gap: PanelGap }) {
 	const count = gapCountText(ctx, gap);
+	// A placeholder's one-line description is small print (Alex, 2026-10-19).
 	return (
-		<p className="m-0 text-sm text-brand-text-muted">
+		<p className={`m-0 ${gap.ghost ? "text-xs" : "text-sm"} text-brand-text-muted`}>
 			{gap.text}
 			{gap.code && <span className="whitespace-nowrap"> ({gap.code})</span>}
 			{count && <span className="block">{count}</span>}
