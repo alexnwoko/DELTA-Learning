@@ -43,9 +43,9 @@ const html = (n: number, p = panels) => text(renderToString(<>{p.find((x) => x.n
 describe("Sectors view panels 1 to 7", () => {
 	it("draw its panels; unbuilt ones would list in Features Coming Soon", () => {
 		// 8 and 9 are Ranked by divisions and Sector reporting completeness (a7e85e92).
-		expect(panels.filter((p) => !p.gap).map((p) => p.n).sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-		// Reassessment 4.1: 14 unbuilt features, all in Features Coming Soon.
-		expect(panels.filter((p) => p.gap && !p.gap.ghost)).toHaveLength(14);
+		expect(panels.filter((p) => !p.gap).map((p) => p.n).sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+		// Reassessment 4.1: 13 unbuilt features (SEC-10 is now built), all in Features Coming Soon.
+		expect(panels.filter((p) => p.gap && !p.gap.ghost)).toHaveLength(13);
 		expect(collapsesGaps("sectors")).toBe(true);
 	});
 
@@ -112,5 +112,13 @@ describe("Sectors layout (FE-Proposal-02, Alex 2026-10-18)", () => {
 		const total = D.completeness.recordsTotal.toLocaleString("en");
 		expect(html).toContain(`of ${total}`);
 		expect(c.exportData!.rows.every((r) => r.valueState === "reported" && r.value !== null)).toBe(true);
+	});
+});
+
+describe("SEC-10 Records with several sectors (Analytics ac42bc55)", () => {
+	it("draws the bins and leaves Features Coming Soon", () => {
+		const p = panels.find((x) => x.id === "sectors-10")!;
+		expect(p.gap).toBeUndefined();
+		expect(p.exportData!.notes).toContain("Of 260 records reporting sector damage.");
 	});
 });

@@ -40,7 +40,7 @@ describe("Disaster events panels 1 to 7", () => {
 		// Reassessment 4.3: DE-8 to DE-26 are unbuilt; 12, 13 and 16 hold layout slots.
 		const gaps = panels.filter((p) => p.gap);
 		expect(gaps.map((p) => p.id).sort()).toEqual([...Array.from({ length: 19 }, (_, i) => `events-${i + 8}`), "events-aa"].sort());
-		expect(gaps.filter((p) => p.gap!.ghost).map((p) => p.id).sort()).toEqual(["events-12", "events-13", "events-16"]);
+		expect(gaps.filter((p) => p.gap!.ghost).map((p) => p.id).sort()).toEqual(["events-12", "events-13", "events-16", "events-21"]);
 	});
 
 	it("print the grouping rule and the ungrouped share on every panel (RV-1)", () => {
@@ -121,7 +121,7 @@ describe("Disaster events layout (FE-Proposal-02, Alex 2026-10-18)", () => {
 	it("opens with the headline and Ranked by divisions, then the agreed rows", () => {
 		expect(laid.filter((p) => !p.more).map((p) => p.id)).toEqual([
 			"events-1", "events-divisions", "events-5", "events-4", "events-3", "events-16",
-			"events-7", "events-13", "events-2", "events-12",
+			"events-7", "events-13", "events-2", "events-12", "events-21",
 		]);
 		expect(laid.find((p) => p.id === "events-5")!.title).toBe("Hazard ranking by disaster events");
 	});
@@ -159,7 +159,8 @@ describe("Disaster events panels 11, 12, 13 and 16 (Analytics ee73e61f)", () => 
 			tooFewEvents: true,
 		},
 		season: { cells: [{ year: 2024, month: 2, events: 4 }], eventsWithoutMonth: 2 },
-		meta: Object.fromEntries(["register", "completeness", "divisionsPerEvent", "bySector", "exceedance", "season"].map((k) => [k, { method: "m", notApplied: [] }])) as never,
+		hazardMix: { bins: [{ label: "1 cluster", events: 30 }, { label: "2 or more", events: 4 }], eventsWithoutHazard: 6, pairs: [{ a: "Flood", b: "Landslide", events: 3 }], byCluster: [] },
+		meta: Object.fromEntries(["register", "completeness", "divisionsPerEvent", "bySector", "exceedance", "season", "hazardMix"].map((k) => [k, { method: "m", notApplied: [] }])) as never,
 	};
 	const withMore = eventDashboardPanels(ctx, D, { source: "DELTA Angola", scope: "Angola", provisional: false, more });
 
@@ -169,7 +170,8 @@ describe("Disaster events panels 11, 12, 13 and 16 (Analytics ee73e61f)", () => 
 			expect(p.gap).toBeUndefined();
 			expect(p.render).toBeDefined();
 		}
-		expect(withMore.filter((p) => p.gap?.ghost)).toHaveLength(0);
+		// Only Hazard by month keeps its grey slot until its payload is passed.
+		expect(withMore.filter((p) => p.gap?.ghost).map((p) => p.id)).toEqual(["events-21"]);
 	});
 
 	it("shows completeness as n of the events in scope, 0 included", () => {
@@ -189,6 +191,13 @@ describe("Disaster events panels 11, 12, 13 and 16 (Analytics ee73e61f)", () => 
 	});
 
 
+
+	it("shows hazards in one event as co-occurrence, never cause", () => {
+		const p = withMore.find((x) => x.id === "events-20")!;
+		expect(p.gap).toBeUndefined();
+		expect(p.exportData!.notes).toContain("Hazards found in the same event, not a cause and effect.");
+		expect(p.exportData!.rows.some((r) => r.label === "Flood + Landslide")).toBe(true);
+	});
 
 	it("says how many events the register lists, and counts what panels 13 and 16 leave out", () => {
 		expect(withMore.find((p) => p.id === "events-11")!.exportData!.notes).toContain("Newest 1 of 40 events in scope.");

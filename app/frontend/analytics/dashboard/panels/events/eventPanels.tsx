@@ -25,6 +25,8 @@ import { effectLabel } from "../impact/panels5to16";
 import { DASHBOARD_RAMP } from "~/frontend/charts/sectionPalette";
 import type { EventMapPayload } from "~/utils/dashboard/eventMap";
 import type { EventPanels8to16 } from "~/utils/dashboard/eventPanels8to16";
+import type { HazardMonth } from "~/utils/dashboard/hazardMonth";
+import { hazardMonthPanel } from "../hazardMonth";
 import { comingSoonPanels } from "../../comingSoon";
 import { arrangeByLayout, EVENTS_LAYOUT } from "../../layout";
 
@@ -420,7 +422,7 @@ function EventSizeView({ common, d, exp }: { common: Common; d: EventPanels1to7;
 export function eventDashboardPanels(
 	ctx: ViewContext,
 	d: EventPanels1to7,
-	opts: { source: string; scope: string; provisional: boolean; map?: EventMapPayload | null; more?: EventPanels8to16 | null },
+	opts: { source: string; scope: string; provisional: boolean; map?: EventMapPayload | null; more?: EventPanels8to16 | null; hazardMonth?: HazardMonth | null },
 ): DashboardPanel[] {
 	const t = ctx.t;
 	if (d.empty) {
@@ -460,7 +462,8 @@ export function eventDashboardPanels(
 	];
 	const drawn = spec.map(([n, title, exp, view]): DashboardPanel => ({ id: `events-${n}`, n, title, exportData: exp, render: () => view(common(title), exp) }));
 	const divisions = opts.map ? [eventDivisionsPanel(ctx, opts.map, common)] : [];
-	const built = [...drawn, ...divisions, ...(opts.more ? eventPanels8to16(ctx, opts.more, common) : [])];
+	const months = opts.hazardMonth ? [hazardMonthPanel(ctx, opts.hazardMonth, "events-21", 21, opts)] : [];
+	const built = [...drawn, ...divisions, ...(opts.more ? eventPanels8to16(ctx, opts.more, common) : []), ...months];
 	// Unbuilt features (Alex, 2026-10-19): a grey placeholder in their slot,
 	// the rest in Features Coming Soon, official warning included.
 	return arrangeByLayout([...built, ...comingSoonPanels(ctx, "events", EVENTS_LAYOUT, built)], EVENTS_LAYOUT);
@@ -649,7 +652,42 @@ export function eventPanels8to16(ctx: ViewContext, d: EventPanels8to16, common: 
 		),
 	};
 
-	return [register, completeness, perEvent, bySector, exceedancePanel(ctx, d, common)];
+	// DE-20 Events with several hazards (Analytics ac42bc55): co-occurrence
+	// only; a pair in one event is never read as one hazard causing another.
+	const mixTitle = tr(t, "dashboard.events_20", "Events with several hazards");
+	const mix = d.hazardMix;
+	const topPairs = mix.pairs.slice(0, 5);
+	const coNote = tr(t, "dashboard.cooccurrence_note", "Hazards found in the same event, not a cause and effect.");
+	const mixExp: PanelExport = {
+		rows: [
+			...mix.bins.map((b) => countRow(b.label, b.events, "events", tr(t, "dashboard.hazard_clusters", "Hazard clusters per event"))),
+			...mix.pairs.map((p) => countRow(`${p.a} + ${p.b}`, p.events, "events", tr(t, "dashboard.hazard_pairs", "Hazard pairs"))),
+		],
+		method: m.hazardMix.method,
+		notes: panelNotes(m.hazardMix, [
+			coNote,
+			mix.eventsWithoutHazard > 0 ? tr(t, "dashboard.events_without_hazard", "{n} events have no hazard on their records and are left out.", { n: n(mix.eventsWithoutHazard) }) : undefined,
+		]),
+	};
+	const hazardMix: DashboardPanel = {
+		id: "events-20",
+		n: 20,
+		title: mixTitle,
+		exportData: mixExp,
+		render: () => (
+			<Frame common={common(mixTitle)} exp={mixExp}>
+				<RowBars ctx={ctx} label={mixTitle} rows={mix.bins.map((b) => ({ key: b.label, label: b.label, bars: [{ cell: countCell(b.events) }] }))} />
+				{topPairs.length > 0 && (
+					<ul className="m-0 list-none p-0 text-sm">
+						{topPairs.map((p) => <li key={`${p.a}|${p.b}`}>{`${p.a} + ${p.b}: ${n(p.events)}`}</li>)}
+					</ul>
+				)}
+				<p className="m-0 text-xs text-brand-text-muted">{coNote}</p>
+			</Frame>
+		),
+	};
+
+	return [register, completeness, perEvent, bySector, exceedancePanel(ctx, d, common), hazardMix];
 }
 
 /**

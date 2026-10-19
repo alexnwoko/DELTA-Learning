@@ -11,6 +11,7 @@ import { getTenantOutline, neighbourOutlines, worldBoundariesUrl } from "~/backe
 import { getEventPanels1to7 } from "~/backend.server/models/analytics/dashboard/eventPanels.server";
 import { getEventPanels8to16 } from "~/backend.server/models/analytics/dashboard/eventPanels8to16.server";
 import { getImpactSources } from "~/backend.server/models/analytics/dashboard/impactSources.server";
+import { getHazardMonth } from "~/backend.server/models/analytics/dashboard/hazardMonth.server";
 import { getRecordsByApproval } from "~/backend.server/models/analytics/dashboard/recordsByApproval.server";
 import { getSendaiSection } from "~/backend.server/models/analytics/dashboard/sendaiPanels.server";
 import { getHazardEventPanels1to7 } from "~/backend.server/models/analytics/dashboard/hazardEventPanels.server";
@@ -57,6 +58,7 @@ import type { EventMapPayload } from "~/utils/dashboard/eventMap";
 import type { EventPanels1to7 } from "~/utils/dashboard/eventPanels";
 import type { EventPanels8to16 } from "~/utils/dashboard/eventPanels8to16";
 import type { ImpactSources } from "~/utils/dashboard/impactSources";
+import type { HazardMonth } from "~/utils/dashboard/hazardMonth";
 import type { HazardEventPanels1to7 } from "~/utils/dashboard/hazardEventPanels";
 import type { ImpactMapPayload } from "~/utils/dashboard/impactMap";
 import type { SectorPanels1to7 } from "~/utils/dashboard/sectorPanels";
@@ -111,11 +113,14 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request, p
 					getImpactMap(query, ctx),
 					// DI-18 Reporting sources (Analytics fe24a633).
 					getImpactSources(query, ctx),
+					// Hazard by month, records (Alex, 2026-10-19; Analytics 0071b980).
+					getHazardMonth(query, ctx, "disaster_record"),
 				])
 			: null;
 	const events = view === "disaster_event" ? await getEventPanels1to7(query, ctx) : null;
 	// Panels 11, 12, 13 and 16 (Analytics ee73e61f); none while the view is empty.
 	const eventsMore = events && !events.empty ? await getEventPanels8to16(query, ctx) : null;
+	const eventsHazardMonth = events && !events.empty ? await getHazardMonth(query, ctx, "disaster_event") : null;
 	const hazardEvents = view === "hazardous_event" ? await getHazardEventPanels1to7(query, ctx) : null;
 	const sectors = view === "sectors" ? await getSectorPanels1to7(query, ctx) : null;
 	// The Sendai section, the same on Disaster events and Disaster impact, and
@@ -169,6 +174,7 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request, p
 		view,
 		events,
 		eventsMore,
+		eventsHazardMonth,
 		hazardEvents,
 		sectors,
 		eventMap,
@@ -187,6 +193,7 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request, p
 		impactMore: impact?.[1] ?? null,
 		impactMap: impact?.[2] ?? null,
 		impactSources: impact?.[3] ?? null,
+		impactHazardMonth: impact?.[4] ?? null,
 		audience,
 	};
 });
@@ -255,9 +262,10 @@ export default function AnalysisDashboard() {
 				// A place filter makes every figure sub-national: no Sendai codes (TR-060).
 				subnational: Boolean(query.where.geo || query.where.region),
 				sources: ld.impactSources as ImpactSources | null,
+				hazardMonth: ld.impactHazardMonth as HazardMonth | null,
 			})
 		: events
-			? eventDashboardPanels(ctx, events, { ...opts, map: ld.eventMap as EventMapPayload | null, more: ld.eventsMore ? events8to16FromFirstRecord(ld.eventsMore as EventPanels8to16, firstYear) : null })
+			? eventDashboardPanels(ctx, events, { ...opts, map: ld.eventMap as EventMapPayload | null, more: ld.eventsMore ? events8to16FromFirstRecord(ld.eventsMore as EventPanels8to16, firstYear) : null, hazardMonth: ld.eventsHazardMonth as HazardMonth | null })
 			: hazardEvents
 				? hazardEventDashboardPanels(ctx, hazardEvents, { ...opts, signedIn: ld.signedIn })
 				: sectors

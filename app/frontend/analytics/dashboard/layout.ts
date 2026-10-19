@@ -23,6 +23,7 @@ export const EVENTS_LAYOUT: readonly string[] = [
 	"events-3", "events-16", // Largest disaster events by disaster impact | Disaster events by sector
 	"events-7", "events-13", // Extensive and intensive risk by disaster event | Divisions per disaster event
 	"events-2", "events-12", // Records grouped into disaster events | Reporting completeness of disaster events
+	"events-21", // Hazard by month (Alex, 2026-10-19)
 ];
 /**
  * "Official warning recorded, by hazard" has no slot: its flag defaults to

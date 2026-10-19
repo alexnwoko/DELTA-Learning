@@ -295,22 +295,20 @@ export function sectorDashboardPanels(
 		7: tr(t, "dashboard.sectors_7", "Sector inputs to Sendai Targets C and D"),
 	};
 	const common = (x: string): Common => ({ ctx, title: x, source: opts.source, scope: opts.scope, provisional: opts.provisional });
-	return arrangeByLayout(
-		[
-			...[1, 2, 3, 4, 5, 6, 7].map((k): DashboardPanel => ({
-				id: `sectors-${k}`,
-				n: k,
-				title: titles[k],
-				exportData: exports[k],
-				render: () => views[k](common(titles[k]), exports[k]),
-			})),
-			sectorDivisionsPanel(ctx, d, common),
-			sectorCompletenessPanel(ctx, d, common),
-			// Unbuilt features (Alex, 2026-10-19): Features Coming Soon.
-			...comingSoonPanels(ctx, "sectors", SECTORS_LAYOUT, []),
-		],
-		SECTORS_LAYOUT,
-	);
+	const built = [
+		...[1, 2, 3, 4, 5, 6, 7].map((k): DashboardPanel => ({
+			id: `sectors-${k}`,
+			n: k,
+			title: titles[k],
+			exportData: exports[k],
+			render: () => views[k](common(titles[k]), exports[k]),
+		})),
+		sectorDivisionsPanel(ctx, d, common),
+		sectorCompletenessPanel(ctx, d, common),
+		multiSectorPanel(ctx, d, common),
+	];
+	// Unbuilt features (Alex, 2026-10-19): Features Coming Soon; a built one drops out.
+	return arrangeByLayout([...built, ...comingSoonPanels(ctx, "sectors", SECTORS_LAYOUT, built)], SECTORS_LAYOUT);
 }
 
 /**
@@ -415,6 +413,41 @@ function sectorCompletenessPanel(ctx: ViewContext, d: SectorPanels1to7, common: 
 						</tbody>
 					</table>
 				</div>
+			</Frame>
+		),
+	};
+}
+
+/** SEC-10 Records with several sectors (Analytics ac42bc55): how often one record hits several sectors. */
+function multiSectorPanel(ctx: ViewContext, d: SectorPanels1to7, common: (x: string) => Common): DashboardPanel {
+	const t = ctx.t;
+	const n = (x: number) => x.toLocaleString(ctx.lang);
+	const title = tr(t, "dashboard.sectors_10", "Records with several sectors");
+	const ms = d.multiSector;
+	const cell = (x: number) => ({ value: x, valueState: "reported" as const, recordsReported: x, recordsZeroConfirmed: 0, recordsNotReported: 0, recordsTotal: x, recordsFlagged: 0 });
+	const of = tr(t, "dashboard.records_with_sector", "Of {n} records reporting sector damage.", { n: n(ms.recordsWithSector) });
+	const exp: PanelExport = {
+		rows: [
+			...ms.bins.map((b) => cellRow(b.label, cell(b.records))),
+			...ms.pairs.map((p) => ({ ...cellRow(`${p.a.label} + ${p.b.label}`, cell(p.records)), series: tr(t, "dashboard.sector_pairs", "Sector pairs") })),
+		],
+		method: d.meta.multiSector.method,
+		notes: panelNotes(d.meta.multiSector, [of]),
+	};
+	return {
+		id: "sectors-10",
+		n: 10,
+		title,
+		exportData: exp,
+		render: () => (
+			<Frame common={common(title)} exp={exp}>
+				<RowBars ctx={ctx} label={title} rows={ms.bins.map((b) => ({ key: b.label, label: b.label, bars: [{ cell: cell(b.records) }] }))} />
+				{ms.pairs.length > 0 && (
+					<ul className="m-0 list-none p-0 text-sm">
+						{ms.pairs.slice(0, 5).map((p) => <li key={`${p.a.sectorId}|${p.b.sectorId}`}>{`${p.a.label} + ${p.b.label}: ${n(p.records)}`}</li>)}
+					</ul>
+				)}
+				<p className="m-0 text-xs text-brand-text-muted">{of}</p>
 			</Frame>
 		),
 	};
