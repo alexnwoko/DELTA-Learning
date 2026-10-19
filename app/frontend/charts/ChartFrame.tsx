@@ -106,6 +106,12 @@ function svgToPng(svg: string, width: number, height: number, scale = 2): Promis
 	});
 }
 
+/** The label of a note such as "Source: DELTA" ("Source"); null for a plain sentence. */
+export function noteLabel(note: string): string | null {
+	const m = /^([A-Z][A-Za-z]+(?: [a-z]+)?): /.exec(note);
+	return m ? m[1] : null;
+}
+
 export function ChartFrame({ ctx, title, meta, rows, formatValue, pictures = true, quietNotes = [], children }: ChartFrameProps) {
 	const titleId = useId();
 	const icon = usePanelIcon();
@@ -192,12 +198,24 @@ export function ChartFrame({ ctx, title, meta, rows, formatValue, pictures = tru
 				</MenuTrigger>
 			</div>
 			<div ref={chartRef}>{children}</div>
-			<figcaption className="text-sm text-brand-text-muted">
-				{notes.map((note) => (
-					<span key={note} className="block">
-						{note}
-					</span>
-				))}
+			{/* Small print, so the chart keeps the reader's eye (Alex, 2026-10-19):
+			    7.5pt, with each note's label ("Source:", "Method:") bold at 8pt. */}
+			<figcaption className="text-brand-text-muted" style={{ fontSize: "7.5pt", lineHeight: 1.35 }}>
+				{notes.map((note) => {
+					const label = noteLabel(note);
+					return (
+						<span key={note} className="block">
+							{label ? (
+								<>
+									<strong className="font-bold text-brand-text" style={{ fontSize: "8pt" }}>{label}:</strong>
+									{note.slice(label.length + 1)}
+								</>
+							) : (
+								note
+							)}
+						</span>
+					);
+				})}
 			</figcaption>
 			{/* The table prints open (print.css), so the numbers reach paper too. */}
 			<Disclosure data-print="expand">
