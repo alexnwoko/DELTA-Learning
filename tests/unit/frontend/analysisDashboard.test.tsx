@@ -161,7 +161,7 @@ describe("Disaster impact panels 1 to 4 on the example payload", () => {
 		expect(html).toContain("No data"); // missing
 		expect(html).toContain("Zero, confirmed"); // injured
 		expect(html).toContain("Not shown: monetary convention pending");
-		expect(html).toContain("Basis: PROVISIONAL");
+		expect(html.replace(/<[^>]+>/g, "")).toContain("Basis: PROVISIONAL");
 	});
 
 	it("waffle legend sums to the records in scope", () => {
@@ -363,7 +363,7 @@ describe("Disaster impact panels 5 to 16 on the example payload", () => {
 
 	it("15: prints the GAR 2015 threshold and splits records in words", () => {
 		const h = html(15);
-		expect(h).toContain("Threshold: 30 deaths or 600 houses destroyed per record (GAR 2015).");
+		expect(h.replace(/<[^>]+>/g, "")).toContain("Threshold: 30 deaths or 600 houses destroyed per record (GAR 2015).");
 		expect(h).toContain("Intensive (records at or above the threshold)");
 	});
 

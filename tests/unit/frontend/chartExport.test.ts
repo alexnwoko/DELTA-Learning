@@ -174,3 +174,13 @@ describe("standaloneChartSvg logo (Alex, 2026-10-19)", () => {
 		expect(standaloneChartSvg(chart, { width: 400, height: 200 }, META, ROWS)).not.toContain("<image");
 	});
 });
+
+describe("chart notes small print (Alex, 2026-10-19)", () => {
+	it("finds the bold label of a labelled note, and none in a plain sentence", async () => {
+		const { noteLabel } = await import("~/frontend/charts/ChartFrame");
+		expect(noteLabel("Source: DELTA")).toBe("Source");
+		expect(noteLabel("Method: Sum per category over rows")).toBe("Method");
+		expect(noteLabel("0 of 534 records carry a breakdown; totals are not sums.")).toBeNull();
+		expect(noteLabel("An event in several provinces counts in each: rows do not add up.")).toBeNull();
+	});
+});

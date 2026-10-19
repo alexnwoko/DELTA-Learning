@@ -50,7 +50,7 @@ describe("HumanAffects sex breakdown in the chart frame", () => {
 	it("frames the chart with source, scope, method, basis and coverage", () => {
 		const html = render(scope);
 		expect(html).toContain("<figure");
-		const caption = html.match(/<figcaption[^>]*>(.*?)<\/figcaption>/s)![1];
+		const caption = html.match(/<figcaption[^>]*>(.*?)<\/figcaption>/s)![1].replace(/<[^>]+>/g, "");
 		expect(caption).toContain("DELTA Resilience, Angola");
 		expect(caption).toContain("Basis: Published records");
 		expect(caption).toContain("sex-only rows");
