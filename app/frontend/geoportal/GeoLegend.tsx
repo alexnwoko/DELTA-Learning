@@ -116,16 +116,16 @@ export function GeoLegend(props: {
 	return (
 		<section
 			aria-label={props.title}
-			className="geo-legend text-sm bg-brand-surface/95 border border-brand-border rounded shadow-sm p-2 max-w-[17rem]"
+			className="geo-legend text-[7.7pt] bg-brand-surface/95 border border-brand-border rounded shadow-sm p-2 max-w-[17rem]"
 		>
-			<h2 className="text-sm font-semibold leading-tight">{props.title}</h2>
+			<h2 className="text-[7.7pt] font-semibold leading-tight">{props.title}</h2>
 			{props.subtitle && (
-				<p className="text-xs text-brand-text-muted">{props.subtitle}</p>
+				<p className="text-[6.5pt] text-brand-text-muted">{props.subtitle}</p>
 			)}
 			{props.note && (
-				<p className="text-xs text-brand-text-muted">{props.note}</p>
+				<p className="text-[6.5pt] text-brand-text-muted">{props.note}</p>
 			)}
-			{method && <p className="text-xs text-brand-text-muted mb-1">{method}</p>}
+			{method && <p className="text-[6.5pt] text-brand-text-muted mb-1">{method}</p>}
 			<ul className="space-y-1">
 				{legend.symbols?.kind === "bubble" &&
 					legend.symbols?.references.map((r) => {
@@ -148,7 +148,7 @@ export function GeoLegend(props: {
 						);
 					})}
 				{legend.symbols?.kind === "bubble" && (
-					<li className="text-xs">
+					<li className="text-[6.5pt]">
 						{t({
 							code: "geoportal.legend.bubble_ring",
 							msg: "Ring: share of records that report this figure",
@@ -157,7 +157,7 @@ export function GeoLegend(props: {
 				)}
 				{legend.symbols?.kind === "bubble" &&
 					legend.symbols?.outliers.map((o) => (
-						<li key={`outlier-${o.areaId}`} className="text-xs">
+						<li key={`outlier-${o.areaId}`} className="text-[6.5pt]">
 							{t(
 								{
 									code: "geoportal.legend.bubble_outlier",
@@ -184,7 +184,7 @@ export function GeoLegend(props: {
 						</li>
 					))}
 				{legend.symbols?.kind === "bars" && (
-					<li className="text-xs">
+					<li className="text-[6.5pt]">
 						{t(
 							{
 								code: "geoportal.legend.bars_scale",
@@ -195,7 +195,7 @@ export function GeoLegend(props: {
 					</li>
 				)}
 				{legend.symbols?.maxFlagged && (
-					<li className="text-xs">
+					<li className="text-[6.5pt]">
 						{t({
 							code: "geoportal.legend.symbol_max_flagged",
 							msg: "Largest symbol includes figures flagged for review",
@@ -288,7 +288,7 @@ export function GeoLegend(props: {
 				)}
 			</ul>
 			{props.provenance && (
-				<p className="text-xs text-brand-text-muted border-t border-brand-border mt-2 pt-1">
+				<p className="text-[6.5pt] text-brand-text-muted border-t border-brand-border mt-2 pt-1">
 					{boundaryText(props.provenance.boundaryVersion, t)}
 					{props.provenance.refreshedAt && (
 						<>
