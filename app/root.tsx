@@ -348,6 +348,16 @@ export default function Screen() {
 
 						{/* Main Content */}
 						<main id="main" tabIndex={-1} className="flex-1 w-full">
+							{/* On paper the top bar is hidden, so the logo heads every printed page (Alex, 2026-10-19). */}
+							<div className="hidden print:block mx-auto max-w-8xl px-4 pb-2 md:px-6 lg:px-8">
+								<img
+									src="/assets/images/delta-resilience-logo.png"
+									alt="DELTA Resilience: Disaster Event Loss and Damage Tracking and Analysis for Resilience"
+									width={705}
+									height={130}
+									className="h-10 w-auto"
+								/>
+							</div>
 							{/* Data Entry pages share one section heading (Alex, 2026-10-19). */}
 							{isDataEntryPath(location.pathname) && !hideMainNavigation ? (
 								<div className="mx-auto max-w-8xl px-4 pt-6 md:px-6 lg:px-8">

@@ -162,3 +162,15 @@ describe("dashboardCsv (D1, ruling D6)", () => {
 		expect(combined).toEqual(single);
 	});
 });
+
+describe("standaloneChartSvg logo (Alex, 2026-10-19)", () => {
+	const chart = '<svg width="400" height="200"><rect width="10" height="10"/></svg>';
+	it("draws the logo top right, 24 px tall, when given one", () => {
+		const svg = standaloneChartSvg(chart, { width: 400, height: 200 }, META, ROWS, undefined, { href: "data:image/png;base64,AAAA", width: 705, height: 130 });
+		expect(svg).toMatch(/<image href="data:image\/png;base64,AAAA" x="[\d.]+" y="16" width="[\d.]+" height="24"/);
+		expect(svg).toContain("<title>DELTA Resilience</title>");
+	});
+	it("leaves it out when there is none", () => {
+		expect(standaloneChartSvg(chart, { width: 400, height: 200 }, META, ROWS)).not.toContain("<image");
+	});
+});
