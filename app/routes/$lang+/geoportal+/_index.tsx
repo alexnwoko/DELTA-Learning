@@ -92,6 +92,7 @@ import {
 } from "~/backend.server/models/geo/tenantExtent";
 import { divisionAreasKm2 } from "~/backend.server/models/analytics/divisionAreas";
 import { selectableBasemaps, type BasemapLayerId } from "~/utils/basemap";
+import { PageBrand } from "~/frontend/PageBrand";
 
 // OpenLayers loads with the map, not with the page (NFR-130).
 const GeoMap = lazy(() =>
@@ -677,7 +678,8 @@ export default function GeoportalPage() {
 		<MainContainer title={title} showHeader={false}>
 			<div className="geo-page py-2">
 				<div className="flex flex-wrap items-center justify-between gap-2">
-					<h1 className="text-xl font-semibold">{title}</h1>
+					{/* The section heading, shared with Data Entry and Analysis (Alex, 2026-10-19). */}
+					<PageBrand ctx={ctx} section="geoportal" />
 					<div className="flex items-center gap-2" data-print="hide">
 						<span role="status" className="text-xs text-brand-text-muted">
 							{copied}
