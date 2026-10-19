@@ -11,7 +11,7 @@ import { cachedDashboard } from "~/backend.server/models/analytics/dashboard/das
 import { sql, type SQL } from "drizzle-orm";
 import { displacedHeadlineSql } from "~/backend.server/models/analytics/displacedHeadline";
 import {
-	aboveCeiling,
+	underReviewFor,
 	humanEffectsFilteredRecords,
 } from "~/backend.server/models/analytics/hazard-analysis";
 import {
@@ -288,7 +288,7 @@ async function computeHazardMonth(
 					${monthOf(sql`rec."start_date"`)} AS month0,
 					${yearOf(sql`rec."start_date"`)} AS year,
 					${rm.value} AS v, ${rm.zero} AS z,
-					(fr.pflags IS NOT NULL OR ${aboveCeiling(measure, rm.value)}) AS fl
+					${underReviewFor(measure, sql`fr.pflags`, rm.value)} AS fl
 				FROM filtered_records fr
 				JOIN "disaster_records" rec ON rec."id" = fr.record_id
 				LEFT JOIN "human_category_presence" hcp ON hcp."record_id" = fr.record_id
@@ -348,7 +348,7 @@ async function computeHazardMonth(
 			pe AS (
 				SELECT fr.event_id, SUM(${rm.value}) AS s, COUNT(${rm.value}) AS rep,
 					COUNT(*) FILTER (WHERE ${rm.value} IS NULL AND ${rm.zero}) AS z,
-					COUNT(*) FILTER (WHERE fr.pflags IS NOT NULL OR ${aboveCeiling(measure, rm.value)}) AS fl
+					COUNT(*) FILTER (WHERE ${underReviewFor(measure, sql`fr.pflags`, rm.value)}) AS fl
 				FROM filtered_records fr
 				LEFT JOIN "human_category_presence" hcp ON hcp."record_id" = fr.record_id
 				GROUP BY 1
