@@ -89,6 +89,7 @@
   --delta-data-dashboard-slate: #4a5a75; /** Grey-blue text for Features Coming Soon (Alex, 2026-10-19): 6.42:1 on the dashboard tint, 6.98:1 on white (WCAG 1.4.3). */
   --delta-data-dashboard-canvas: #f0f6ff; /** Analysis page background, so the page is not plain white (FE-Proposal-03, Alex 2026-10-19). */
   --delta-data-dashboard-surface: #ffffff; /** Layers on the canvas: view bar, rail, filter row, cards (FE-Proposal-03). */
+  --delta-data-dashboard-hover: #0095fd; /** Hover border of buttons and filter controls, the same blue in every brand theme (Alex, 2026-10-20). 3.13:1 on white (WCAG 1.4.11); on the hover tint it is 2.88:1, and the fill change also marks hover. */
   --delta-data-sfm-tint: #f7fbff; /** Section and panel background tint. */
   --delta-data-sfm-border: #d6eaf7; /** Section and panel borders. */
   --delta-data-sfm-accent: #a8cfe3; /** Decorative accents only (1.65:1 on white). */
