@@ -125,6 +125,21 @@ async function computeGetEventPanels8to16(
 		${measurePartsJoins}
 		LEFT JOIN "disaster_records" rec ON rec."id" = fr.record_id
 		GROUP BY fr.event_id`);
+	// DE-20: HIPs clusters of each event's linked records.
+	const eventClusters = await rows(sql`
+		WITH RECURSIVE ${ev}, ${lr}
+		SELECT fr.event_id::text AS event_id,
+			array_agg(DISTINCT NULLIF(rec."hip_cluster_id", '')) FILTER (WHERE NULLIF(rec."hip_cluster_id", '') IS NOT NULL) AS clusters
+		FROM filtered_records fr
+		JOIN "disaster_records" rec ON rec."id" = fr.record_id
+		GROUP BY 1`);
+	const clusterNames = new Map(
+		(
+			await rows(
+				sql`SELECT "id"::text AS id, "name_en" AS name FROM "hip_cluster"`,
+			)
+		).map((r) => [r.id as string, r.name as string]),
+	);
 	const anySector = await rows(sql`
 		WITH RECURSIVE ${ev}, ${lr}, ${sectorHitsCtes}
 		SELECT COUNT(DISTINCT fr.event_id) AS n
@@ -211,6 +226,48 @@ async function computeGetEventPanels8to16(
 		};
 	});
 
+	// DE-20: hazard mix per event; co-occurrence only, never a cascade.
+	const clusterLabel = (id: string) =>
+		clusterNames.get(id) || `HIPs cluster ${id}`;
+	const lists = eventClusters.map((r) =>
+		((r.clusters as string[] | null) ?? []).slice().sort(),
+	);
+	const pairCounts = new Map<string, number>();
+	const clusterEvents = new Map<string, number>();
+	for (const l of lists) {
+		for (const c of l) clusterEvents.set(c, (clusterEvents.get(c) ?? 0) + 1);
+		for (let i = 0; i < l.length; i++)
+			for (let j = i + 1; j < l.length; j++) {
+				const k = `${l[i]}|${l[j]}`;
+				pairCounts.set(k, (pairCounts.get(k) ?? 0) + 1);
+			}
+	}
+	const hazardMix = {
+		bins: [
+			{ label: "1 hazard cluster", test: (n: number) => n === 1 },
+			{ label: "2", test: (n: number) => n === 2 },
+			{ label: "3 or more", test: (n: number) => n >= 3 },
+		].map((b) => ({
+			label: b.label,
+			events: lists.filter((l) => b.test(l.length)).length,
+		})),
+		eventsWithoutHazard: lists.filter((l) => l.length === 0).length,
+		pairs: [...pairCounts]
+			.map(([k, events]) => {
+				const [a, b] = k.split("|");
+				return { a: clusterLabel(a), b: clusterLabel(b), events };
+			})
+			.sort((x, y) => y.events - x.events || x.a.localeCompare(y.a))
+			.slice(0, 15),
+		byCluster: [...clusterEvents]
+			.map(([id, events]) => ({
+				hipClusterId: id,
+				label: clusterLabel(id),
+				events,
+			}))
+			.sort((x, y) => y.events - x.events || x.label.localeCompare(y.label)),
+	};
+
 	// DE-21: events per start month and year.
 	const seasonCounts = new Map<string, number>();
 	let eventsWithoutMonth = 0;
@@ -268,6 +325,7 @@ async function computeGetEventPanels8to16(
 			tooFewEvents: valued.length < EXCEEDANCE_MIN_EVENTS,
 		},
 		season: { cells: seasonCells, eventsWithoutMonth },
+		hazardMix,
 		meta: {
 			register: meta(
 				`Disaster events in scope, newest first (top ${EVENT_REGISTER_TOP}); records and divisions come from linked disaster records in the approval basis`,
@@ -280,6 +338,9 @@ async function computeGetEventPanels8to16(
 			),
 			exceedance: meta(
 				`Empirical exceedance from recorded disaster events: per event, the sum of ${measure} over its linked disaster records; rank = events at or above the value; per year = rank / years of record; return period = years / rank. Not a hazard or risk model; with fewer than ${EXCEEDANCE_MIN_EVENTS} events or a short record the tail is unstable. Events with no reported value are left out and counted`,
+			),
+			hazardMix: meta(
+				"HIPs clusters carried by each disaster event's linked disaster records. Hazards in the same event co-occur; this is not evidence that one triggered another. Events with no linked record are not counted",
 			),
 			season: meta(
 				"Disaster events by start month and year, from the event's own start date; events with a start year only are counted, not drawn",

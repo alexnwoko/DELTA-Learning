@@ -11,6 +11,7 @@ import { getEventPanels1to7 } from "~/backend.server/models/analytics/dashboard/
 import { getEventPanels8to16 } from "~/backend.server/models/analytics/dashboard/eventPanels8to16.server";
 import { getImpactSources } from "~/backend.server/models/analytics/dashboard/impactSources.server";
 import { DEFAULT_QUERY } from "~/utils/deltaQuery";
+import { clearDashboardCache } from "~/backend.server/models/analytics/dashboard/dashboardCache.server";
 
 // D1 Disaster events panels 1 to 7 against seeded events:
 // E1 GLIDE event, 2020, HIPs type 1042: records a (40 deaths, North) and
@@ -247,5 +248,20 @@ describe("getEventPanels1to7", () => {
 		expect(p.recordsInScope).toBe(4);
 		expect(p.distinctSources).toBe(1);
 		expect(p.rest).toBeNull();
+	});
+
+	it("DE-20: HIPs clusters within events, co-occurrence only", async () => {
+		await dr.execute(sql`UPDATE disaster_records SET hip_cluster_id = '1046' WHERE id = ${rec.a}`);
+		await dr.execute(sql`UPDATE disaster_records SET hip_cluster_id = '1053' WHERE id = ${rec.d}`);
+		clearDashboardCache(ids.countryAccountId);
+		const p = await getEventPanels8to16({ ...DEFAULT_QUERY, measure: "injured" }, ctx());
+		const bins = Object.fromEntries(p.hazardMix.bins.map((b) => [b.label, b.events]));
+		expect(bins).toEqual({ "1 hazard cluster": 0, "2": 1, "3 or more": 0 });
+		// E2 has a linked record with no cluster; E3 has no linked record and is not counted.
+		expect(p.hazardMix.eventsWithoutHazard).toBe(1);
+		expect(p.hazardMix.pairs).toEqual([
+			{ a: "Insect-related Diseases", b: "Infectious Diseases", events: 1 },
+		]);
+		expect(p.meta.hazardMix.method).toContain("not evidence that one triggered another");
 	});
 });
