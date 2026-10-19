@@ -172,8 +172,8 @@ function SelectField(props: {
 			}
 			className="flex flex-col gap-1 min-w-0"
 		>
-			<Label className="text-xs font-semibold">{props.label}</Label>
-			<Button className="border border-brand-border-control rounded px-2 py-1 text-start min-w-36 max-w-64 truncate bg-brand-surface data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring">
+			<Label className="text-[0.8125rem] font-bold text-data-dashboard-ink">{props.label}</Label>
+			<Button className="border border-brand-border-control rounded-[8px] px-2 py-1 min-h-[40px] text-start min-w-36 max-w-64 truncate bg-brand-surface data-[hovered]:border-brand-interactive data-[hovered]:bg-data-dashboard-tint data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring">
 				<SelectValue />
 			</Button>
 			<Popover className="bg-brand-surface border border-brand-border-control rounded shadow">
@@ -214,10 +214,10 @@ function DateField(props: {
 			}}
 			className="flex flex-col gap-1"
 		>
-			<Label className="text-xs font-semibold">{props.label}</Label>
+			<Label className="text-[0.8125rem] font-bold text-data-dashboard-ink">{props.label}</Label>
 			<Input
 				placeholder="YYYY"
-				className="border border-brand-border-control rounded px-2 py-1 w-28 data-[invalid]:border-brand-danger"
+				className="border border-brand-border-control rounded-[8px] px-2 py-1 min-h-[40px] w-28 data-[hovered]:border-brand-interactive data-[hovered]:bg-data-dashboard-tint data-[invalid]:border-brand-danger"
 			/>
 			<FieldError className="text-xs text-brand-danger">
 				{props.t({
@@ -252,10 +252,10 @@ function PlaceField(props: {
 			}
 			className="flex flex-col gap-1 min-w-0"
 		>
-			<Label className="text-xs font-semibold">
+			<Label className="text-[0.8125rem] font-bold text-data-dashboard-ink">
 				{t({ code: "geoportal.place.area", msg: "Area" })}
 			</Label>
-			<Button className="border border-brand-border-control rounded px-2 py-1 text-start min-w-36 max-w-64 truncate bg-brand-surface data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring">
+			<Button className="border border-brand-border-control rounded-[8px] px-2 py-1 min-h-[40px] text-start min-w-36 max-w-64 truncate bg-brand-surface data-[hovered]:border-brand-interactive data-[hovered]:bg-data-dashboard-tint data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring">
 				<SelectValue />
 			</Button>
 			<Popover className="bg-brand-surface border border-brand-border-control rounded shadow">
@@ -332,7 +332,7 @@ function ChipGroup(props: {
 	});
 	return (
 		<div className="flex flex-col gap-1">
-			<span className="text-xs font-semibold" id={`geo-chips-${chips.kind}`}>
+			<span className="text-[0.8125rem] font-bold text-data-dashboard-ink" id={`geo-chips-${chips.kind}`}>
 				{label}
 			</span>
 			<ToggleButtonGroup
@@ -472,7 +472,7 @@ export function GeoFilterBar(props: GeoFilterBarProps) {
 		});
 		return (
 			<div className="geo-filter-bar geo-filter-row flex flex-col gap-2 py-2">
-				<div className="flex flex-wrap items-end gap-x-3 gap-y-2 border border-brand-border rounded p-2 bg-brand-surface">
+				<div className="flex flex-wrap items-end delta-layer p-[12px] gap-x-3 gap-y-2.5">
 					{props.dimensionControl !== "none" && (
 						<SelectField
 							label={t({ code: "geoportal.group.dimension", msg: "Dimension" })}
@@ -746,7 +746,7 @@ export function GeoFilterBar(props: GeoFilterBarProps) {
 			<Group label={t({ code: "geoportal.group.what", msg: "What" })}>
 				{props.dimensionControl !== "none" && (
 					<div className="flex flex-col gap-1">
-						<span className="text-xs font-semibold" id="geo-dim-label">
+						<span className="text-[0.8125rem] font-bold text-data-dashboard-ink" id="geo-dim-label">
 							{t({ code: "geoportal.group.dimension", msg: "Dimension" })}
 						</span>
 						<ToggleButtonGroup
