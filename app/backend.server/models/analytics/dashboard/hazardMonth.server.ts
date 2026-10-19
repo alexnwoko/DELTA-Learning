@@ -76,6 +76,10 @@ export function placeholderDays(
 	);
 }
 
+/** The people measure when the query names none (Alex, 2026-10-19). */
+export const HAZARD_MONTH_DEFAULT_MEASURE: ImpactHeadlineMeasure =
+	"affected_direct";
+
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
 
 /** Per-record value, reported and confirmed-zero tests for a measure. */
@@ -179,7 +183,11 @@ async function computeHazardMonth(
 	unit: HazardMonth["unit"],
 ): Promise<HazardMonth> {
 	const { filters, notApplied } = impactFiltersFromQuery(query, ctx);
-	const measure = chosenMeasure(query);
+	// Alex, 2026-10-19: people directly affected by default here (deaths when
+	// the query asks for them), so the switch shows the breadth of impact.
+	const measure: ImpactHeadlineMeasure = query.measure
+		? chosenMeasure(query)
+		: HAZARD_MONTH_DEFAULT_MEASURE;
 	const rm = recordMeasure(measure);
 	const clusters = await clusterInfo();
 	let occ: Occ[];
