@@ -215,10 +215,16 @@ describe("dashboard shell", () => {
 	it("has one h1, the scope line, four buttons in Alex's order and Print", () => {
 		const html = renderShell("disaster_impact");
 		expect(html.match(/<h1/g)!.length).toBe(1);
-		expect(html).toContain("Angola · 2015 to 2024 · Basis: published");
-		const tabs = [...html.matchAll(/role="tab"[^>]*>([^<]+)</g)].map((m) => m[1]);
+		// The scope line as chips (FE-Proposal-03), the country first and extra bold.
+		expect(html).toMatch(/<li class="[^"]*font-extrabold[^"]*">Angola<\/li>/);
+		expect(html).toContain(">2015 to 2024</li>");
+		expect(html).toContain(">Basis: published</li>");
+		// Each view button starts with its icon (FE-Proposal-03), then its label.
+		const tabs = [...html.matchAll(/role="tab"[^>]*>.*?<\/span><\/span>([^<]+)</g)].map((m) => m[1]);
+		expect(html.match(/role="tab"/g)).toHaveLength(4);
+		for (const icon of ["multi-cluster-sector", "observation-tower", "alert", "affected-population"]) expect(html).toContain(`data-icon="${icon}"`);
 		expect(tabs).toEqual(["Sectors", "Hazardous events", "Disaster events", "Disaster impact"]);
-		expect(html).toMatch(/aria-selected="true"[^>]*role="tab"[^>]*>Disaster impact/);
+		expect(html).toMatch(/aria-selected="true"[^>]*role="tab"[^>]*>.*?<\/span><\/span>Disaster impact/);
 		expect(html).toContain("Print or save as PDF");
 	});
 

@@ -21,7 +21,7 @@ export function BasisSwitch({
 	onChange: (basis: QueryBasis) => void;
 }) {
 	const t = ctx.t;
-	const option = `cursor-pointer px-3 py-1 text-sm text-brand-interactive data-[hovered]:bg-brand-surface-subtle data-[selected]:bg-brand-interactive data-[selected]:text-brand-text-on-interactive ${focus}`;
+	const option = `inline-flex min-h-[40px] cursor-pointer items-center px-3.5 text-sm font-bold text-brand-interactive transition-colors duration-150 motion-reduce:transition-none data-[hovered]:bg-data-dashboard-tint data-[pressed]:bg-data-dashboard-border data-[selected]:bg-brand-interactive data-[selected]:text-brand-text-on-interactive ${focus}`;
 	return (
 		<RadioGroup
 			value={basis}
@@ -31,7 +31,7 @@ export function BasisSwitch({
 			className="flex items-center gap-2"
 		>
 			<Label className="text-sm text-brand-text-muted">{t({ code: "dashboard.basis", msg: "Basis" })}</Label>
-			<div className="flex overflow-hidden rounded border border-brand-border-control">
+			<div className="flex overflow-hidden rounded-lg border border-brand-border-control bg-data-dashboard-surface">
 				<Radio value="published" className={option}>
 					{t({ code: "dashboard.basis_published_option", msg: "Published" })}
 				</Radio>

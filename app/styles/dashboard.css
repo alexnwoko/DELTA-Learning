@@ -9,6 +9,22 @@
 	--panel-tint: var(--delta-data-dashboard-tint);
 	--panel-border: var(--delta-data-dashboard-border);
 	--panel-accent: var(--delta-data-dashboard-accent);
+	/* Soft layering (FE-Proposal-03): CSS only, the token build has no shadow type. */
+	--panel-shadow: 0 1px 2px rgb(45 51 85 / 6%), 0 2px 8px rgb(45 51 85 / 6%);
+}
+
+/* The Analysis page sits on a tinted canvas; Data Entry and Geoportal stay
+   white until Alex rules otherwise (FE-Proposal-03, D3). */
+main:has(.delta-dashboard-canvas) {
+	background-color: var(--delta-data-dashboard-canvas);
+}
+
+/* A white layer on the canvas: view bar, rail, filter row, cards, map. */
+.delta-layer {
+	background-color: var(--delta-data-dashboard-surface);
+	border: 1px solid var(--panel-border);
+	border-radius: 0.857rem;
+	box-shadow: var(--panel-shadow);
 }
 .delta-sfm {
 	--panel-ink: var(--delta-data-sfm-ink);
@@ -17,8 +33,10 @@
 	--panel-tint: var(--delta-data-sfm-tint);
 	--panel-border: var(--delta-data-sfm-border);
 	--panel-accent: var(--delta-data-sfm-accent);
-	background-color: var(--panel-tint);
+	/* A white layer on the canvas, its tiles keep the Sendai tint (FE-Proposal-03). */
+	background-color: var(--delta-data-dashboard-surface);
 	border-color: var(--panel-border);
+	box-shadow: var(--panel-shadow);
 }
 
 /* Chart titles and subtitles: bold, in the palette's blue ink. */

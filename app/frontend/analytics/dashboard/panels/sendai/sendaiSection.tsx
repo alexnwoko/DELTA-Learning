@@ -587,7 +587,7 @@ export function SendaiSectionView({
 				{!d.nationalOnly && <p className="m-0 text-sm font-semibold">{subnationalNote(t)}</p>}
 			</header>
 			{by("S").map((p) => (
-				<div key={p.id} id={p.id} className={card}>
+				<div key={p.id} id={p.id} data-print="flow" className={card}>
 					<PanelIconContext.Provider value={panelIcon(p.id)}>{p.render?.()}</PanelIconContext.Provider>
 				</div>
 			))}
@@ -600,9 +600,9 @@ export function SendaiSectionView({
 							{t({ code, msg })}
 						</h3>
 						{/* Each target is its own grid, so Target B never starts in Target A's row. */}
-						<div className="grid grid-cols-1 gap-4 lg:grid-cols-2 print:grid-cols-1">
+						<div data-print="flow" className="grid grid-cols-1 gap-4 lg:grid-cols-2 print:grid-cols-1">
 							{by(g).map((p) => (
-								<div key={p.id} id={p.id} className={card}>
+								<div key={p.id} id={p.id} data-print="flow" className={card}>
 									<PanelIconContext.Provider value={panelIcon(p.id)}>{p.render?.()}</PanelIconContext.Provider>
 								</div>
 							))}

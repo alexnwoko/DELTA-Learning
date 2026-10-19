@@ -65,6 +65,8 @@
 	--color-data-dashboard-icon: var(--delta-data-dashboard-icon);
 	--color-data-dashboard-ink: var(--delta-data-dashboard-ink);
 	--color-data-dashboard-slate: var(--delta-data-dashboard-slate);
+	--color-data-dashboard-canvas: var(--delta-data-dashboard-canvas);
+	--color-data-dashboard-surface: var(--delta-data-dashboard-surface);
 	--color-data-sfm-tint: var(--delta-data-sfm-tint);
 	--color-data-sfm-border: var(--delta-data-sfm-border);
 	--color-data-sfm-accent: var(--delta-data-sfm-accent);
