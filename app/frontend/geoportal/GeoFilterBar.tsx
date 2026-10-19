@@ -173,7 +173,7 @@ function SelectField(props: {
 			className="flex flex-col gap-1 min-w-0"
 		>
 			<Label className="text-[0.8125rem] font-bold text-data-dashboard-ink">{props.label}</Label>
-			<Button className="border border-brand-border-control rounded-[8px] px-2 py-1 min-h-[40px] text-start min-w-36 max-w-64 truncate bg-brand-surface data-[hovered]:border-brand-interactive data-[hovered]:bg-data-dashboard-tint data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring">
+			<Button className="border border-brand-border-control rounded-[8px] px-2 py-1 min-h-[40px] text-start min-w-36 max-w-64 truncate bg-brand-surface data-[hovered]:border-data-dashboard-hover data-[hovered]:bg-data-dashboard-tint data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring">
 				<SelectValue />
 			</Button>
 			<Popover className="bg-brand-surface border border-brand-border-control rounded shadow">
@@ -217,7 +217,7 @@ function DateField(props: {
 			<Label className="text-[0.8125rem] font-bold text-data-dashboard-ink">{props.label}</Label>
 			<Input
 				placeholder="YYYY"
-				className="border border-brand-border-control rounded-[8px] px-2 py-1 min-h-[40px] w-28 data-[hovered]:border-brand-interactive data-[hovered]:bg-data-dashboard-tint data-[invalid]:border-brand-danger"
+				className="border border-brand-border-control rounded-[8px] px-2 py-1 min-h-[40px] w-28 data-[hovered]:border-data-dashboard-hover data-[hovered]:bg-data-dashboard-tint data-[invalid]:border-brand-danger"
 			/>
 			<FieldError className="text-xs text-brand-danger">
 				{props.t({
@@ -255,7 +255,7 @@ function PlaceField(props: {
 			<Label className="text-[0.8125rem] font-bold text-data-dashboard-ink">
 				{t({ code: "geoportal.place.area", msg: "Area" })}
 			</Label>
-			<Button className="border border-brand-border-control rounded-[8px] px-2 py-1 min-h-[40px] text-start min-w-36 max-w-64 truncate bg-brand-surface data-[hovered]:border-brand-interactive data-[hovered]:bg-data-dashboard-tint data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring">
+			<Button className="border border-brand-border-control rounded-[8px] px-2 py-1 min-h-[40px] text-start min-w-36 max-w-64 truncate bg-brand-surface data-[hovered]:border-data-dashboard-hover data-[hovered]:bg-data-dashboard-tint data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring">
 				<SelectValue />
 			</Button>
 			<Popover className="bg-brand-surface border border-brand-border-control rounded shadow">
