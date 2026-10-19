@@ -39,6 +39,7 @@ import { isAdminRoute } from "./utils/url.backend";
 import { authLoaderGetOptionalUserForFrontend } from "./utils/auth";
 import { Toast } from "primereact/toast";
 import RegularMenuBar from "./components/RegularMenuBar";
+import { isDataEntryPath, PageBrand } from "./frontend/PageBrand";
 import SuperAdminMenuBar from "./components/SuperAdminMenuBar";
 import InactivityWarning from "./components/InactivityWarning";
 import {
@@ -347,6 +348,12 @@ export default function Screen() {
 
 						{/* Main Content */}
 						<main id="main" tabIndex={-1} className="flex-1 w-full">
+							{/* Data Entry pages share one section heading (Alex, 2026-10-19). */}
+							{isDataEntryPath(location.pathname) && !hideMainNavigation ? (
+								<div className="mx-auto max-w-8xl px-4 pt-6 md:px-6 lg:px-8">
+									<PageBrand ctx={ctx} section="data" />
+								</div>
+							) : null}
 							<div className="w-full py-8">
 								<Outlet />
 							</div>
