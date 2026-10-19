@@ -97,7 +97,11 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request, p
 	const countryAccountsId = await getCountryAccountsIdFromSession(request);
 	if (!countryAccountsId) throw new Response("No instance selected", { status: 400 });
 	const settings = await getCountrySettingsFromSession(request);
-	const country = (settings?.countryName as string | undefined) ?? "";
+	// The country's name: the instance settings, else the country account's own
+	// name (the cached tenant outline), so "About the data" and the Sendai
+	// notice never print a blank (Geoportal's PDF check, 2026-10-19).
+	const country =
+		(settings?.countryName as string | undefined) || (await getTenantOutline(countryAccountsId)).name || "";
 	const ctx = {
 		countryAccountsId,
 		audience,

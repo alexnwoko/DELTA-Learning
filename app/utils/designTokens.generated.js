@@ -147,7 +147,8 @@ export const dataTokens = {
 		"ink": "#2d3355",
 		"slate": "#4a5a75",
 		"canvas": "#f0f6ff",
-		"surface": "#ffffff"
+		"surface": "#ffffff",
+		"hover": "#0095fd"
 	},
 	"sfm": {
 		"tint": "#f7fbff",
