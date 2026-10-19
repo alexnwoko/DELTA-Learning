@@ -144,7 +144,8 @@ export const dataTokens = {
 		"border": "#cfe3ff",
 		"accent": "#9dc3ff",
 		"icon": "#6a8bdc",
-		"ink": "#2d3355"
+		"ink": "#2d3355",
+		"slate": "#4a5a75"
 	},
 	"sfm": {
 		"tint": "#f7fbff",

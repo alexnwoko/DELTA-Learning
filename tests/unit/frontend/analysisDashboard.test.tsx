@@ -114,23 +114,32 @@ describe("panel grid (decision 1)", () => {
 		expect(html).toContain("chart 1");
 	});
 
-	it("keeps each gap in its own frame on Disaster impact", () => {
+	it("lists unbuilt panels in Features Coming Soon on Disaster impact too (Alex, 2026-10-19)", () => {
 		const html = text(renderToString(<PanelGrid ctx={ctx} panels={panels} collapseGaps={collapsesGaps("disaster_impact")} />));
-		// Six gaps among panels 1 to 12, two more in the closed "Show more" part.
-		expect(html.match(/data-panel-state="gap"/g)?.length).toBe(8);
-		expect(html).not.toContain("Not yet available");
+		expect(html).toContain("Features Coming Soon");
+		expect(html).not.toContain('data-panel-state="gap"');
+	});
+
+	it("keeps a grey placeholder in its slot, and names the chart type in the strip", () => {
+		const mixed = [
+			{ id: "x-1", n: 1, title: "Ghosted", gap: { text: "Shows a trend.", ghost: "line" as const } },
+			{ id: "x-2", n: 2, title: "Listed", gap: { text: "Shows places.", ghost: "map" as const } },
+		].map((p, i) => (i === 1 ? { ...p, gap: { ...p.gap, ghost: undefined, chartType: "Map" } } : p));
+		const html = text(renderToString(<PanelGrid ctx={ctx} panels={mixed} collapseGaps />));
+		expect(html).toContain('data-panel-state="ghost"');
+		expect(html).toMatch(/Listed<\/span><span[^>]*>Map<\/span>/);
 	});
 
 	it("folds gaps into one strip on the event dimensions, with code and count, never 0", () => {
 		expect(collapsesGaps("hazardous_event")).toBe(true);
 		expect(collapsesGaps("disaster_event")).toBe(true);
-		expect(collapsesGaps("sectors")).toBe(false);
+		expect(collapsesGaps("sectors")).toBe(true);
 		const html = text(renderToString(<PanelGrid ctx={ctx} panels={panels} collapseGaps />));
-		expect(html).toContain("Not yet available");
+		expect(html).toContain("Features Coming Soon");
 		expect(html).toContain("Panel 4</span>");
 		expect(html).toContain("No events recorded (G-01) · 42 draft records");
 		// Panel 2's count is 0: it is left out, not shown as a figure.
-		expect(html).toMatch(/Panel 2<\/span><span[^>]*>: No events recorded \(G-01\)<\/span>/);
+		expect(html).toMatch(/Panel 2<\/span><span[^>]*>No events recorded \(G-01\)<\/span>/);
 		expect(html).not.toContain('data-panel-state="gap"');
 	});
 });

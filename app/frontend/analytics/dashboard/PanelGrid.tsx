@@ -8,7 +8,7 @@ import { Button, Disclosure, DisclosurePanel } from "react-aria-components";
 import { panelIcon } from "~/frontend/charts/dashboardIcons";
 import { PanelIcon, PanelIconContext } from "~/frontend/charts/PanelIcon";
 import type { ViewContext } from "~/frontend/context";
-import { GhostChart } from "./GhostChart";
+import { GhostChart, type GhostShape } from "./GhostChart";
 import { panelPosition, panelUnderMore, type DashboardPanel, type PanelGap } from "./types";
 
 const focusRing =
@@ -72,33 +72,61 @@ function PanelCard({ ctx, panel }: { ctx: ViewContext; panel: DashboardPanel }) 
 	);
 }
 
-/** One strip listing the panels that have nothing to show yet. */
+/** The chart or map type a feature will take, for Features Coming Soon. */
+export function chartTypeLabel(ctx: ViewContext, gap: PanelGap): string | null {
+	if (gap.chartType) return gap.chartType;
+	if (!gap.ghost) return null;
+	const t = (code: string, msg: string) => ctx.t({ code, msg });
+	const labels: Record<GhostShape, string> = {
+		tiles: t("dashboard.type_tiles", "Figure tiles"),
+		bars: t("dashboard.type_bars", "Bar chart"),
+		columns: t("dashboard.type_columns", "Column chart"),
+		line: t("dashboard.type_line", "Line chart"),
+		heatmap: t("dashboard.type_heatmap", "Heat map"),
+		map: t("dashboard.type_map", "Map"),
+		table: t("dashboard.type_table", "Table"),
+		flow: t("dashboard.type_flow", "Flow diagram"),
+		boxes: t("dashboard.type_boxes", "Tree map"),
+		boxplot: t("dashboard.type_boxplot", "Box plot"),
+		dots: t("dashboard.type_dots", "Dot plot"),
+	};
+	return labels[gap.ghost];
+}
+
+/**
+ * Features Coming Soon (Alex, 2026-10-19; once "Not yet available"): every
+ * unbuilt feature on the view that has no grey placeholder of its own, with
+ * its name, a one-line description and its chart or map type, in grey-blue
+ * (data.dashboard.slate, 6.42:1 on the strip).
+ */
 export function NotYetAvailableStrip({ ctx, panels }: { ctx: ViewContext; panels: DashboardPanel[] }) {
 	const headingId = useId();
 	if (panels.length === 0) return null;
 	return (
 		<section
 			aria-labelledby={headingId}
-			className="delta-panel-tile rounded border border-dashed p-4"
+			data-print="keep"
+			className="delta-panel-tile delta-coming-soon rounded border border-dashed p-4"
 		>
 			<h3 id={headingId} className="delta-panel-title m-0 mb-2 text-base">
-				{ctx.t({ code: "dashboard.not_yet_available", msg: "Not yet available" })}
+				{ctx.t({ code: "dashboard.features_coming_soon", msg: "Features Coming Soon" })}
 			</h3>
 			<ul className="m-0 flex list-none flex-col gap-2 p-0">
 				{panels.map((p) => {
 					const gap = p.gap as PanelGap;
 					const count = gapCountText(ctx, gap);
+					const type = chartTypeLabel(ctx, gap);
 					return (
 						<li key={p.id} id={p.id} className="flex items-start gap-2 text-sm">
 							<PanelIcon name={panelIcon(p.id)} size={31} />
 							<span>
-							<span className="delta-panel-title">{p.title}</span>
-							<span className="text-brand-text-muted">
-								{": "}
-								{gap.text}
-								{gap.code && ` (${gap.code})`}
-								{count && ` · ${count}`}
-							</span>
+								<span className="delta-panel-title">{p.title}</span>
+								{type && <span className="ms-2 whitespace-nowrap rounded border px-1 text-xs">{type}</span>}
+								<span className="block text-xs">
+									{gap.text}
+									{gap.code && ` (${gap.code})`}
+									{count && ` · ${count}`}
+								</span>
 							</span>
 						</li>
 					);
@@ -124,7 +152,7 @@ export function PanelGrid({ ctx, panels, collapseGaps }: PanelGridProps) {
 	// as G-01) keeps its own frame across the view.
 	// Ghost panels and full-width notices keep their own place.
 	const foldable = (p: DashboardPanel) => !!p.gap && !p.gap.ghost && !p.wide;
-	const fold = collapseGaps && sorted.filter(foldable).length > 1;
+	const fold = collapseGaps && sorted.some(foldable);
 	const visible = fold ? sorted.filter((p) => !foldable(p)) : sorted;
 	const strip = fold ? sorted.filter(foldable) : [];
 	const main = visible.filter((p) => !panelUnderMore(p));

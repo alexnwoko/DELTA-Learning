@@ -40,10 +40,10 @@ const panels = sectorDashboardPanels(ctx, D, opts);
 const html = (n: number, p = panels) => text(renderToString(<>{p.find((x) => x.n === n)!.render!()}</>));
 
 describe("Sectors view panels 1 to 7", () => {
-	it("draw seven panels, each framed even without data (Sectors keeps frames)", () => {
+	it("draw its panels; unbuilt ones would list in Features Coming Soon", () => {
 		// 8 and 9 are Ranked by divisions and Sector reporting completeness (a7e85e92).
 		expect(panels.map((p) => p.n).sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-		expect(collapsesGaps("sectors")).toBe(false);
+		expect(collapsesGaps("sectors")).toBe(true);
 	});
 
 	it("1: keeps losses and money apart from damage, money as G-06", () => {

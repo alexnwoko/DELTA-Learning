@@ -93,7 +93,7 @@ describe("Disaster events panels 1 to 7", () => {
 	it("fold 8 to 16 into the strip on this view, and export only drawn panels", () => {
 		expect(collapsesGaps("disaster_event")).toBe(true);
 		const grid = text(renderToString(<PanelGrid ctx={ctx} panels={panels} collapseGaps />));
-		expect(grid).toContain("Not yet available");
+		expect(grid).toContain("Features Coming Soon");
 		expect(grid).toContain("Disaster event register");
 		const csv = dashboardPanelsCsv(panels, "Angola", "DELTA Angola", "published", new Date("2026-10-17T00:00:00Z"));
 		expect(csv).toContain("Records grouped into disaster events,Not grouped,,900,reported,records,");
