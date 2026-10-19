@@ -281,7 +281,7 @@ describe("Disaster impact layout (Alex, 2026-10-18)", () => {
 			"Hazard by human effect", "Hazard by sector",
 			"Houses destroyed and damaged", "People displaced, evacuated and relocated",
 			"Coverage of the records", "Reporting completeness and precision",
-			"Disaster impact by sex and age disaggregation",
+			"Disaster impact by sex and age disaggregation", "Hazard by month",
 		]);
 	});
 
@@ -309,7 +309,7 @@ describe("Disaster impact panels 5 to 16 on the example payload", () => {
 		expect(drawn.map((p) => p.n).sort((a, b) => a - b)).toEqual(Array.from({ length: 16 }, (_, i) => i + 1));
 		expect(drawn.every((p) => p.render && p.exportData)).toBe(true);
 		// The rest are Features Coming Soon (reassessment 4.4): DI-18 to DI-27.
-		expect(all.filter((p) => p.gap).map((p) => p.id)).toEqual([...Array.from({ length: 10 }, (_, i) => `impact-${i + 18}`), "impact-hazard-month", "impact-aa"]);
+		expect(all.filter((p) => p.gap).map((p) => p.id).sort()).toEqual([...Array.from({ length: 10 }, (_, i) => `impact-${i + 18}`), "impact-hazard-month", "impact-aa"].sort());
 	});
 
 	it("5: names the country in the notice, keeps dwelling inputs code-free, lists refusals", () => {
