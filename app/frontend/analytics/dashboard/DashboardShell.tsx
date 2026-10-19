@@ -4,6 +4,8 @@
 // "About the data". With the Sendai toggle on, only the Sendai section shows. The shell owns
 // no data and no URL: the route passes the query and writes the next one
 // to the URL (delta.query/1), so every view has a shareable link.
+// In print, the layout columns carry data-print="flow" and print as plain
+// blocks (print.css), so each section starts below the one before it.
 import React from "react";
 import { Tab, TabList, TabPanel, Tabs, type Key } from "react-aria-components";
 import type { ViewContext } from "~/frontend/context";
@@ -85,7 +87,7 @@ export function DashboardShell({
 		"cursor-pointer border-b-4 border-transparent px-3 py-2 text-sm font-semibold text-brand-text-muted outline-none data-[hovered]:text-brand-text data-[selected]:border-brand-interactive data-[selected]:text-brand-text data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:-outline-offset-2 data-[focus-visible]:outline-brand-focus-ring";
 
 	return (
-		<div className="flex flex-col gap-4 text-brand-text">
+		<div data-print="flow" className="flex flex-col gap-4 text-brand-text">
 			<header className="flex flex-wrap items-start justify-between gap-3">
 				<div className="flex min-w-0 flex-col gap-1">
 					<h1 className="m-0 text-2xl font-semibold">
@@ -124,12 +126,13 @@ export function DashboardShell({
 			{notice}
 
 			{/* The rail sits left of the views on wide screens, above them on phones. */}
-			<div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+			<div data-print="flow" className="flex flex-col gap-4 lg:flex-row lg:items-start">
 			{rail}
 			<Tabs
 				selectedKey={view}
 				onSelectionChange={(key: Key) => onViewChange(key as DashboardView)}
 				isDisabled={sfmOn}
+				data-print="flow"
 				className="flex min-w-0 flex-1 flex-col gap-4"
 			>
 				<TabList
@@ -158,7 +161,7 @@ export function DashboardShell({
 				    below sits directly under the filter bar (FR-AN-024). */}
 				{!sfmOn &&
 					DASHBOARD_VIEWS.map((v) => (
-					<TabPanel key={v} id={v} className="flex flex-col gap-4 outline-none">
+					<TabPanel key={v} id={v} data-print="flow" className="flex flex-col gap-4 outline-none">
 						<h2 className="sr-only print:not-sr-only print:m-0 print:text-xl print:font-semibold">
 							{viewLabel(ctx, v)}
 						</h2>
