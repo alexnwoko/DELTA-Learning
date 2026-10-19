@@ -4,7 +4,10 @@
 // events or of their linked disaster records, never one for the other.
 
 import type { EventGroupingRule } from "~/utils/dashboard/eventPanels";
-import type { PanelMeta } from "~/utils/dashboard/impactPanels";
+import type {
+	ImpactHeadlineMeasure,
+	PanelMeta,
+} from "~/utils/dashboard/impactPanels";
 
 /** Panel 11: the disaster event register, newest first. */
 export interface EventRegister {
@@ -61,13 +64,55 @@ export interface EventsBySector {
 	eventsWithoutSector: number;
 }
 
+/**
+ * Panel DE-17: empirical exceedance of the chosen human effect per disaster
+ * event. Each point is one event with a reported value: how many events in
+ * scope reached at least that value, per year of the record, and the
+ * empirical return period (years / rank). Built from recorded events only;
+ * not a hazard or risk model, and short records give unstable tails.
+ */
+export interface EventExceedance {
+	measure: ImpactHeadlineMeasure;
+	/** Years from the first to the last event start year in scope. */
+	years: number | null;
+	points: {
+		eventId: string;
+		name: string;
+		value: number;
+		/** Events in scope at or above this value. */
+		rank: number;
+		/** rank / years: events per year at or above the value. */
+		perYear: number | null;
+		/** years / rank. */
+		returnPeriodYears: number | null;
+	}[];
+	/** Events in scope with no reported value for the measure (left out). */
+	eventsNotReported: number;
+	/** True when fewer than EXCEEDANCE_MIN_EVENTS events report a value. */
+	tooFewEvents: boolean;
+}
+
+/** Panel DE-21: disaster events by start month, per year. */
+export interface EventSeason {
+	cells: { year: number; month: number; events: number }[];
+	/** Events with a start year but no month: counted, not drawn. */
+	eventsWithoutMonth: number;
+}
+
 export interface EventPanels8to16 {
 	register: EventRegister;
 	completeness: EventCompleteness;
 	divisionsPerEvent: DivisionsPerEvent;
 	bySector: EventsBySector;
+	exceedance: EventExceedance;
+	season: EventSeason;
 	meta: Record<
-		"register" | "completeness" | "divisionsPerEvent" | "bySector",
+		| "register"
+		| "completeness"
+		| "divisionsPerEvent"
+		| "bySector"
+		| "exceedance"
+		| "season",
 		PanelMeta
 	>;
 }
