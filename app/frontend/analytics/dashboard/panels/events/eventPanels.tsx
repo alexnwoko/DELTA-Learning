@@ -24,6 +24,7 @@ import { YearColumns } from "../impact/ImpactTimeline";
 import { effectLabel } from "../impact/panels5to16";
 import { DASHBOARD_RAMP } from "~/frontend/charts/sectionPalette";
 import type { EventMapPayload } from "~/utils/dashboard/eventMap";
+import type { EventPanels8to16 } from "~/utils/dashboard/eventPanels8to16";
 import { comingSoonPanels } from "../../comingSoon";
 import { arrangeByLayout, EVENTS_LAYOUT } from "../../layout";
 
@@ -419,7 +420,7 @@ function EventSizeView({ common, d, exp }: { common: Common; d: EventPanels1to7;
 export function eventDashboardPanels(
 	ctx: ViewContext,
 	d: EventPanels1to7,
-	opts: { source: string; scope: string; provisional: boolean; map?: EventMapPayload | null },
+	opts: { source: string; scope: string; provisional: boolean; map?: EventMapPayload | null; more?: EventPanels8to16 | null },
 ): DashboardPanel[] {
 	const t = ctx.t;
 	if (d.empty) {
@@ -459,7 +460,7 @@ export function eventDashboardPanels(
 	];
 	const drawn = spec.map(([n, title, exp, view]): DashboardPanel => ({ id: `events-${n}`, n, title, exportData: exp, render: () => view(common(title), exp) }));
 	const divisions = opts.map ? [eventDivisionsPanel(ctx, opts.map, common)] : [];
-	const built = [...drawn, ...divisions];
+	const built = [...drawn, ...divisions, ...(opts.more ? eventPanels8to16(ctx, opts.more, common) : [])];
 	// Unbuilt features (Alex, 2026-10-19): a grey placeholder in their slot,
 	// the rest in Features Coming Soon, official warning included.
 	return arrangeByLayout([...built, ...comingSoonPanels(ctx, "events", EVENTS_LAYOUT, built)], EVENTS_LAYOUT);
@@ -501,4 +502,152 @@ export function eventDivisionsPanel(ctx: ViewContext, map: EventMapPayload, comm
 			</Frame>
 		),
 	};
+}
+
+/** Share track for "n of N": an empty track is 0, which is a finding. */
+function ShareTrack({ n, of }: { n: number; of: number }) {
+	const share = of > 0 ? n / of : 0;
+	return (
+		<svg width="100%" height={6} aria-hidden="true" focusable="false" className="mt-1 block">
+			<rect x={0} y={0} width="100%" height={6} rx={3} fill={DASHBOARD_RAMP[1]} />
+			{n > 0 && <rect x={0} y={0} width={`${Math.max(2, share * 100)}%`} height={6} rx={3} fill={DASHBOARD_RAMP[3]} />}
+		</svg>
+	);
+}
+
+/**
+ * Disaster events panels 11, 12, 13 and 16 (Analytics ee73e61f,
+ * reassessment DE-11 to DE-16). Counts of events or of their linked
+ * records, never one for the other.
+ */
+export function eventPanels8to16(ctx: ViewContext, d: EventPanels8to16, common: (title: string) => Common): DashboardPanel[] {
+	const t = ctx.t;
+	const n = (x: number) => x.toLocaleString(ctx.lang);
+	const m = d.meta;
+	const th = "border-b border-brand-border bg-brand-surface-subtle px-2 py-1 font-semibold";
+	const td = "border-b border-brand-border px-2 py-1";
+
+	// 11: the register, newest first.
+	const regTitle = tr(t, "dashboard.events_11", "Disaster event register");
+	const reg = d.register;
+	const regShown = tr(t, "dashboard.register_shown", "Newest {n} of {total} events in scope.", { n: n(reg.rows.length), total: n(reg.eventsInScope) });
+	const regExp: PanelExport = {
+		rows: reg.rows.map((r) => countRow(r.name, r.records, "linked records", r.startDate ?? undefined)),
+		method: m.register.method,
+		notes: panelNotes(m.register, [regShown]),
+	};
+	const register: DashboardPanel = {
+		id: "events-11",
+		n: 11,
+		title: regTitle,
+		exportData: regExp,
+		render: () => (
+			<Frame common={common(regTitle)} exp={regExp} pictures={false}>
+				<p className="m-0 text-xs text-brand-text-muted">{regShown}</p>
+				<div className="max-h-96 max-w-full overflow-auto">
+					<table className="w-full border-collapse text-sm">
+						<caption className="sr-only">{regTitle}</caption>
+						<thead className="sticky top-0">
+							<tr>
+								<th scope="col" className={`${th} text-start`}>{tr(t, "dashboard.event", "Event")}</th>
+								<th scope="col" className={`${th} text-start`}>{tr(t, "dashboard.start", "Start")}</th>
+								<th scope="col" className={`${th} text-start`}>{tr(t, "dashboard.hazard", "Hazard")}</th>
+								<th scope="col" className={`${th} text-start`}>GLIDE</th>
+								<th scope="col" className={`${th} text-end`}>{tr(t, "dashboard.records", "Records")}</th>
+								<th scope="col" className={`${th} text-end`}>{tr(t, "dashboard.divisions", "Divisions")}</th>
+							</tr>
+						</thead>
+						<tbody>
+							{reg.rows.map((r) => (
+								<tr key={r.eventId}>
+									<th scope="row" className={`${td} text-start font-normal`}>{r.name}</th>
+									<td className={`${td} whitespace-nowrap`}>{r.startDate ?? "—"}</td>
+									<td className={td}>{r.hazardLabel}</td>
+									<td className={`${td} whitespace-nowrap`}>{r.glide ?? "—"}</td>
+									<td className={`${td} text-end tabular-nums`}>{n(r.records)}</td>
+									<td className={`${td} text-end tabular-nums`}>{n(r.divisions)}</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</div>
+			</Frame>
+		),
+	};
+
+	// 12: fields filled, as events of all events in scope.
+	const compTitle = tr(t, "dashboard.events_12", "Reporting completeness of disaster events");
+	const comp = d.completeness;
+	const compExp: PanelExport = {
+		rows: comp.rows.map((r) => countRow(r.label, r.events, `events filling the field, of ${comp.eventsInScope}`)),
+		method: m.completeness.method,
+		notes: panelNotes(m.completeness),
+	};
+	const completeness: DashboardPanel = {
+		id: "events-12",
+		n: 12,
+		title: compTitle,
+		exportData: compExp,
+		render: () => (
+			<Frame common={common(compTitle)} exp={compExp} pictures={false}>
+				<ul className="m-0 flex list-none flex-col gap-2 p-0 text-sm">
+					{comp.rows.map((r) => (
+						<li key={r.key}>
+							<span className="flex justify-between gap-2">
+								<span>{r.label}</span>
+								<span className="tabular-nums">{tr(t, "dashboard.n_of_total", "{n} of {total}", { n: n(r.events), total: n(comp.eventsInScope) })}</span>
+							</span>
+							<ShareTrack n={r.events} of={comp.eventsInScope} />
+						</li>
+					))}
+				</ul>
+			</Frame>
+		),
+	};
+
+	// 13: events by how many level-1 divisions their records touch.
+	const divTitle = tr(t, "dashboard.events_13", "Divisions per disaster event");
+	const dpe = d.divisionsPerEvent;
+	const noDiv = tr(t, "dashboard.events_without_division", "{n} events name no division and are left out.", { n: n(dpe.eventsWithoutDivision) });
+	const divExp: PanelExport = {
+		rows: dpe.bins.map((b) => countRow(b.label, b.events, "events")),
+		method: m.divisionsPerEvent.method,
+		notes: panelNotes(m.divisionsPerEvent, [dpe.eventsWithoutDivision > 0 ? noDiv : undefined]),
+	};
+	const perEvent: DashboardPanel = {
+		id: "events-13",
+		n: 13,
+		title: divTitle,
+		exportData: divExp,
+		render: () => (
+			<Frame common={common(divTitle)} exp={divExp}>
+				<RowBars ctx={ctx} label={divTitle} rows={dpe.bins.map((b) => ({ key: b.label, label: b.label, bars: [{ cell: countCell(b.events) }] }))} />
+				{dpe.eventsWithoutDivision > 0 && <p className="m-0 text-sm text-brand-text-muted">{noDiv}</p>}
+			</Frame>
+		),
+	};
+
+	// 16: events with a linked record reporting damage, per sector.
+	const secTitle = tr(t, "dashboard.events_16", "Disaster events by sector");
+	const bs = d.bySector;
+	const noSec = tr(t, "dashboard.events_without_sector", "{n} events have no linked record reporting sector damage.", { n: n(bs.eventsWithoutSector) });
+	const secExp: PanelExport = {
+		rows: bs.rows.map((r) => countRow(r.label, r.events, "events")),
+		method: m.bySector.method,
+		notes: panelNotes(m.bySector, [bs.eventsWithoutSector > 0 ? noSec : undefined]),
+	};
+	const bySector: DashboardPanel = {
+		id: "events-16",
+		n: 16,
+		title: secTitle,
+		exportData: secExp,
+		render: () => (
+			<Frame common={common(secTitle)} exp={secExp}>
+				<RowBars ctx={ctx} label={secTitle} rows={bs.rows.map((r) => ({ key: r.sectorId, label: r.label, bars: [{ cell: countCell(r.events) }] }))} />
+				{bs.eventsWithoutSector > 0 && <p className="m-0 text-sm text-brand-text-muted">{noSec}</p>}
+			</Frame>
+		),
+	};
+
+	return [register, completeness, perEvent, bySector];
 }

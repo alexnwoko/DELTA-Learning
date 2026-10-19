@@ -9,6 +9,7 @@ import { approvalAudienceForBasis } from "~/backend.server/approvalAudience.serv
 import { getEventMap } from "~/backend.server/models/analytics/dashboard/eventMap.server";
 import { getTenantOutline, neighbourOutlines, worldBoundariesUrl } from "~/backend.server/models/geo/tenantExtent";
 import { getEventPanels1to7 } from "~/backend.server/models/analytics/dashboard/eventPanels.server";
+import { getEventPanels8to16 } from "~/backend.server/models/analytics/dashboard/eventPanels8to16.server";
 import { getRecordsByApproval } from "~/backend.server/models/analytics/dashboard/recordsByApproval.server";
 import { getSendaiSection } from "~/backend.server/models/analytics/dashboard/sendaiPanels.server";
 import { getHazardEventPanels1to7 } from "~/backend.server/models/analytics/dashboard/hazardEventPanels.server";
@@ -52,6 +53,7 @@ import { authLoaderPublicOrWithPerm, hasPermission } from "~/utils/auth";
 import type { ImpactPanels1to4 } from "~/utils/dashboard/impactPanels";
 import type { EventMapPayload } from "~/utils/dashboard/eventMap";
 import type { EventPanels1to7 } from "~/utils/dashboard/eventPanels";
+import type { EventPanels8to16 } from "~/utils/dashboard/eventPanels8to16";
 import type { HazardEventPanels1to7 } from "~/utils/dashboard/hazardEventPanels";
 import type { ImpactMapPayload } from "~/utils/dashboard/impactMap";
 import type { SectorPanels1to7 } from "~/utils/dashboard/sectorPanels";
@@ -107,6 +109,8 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request, p
 				])
 			: null;
 	const events = view === "disaster_event" ? await getEventPanels1to7(query, ctx) : null;
+	// Panels 11, 12, 13 and 16 (Analytics ee73e61f); none while the view is empty.
+	const eventsMore = events && !events.empty ? await getEventPanels8to16(query, ctx) : null;
 	const hazardEvents = view === "hazardous_event" ? await getHazardEventPanels1to7(query, ctx) : null;
 	const sectors = view === "sectors" ? await getSectorPanels1to7(query, ctx) : null;
 	// The Sendai section, the same on Disaster events and Disaster impact, and
@@ -159,6 +163,7 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request, p
 		query,
 		view,
 		events,
+		eventsMore,
 		hazardEvents,
 		sectors,
 		eventMap,
@@ -245,7 +250,7 @@ export default function AnalysisDashboard() {
 				subnational: Boolean(query.where.geo || query.where.region),
 			})
 		: events
-			? eventDashboardPanels(ctx, events, { ...opts, map: ld.eventMap as EventMapPayload | null })
+			? eventDashboardPanels(ctx, events, { ...opts, map: ld.eventMap as EventMapPayload | null, more: ld.eventsMore as EventPanels8to16 | null })
 			: hazardEvents
 				? hazardEventDashboardPanels(ctx, hazardEvents, { ...opts, signedIn: ld.signedIn })
 				: sectors
