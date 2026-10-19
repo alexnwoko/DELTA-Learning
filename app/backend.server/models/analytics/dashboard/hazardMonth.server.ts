@@ -221,7 +221,8 @@ function buildRows(
 						? "Hazard not coded"
 						: level === "hazard"
 							? (hazard?.label ?? `HIPs hazard ${key}`)
-							: (cluster?.label ?? `HIPs cluster ${clusterId}`),
+							: // Coded to a cluster only: say so, so the row is never read as a group heading (Alex, 2026-10-19: the direct hazard, not the top grouping).
+								`${cluster?.label ?? `HIPs cluster ${clusterId}`} (specific hazard not recorded)`,
 				hipHazardId: level === "hazard" ? key : null,
 				hipClusterId: clusterId,
 				clusterLabel: cluster?.label ?? null,
