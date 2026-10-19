@@ -11,6 +11,13 @@ import {
 	linkedRecordsCte,
 } from "~/backend.server/models/analytics/dashboard/eventPanels.server";
 import {
+	humanEffectMeasuresFromRow,
+	humanEffectMeasuresSelect,
+	measurePartsCtes,
+	measurePartsJoins,
+} from "~/backend.server/models/analytics/hazard-analysis";
+import {
+	chosenMeasure,
 	hipTypeLabels,
 	impactFiltersFromQuery,
 	type ImpactPanelsContext,
@@ -30,6 +37,11 @@ import type { PanelMeta } from "~/utils/dashboard/impactPanels";
 
 /** Events the register lists, newest first. */
 export const EVENT_REGISTER_TOP = 100;
+
+/** Below this many events with a value, the exceedance curve is flagged. */
+export const EXCEEDANCE_MIN_EVENTS = 10;
+/** Points the exceedance curve carries (largest events first). */
+export const EXCEEDANCE_MAX_POINTS = 200;
 
 /** Bins of level-1 divisions per event (panel 13). */
 const DIVISION_BINS: { label: string; min: number; max: number }[] = [
@@ -104,6 +116,15 @@ async function computeGetEventPanels8to16(
 			GROUP BY 1, 2`),
 		hipTypeLabels(),
 	]);
+	const measure = chosenMeasure(query);
+	const perEventMeasures = await rows(sql`
+		WITH RECURSIVE ${ev}, ${lr}, ${measurePartsCtes}
+		SELECT fr.event_id::text AS event_id, ${humanEffectMeasuresSelect()}
+		FROM filtered_records fr
+		LEFT JOIN "human_category_presence" hcp ON hcp."record_id" = fr.record_id
+		${measurePartsJoins}
+		LEFT JOIN "disaster_records" rec ON rec."id" = fr.record_id
+		GROUP BY fr.event_id`);
 	const anySector = await rows(sql`
 		WITH RECURSIVE ${ev}, ${lr}, ${sectorHitsCtes}
 		SELECT COUNT(DISTINCT fr.event_id) AS n
@@ -156,6 +177,62 @@ async function computeGetEventPanels8to16(
 	];
 
 	const withDivisions = perEvent.map((r) => num(r.divisions));
+
+	// DE-17: empirical exceedance of the chosen measure per event.
+	const names = new Map(
+		perEvent.map((r) => [r.id as string, r.name as string]),
+	);
+	const yearsSeen = perEvent
+		.map((r) =>
+			typeof r.start_date === "string" ? Number(r.start_date.slice(0, 4)) : NaN,
+		)
+		.filter((y) => Number.isFinite(y));
+	const years = yearsSeen.length
+		? Math.max(...yearsSeen) - Math.min(...yearsSeen) + 1
+		: null;
+	const valued = perEventMeasures
+		.map((r) => ({
+			eventId: r.event_id as string,
+			cell: humanEffectMeasuresFromRow(r)[measure],
+		}))
+		.filter((e) => e.cell.valueState === "reported" && (e.cell.value ?? 0) > 0)
+		.map((e) => ({ eventId: e.eventId, value: e.cell.value as number }))
+		.sort((a, b) => b.value - a.value || a.eventId.localeCompare(b.eventId));
+	const points = valued.slice(0, EXCEEDANCE_MAX_POINTS).map((e) => {
+		// Ties share the rank of the last tied event: all of them reach the value.
+		const rank = valued.filter((x) => x.value >= e.value).length;
+		return {
+			eventId: e.eventId,
+			name: names.get(e.eventId) ?? e.eventId,
+			value: e.value,
+			rank,
+			perYear: years ? Math.round((rank / years) * 1000) / 1000 : null,
+			returnPeriodYears: years ? Math.round((years / rank) * 10) / 10 : null,
+		};
+	});
+
+	// DE-21: events per start month and year.
+	const seasonCounts = new Map<string, number>();
+	let eventsWithoutMonth = 0;
+	for (const r of perEvent) {
+		const m =
+			typeof r.start_date === "string"
+				? /^(\d{4})-(\d{2})/.exec(r.start_date)
+				: null;
+		if (!m) {
+			if (typeof r.start_date === "string" && /^\d{4}/.test(r.start_date))
+				eventsWithoutMonth++;
+			continue;
+		}
+		const key = `${Number(m[1])}-${Number(m[2])}`;
+		seasonCounts.set(key, (seasonCounts.get(key) ?? 0) + 1);
+	}
+	const seasonCells = [...seasonCounts]
+		.map(([k, events]) => {
+			const [year, month] = k.split("-").map(Number);
+			return { year, month, events };
+		})
+		.sort((a, b) => a.year - b.year || a.month - b.month);
 	return {
 		register: { rows: register, eventsInScope: total },
 		completeness: {
@@ -183,6 +260,14 @@ async function computeGetEventPanels8to16(
 				.sort((a, b) => b.events - a.events || a.label.localeCompare(b.label)),
 			eventsWithoutSector: total - num(anySector[0]?.n),
 		},
+		exceedance: {
+			measure,
+			years,
+			points,
+			eventsNotReported: total - valued.length,
+			tooFewEvents: valued.length < EXCEEDANCE_MIN_EVENTS,
+		},
+		season: { cells: seasonCells, eventsWithoutMonth },
 		meta: {
 			register: meta(
 				`Disaster events in scope, newest first (top ${EVENT_REGISTER_TOP}); records and divisions come from linked disaster records in the approval basis`,
@@ -192,6 +277,12 @@ async function computeGetEventPanels8to16(
 			),
 			divisionsPerEvent: meta(
 				"Disaster events by the number of level-1 divisions their linked disaster records name",
+			),
+			exceedance: meta(
+				`Empirical exceedance from recorded disaster events: per event, the sum of ${measure} over its linked disaster records; rank = events at or above the value; per year = rank / years of record; return period = years / rank. Not a hazard or risk model; with fewer than ${EXCEEDANCE_MIN_EVENTS} events or a short record the tail is unstable. Events with no reported value are left out and counted`,
+			),
+			season: meta(
+				"Disaster events by start month and year, from the event's own start date; events with a start year only are counted, not drawn",
 			),
 			bySector: meta(
 				"Disaster events with at least one linked disaster record reporting damage in the level-2 sector; an event can count under several sectors",

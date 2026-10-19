@@ -9,6 +9,7 @@ import {
 } from "../test-helpers";
 import { getEventPanels1to7 } from "~/backend.server/models/analytics/dashboard/eventPanels.server";
 import { getEventPanels8to16 } from "~/backend.server/models/analytics/dashboard/eventPanels8to16.server";
+import { getImpactSources } from "~/backend.server/models/analytics/dashboard/impactSources.server";
 import { DEFAULT_QUERY } from "~/utils/deltaQuery";
 
 // D1 Disaster events panels 1 to 7 against seeded events:
@@ -216,5 +217,35 @@ describe("getEventPanels1to7", () => {
 			expect.objectContaining({ sectorId: HOUSING, events: 1 }),
 		]);
 		expect(p.bySector.eventsWithoutSector).toBe(2);
+	});
+
+	it("DE-17: empirical exceedance per event; a confirmed zero and silence are left out and counted", async () => {
+		const p = await getEventPanels8to16(DEFAULT_QUERY, ctx());
+		expect(p.exceedance.measure).toBe("deaths");
+		expect(p.exceedance.years).toBe(2);
+		expect(p.exceedance.points).toEqual([
+			expect.objectContaining({ eventId: ev.e1, value: 45, rank: 1, perYear: 0.5, returnPeriodYears: 2 }),
+		]);
+		expect(p.exceedance.eventsNotReported).toBe(2);
+		expect(p.exceedance.tooFewEvents).toBe(true);
+		expect(p.meta.exceedance.method).toContain("Not a hazard or risk model");
+	});
+
+	it("DE-21: events by start month; a year-only start is counted, not drawn", async () => {
+		const p = await getEventPanels8to16(DEFAULT_QUERY, ctx());
+		expect(p.season.cells).toEqual([{ year: 2020, month: 3, events: 1 }]);
+		expect(p.season.eventsWithoutMonth).toBe(1);
+	});
+
+	it("DI-18: reporting sources group exact text after trimming; no source is counted apart", async () => {
+		await dr.execute(sql`UPDATE disaster_records SET primary_data_source = 'NDMO' WHERE id IN (${rec.a}, ${rec.d})`);
+		await dr.execute(sql`UPDATE disaster_records SET primary_data_source = ' NDMO ' WHERE id = ${rec.b}`);
+		await dr.execute(sql`UPDATE disaster_records SET primary_data_source = '' WHERE id = ${rec.c}`);
+		const p = await getImpactSources(DEFAULT_QUERY, ctx());
+		expect(p.rows).toEqual([{ source: "NDMO", records: 3 }]);
+		expect(p.recordsWithoutSource).toBe(1);
+		expect(p.recordsInScope).toBe(4);
+		expect(p.distinctSources).toBe(1);
+		expect(p.rest).toBeNull();
 	});
 });
