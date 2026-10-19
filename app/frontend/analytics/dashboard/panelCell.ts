@@ -91,5 +91,6 @@ export function noRecordsText(ctx: DContext): string {
 
 /** One frame across a view when nothing is in scope (Alex, 2026-10-17). */
 export function emptyViewPanel(id: string, title: string, reason: string): DashboardPanel {
-	return { id: `${id}-empty`, n: 1, title, gap: { text: reason } };
+	// Across the view, and never listed as a feature to come: the scope is empty.
+	return { id: `${id}-empty`, n: 1, title, wide: true, gap: { text: reason } };
 }

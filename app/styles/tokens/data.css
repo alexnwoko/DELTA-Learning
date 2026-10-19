@@ -86,6 +86,7 @@
   --delta-data-dashboard-accent: #9dc3ff; /** Decorative accents only (1.8:1 on white): selected-state fills beside a text cue. */
   --delta-data-dashboard-icon: #6a8bdc; /** Dashboard icons: 3.31:1 on white, 3.05:1 on tint (WCAG 1.4.11). */
   --delta-data-dashboard-ink: #2d3355; /** Chart titles and subtitles, bold: 12.24:1 on white. */
+  --delta-data-dashboard-slate: #4a5a75; /** Grey-blue text for Features Coming Soon (Alex, 2026-10-19): 6.42:1 on the dashboard tint, 6.98:1 on white (WCAG 1.4.3). */
   --delta-data-sfm-tint: #f7fbff; /** Section and panel background tint. */
   --delta-data-sfm-border: #d6eaf7; /** Section and panel borders. */
   --delta-data-sfm-accent: #a8cfe3; /** Decorative accents only (1.65:1 on white). */

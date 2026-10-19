@@ -492,6 +492,11 @@
 				"$type": "color",
 				"$value": "#2d3355",
 				"$description": "Chart titles and subtitles, bold: 12.24:1 on white."
+			},
+			"slate": {
+				"$type": "color",
+				"$value": "#4a5a75",
+				"$description": "Grey-blue text for Features Coming Soon (Alex, 2026-10-19): 6.42:1 on the dashboard tint, 6.98:1 on white (WCAG 1.4.3)."
 			}
 		},
 		"sfm": {

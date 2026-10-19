@@ -23,6 +23,11 @@ export interface PanelGap {
 	 * ghost keeps its own place in the grid; it never folds into the strip.
 	 */
 	ghost?: GhostShape;
+	/**
+	 * Already translated: the chart or map type it will be, for Features
+	 * Coming Soon. Omitted: derived from the ghost shape.
+	 */
+	chartType?: string;
 }
 
 export interface DashboardPanel {
@@ -62,6 +67,8 @@ export const DEFAULT_PANEL_COUNT = 12;
  * two event dimensions fold into one "Not yet available" strip; on Disaster
  * impact each empty panel keeps its own frame with its reason.
  */
-export function collapsesGaps(view: DashboardView): boolean {
-	return view === "hazardous_event" || view === "disaster_event";
+export function collapsesGaps(_view: DashboardView): boolean {
+	// Alex, 2026-10-19: every view lists its unbuilt features in Features
+	// Coming Soon; grey placeholders keep their own place in the grid.
+	return true;
 }
