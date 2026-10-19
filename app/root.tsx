@@ -350,7 +350,10 @@ export default function Screen() {
 						<main id="main" tabIndex={-1} className="flex-1 w-full">
 							{/* On paper the top bar is hidden, so the logo heads every printed page,
 							    twice the screen size, 2pt above the page heading (Alex, 2026-10-19). */}
-							<div className="delta-print-logo hidden print:block mx-auto max-w-8xl px-4 md:px-6 lg:px-8">
+							<div className="delta-print-logo hidden print:block w-full">
+								{/* One level below main, like the heading and content, so on paper
+								    the logo and rule keep mg-container's side padding and line up. */}
+								<div className="mg-container">
 								<img
 									src="/assets/images/delta-resilience-logo.png"
 									alt="DELTA Resilience: Disaster Event Loss and Damage Tracking and Analysis for Resilience"
@@ -361,6 +364,7 @@ export default function Screen() {
 								/>
 								{/* A rule under the logo on paper (Alex, 2026-10-19). */}
 								<hr className="m-0 mb-[2pt] border-0 border-t border-data-dashboard-ink" />
+								</div>
 							</div>
 							{/* Data Entry pages share one section heading (Alex, 2026-10-19). */}
 							{isDataEntryPath(location.pathname) && !hideMainNavigation ? (
