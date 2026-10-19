@@ -89,9 +89,11 @@ export function DashboardShell({
 	const t = ctx.t;
 	// The view buttons (FE-Proposal-03, Alex 2026-10-19): bold, 2pt larger,
 	// at least 44 x 44 px, with distinct hover, pressed, selected, focus and
-	// disabled states; the selected one is filled in the dashboard ink.
+	// disabled states; the selected one is filled in the dashboard ink. 32 px
+	// side padding makes each 30% wider than at first (Alex, 2026-10-20: 113-137 px
+	// measured, +36 px each).
 	const tabClass =
-		"group inline-flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center gap-2 rounded-lg px-4 text-[1.0625rem] font-bold leading-tight text-data-dashboard-ink outline-none transition-[background-color,color,box-shadow] duration-150 motion-reduce:transition-none data-[hovered]:bg-data-dashboard-border data-[pressed]:bg-data-dashboard-accent data-[selected]:bg-data-dashboard-ink data-[selected]:text-brand-text-on-interactive data-[selected]:shadow-[inset_0_-3px_0_var(--delta-data-dashboard-accent)] data-[selected]:data-[hovered]:bg-data-dashboard-ink data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50";
+		"group inline-flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center gap-2 rounded-lg px-[32px] text-[1.0625rem] font-bold leading-tight text-data-dashboard-ink outline-none transition-[background-color,color,box-shadow] duration-150 motion-reduce:transition-none data-[hovered]:bg-data-dashboard-border data-[pressed]:bg-data-dashboard-accent data-[selected]:bg-data-dashboard-ink data-[selected]:text-brand-text-on-interactive data-[selected]:shadow-[inset_0_-3px_0_var(--delta-data-dashboard-accent)] data-[selected]:data-[hovered]:bg-data-dashboard-ink data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50";
 	// The scope line as chips: querySummary joins its parts with " · ".
 	const chips = summary.split(" · ").filter(Boolean);
 
@@ -99,7 +101,8 @@ export function DashboardShell({
 		<div data-print="flow" className="delta-dashboard-canvas flex flex-col gap-4 text-brand-text">
 			<header className="flex flex-wrap items-start justify-between gap-3">
 				<div className="flex min-w-0 flex-col gap-1">
-					<PageBrand ctx={ctx} section="analysis" />
+					{/* Space above the page title (Alex, 2026-10-20). */}
+					<PageBrand ctx={ctx} section="analysis" className="pt-[1.5rem] print:pt-0" />
 					<ul aria-label={t({ code: "dashboard.scope", msg: "Scope" })} className="m-0 flex list-none flex-wrap gap-1.5 p-0">
 						{chips.map((c, i) => (
 							<li key={c}

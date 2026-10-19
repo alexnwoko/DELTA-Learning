@@ -1,5 +1,6 @@
 // The page heading of each main section (Alex, 2026-10-19): "Delta
-// Resilience | Data Entry", "| Analysis" and "| Geoportal", in capitals,
+// Resilience | Data Entry", "Data Analysis" (2026-10-20) and "Delta
+// Resilience | Geoportal", in capitals,
 // extra bold, 4pt above the Analysis heading's old size (text-2xl, 21px,
 // 15.75pt, so 19.75pt). The words stay in normal case for screen readers
 // and translation; the capitals are CSS.
@@ -23,13 +24,13 @@ export function useIsDataEntryPage(): boolean {
 }
 
 export function brandTitle(ctx: Pick<ViewContext, "t">, section: BrandSection): string {
+	// Analysis reads "Data Analysis" alone (Alex, 2026-10-20); the logo above names DELTA Resilience.
+	if (section === "analysis") return ctx.t({ code: "brand.data_analysis", msg: "Data Analysis" });
 	const name = ctx.t({ code: "brand.name", msg: "Delta Resilience" });
 	const part =
 		section === "data"
 			? ctx.t({ code: "brand.data_entry", msg: "Data Entry" })
-			: section === "analysis"
-				? ctx.t({ code: "brand.analysis", msg: "Analysis" })
-				: ctx.t({ code: "brand.geoportal", msg: "Geoportal" });
+			: ctx.t({ code: "brand.geoportal", msg: "Geoportal" });
 	return `${name} | ${part}`;
 }
 
