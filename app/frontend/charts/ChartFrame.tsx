@@ -23,6 +23,7 @@ import {
 	type ChartExportMeta,
 	type ChartExportRow,
 } from "./chartExport";
+import { SECONDARY_BUTTON_SM } from "~/frontend/buttonStyles";
 
 export interface ChartFrameProps {
 	ctx: ViewContext;
@@ -65,6 +66,29 @@ export function saveBlob(blob: Blob, fileName: string) {
 	setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
+/** Where the DELTA Resilience logo is served (RegularMenuBar uses the same file). */
+export const LOGO_URL = "/assets/images/delta-resilience-logo.png";
+const LOGO_SIZE = { width: 705, height: 130 };
+let logoData: Promise<string | null> | null = null;
+
+/** The logo as a data URI, fetched once; null when it cannot be read, so a download never fails for it. */
+function logoDataUri(): Promise<string | null> {
+	logoData ??= fetch(LOGO_URL)
+		.then((r) => (r.ok ? r.blob() : null))
+		.then(
+			(b) =>
+				b &&
+				new Promise<string | null>((resolve) => {
+					const reader = new FileReader();
+					reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : null);
+					reader.onerror = () => resolve(null);
+					reader.readAsDataURL(b);
+				}),
+		)
+		.catch(() => null);
+	return logoData;
+}
+
 function svgToPng(svg: string, width: number, height: number, scale = 2): Promise<Blob> {
 	return new Promise((resolve, reject) => {
 		const image = new Image();
@@ -81,6 +105,12 @@ function svgToPng(svg: string, width: number, height: number, scale = 2): Promis
 		image.onerror = () => reject(new Error("SVG could not be drawn"));
 		image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 	});
+}
+
+/** The label of a note such as "Source: DELTA" ("Source"); null for a plain sentence. */
+export function noteLabel(note: string): string | null {
+	const m = /^([A-Z][A-Za-z]+(?: [a-z]+)?): /.exec(note);
+	return m ? m[1] : null;
 }
 
 export function ChartFrame({ ctx, title, meta, rows, formatValue, pictures = true, quietNotes = [], children }: ChartFrameProps) {
@@ -106,12 +136,14 @@ export function ChartFrame({ ctx, title, meta, rows, formatValue, pictures = tru
 		const styles = getComputedStyle(document.documentElement);
 		const text = styles.getPropertyValue("--delta-brand-text").trim();
 		const background = styles.getPropertyValue("--delta-brand-surface").trim();
+		const logo = await logoDataUri();
 		const svg = standaloneChartSvg(
 			chart.outerHTML,
 			{ width: box.width, height: box.height },
 			m,
 			rows,
 			text && background ? { text, background } : undefined,
+			logo ? { href: logo, ...LOGO_SIZE } : undefined,
 		);
 		if (kind === "svg") {
 			saveBlob(new Blob([svg], { type: "image/svg+xml" }), chartFileName(title, "svg", m.generatedAt));
@@ -125,11 +157,12 @@ export function ChartFrame({ ctx, title, meta, rows, formatValue, pictures = tru
 	const t = (code: string, msg: string) => ctx.t({ code, msg });
 
 	return (
-		<figure aria-labelledby={titleId} className="m-0 flex flex-1 flex-col gap-2">
-			<div className="flex items-start justify-between gap-2">
-				<h3 id={titleId} className="delta-panel-title m-0 flex items-center gap-2 text-base">
+		<figure aria-labelledby={titleId} data-print="flow" className="m-0 flex flex-1 flex-col gap-2">
+			{/* A light blue rule under the title row (FE-Proposal-03). */}
+			<div className="flex items-start justify-between gap-2 border-b border-data-dashboard-border pb-2.5">
+				<h3 id={titleId} className="delta-panel-title m-0 flex items-center gap-2 text-[1.0625rem]">
 					{icon && (
-						<span className="delta-panel-iconbox flex h-16 w-16 shrink-0 items-center justify-center rounded border">
+						<span className="delta-panel-iconbox flex h-16 w-16 shrink-0 items-center justify-center rounded-[0.714rem] border">
 							<PanelIcon name={icon} size={35} />
 						</span>
 					)}
@@ -139,7 +172,7 @@ export function ChartFrame({ ctx, title, meta, rows, formatValue, pictures = tru
 					<Button
 						data-print="hide"
 						aria-label={`${t("charts.download", "Download")}: ${title}`}
-						className="rounded border border-brand-border-control px-2 py-1 text-sm text-brand-interactive data-[hovered]:bg-brand-surface-subtle data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
+						className={SECONDARY_BUTTON_SM}
 					>
 						{t("charts.download", "Download")}
 					</Button>
@@ -167,12 +200,24 @@ export function ChartFrame({ ctx, title, meta, rows, formatValue, pictures = tru
 				</MenuTrigger>
 			</div>
 			<div ref={chartRef}>{children}</div>
-			<figcaption className="text-sm text-brand-text-muted">
-				{notes.map((note) => (
-					<span key={note} className="block">
-						{note}
-					</span>
-				))}
+			{/* Small print, so the chart keeps the reader's eye (Alex, 2026-10-19):
+			    7.5pt, with each note's label ("Source:", "Method:") bold at 8pt. */}
+			<figcaption className="text-brand-text-muted" style={{ fontSize: "7.5pt", lineHeight: 1.35 }}>
+				{notes.map((note) => {
+					const label = noteLabel(note);
+					return (
+						<span key={note} className="block">
+							{label ? (
+								<>
+									<strong className="font-bold text-brand-text" style={{ fontSize: "8pt" }}>{label}:</strong>
+									{note.slice(label.length + 1)}
+								</>
+							) : (
+								note
+							)}
+						</span>
+					);
+				})}
 			</figcaption>
 			{/* The table prints open (print.css), so the numbers reach paper too. */}
 			<Disclosure data-print="expand">

@@ -7,6 +7,7 @@ import { saveBlob } from "~/frontend/charts/ChartFrame";
 import { chartFileName, dashboardCsv, type ExportBasis } from "~/frontend/charts/chartExport";
 import type { ViewContext } from "~/frontend/context";
 import type { DashboardPanel } from "./types";
+import { SECONDARY_BUTTON } from "~/frontend/buttonStyles";
 
 export interface DashboardDownloadProps {
 	ctx: ViewContext;
@@ -54,7 +55,7 @@ export function DashboardDownload({ ctx, title, scopeLine, source, basis, panels
 				const csv = dashboardPanelsCsv(panels, scopeLine, source, basis, at);
 				saveBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), chartFileName(title, "csv", at));
 			}}
-			className="rounded border border-brand-border-control bg-brand-surface px-3 py-1 text-sm text-brand-interactive data-[hovered]:bg-brand-surface-subtle data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
+			className={SECONDARY_BUTTON}
 		>
 			{ctx.t({ code: "dashboard.download_all", msg: "Download all panels (CSV)" })}
 		</Button>

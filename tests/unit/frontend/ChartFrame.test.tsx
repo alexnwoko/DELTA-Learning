@@ -34,7 +34,7 @@ describe("ChartFrame (TR-245)", () => {
 	});
 
 	it("captions the figure with source, basis, scope, method, grade and caveats (NFR-131)", () => {
-		const caption = render().match(/<figcaption[^>]*>(.*?)<\/figcaption>/s)![1];
+		const caption = render().match(/<figcaption[^>]*>(.*?)<\/figcaption>/s)![1].replace(/<[^>]+>/g, "");
 		for (const note of [
 			"Source: DELTA Angola",
 			"Basis: Published records",

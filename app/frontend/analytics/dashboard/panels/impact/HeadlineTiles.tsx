@@ -106,14 +106,14 @@ export function HeadlineTiles({ ctx, title, tiles, meta, source, scope, provisio
 					return (
 						<li
 							key={tile.measure}
-							className="delta-panel-tile flex min-w-0 flex-col gap-1 rounded border p-3"
+							className="delta-panel-tile flex min-w-0 flex-col gap-1 rounded-[0.714rem] border p-3"
 						>
 							<span className="delta-panel-title flex items-center gap-1.5 text-sm">
 								<PanelIcon name={MEASURE_ICONS[tile.measure]} size={31} />
 								{label}
 							</span>
 							<span
-								className={isNumber ? "text-2xl font-semibold tabular-nums" : "text-base font-semibold"}
+								className={isNumber ? "text-2xl font-extrabold tabular-nums text-data-dashboard-ink" : "text-base font-semibold text-brand-text-muted"}
 							>
 								{value}
 							</span>
@@ -136,7 +136,7 @@ export function HeadlineTiles({ ctx, title, tiles, meta, source, scope, provisio
 						</li>
 					);
 				})}
-				<li className="delta-panel-tile flex min-w-0 flex-col gap-1 rounded border border-dashed p-3">
+				<li className="delta-panel-tile flex min-w-0 flex-col gap-1 rounded-[0.714rem] border border-dashed p-3">
 					<span className="delta-panel-title flex items-center gap-1.5 text-sm">
 						<PanelIcon name={MEASURE_ICONS.money} size={31} />
 						{ctx.t({ code: "dashboard.measure_money", msg: "Damage and losses" })}

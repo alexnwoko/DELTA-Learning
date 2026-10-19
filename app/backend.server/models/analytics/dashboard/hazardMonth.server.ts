@@ -1,9 +1,11 @@
 // Hazard by month, years pooled (Alex, 2026-10-19): the loader behind
 // ~/utils/dashboard/hazardMonth. On Disaster impact each occurrence is a
-// disaster record (its start month and HIPs cluster); on Disaster events it
-// is a disaster event (the event's start month; the HIPs clusters of its
-// linked records, since events carry no hazard of their own). People are the
-// chosen human effect, with value states as everywhere (TR-076).
+// disaster record (its start month and HIPs hazard); on Disaster events it is
+// a disaster event (the event's start month; the HIPs hazards of its linked
+// records, since events carry no hazard of their own). Rows are specific HIPs
+// hazards, so Drought and Flooding appear by name; occurrences with no usable
+// month (a placeholder date or a year-only start) are counted per row, never
+// dropped. People are the chosen human effect, with value states (TR-076).
 
 import { cachedDashboard } from "~/backend.server/models/analytics/dashboard/dashboardCache.server";
 import { sql, type SQL } from "drizzle-orm";
@@ -27,15 +29,18 @@ import {
 } from "~/backend.server/models/analytics/dashboard/impactPanels5to16.server";
 import type { DeltaQuery } from "~/utils/deltaQuery";
 import type { ImpactHeadlineMeasure } from "~/utils/dashboard/impactPanels";
-import type { HazardMonth } from "~/utils/dashboard/hazardMonth";
+import type {
+	HazardMonth,
+	HazardMonthRow,
+} from "~/utils/dashboard/hazardMonth";
 import { measureValue } from "~/utils/valueState";
 
 /**
  * A month cell is a rare severe outlier when it holds few occurrences that
- * carry a high toll for its hazard: at most RARE_MAX_COUNT occurrences, and
- * people per reporting occurrence at least RARE_MULTIPLE times the hazard's
- * median per occurrence, for hazards with at least RARE_MIN_REPORTING
- * reporting occurrences.
+ * carry a high toll for its hazard: at most maxCount occurrences, and people
+ * per reporting occurrence at least `multiple` times the hazard's median per
+ * occurrence, for hazards with at least minReporting reporting occurrences.
+ * Occurrences under review never count toward it.
  */
 export const RARE_SEVERE_RULE = {
 	maxCount: 2,
@@ -45,40 +50,47 @@ export const RARE_SEVERE_RULE = {
 
 /**
  * A calendar day (month and day, any year) is a placeholder date when it
- * holds at least minRecords occurrences and at least multiple times the
- * average per calendar day of the dated occurrences in scope (2026-10-19
- * seasonality research: Angola, 72 records on 31 January, 57 times the
- * average). Occurrences on it count as having no usable month.
+ * holds at least minRecords occurrences and at least `multiple` times the
+ * average per calendar day of the dated occurrences in scope. Examples:
+ * Angola, 72 records on 31 January; Ethiopia, 7,445 on 7 September (the
+ * DesInventar source itself carries 2008-9-7, 2007-9-7 and so on).
  */
 export const PLACEHOLDER_DATE_RULE = { minRecords: 10, multiple: 10 } as const;
+
+/** The people measure when the query names none (Alex, 2026-10-19). */
+export const HAZARD_MONTH_DEFAULT_MEASURE: ImpactHeadlineMeasure =
+	"affected_direct";
+
+const DAY_RE = /^\d{4}-(\d{2}-\d{2})/;
+/** "MM-DD" of a day-precise date, else null. */
+const calendarDay = (d: unknown): string | null =>
+	typeof d === "string" ? (d.match(DAY_RE)?.[1] ?? null) : null;
 
 /** Calendar days ("MM-DD") that are placeholders among day-precise dates. */
 export function placeholderDays(
 	dates: (string | null | undefined)[],
-): Set<string> {
+): Map<string, number> {
 	const counts = new Map<string, number>();
 	let dated = 0;
 	for (const d of dates) {
-		const m = typeof d === "string" ? /^\d{4}-(\d{2}-\d{2})/.exec(d) : null;
-		if (!m) continue;
+		const day = calendarDay(d);
+		if (!day) continue;
 		dated++;
-		counts.set(m[1], (counts.get(m[1]) ?? 0) + 1);
+		counts.set(day, (counts.get(day) ?? 0) + 1);
 	}
 	const avg = dated / 365;
-	return new Set(
-		[...counts]
-			.filter(
-				([, n]) =>
-					n >= PLACEHOLDER_DATE_RULE.minRecords &&
-					n >= PLACEHOLDER_DATE_RULE.multiple * avg,
-			)
-			.map(([k]) => k),
+	return new Map(
+		[...counts].filter(
+			([, n]) =>
+				n >= PLACEHOLDER_DATE_RULE.minRecords &&
+				n >= PLACEHOLDER_DATE_RULE.multiple * avg,
+		),
 	);
 }
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
 
-/** Per-record value, reported and confirmed-zero tests for a measure. */
+/** Per-record value and confirmed-zero tests for a measure. */
 function recordMeasure(m: ImpactHeadlineMeasure) {
 	const total =
 		m === "displaced"
@@ -91,87 +103,162 @@ function recordMeasure(m: ImpactHeadlineMeasure) {
 	};
 }
 
+/** Row key of a record: its specific hazard, else its cluster, else none. */
+const rowKey = (rec: string) =>
+	sql.raw(
+		`COALESCE(NULLIF(${rec}."hip_hazard_id", ''), 'cluster:' || NULLIF(${rec}."hip_cluster_id", ''), 'none')`,
+	);
 const monthOf = (col: SQL) =>
 	sql`NULLIF(substring(${col} from '^[0-9]{4}-([0-9]{2})'), '')::int`;
 const yearOf = (col: SQL) =>
 	sql`NULLIF(substring(${col} from '^[0-9]{4}'), '')::int`;
+const dayOf = (col: SQL) =>
+	sql`substring(${col} from '^[0-9]{4}-([0-9]{2}-[0-9]{2})')`;
 
-interface Occ {
+/** One occurrence group: a row key, a month (or none) and its tallies. */
+interface Tally {
+	key: string;
 	cluster: string | null;
-	month: number;
+	/** 1 to 12; null when the month is unknown or a placeholder. */
+	month: number | null;
+	placeholder: boolean;
+	noMonth: boolean;
+	total: number;
 	sum: number;
 	reported: number;
 	zero: number;
-	total: number;
-	median: number | null;
-	reportingInHazard: number;
-	/** Occurrences under review (plausibility flag or above the ceiling). */
 	flagged: number;
 }
 
+interface HazardNames {
+	hazards: Map<string, { label: string; cluster: string }>;
+	clusters: Map<string, { label: string; typeId: string | null }>;
+}
+
+async function hazardNames(): Promise<HazardNames> {
+	const [hz, cl] = await Promise.all([
+		rows(
+			sql`SELECT "id"::text AS id, "name_en" AS name, "cluster_id"::text AS cluster FROM "hip_hazard"`,
+		),
+		rows(
+			sql`SELECT "id"::text AS id, "name_en" AS name, "type_id"::text AS type_id FROM "hip_cluster"`,
+		),
+	]);
+	return {
+		hazards: new Map(
+			hz.map((r) => [
+				r.id as string,
+				{ label: r.name as string, cluster: r.cluster as string },
+			]),
+		),
+		clusters: new Map(
+			cl.map((r) => [
+				r.id as string,
+				{
+					label: r.name as string,
+					typeId: (r.type_id as string | null) ?? null,
+				},
+			]),
+		),
+	};
+}
+
+const sumOf = (list: Tally[], f: (t: Tally) => number) =>
+	list.reduce((s, t) => s + f(t), 0);
+
 function buildRows(
-	occ: Occ[],
-	clusters: Map<string, { label: string; typeId: string | null }>,
-): HazardMonth["rows"] {
-	const by = new Map<string, Occ[]>();
-	for (const o of occ) {
-		const k = o.cluster ?? "none";
-		by.set(k, [...(by.get(k) ?? []), o]);
-	}
+	tallies: Tally[],
+	medians: Map<string, { median: number | null; n: number }>,
+	names: HazardNames,
+): HazardMonthRow[] {
+	const by = new Map<string, Tally[]>();
+	for (const t of tallies) by.set(t.key, [...(by.get(t.key) ?? []), t]);
 	return [...by]
-		.map(([id, list]) => {
+		.map(([key, list]): HazardMonthRow => {
+			const med = medians.get(key);
+			const dated = list.filter((t) => t.month !== null);
 			const cells = MONTHS.map((month) => {
-				const c = list.find((o) => o.month === month);
+				const c = dated.filter((t) => t.month === month);
+				const total = sumOf(c, (t) => t.total);
+				const sum = sumOf(c, (t) => t.sum);
+				const reported = sumOf(c, (t) => t.reported);
 				const people = measureValue({
-					sum: c && c.reported > 0 ? c.sum : null,
-					reported: c?.reported ?? 0,
-					zeroConfirmed: c?.zero ?? 0,
-					total: c?.total ?? 0,
+					sum: reported > 0 ? sum : null,
+					reported,
+					zeroConfirmed: sumOf(c, (t) => t.zero),
+					total,
 				});
-				const perOcc = c && c.reported > 0 ? c.sum / c.reported : 0;
+				const perOcc = reported > 0 ? sum / reported : 0;
 				const rare =
-					!!c &&
-					c.flagged === 0 &&
-					c.total <= RARE_SEVERE_RULE.maxCount &&
-					c.reportingInHazard >= RARE_SEVERE_RULE.minReporting &&
-					c.median !== null &&
-					c.median > 0 &&
-					perOcc >= RARE_SEVERE_RULE.multiple * c.median;
-				return { month, count: c?.total ?? 0, people, rare };
+					total > 0 &&
+					total <= RARE_SEVERE_RULE.maxCount &&
+					sumOf(c, (t) => t.flagged) === 0 &&
+					!!med &&
+					med.n >= RARE_SEVERE_RULE.minReporting &&
+					med.median !== null &&
+					med.median > 0 &&
+					perOcc >= RARE_SEVERE_RULE.multiple * med.median;
+				return { month, count: total, people, rare };
 			});
-			const info = id === "none" ? null : clusters.get(id);
+			const level: HazardMonthRow["level"] =
+				key === "none"
+					? "none"
+					: key.startsWith("cluster:")
+						? "cluster"
+						: "hazard";
+			const hazard = level === "hazard" ? names.hazards.get(key) : undefined;
+			const clusterId =
+				level === "cluster"
+					? key.slice("cluster:".length)
+					: (hazard?.cluster ?? list.find((t) => t.cluster)?.cluster ?? null);
+			const cluster = clusterId ? names.clusters.get(clusterId) : undefined;
+			const datedReported = sumOf(dated, (t) => t.reported);
 			return {
-				hipClusterId: id,
+				key,
+				level,
 				label:
-					id === "none"
+					level === "none"
 						? "Hazard not coded"
-						: (info?.label ?? `HIPs cluster ${id}`),
-				hipTypeId: info?.typeId ?? null,
+						: level === "hazard"
+							? (hazard?.label ?? `HIPs hazard ${key}`)
+							: (cluster?.label ?? `HIPs cluster ${clusterId}`),
+				hipHazardId: level === "hazard" ? key : null,
+				hipClusterId: clusterId,
+				clusterLabel: cluster?.label ?? null,
+				hipTypeId: cluster?.typeId ?? null,
 				total: cells.reduce((s, c) => s + c.count, 0),
+				allOccurrences: sumOf(list, (t) => t.total),
+				people: measureValue({
+					sum: datedReported > 0 ? sumOf(dated, (t) => t.sum) : null,
+					reported: datedReported,
+					zeroConfirmed: sumOf(dated, (t) => t.zero),
+					total: sumOf(dated, (t) => t.total),
+				}),
+				unplaced: {
+					placeholder: sumOf(
+						list.filter((t) => t.placeholder),
+						(t) => t.total,
+					),
+					noMonth: sumOf(
+						list.filter((t) => t.noMonth),
+						(t) => t.total,
+					),
+				},
 				cells,
 			};
 		})
-		.sort((a, b) => b.total - a.total || a.label.localeCompare(b.label));
-}
-
-async function clusterInfo() {
-	const r = await rows(
-		sql`SELECT "id"::text AS id, "name_en" AS name, "type_id"::text AS type_id FROM "hip_cluster"`,
-	);
-	return new Map(
-		r.map((x) => [
-			x.id as string,
-			{ label: x.name as string, typeId: (x.type_id as string | null) ?? null },
-		]),
-	);
+		.sort(
+			(a, b) =>
+				b.allOccurrences - a.allOccurrences || a.label.localeCompare(b.label),
+		);
 }
 
 const methodText = (unit: HazardMonth["unit"], m: ImpactHeadlineMeasure) =>
-	`${unit === "disaster_record" ? "Disaster records" : "Disaster events"} by HIPs cluster and start month, all years pooled; people = ${m} with value states (a month with occurrences but no reported figure is not reported, never 0). ${
+	`${unit === "disaster_record" ? "Disaster records" : "Disaster events"} by specific HIPs hazard (or cluster when no hazard is coded) and start month, all years pooled; people = ${m}, with value states (a month with occurrences but no reported figure is not reported, never 0). ${
 		unit === "disaster_event"
-			? "An event takes the clusters of its linked disaster records and counts under each. "
+			? "An event takes the hazards of its linked disaster records and counts under each. "
 			: ""
-	}Rare severe: at most ${RARE_SEVERE_RULE.maxCount} occurrences in the month and ${m} per reporting occurrence at least ${RARE_SEVERE_RULE.multiple} times the hazard's median, for hazards with ${RARE_SEVERE_RULE.minReporting} or more reporting occurrences; occurrences under review (a plausibility flag or above the ceiling) never make a month rare and are left out of the median. Placeholder dates (a calendar day with ${PLACEHOLDER_DATE_RULE.minRecords} or more occurrences and ${PLACEHOLDER_DATE_RULE.multiple} times the daily average, such as a default 31 January) count as no month. The start month is a reporting date for slow-onset hazards such as drought, a weak guide to onset. More records can reflect more reporting.`;
+	}Occurrences with no usable month are counted per hazard, not drawn: placeholder dates (a calendar day with ${PLACEHOLDER_DATE_RULE.minRecords} or more occurrences and ${PLACEHOLDER_DATE_RULE.multiple} times the daily average, such as a source default of 7 September) and year-only starts. Rare severe: at most ${RARE_SEVERE_RULE.maxCount} occurrences in the month and ${m} per reporting occurrence at least ${RARE_SEVERE_RULE.multiple} times the hazard's median, for hazards with ${RARE_SEVERE_RULE.minReporting} or more reporting occurrences; occurrences under review (a plausibility flag or above the ceiling) never make a month rare and are left out of the median. The start month is a reporting date for slow-onset hazards such as drought, a weak guide to onset. More records can reflect more reporting.`;
 
 async function computeHazardMonth(
 	query: DeltaQuery,
@@ -179,12 +266,16 @@ async function computeHazardMonth(
 	unit: HazardMonth["unit"],
 ): Promise<HazardMonth> {
 	const { filters, notApplied } = impactFiltersFromQuery(query, ctx);
-	const measure = chosenMeasure(query);
+	// Alex, 2026-10-19: people directly affected by default here (deaths when
+	// the query asks for them), so the switch shows the breadth of impact.
+	const measure: ImpactHeadlineMeasure = query.measure
+		? chosenMeasure(query)
+		: HAZARD_MONTH_DEFAULT_MEASURE;
 	const rm = recordMeasure(measure);
-	const clusters = await clusterInfo();
-	let occ: Occ[];
-	let withoutMonth: number;
-	let placeholderDates: number;
+	const names = await hazardNames();
+	let tallies: Tally[];
+	const medians = new Map<string, { median: number | null; n: number }>();
+	let phDays: Map<string, number>;
 	let years: HazardMonth["years"];
 
 	if (unit === "disaster_record") {
@@ -192,8 +283,8 @@ async function computeHazardMonth(
 		const base = sql`
 			WITH RECURSIVE ${fr},
 			rv0 AS (
-				SELECT NULLIF(rec."hip_cluster_id", '') AS cl,
-					substring(rec."start_date" from '^[0-9]{4}-([0-9]{2}-[0-9]{2})') AS md,
+				SELECT ${rowKey("rec")} AS k, NULLIF(rec."hip_cluster_id", '') AS cl,
+					${dayOf(sql`rec."start_date"`)} AS md,
 					${monthOf(sql`rec."start_date"`)} AS month0,
 					${yearOf(sql`rec."start_date"`)} AS year,
 					${rm.value} AS v, ${rm.zero} AS z,
@@ -203,7 +294,7 @@ async function computeHazardMonth(
 				LEFT JOIN "human_category_presence" hcp ON hcp."record_id" = fr.record_id
 			),
 			ph AS (
-				SELECT md FROM rv0 WHERE md IS NOT NULL GROUP BY md
+				SELECT md, COUNT(*) AS n FROM rv0 WHERE md IS NOT NULL GROUP BY md
 				HAVING COUNT(*) >= ${PLACEHOLDER_DATE_RULE.minRecords}
 					AND COUNT(*) >= ${PLACEHOLDER_DATE_RULE.multiple} *
 						(SELECT COUNT(*) FROM rv0 WHERE md IS NOT NULL) / 365.0
@@ -213,40 +304,38 @@ async function computeHazardMonth(
 					CASE WHEN ph.md IS NULL THEN rv0.month0 END AS month
 				FROM rv0 LEFT JOIN ph ON ph.md = rv0.md
 			)`;
-		const [cells, med, span] = await Promise.all([
+		const [groups, med, span, days] = await Promise.all([
 			rows(sql`${base}
-				SELECT cl, month, COUNT(*) AS total, SUM(v) AS sum,
-					COUNT(v) AS reported, COUNT(*) FILTER (WHERE v IS NULL AND z) AS zero,
+				SELECT k, cl, month, placeholder,
+					(year IS NOT NULL AND month0 IS NULL) AS no_month,
+					COUNT(*) AS total, SUM(v) AS sum, COUNT(v) AS reported,
+					COUNT(*) FILTER (WHERE v IS NULL AND z) AS zero,
 					COUNT(*) FILTER (WHERE fl) AS flagged
-				FROM rv WHERE month BETWEEN 1 AND 12 GROUP BY 1, 2`),
+				FROM rv GROUP BY 1, 2, 3, 4, 5`),
 			rows(sql`${base}
-				SELECT cl, percentile_cont(0.5) WITHIN GROUP (ORDER BY v) AS median, COUNT(v) AS reporting
-				FROM rv WHERE v IS NOT NULL AND NOT fl AND month BETWEEN 1 AND 12 GROUP BY 1`),
-			rows(sql`${base}
-				SELECT MIN(year) AS y0, MAX(year) AS y1,
-					COUNT(*) FILTER (WHERE year IS NOT NULL AND month0 IS NULL) AS no_month,
-					COUNT(*) FILTER (WHERE placeholder) AS placeholder
-				FROM rv`),
+				SELECT k, percentile_cont(0.5) WITHIN GROUP (ORDER BY v) AS median, COUNT(v) AS n
+				FROM rv WHERE v IS NOT NULL AND NOT fl AND month IS NOT NULL GROUP BY 1`),
+			rows(sql`${base} SELECT MIN(year) AS y0, MAX(year) AS y1 FROM rv`),
+			rows(sql`${base} SELECT md, n FROM ph`),
 		]);
-		const medBy = new Map(
-			med.map((r) => [(r.cl as string | null) ?? "none", r]),
-		);
-		occ = cells.map((r) => {
-			const m = medBy.get((r.cl as string | null) ?? "none");
-			return {
-				cluster: (r.cl as string | null) ?? null,
-				month: num(r.month),
-				sum: num(r.sum),
-				reported: num(r.reported),
-				zero: num(r.zero),
-				total: num(r.total),
-				median: m && m.median !== null ? Number(m.median) : null,
-				reportingInHazard: num(m?.reporting),
-				flagged: num(r.flagged),
-			};
-		});
-		withoutMonth = num(span[0]?.no_month);
-		placeholderDates = num(span[0]?.placeholder);
+		tallies = groups.map((r) => ({
+			key: r.k as string,
+			cluster: (r.cl as string | null) ?? null,
+			month: r.month == null ? null : num(r.month),
+			placeholder: r.placeholder === true,
+			noMonth: r.no_month === true,
+			total: num(r.total),
+			sum: num(r.sum),
+			reported: num(r.reported),
+			zero: num(r.zero),
+			flagged: num(r.flagged),
+		}));
+		for (const r of med)
+			medians.set(r.k as string, {
+				median: r.median === null ? null : Number(r.median),
+				n: num(r.n),
+			});
+		phDays = new Map(days.map((r) => [r.md as string, num(r.n)]));
 		years =
 			span[0]?.y0 != null
 				? { from: num(span[0].y0), to: num(span[0].y1) }
@@ -264,45 +353,45 @@ async function computeHazardMonth(
 				LEFT JOIN "human_category_presence" hcp ON hcp."record_id" = fr.record_id
 				GROUP BY 1
 			),
-			ec AS (
-				SELECT DISTINCT fr.event_id, NULLIF(rec."hip_cluster_id", '') AS cl
+			ek AS (
+				SELECT DISTINCT fr.event_id, ${rowKey("rec")} AS k, NULLIF(rec."hip_cluster_id", '') AS cl
 				FROM filtered_records fr
 				JOIN "disaster_records" rec ON rec."id" = fr.record_id
 			)
-			SELECT ev."id"::text AS id, ev.start_date, ${monthOf(sql`ev.start_date`)} AS month,
-				${yearOf(sql`ev.start_date`)} AS year, ec.cl,
-				pe.s, COALESCE(pe.rep, 0) AS rep, COALESCE(pe.z, 0) AS z,
-				COALESCE(pe.fl, 0) AS fl
+			SELECT ev."id"::text AS id, ev.start_date,
+				${monthOf(sql`ev.start_date`)} AS month0, ${yearOf(sql`ev.start_date`)} AS year,
+				COALESCE(ek.k, 'none') AS k, ek.cl,
+				pe.s, COALESCE(pe.rep, 0) AS rep, COALESCE(pe.z, 0) AS z, COALESCE(pe.fl, 0) AS fl
 			FROM ev
-			LEFT JOIN ec ON ec.event_id = ev."id"
+			LEFT JOIN ek ON ek.event_id = ev."id"
 			LEFT JOIN pe ON pe.event_id = ev."id"`);
-		const ph = placeholderDays([
+		phDays = placeholderDays([
 			...new Map(
 				perEvent.map((r) => [r.id as string, r.start_date as string | null]),
 			).values(),
 		]);
-		const isPh = (r: Record<string, unknown>) => {
-			const m =
-				typeof r.start_date === "string"
-					? /^\d{4}-(\d{2}-\d{2})/.exec(r.start_date)
-					: null;
-			return !!m && ph.has(m[1]);
-		};
-		const dated = perEvent.filter((r) => r.month != null && !isPh(r));
-		// Each event's state: reported when its records sum above 0.
-		const state = (r: Record<string, unknown>) => ({
-			value: num(r.rep) > 0 ? num(r.s) : null,
-			zero: num(r.rep) === 0 && num(r.z) > 0,
+		tallies = perEvent.map((r) => {
+			const ph = phDays.has(calendarDay(r.start_date) ?? "");
+			const reported = num(r.rep) > 0;
+			return {
+				key: r.k as string,
+				cluster: (r.cl as string | null) ?? null,
+				month: ph || r.month0 == null ? null : num(r.month0),
+				placeholder: ph,
+				noMonth: r.year != null && r.month0 == null,
+				total: 1,
+				sum: reported ? num(r.s) : 0,
+				reported: reported ? 1 : 0,
+				zero: !reported && num(r.z) > 0 ? 1 : 0,
+				flagged: num(r.fl) > 0 ? 1 : 0,
+			};
 		});
-		const medians = new Map<string, { median: number | null; n: number }>();
-		const byCl = new Map<string, number[]>();
-		for (const r of dated) {
-			const v = state(r).value;
-			if (v === null || v <= 0 || num(r.fl) > 0) continue;
-			const k = (r.cl as string | null) ?? "none";
-			byCl.set(k, [...(byCl.get(k) ?? []), v]);
+		const byKey = new Map<string, number[]>();
+		for (const t of tallies) {
+			if (t.month === null || t.reported === 0 || t.flagged > 0) continue;
+			byKey.set(t.key, [...(byKey.get(t.key) ?? []), t.sum]);
 		}
-		for (const [k, vs] of byCl) {
+		for (const [k, vs] of byKey) {
 			const s = [...vs].sort((a, b) => a - b);
 			const mid = Math.floor(s.length / 2);
 			medians.set(k, {
@@ -310,38 +399,6 @@ async function computeHazardMonth(
 				n: s.length,
 			});
 		}
-		const agg = new Map<string, Occ>();
-		for (const r of dated) {
-			const cl = (r.cl as string | null) ?? null;
-			const k = `${cl ?? "none"}|${num(r.month)}`;
-			const st = state(r);
-			const m = medians.get(cl ?? "none");
-			const o = agg.get(k) ?? {
-				cluster: cl,
-				month: num(r.month),
-				sum: 0,
-				reported: 0,
-				zero: 0,
-				total: 0,
-				median: m?.median ?? null,
-				reportingInHazard: m?.n ?? 0,
-				flagged: 0,
-			};
-			o.total++;
-			if (num(r.fl) > 0) o.flagged++;
-			if (st.value !== null && st.value > 0) {
-				o.sum += st.value;
-				o.reported++;
-			} else if (st.zero) o.zero++;
-			agg.set(k, o);
-		}
-		occ = [...agg.values()];
-		const ids = (rs: Record<string, unknown>[]) =>
-			new Set(rs.map((r) => r.id as string)).size;
-		withoutMonth = ids(
-			perEvent.filter((r) => r.month == null && r.year != null),
-		);
-		placeholderDates = ids(perEvent.filter(isPh));
 		const ys = perEvent
 			.map((r) => r.year)
 			.filter((y) => y != null)
@@ -349,12 +406,16 @@ async function computeHazardMonth(
 		years = ys.length ? { from: Math.min(...ys), to: Math.max(...ys) } : null;
 	}
 
+	const rowsOut = buildRows(tallies, medians, names);
 	return {
 		unit,
 		measure,
-		rows: buildRows(occ, clusters),
-		withoutMonth,
-		placeholderDates,
+		rows: rowsOut,
+		withoutMonth: rowsOut.reduce((s, r) => s + r.unplaced.noMonth, 0),
+		placeholderDates: rowsOut.reduce((s, r) => s + r.unplaced.placeholder, 0),
+		placeholderDays: [...phDays]
+			.map(([d, n]) => ({ day: d, occurrences: n }))
+			.sort((a, b) => b.occurrences - a.occurrences),
 		years,
 		meta: { method: methodText(unit, measure), notApplied },
 	};

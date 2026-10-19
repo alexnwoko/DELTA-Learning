@@ -111,5 +111,13 @@ export const HAZARD_ICONS: Record<string, OchaIcon> = {
 	unclassified: "help",
 };
 
+/** The four view buttons (FE-Proposal-03): Sectors and Disaster impact reuse their empty-state icons. */
+export const VIEW_ICONS: Record<"sectors" | "hazardous_event" | "disaster_event" | "disaster_impact", OchaIcon> = {
+	sectors: "multi-cluster-sector",
+	hazardous_event: "observation-tower",
+	disaster_event: "alert",
+	disaster_impact: "affected-population",
+};
+
 /** Section headings outside panels. */
 export const SECTION_ICONS = { sendai: "monitoring", about: "about", map: "map" } as const satisfies Record<string, OchaIcon>;
