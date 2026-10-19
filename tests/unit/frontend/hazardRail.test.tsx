@@ -30,11 +30,11 @@ describe("left hazard rail (mockup option A)", () => {
 		expect(html).toContain("Biological");
 	});
 
-	it("draws each type's icon at 52 px in its identity colour, All hazards in the dashboard blue", () => {
+	it("draws each type's icon at 26 px in its identity colour, All hazards in the dashboard blue", () => {
 		const html = render(null);
-		expect(html).toMatch(/data-icon="multi-hazard"[^>]*width:52px;height:52px;background-color:var\(--panel-icon, var\(--delta-data-icon\)\)/);
+		expect(html).toMatch(/data-icon="multi-hazard"[^>]*width:26px;height:26px;background-color:var\(--panel-icon, var\(--delta-data-icon\)\)/);
 		for (const [name, colour] of [["flood", "meteorological-hydrological"], ["earthquake", "geological"], ["epidemic", "biological"]]) {
-			expect(html).toMatch(new RegExp(`data-icon="${name}"[^>]*width:52px;height:52px;background-color:var\\(--delta-data-hazard-${colour}\\)`));
+			expect(html).toMatch(new RegExp(`data-icon="${name}"[^>]*width:26px;height:26px;background-color:var\\(--delta-data-hazard-${colour}\\)`));
 		}
 	});
 
