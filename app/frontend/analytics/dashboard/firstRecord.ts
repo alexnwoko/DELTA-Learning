@@ -1,8 +1,9 @@
-// Year charts start where the records start (Alex, 2026-10-18): at the
-// country's first record year, or, under a place filter, at the first year
-// with a record in that place. Applied once to each payload, so a chart and
-// its CSV always agree. Years inside the period with no record stay in the
-// series as gaps, drawn as empty space.
+// Time charts start where the data starts (Alex, 2026-10-18; made general
+// 2026-10-20: "only start every chart from the month where the data
+// starts"): at the first year, or for month grids the first month, holding a
+// reported figure or a confirmed zero in the chart's own scope. Applied once
+// to each payload, so a chart and its CSV agree. Later periods with no data
+// stay as gaps, drawn as empty space, never 0.
 import type { EventPanels1to7 } from "~/utils/dashboard/eventPanels";
 import type { EventPanels8to16 } from "~/utils/dashboard/eventPanels8to16";
 import type { HazardEventPanels1to7 } from "~/utils/dashboard/hazardEventPanels";
@@ -14,7 +15,8 @@ import type { SendaiSection } from "~/utils/dashboard/sendaiPanels";
 /** A fixed first year (the country's), or null: start at the first year that has a record. */
 export type FirstYear = number | null;
 
-const hasRecords = (c: PanelCell | null | undefined) => (c?.recordsTotal ?? 0) > 0;
+/** A period holds data: a reported figure or a confirmed zero. */
+const hasRecords = (c: PanelCell | null | undefined) => c?.valueState === "reported" || c?.valueState === "zero_confirmed";
 
 /** The year a series starts: the fixed year, else its first year with a record (null: none). */
 export function startYear<T extends { year: number }>(points: T[], first: FirstYear, has: (p: T) => boolean): number | null {
@@ -27,6 +29,15 @@ export function startYear<T extends { year: number }>(points: T[], first: FirstY
 export function fromYear<T extends { year: number }>(points: T[], start: number | null): T[] {
 	if (start === null) return [];
 	return points.filter((p) => p.year >= start);
+}
+
+/** Year-month cells from the first month that holds data; later empty months stay as gaps. */
+export function fromFirstMonth<T extends { year: number; month: number }>(cells: T[], has: (c: T) => boolean): T[] {
+	const key = (c: T) => c.year * 12 + c.month;
+	const hits = cells.filter(has).map(key);
+	if (hits.length === 0) return [];
+	const start = Math.min(...hits);
+	return cells.filter((c) => key(c) >= start);
 }
 
 /** fromYear(startYear(...)) for one series. */
@@ -51,8 +62,8 @@ export function impact1to4FromFirstRecord(d: ImpactPanels1to4, first: FirstYear)
 	};
 }
 
-export function impact5to16FromFirstRecord(d: ImpactPanels5to16, first: FirstYear): ImpactPanels5to16 {
-	return { ...d, season: { ...d.season, cells: fromFirstRecord(d.season.cells, first, byCell) } };
+export function impact5to16FromFirstRecord(d: ImpactPanels5to16, _first: FirstYear): ImpactPanels5to16 {
+	return { ...d, season: { ...d.season, cells: fromFirstMonth(d.season.cells, byCell) } };
 }
 
 export function eventsFromFirstRecord(d: EventPanels1to7, first: FirstYear): EventPanels1to7 {
@@ -63,7 +74,7 @@ export function hazardEventsFromFirstRecord(d: HazardEventPanels1to7, first: Fir
 	return {
 		...d,
 		byYear: { ...d.byYear, years: fromFirstRecord(d.byYear.years, first, (y) => y.events > 0) },
-		season: { ...d.season, cells: fromFirstRecord(d.season.cells, first, (c) => c.events > 0) },
+		season: { ...d.season, cells: fromFirstMonth(d.season.cells, (c) => c.events > 0) },
 	};
 }
 
@@ -90,6 +101,6 @@ export function sendaiFromFirstRecord(d: SendaiSection, first: FirstYear): Senda
 	};
 }
 
-export function events8to16FromFirstRecord(d: EventPanels8to16, first: FirstYear): EventPanels8to16 {
-	return { ...d, season: { ...d.season, cells: fromFirstRecord(d.season.cells, first, (c) => c.events > 0) } };
+export function events8to16FromFirstRecord(d: EventPanels8to16, _first: FirstYear): EventPanels8to16 {
+	return { ...d, season: { ...d.season, cells: fromFirstMonth(d.season.cells, (c) => c.events > 0) } };
 }
