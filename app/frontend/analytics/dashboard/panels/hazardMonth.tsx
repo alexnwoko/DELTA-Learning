@@ -65,7 +65,11 @@ function HazardMonthView({ ctx, d, title, exp, common }: { ctx: ViewContext; d: 
 	const [mode, setMode] = useState<Mode>("count");
 	const months = monthNames(ctx.lang);
 	const occLabel = d.unit === "disaster_event" ? t({ code: "dashboard.mode_events", msg: "Number of events" }) : t({ code: "dashboard.mode_records", msg: "Number of records" });
-	const peopleLabel = effectLabel(t, d.measure as never);
+	// The switch names people plainly (Alex, 2026-10-19: directly affected by default).
+	const peopleLabel =
+		d.measure === "affected_direct"
+			? t({ code: "dashboard.people_directly_affected", msg: "People directly affected" })
+			: effectLabel(t, d.measure as never);
 	const rows = [...d.rows].sort((a, b) => b.total - a.total || a.label.localeCompare(b.label));
 	const value = (c: HazardMonth["rows"][number]["cells"][number]) => (mode === "count" ? (c.count > 0 ? c.count : null) : peopleValue(c));
 	const max = Math.max(0, ...rows.flatMap((r) => r.cells.map((c) => value(c) ?? 0)));
