@@ -497,6 +497,16 @@
 				"$type": "color",
 				"$value": "#4a5a75",
 				"$description": "Grey-blue text for Features Coming Soon (Alex, 2026-10-19): 6.42:1 on the dashboard tint, 6.98:1 on white (WCAG 1.4.3)."
+			},
+			"canvas": {
+				"$type": "color",
+				"$value": "#f0f6ff",
+				"$description": "Analysis page background, so the page is not plain white (FE-Proposal-03, Alex 2026-10-19)."
+			},
+			"surface": {
+				"$type": "color",
+				"$value": "#ffffff",
+				"$description": "Layers on the canvas: view bar, rail, filter row, cards (FE-Proposal-03)."
 			}
 		},
 		"sfm": {

@@ -50,14 +50,14 @@ export function HazardRail({ ctx, tree, selected, onChange, showCounts }: Hazard
 	const t = ctx.t;
 	const n = (x: number) => x.toLocaleString(ctx.lang);
 	const item =
-		"group relative flex w-24 shrink-0 cursor-pointer flex-col items-center gap-1 rounded border border-transparent px-1 py-2 text-center text-xs text-brand-text data-[hovered]:bg-brand-surface-subtle data-[selected]:border-brand-interactive data-[selected]:bg-brand-surface-subtle data-[selected]:font-semibold data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring data-[disabled]:cursor-default data-[disabled]:opacity-50";
+		"group relative flex w-[88px] shrink-0 cursor-pointer flex-col items-center gap-1 rounded-lg border border-transparent px-1 py-2 text-center text-[0.8125rem] font-semibold text-data-dashboard-ink transition-colors duration-150 motion-reduce:transition-none data-[hovered]:border-data-dashboard-border data-[hovered]:bg-data-dashboard-tint data-[selected]:border-brand-interactive data-[selected]:bg-data-dashboard-tint data-[selected]:font-extrabold data-[selected]:before:absolute data-[selected]:before:inset-y-2 data-[selected]:before:-start-px data-[selected]:before:w-1 data-[selected]:before:rounded-e data-[selected]:before:bg-brand-interactive data-[selected]:before:content-[''] data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring data-[disabled]:cursor-default data-[disabled]:opacity-50";
 	const types = tree?.types ?? [];
 	return (
 		<RadioGroup
 			value={selected ?? ALL_HAZARDS}
 			onChange={(v) => onChange(v === ALL_HAZARDS ? null : v)}
 			data-print="hide"
-			className="flex shrink-0 flex-row gap-1 overflow-x-auto border-b border-brand-border pb-2 lg:sticky lg:top-2 lg:flex-col lg:self-start lg:overflow-visible lg:border-b-0 lg:border-e lg:pb-0 lg:pe-2"
+			className="delta-layer flex shrink-0 flex-row gap-1 overflow-x-auto p-2 lg:sticky lg:top-2 lg:flex-col lg:self-start lg:overflow-visible"
 		>
 			<Label className="sr-only">{t({ code: "dashboard.rail_label", msg: "Hazard type" })}</Label>
 			<Radio value={ALL_HAZARDS} className={item}>
@@ -88,7 +88,7 @@ export function HazardRail({ ctx, tree, selected, onChange, showCounts }: Hazard
 							{showCounts && !empty && (
 								<span
 									aria-hidden="true"
-									className="absolute -top-2 start-10 rounded-full bg-brand-interactive px-1 text-[10px] leading-4 whitespace-nowrap text-brand-text-on-interactive"
+									className="absolute -top-2 start-10 rounded-full bg-brand-interactive px-1.5 text-[11px] font-bold leading-4 tabular-nums whitespace-nowrap text-brand-text-on-interactive"
 								>
 									{n(ty.recordCountSubtree)}
 								</span>

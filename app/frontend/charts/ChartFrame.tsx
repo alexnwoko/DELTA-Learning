@@ -23,6 +23,7 @@ import {
 	type ChartExportMeta,
 	type ChartExportRow,
 } from "./chartExport";
+import { SECONDARY_BUTTON_SM } from "~/frontend/buttonStyles";
 
 export interface ChartFrameProps {
 	ctx: ViewContext;
@@ -156,11 +157,12 @@ export function ChartFrame({ ctx, title, meta, rows, formatValue, pictures = tru
 	const t = (code: string, msg: string) => ctx.t({ code, msg });
 
 	return (
-		<figure aria-labelledby={titleId} className="m-0 flex flex-1 flex-col gap-2">
-			<div className="flex items-start justify-between gap-2">
-				<h3 id={titleId} className="delta-panel-title m-0 flex items-center gap-2 text-base">
+		<figure aria-labelledby={titleId} data-print="flow" className="m-0 flex flex-1 flex-col gap-2">
+			{/* A light blue rule under the title row (FE-Proposal-03). */}
+			<div className="flex items-start justify-between gap-2 border-b border-data-dashboard-border pb-2.5">
+				<h3 id={titleId} className="delta-panel-title m-0 flex items-center gap-2 text-[1.0625rem]">
 					{icon && (
-						<span className="delta-panel-iconbox flex h-16 w-16 shrink-0 items-center justify-center rounded border">
+						<span className="delta-panel-iconbox flex h-16 w-16 shrink-0 items-center justify-center rounded-[0.714rem] border">
 							<PanelIcon name={icon} size={35} />
 						</span>
 					)}
@@ -170,7 +172,7 @@ export function ChartFrame({ ctx, title, meta, rows, formatValue, pictures = tru
 					<Button
 						data-print="hide"
 						aria-label={`${t("charts.download", "Download")}: ${title}`}
-						className="rounded border border-brand-border-control px-2 py-1 text-sm text-brand-interactive data-[hovered]:bg-brand-surface-subtle data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
+						className={SECONDARY_BUTTON_SM}
 					>
 						{t("charts.download", "Download")}
 					</Button>
