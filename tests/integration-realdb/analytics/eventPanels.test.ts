@@ -8,6 +8,7 @@ import {
 	cleanupTestUser,
 } from "../test-helpers";
 import { getEventPanels1to7 } from "~/backend.server/models/analytics/dashboard/eventPanels.server";
+import { getEventPanels8to16 } from "~/backend.server/models/analytics/dashboard/eventPanels8to16.server";
 import { DEFAULT_QUERY } from "~/utils/deltaQuery";
 
 // D1 Disaster events panels 1 to 7 against seeded events:
@@ -181,5 +182,39 @@ describe("getEventPanels1to7", () => {
 		expect(p.empty?.reason).toBe(
 			"No disaster events in scope for these filters.",
 		);
+	});
+
+	it("panel 11: lists events newest first with their linked records and divisions", async () => {
+		const p = await getEventPanels8to16(DEFAULT_QUERY, ctx());
+		expect(p.register.eventsInScope).toBe(3);
+		expect(p.register.rows.map((r) => r.eventId)).toEqual([ev.e2, ev.e1, ev.e3]);
+		const e1 = p.register.rows.find((r) => r.eventId === ev.e1)!;
+		expect(e1).toMatchObject({ records: 2, divisions: 2, rule: "glide", glide: "FL-2020-000001-TST" });
+		expect(p.register.rows.find((r) => r.eventId === ev.e3)!.records).toBe(0);
+	});
+
+	it("panel 12: counts events filling each field; a fallback name is not a name", async () => {
+		const p = await getEventPanels8to16(DEFAULT_QUERY, ctx());
+		const by = Object.fromEntries(p.completeness.rows.map((r) => [r.key, r.events]));
+		expect(p.completeness.eventsInScope).toBe(3);
+		expect(by).toMatchObject({
+			name: 0,
+			start_day: 1,
+			start_year_only: 1,
+			hazard_type: 1,
+			glide: 1,
+			linked_records: 2,
+			places: 1,
+		});
+	});
+
+	it("panels 13 and 16: divisions per event and events by sector, from linked records", async () => {
+		const p = await getEventPanels8to16(DEFAULT_QUERY, ctx());
+		expect(p.divisionsPerEvent.bins.find((b) => b.label === "2 to 3")!.events).toBe(1);
+		expect(p.divisionsPerEvent.eventsWithoutDivision).toBe(2);
+		expect(p.bySector.rows).toEqual([
+			expect.objectContaining({ sectorId: HOUSING, events: 1 }),
+		]);
+		expect(p.bySector.eventsWithoutSector).toBe(2);
 	});
 });
