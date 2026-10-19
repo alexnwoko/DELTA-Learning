@@ -15,6 +15,7 @@ import { RowBars, ShadedTable, type BarSeries } from "../blocks";
 import { YearColumns } from "../impact/ImpactTimeline";
 import { rankedDivisionsExport, sendaiNotice } from "../impact/panels5to16";
 import { DASHBOARD_RAMP } from "~/frontend/charts/sectionPalette";
+import { comingSoonPanels } from "../../comingSoon";
 import { arrangeByLayout, SECTORS_LAYOUT } from "../../layout";
 
 type T = ViewContext["t"];
@@ -305,6 +306,8 @@ export function sectorDashboardPanels(
 			})),
 			sectorDivisionsPanel(ctx, d, common),
 			sectorCompletenessPanel(ctx, d, common),
+			// Unbuilt features (Alex, 2026-10-19): Features Coming Soon.
+			...comingSoonPanels(ctx, "sectors", SECTORS_LAYOUT, []),
 		],
 		SECTORS_LAYOUT,
 	);

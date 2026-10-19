@@ -24,7 +24,8 @@ import { YearColumns } from "../impact/ImpactTimeline";
 import { effectLabel } from "../impact/panels5to16";
 import { DASHBOARD_RAMP } from "~/frontend/charts/sectionPalette";
 import type { EventMapPayload } from "~/utils/dashboard/eventMap";
-import { arrangeByLayout, EVENTS_DROPPED, EVENTS_LAYOUT } from "../../layout";
+import { comingSoonPanels } from "../../comingSoon";
+import { arrangeByLayout, EVENTS_LAYOUT } from "../../layout";
 
 type T = ViewContext["t"];
 const tr = (t: T, code: string, msg: string, r?: Record<string, unknown>) => t({ code, msg }, r);
@@ -457,33 +458,11 @@ export function eventDashboardPanels(
 		[7, tr(t, "dashboard.events_7", "Extensive and intensive risk by disaster event"), eventSizeExport(t, d, m.eventSize), (c, e) => <EventSizeView common={c} d={d} exp={e} />],
 	];
 	const drawn = spec.map(([n, title, exp, view]): DashboardPanel => ({ id: `events-${n}`, n, title, exportData: exp, render: () => view(common(title), exp) }));
-	// Panels 8 to 16 follow; on this view they fold into the strip (decision 1).
-	const later: [number, string][] = [
-		[8, tr(t, "dashboard.events_8", "Declaration, warning and response timeline")],
-		[9, tr(t, "dashboard.events_9", "Event chain")],
-		[10, tr(t, "dashboard.events_10", "Approval and assessment status")],
-		[11, tr(t, "dashboard.events_11", "Disaster event register")],
-		[12, tr(t, "dashboard.events_12", "Reporting completeness of disaster events")],
-		[13, tr(t, "dashboard.events_13", "Divisions per disaster event")],
-		[14, tr(t, "dashboard.events_14", "Official warning recorded, by hazard")],
-		[15, tr(t, "dashboard.events_15", "Compare disaster events")],
-		[16, tr(t, "dashboard.events_16", "Disaster events by sector")],
-	];
 	const divisions = opts.map ? [eventDivisionsPanel(ctx, opts.map, common)] : [];
-	return arrangeByLayout(
-		[
-			...drawn,
-			...divisions,
-			...later.map(([n, title]): DashboardPanel => ({
-				id: `events-${n}`,
-				n,
-				title,
-				gap: { code: "D1 events", text: tr(t, "dashboard.panel_in_build", "This panel is being built.") },
-			})),
-		],
-		EVENTS_LAYOUT,
-		EVENTS_DROPPED,
-	);
+	const built = [...drawn, ...divisions];
+	// Unbuilt features (Alex, 2026-10-19): a grey placeholder in their slot,
+	// the rest in Features Coming Soon, official warning included.
+	return arrangeByLayout([...built, ...comingSoonPanels(ctx, "events", EVENTS_LAYOUT, built)], EVENTS_LAYOUT);
 }
 
 /** How many divisions Ranked by divisions lists before "n other divisions". */

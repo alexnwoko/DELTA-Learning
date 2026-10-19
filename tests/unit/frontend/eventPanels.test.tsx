@@ -35,10 +35,12 @@ const panels = eventDashboardPanels(ctx, D, { source: "DELTA Angola", scope: "An
 const html = (n: number) => text(renderToString(<>{panels.find((p) => p.n === n)!.render!()}</>));
 
 describe("Disaster events panels 1 to 7", () => {
-	it("draw 1 to 7 and list 8 to 16 as being built", () => {
+	it("draw 1 to 7; list the unbuilt features, with grey placeholders in their slots", () => {
 		expect(panels.filter((p) => p.render).map((p) => p.n).sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7]);
-		// 14 (official warning) is left out until the flag can say "not reported" (FE-Proposal-02).
-		expect(panels.filter((p) => p.gap).map((p) => p.n).sort((a, b) => a - b)).toEqual([8, 9, 10, 11, 12, 13, 15, 16]);
+		// Reassessment 4.3: DE-8 to DE-26 are unbuilt; 12, 13 and 16 hold layout slots.
+		const gaps = panels.filter((p) => p.gap);
+		expect(gaps.map((p) => p.id).sort()).toEqual(Array.from({ length: 19 }, (_, i) => `events-${i + 8}`).sort());
+		expect(gaps.filter((p) => p.gap!.ghost).map((p) => p.id).sort()).toEqual(["events-12", "events-13", "events-16"]);
 	});
 
 	it("print the grouping rule and the ungrouped share on every panel (RV-1)", () => {
@@ -129,7 +131,10 @@ describe("Disaster events layout (FE-Proposal-02, Alex 2026-10-18)", () => {
 		expect(rows.map((r) => r.label)).toEqual(["Huila", "Luanda"]);
 	});
 
-	it("leaves out the official warning panel until its flag can say not reported", () => {
-		expect(laid.some((p) => p.id === "events-14")).toBe(false);
+	it("lists the official warning panel as waiting for warning data, never as a chart", () => {
+		const w = laid.find((p) => p.id === "events-14")!;
+		expect(w.gap!.ghost).toBeUndefined();
+		expect(w.gap!.text).toContain("waits for warning data");
+		expect(w.gap!.chartType).toBe("Bar chart");
 	});
 });

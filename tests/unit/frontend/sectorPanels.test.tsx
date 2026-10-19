@@ -42,7 +42,9 @@ const html = (n: number, p = panels) => text(renderToString(<>{p.find((x) => x.n
 describe("Sectors view panels 1 to 7", () => {
 	it("draw its panels; unbuilt ones would list in Features Coming Soon", () => {
 		// 8 and 9 are Ranked by divisions and Sector reporting completeness (a7e85e92).
-		expect(panels.map((p) => p.n).sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+		expect(panels.filter((p) => !p.gap).map((p) => p.n).sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+		// Reassessment 4.1: 14 unbuilt features, all in Features Coming Soon.
+		expect(panels.filter((p) => p.gap && !p.gap.ghost)).toHaveLength(14);
 		expect(collapsesGaps("sectors")).toBe(true);
 	});
 
