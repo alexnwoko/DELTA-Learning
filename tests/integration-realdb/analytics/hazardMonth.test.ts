@@ -107,4 +107,22 @@ describe("getHazardMonth", () => {
 			clearDashboardCache(ids.countryAccountId);
 		}
 	});
+
+	it("a record under review never makes its month rare", async () => {
+		const outlier = monthly[11];
+		await dr.execute(sql`
+			UPDATE disaster_records SET legacy_data = ${JSON.stringify({ migration: { plausibility_flags: [{ code: "IMPLAUSIBLE_MAGNITUDE", fields: ["muertos"] }] } })}::jsonb
+			WHERE id = ${outlier}`);
+		clearDashboardCache(ids.countryAccountId);
+		try {
+			const p = await getHazardMonth(DEFAULT_QUERY, ctx(), "disaster_record");
+			const c1053 = p.rows.find((x) => x.hipClusterId === "1053")!;
+			expect(c1053.cells.some((c) => c.rare)).toBe(false);
+			expect(c1053.cells[11].count).toBe(1);
+			expect(p.meta.method).toContain("under review");
+		} finally {
+			await dr.execute(sql`UPDATE disaster_records SET legacy_data = NULL WHERE id = ${outlier}`);
+			clearDashboardCache(ids.countryAccountId);
+		}
+	});
 });

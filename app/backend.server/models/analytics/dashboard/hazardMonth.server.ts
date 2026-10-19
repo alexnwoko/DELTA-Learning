@@ -8,7 +8,10 @@
 import { cachedDashboard } from "~/backend.server/models/analytics/dashboard/dashboardCache.server";
 import { sql, type SQL } from "drizzle-orm";
 import { displacedHeadlineSql } from "~/backend.server/models/analytics/displacedHeadline";
-import { humanEffectsFilteredRecords } from "~/backend.server/models/analytics/hazard-analysis";
+import {
+	aboveCeiling,
+	humanEffectsFilteredRecords,
+} from "~/backend.server/models/analytics/hazard-analysis";
 import {
 	eventsCte,
 	linkedRecordsCte,
@@ -102,6 +105,8 @@ interface Occ {
 	total: number;
 	median: number | null;
 	reportingInHazard: number;
+	/** Occurrences under review (plausibility flag or above the ceiling). */
+	flagged: number;
 }
 
 function buildRows(
@@ -126,6 +131,7 @@ function buildRows(
 				const perOcc = c && c.reported > 0 ? c.sum / c.reported : 0;
 				const rare =
 					!!c &&
+					c.flagged === 0 &&
 					c.total <= RARE_SEVERE_RULE.maxCount &&
 					c.reportingInHazard >= RARE_SEVERE_RULE.minReporting &&
 					c.median !== null &&
@@ -165,7 +171,7 @@ const methodText = (unit: HazardMonth["unit"], m: ImpactHeadlineMeasure) =>
 		unit === "disaster_event"
 			? "An event takes the clusters of its linked disaster records and counts under each. "
 			: ""
-	}Rare severe: at most ${RARE_SEVERE_RULE.maxCount} occurrences in the month and ${m} per reporting occurrence at least ${RARE_SEVERE_RULE.multiple} times the hazard's median, for hazards with ${RARE_SEVERE_RULE.minReporting} or more reporting occurrences. Placeholder dates (a calendar day with ${PLACEHOLDER_DATE_RULE.minRecords} or more occurrences and ${PLACEHOLDER_DATE_RULE.multiple} times the daily average, such as a default 31 January) count as no month. The start month is a reporting date for slow-onset hazards such as drought, a weak guide to onset. More records can reflect more reporting.`;
+	}Rare severe: at most ${RARE_SEVERE_RULE.maxCount} occurrences in the month and ${m} per reporting occurrence at least ${RARE_SEVERE_RULE.multiple} times the hazard's median, for hazards with ${RARE_SEVERE_RULE.minReporting} or more reporting occurrences; occurrences under review (a plausibility flag or above the ceiling) never make a month rare and are left out of the median. Placeholder dates (a calendar day with ${PLACEHOLDER_DATE_RULE.minRecords} or more occurrences and ${PLACEHOLDER_DATE_RULE.multiple} times the daily average, such as a default 31 January) count as no month. The start month is a reporting date for slow-onset hazards such as drought, a weak guide to onset. More records can reflect more reporting.`;
 
 async function computeHazardMonth(
 	query: DeltaQuery,
@@ -190,7 +196,8 @@ async function computeHazardMonth(
 					substring(rec."start_date" from '^[0-9]{4}-([0-9]{2}-[0-9]{2})') AS md,
 					${monthOf(sql`rec."start_date"`)} AS month0,
 					${yearOf(sql`rec."start_date"`)} AS year,
-					${rm.value} AS v, ${rm.zero} AS z
+					${rm.value} AS v, ${rm.zero} AS z,
+					(fr.pflags IS NOT NULL OR ${aboveCeiling(measure, rm.value)}) AS fl
 				FROM filtered_records fr
 				JOIN "disaster_records" rec ON rec."id" = fr.record_id
 				LEFT JOIN "human_category_presence" hcp ON hcp."record_id" = fr.record_id
@@ -209,11 +216,12 @@ async function computeHazardMonth(
 		const [cells, med, span] = await Promise.all([
 			rows(sql`${base}
 				SELECT cl, month, COUNT(*) AS total, SUM(v) AS sum,
-					COUNT(v) AS reported, COUNT(*) FILTER (WHERE v IS NULL AND z) AS zero
+					COUNT(v) AS reported, COUNT(*) FILTER (WHERE v IS NULL AND z) AS zero,
+					COUNT(*) FILTER (WHERE fl) AS flagged
 				FROM rv WHERE month BETWEEN 1 AND 12 GROUP BY 1, 2`),
 			rows(sql`${base}
 				SELECT cl, percentile_cont(0.5) WITHIN GROUP (ORDER BY v) AS median, COUNT(v) AS reporting
-				FROM rv WHERE v IS NOT NULL AND month BETWEEN 1 AND 12 GROUP BY 1`),
+				FROM rv WHERE v IS NOT NULL AND NOT fl AND month BETWEEN 1 AND 12 GROUP BY 1`),
 			rows(sql`${base}
 				SELECT MIN(year) AS y0, MAX(year) AS y1,
 					COUNT(*) FILTER (WHERE year IS NOT NULL AND month0 IS NULL) AS no_month,
@@ -234,6 +242,7 @@ async function computeHazardMonth(
 				total: num(r.total),
 				median: m && m.median !== null ? Number(m.median) : null,
 				reportingInHazard: num(m?.reporting),
+				flagged: num(r.flagged),
 			};
 		});
 		withoutMonth = num(span[0]?.no_month);
@@ -249,7 +258,8 @@ async function computeHazardMonth(
 			WITH RECURSIVE ${ev}, ${lr},
 			pe AS (
 				SELECT fr.event_id, SUM(${rm.value}) AS s, COUNT(${rm.value}) AS rep,
-					COUNT(*) FILTER (WHERE ${rm.value} IS NULL AND ${rm.zero}) AS z
+					COUNT(*) FILTER (WHERE ${rm.value} IS NULL AND ${rm.zero}) AS z,
+					COUNT(*) FILTER (WHERE fr.pflags IS NOT NULL OR ${aboveCeiling(measure, rm.value)}) AS fl
 				FROM filtered_records fr
 				LEFT JOIN "human_category_presence" hcp ON hcp."record_id" = fr.record_id
 				GROUP BY 1
@@ -261,7 +271,8 @@ async function computeHazardMonth(
 			)
 			SELECT ev."id"::text AS id, ev.start_date, ${monthOf(sql`ev.start_date`)} AS month,
 				${yearOf(sql`ev.start_date`)} AS year, ec.cl,
-				pe.s, COALESCE(pe.rep, 0) AS rep, COALESCE(pe.z, 0) AS z
+				pe.s, COALESCE(pe.rep, 0) AS rep, COALESCE(pe.z, 0) AS z,
+				COALESCE(pe.fl, 0) AS fl
 			FROM ev
 			LEFT JOIN ec ON ec.event_id = ev."id"
 			LEFT JOIN pe ON pe.event_id = ev."id"`);
@@ -287,7 +298,7 @@ async function computeHazardMonth(
 		const byCl = new Map<string, number[]>();
 		for (const r of dated) {
 			const v = state(r).value;
-			if (v === null || v <= 0) continue;
+			if (v === null || v <= 0 || num(r.fl) > 0) continue;
 			const k = (r.cl as string | null) ?? "none";
 			byCl.set(k, [...(byCl.get(k) ?? []), v]);
 		}
@@ -314,8 +325,10 @@ async function computeHazardMonth(
 				total: 0,
 				median: m?.median ?? null,
 				reportingInHazard: m?.n ?? 0,
+				flagged: 0,
 			};
 			o.total++;
+			if (num(r.fl) > 0) o.flagged++;
 			if (st.value !== null && st.value > 0) {
 				o.sum += st.value;
 				o.reported++;
