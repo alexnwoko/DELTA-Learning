@@ -39,6 +39,7 @@ describe("Hazard by month", () => {
 		expect(html).toContain("Number of records");
 		expect(html).toMatch(/aria-checked="true"/);
 		expect(html).toContain(">30</td>");
+		expect(html).toContain("People directly affected");
 	});
 
 	it("rings a rare severe month and says so for screen readers", () => {
