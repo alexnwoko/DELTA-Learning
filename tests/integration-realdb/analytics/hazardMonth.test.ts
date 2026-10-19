@@ -16,6 +16,7 @@ ids.userEmail = ids.userEmail.replace("@", "-hazardmonth@");
 const r = { r1: randomUUID(), r2: randomUUID(), r3: randomUUID(), r4: randomUUID() };
 const monthly = Array.from({ length: 12 }, () => randomUUID());
 const ev = { e1: randomUUID(), e2: randomUUID() };
+const Q = { ...DEFAULT_QUERY, measure: "deaths" as const };
 const ctx = () => ({ countryAccountsId: ids.countryAccountId, audience: "public" as const, tenantName: "Testland", provisional: false });
 
 describe("getHazardMonth", () => {
@@ -55,7 +56,7 @@ describe("getHazardMonth", () => {
 	});
 
 	it("records: all 12 months per hazard, value states kept, year-only records counted apart", async () => {
-		const p = await getHazardMonth(DEFAULT_QUERY, ctx(), "disaster_record");
+		const p = await getHazardMonth(Q, ctx(), "disaster_record");
 		expect(p.unit).toBe("disaster_record");
 		expect(p.rows.map((x) => [x.hipClusterId, x.total])).toEqual([["1053", 12], ["1046", 3]]);
 		const c1046 = p.rows.find((x) => x.hipClusterId === "1046")!;
@@ -70,7 +71,7 @@ describe("getHazardMonth", () => {
 	});
 
 	it("records: flags the month where one occurrence carries a toll far above the hazard's median", async () => {
-		const p = await getHazardMonth(DEFAULT_QUERY, ctx(), "disaster_record");
+		const p = await getHazardMonth(Q, ctx(), "disaster_record");
 		const c1053 = p.rows.find((x) => x.hipClusterId === "1053")!;
 		expect(c1053.cells.filter((c) => c.rare).map((c) => c.month)).toEqual([12]);
 		// 1046 has too few reporting records for the rule.
@@ -79,7 +80,7 @@ describe("getHazardMonth", () => {
 	});
 
 	it("events: an event takes its linked records' cluster and its own start month", async () => {
-		const p = await getHazardMonth(DEFAULT_QUERY, ctx(), "disaster_event");
+		const p = await getHazardMonth(Q, ctx(), "disaster_event");
 		expect(p.unit).toBe("disaster_event");
 		const c1046 = p.rows.find((x) => x.hipClusterId === "1046")!;
 		expect(c1046.total).toBe(1);
@@ -97,7 +98,7 @@ describe("getHazardMonth", () => {
 		}
 		clearDashboardCache(ids.countryAccountId);
 		try {
-			const p = await getHazardMonth(DEFAULT_QUERY, ctx(), "disaster_record");
+			const p = await getHazardMonth(Q, ctx(), "disaster_record");
 			expect(p.placeholderDates).toBe(10);
 			expect(p.rows.find((x) => x.hipClusterId === "1046")!.cells[0].count).toBe(0);
 			expect(p.meta.method).toContain("Placeholder dates");
@@ -115,7 +116,7 @@ describe("getHazardMonth", () => {
 			WHERE id = ${outlier}`);
 		clearDashboardCache(ids.countryAccountId);
 		try {
-			const p = await getHazardMonth(DEFAULT_QUERY, ctx(), "disaster_record");
+			const p = await getHazardMonth(Q, ctx(), "disaster_record");
 			const c1053 = p.rows.find((x) => x.hipClusterId === "1053")!;
 			expect(c1053.cells.some((c) => c.rare)).toBe(false);
 			expect(c1053.cells[11].count).toBe(1);
@@ -124,5 +125,11 @@ describe("getHazardMonth", () => {
 			await dr.execute(sql`UPDATE disaster_records SET legacy_data = NULL WHERE id = ${outlier}`);
 			clearDashboardCache(ids.countryAccountId);
 		}
+	});
+
+	it("defaults the people measure to directly affected when the query names none", async () => {
+		const p = await getHazardMonth(DEFAULT_QUERY, ctx(), "disaster_record");
+		expect(p.measure).toBe("affected_direct");
+		expect(p.meta.method).toContain("affected_direct");
 	});
 });
