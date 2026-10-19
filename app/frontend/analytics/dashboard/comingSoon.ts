@@ -37,7 +37,12 @@ export const COMING_SOON: Record<"events" | "hazard-events" | "sectors" | "impac
 		soon("events-18", 18, "Onset class and member start-date span", "Rapid or slow onset, and days between member records; coming soon.", "boxplot"),
 		soon("events-19", 19, "Identifiers and cross-references", "Events carrying GLIDE, national and registry identifiers; coming soon.", "tiles"),
 		soon("events-20", 20, "Events with several hazards", "Events that group records of several hazard types; coming soon.", "bars"),
-		soon("events-21", 21, "Season of disaster events", "Months in which disaster events start; coming soon.", "heatmap"),
+		// Alex, 2026-10-19: hazards by calendar month, all years pooled, with a
+		// people-or-events switch to show rare events of high impact.
+		soon("events-21", 21, "Hazard by month", "Each hazard by calendar month, people affected or events; coming soon.", "heatmap"),
+		// Alex, 2026-10-19: the window to act before recurring hazards and
+		// their cascades, from data evidence and the literature.
+		soon("events-aa", 27, "Anticipatory action window", "Months to act before recurring hazards and their cascades; coming soon.", "line"),
 		soon("events-22", 22, "Response, humanitarian and recovery costs", "Response, humanitarian and recovery costs per event; waits for cost data.", "bars"),
 		soon("events-23", 23, "Damage and losses in money per event", "Damage and losses in money per event, kept apart; waits for valuation.", "columns"),
 		soon("events-24", 24, "Non-economic losses per event", "Non-economic losses reported per event; waits for non-economic loss records.", "table"),
@@ -87,6 +92,8 @@ export const COMING_SOON: Record<"events" | "hazard-events" | "sectors" | "impac
 		soon("impact-25", 25, "Point locations", "Exact places of damage on the map; waits for point locations.", "map"),
 		soon("impact-26", 26, "Rates per population", "Deaths and affected per 100,000 people; waits for population data.", "map"),
 		soon("impact-27", 27, "Poverty disaggregation", "Human effects by poverty status; waits for disaggregated records.", "bars"),
+		soon("impact-hazard-month", 28, "Hazard by month", "Each hazard by calendar month, people affected or events; coming soon.", "heatmap"),
+		soon("impact-aa", 29, "Anticipatory action window", "Months to act before recurring hazards and their cascades; coming soon.", "line"),
 	],
 };
 

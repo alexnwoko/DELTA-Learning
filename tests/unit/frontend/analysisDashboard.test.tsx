@@ -309,7 +309,7 @@ describe("Disaster impact panels 5 to 16 on the example payload", () => {
 		expect(drawn.map((p) => p.n).sort((a, b) => a - b)).toEqual(Array.from({ length: 16 }, (_, i) => i + 1));
 		expect(drawn.every((p) => p.render && p.exportData)).toBe(true);
 		// The rest are Features Coming Soon (reassessment 4.4): DI-18 to DI-27.
-		expect(all.filter((p) => p.gap).map((p) => p.id)).toEqual(Array.from({ length: 10 }, (_, i) => `impact-${i + 18}`));
+		expect(all.filter((p) => p.gap).map((p) => p.id)).toEqual([...Array.from({ length: 10 }, (_, i) => `impact-${i + 18}`), "impact-hazard-month", "impact-aa"]);
 	});
 
 	it("5: names the country in the notice, keeps dwelling inputs code-free, lists refusals", () => {
@@ -410,5 +410,24 @@ describe("Sendai counts under a place filter (TR-060, FR-AN-009)", () => {
 		expect(html).toContain("Sub-national figures. Not a Sendai indicator value (TR-060).");
 		expect(html).not.toMatch(/\b[AB]-\d\b/);
 		expect(p5.exportData!.rows.map((r) => r.label).join(" ")).not.toMatch(/\b[AB]-\d\b/);
+	});
+});
+
+describe("DI-18 Reporting sources (Analytics fe24a633)", () => {
+	it("draws sources as found, counts records without one, and leaves the coming-soon list", () => {
+		const sources = {
+			rows: [{ source: "INGC", records: 40 }, { source: "Red Cross", records: 12 }],
+			rest: { sources: 5, records: 9 },
+			recordsWithoutSource: 7,
+			recordsInScope: 68,
+			distinctSources: 7,
+			meta: { method: "m", notApplied: [] },
+		};
+		const all = impactDashboardPanels(ctx, IMPACT_PANELS_FIXTURE, "EXAMPLE DATA", { data: IMPACT_PANELS_5TO16_FIXTURE, country: "Angola", sources });
+		const p = all.find((x) => x.id === "impact-18")!;
+		expect(p.gap).toBeUndefined();
+		expect(p.more).toBe(true);
+		expect(p.exportData!.rows.map((r) => r.label)).toEqual(["INGC", "Red Cross", "5 other sources"]);
+		expect(p.exportData!.notes).toContain("7 of 68 records name no source.");
 	});
 });

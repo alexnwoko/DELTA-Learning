@@ -4,6 +4,7 @@
 // its CSV always agree. Years inside the period with no record stay in the
 // series as gaps, drawn as empty space.
 import type { EventPanels1to7 } from "~/utils/dashboard/eventPanels";
+import type { EventPanels8to16 } from "~/utils/dashboard/eventPanels8to16";
 import type { HazardEventPanels1to7 } from "~/utils/dashboard/hazardEventPanels";
 import type { ImpactPanels1to4, PanelCell } from "~/utils/dashboard/impactPanels";
 import type { ImpactPanels5to16 } from "~/utils/dashboard/impactPanels5to16";
@@ -87,4 +88,8 @@ export function sendaiFromFirstRecord(d: SendaiSection, first: FirstYear): Senda
 		b1: { injured: fromYear(d.b1.injured, b1Start), affectedDirect: fromYear(d.b1.affectedDirect, b1Start) },
 		b2: { ...d.b2, rows: fromFirstRecord(d.b2.rows, first, (y) => hasRecords(y.destroyed) || hasRecords(y.damaged)) },
 	};
+}
+
+export function events8to16FromFirstRecord(d: EventPanels8to16, first: FirstYear): EventPanels8to16 {
+	return { ...d, season: { ...d.season, cells: fromFirstRecord(d.season.cells, first, (c) => c.events > 0) } };
 }

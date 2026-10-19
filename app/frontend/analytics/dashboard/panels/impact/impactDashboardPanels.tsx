@@ -3,6 +3,10 @@
 import type { ViewContext } from "~/frontend/context";
 import type { ImpactPanels1to4 } from "~/utils/dashboard/impactPanels";
 import type { ImpactPanels5to16 } from "~/utils/dashboard/impactPanels5to16";
+import type { ImpactSources } from "~/utils/dashboard/impactSources";
+import { ChartFrame } from "~/frontend/charts/ChartFrame";
+import { cellRow, panelNotes } from "../../panelCell";
+import { RowBars } from "../blocks";
 import { emptyViewPanel } from "../../panelCell";
 import { comingSoonPanels } from "../../comingSoon";
 import { arrangeByLayout } from "../../layout";
@@ -38,7 +42,7 @@ export function impactDashboardPanels(
 	ctx: ViewContext,
 	data: ImpactPanels1to4,
 	source: string,
-	later?: { data: ImpactPanels5to16; country: string; subnational?: boolean },
+	later?: { data: ImpactPanels5to16; country: string; subnational?: boolean; sources?: ImpactSources | null },
 ): DashboardPanel[] {
 	const t = (code: string, msg: string) => ctx.t({ code, msg });
 	// No record in scope: one frame, never tiles and bars of 0 (Alex, 2026-10-17).
@@ -115,6 +119,44 @@ export function impactDashboardPanels(
 			})
 		: [];
 	// Unbuilt features (Alex, 2026-10-19): Features Coming Soon.
-	const built = [...ready, ...rest];
+	const sources = later?.sources ? [impactSourcesPanel(ctx, later.sources, common)] : [];
+	const built = [...ready, ...rest, ...sources];
 	return arrangeImpactPanels([...built, ...comingSoonPanels(ctx, "impact", IMPACT_LAYOUT, built)]);
+}
+
+/** A count as a reported cell, for the bars. */
+const recordsCell = (n: number) => ({ value: n, valueState: "reported" as const, recordsReported: n, recordsZeroConfirmed: 0, recordsNotReported: 0, recordsTotal: n, recordsFlagged: 0 });
+
+/**
+ * DI-18 Reporting sources (Analytics fe24a633): records per primary data
+ * source as entered, grouped by exact text, never merged by guesswork.
+ */
+function impactSourcesPanel(
+	ctx: ViewContext,
+	d: ImpactSources,
+	common: { ctx: ViewContext; source: string; scope: string; provisional: boolean },
+): DashboardPanel {
+	const t = (code: string, msg: string, r?: Record<string, unknown>) => ctx.t({ code, msg }, r);
+	const n = (x: number) => x.toLocaleString(ctx.lang);
+	const title = t("dashboard.impact_18", "Reporting sources");
+	const restLabel = d.rest ? t("dashboard.other_sources", "{n} other sources", { n: n(d.rest.sources) }) : "";
+	const rows = [...d.rows.map((r) => ({ label: r.source, n: r.records })), ...(d.rest ? [{ label: restLabel, n: d.rest.records }] : [])];
+	const notes = [
+		t("dashboard.sources_distinct", "{n} distinct sources, grouped by their exact text.", { n: n(d.distinctSources) }),
+		d.recordsWithoutSource > 0 ? t("dashboard.sources_none", "{n} of {total} records name no source.", { n: n(d.recordsWithoutSource), total: n(d.recordsInScope) }) : undefined,
+	];
+	const exportData = { rows: rows.map((r) => cellRow(r.label, recordsCell(r.n))), method: d.meta.method, notes: panelNotes(d.meta, notes) };
+	return {
+		id: "impact-18",
+		n: 18,
+		title,
+		exportData,
+		render: () => (
+			<ChartFrame ctx={ctx} title={title} rows={exportData.rows}
+				meta={{ source: common.source, scope: common.scope, method: d.meta.method, basis: common.provisional ? "provisional" : "published", notes: exportData.notes }}>
+				<RowBars ctx={ctx} label={title} rows={rows.map((r) => ({ key: r.label, label: r.label, bars: [{ cell: recordsCell(r.n) }] }))} />
+				{notes.filter(Boolean).map((x) => <p key={x} className="m-0 text-xs text-brand-text-muted">{x}</p>)}
+			</ChartFrame>
+		),
+	};
 }
