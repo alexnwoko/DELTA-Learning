@@ -39,7 +39,7 @@ describe("Disaster events panels 1 to 7", () => {
 		expect(panels.filter((p) => p.render).map((p) => p.n).sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7]);
 		// Reassessment 4.3: DE-8 to DE-26 are unbuilt; 12, 13 and 16 hold layout slots.
 		const gaps = panels.filter((p) => p.gap);
-		expect(gaps.map((p) => p.id).sort()).toEqual(Array.from({ length: 19 }, (_, i) => `events-${i + 8}`).sort());
+		expect(gaps.map((p) => p.id).sort()).toEqual([...Array.from({ length: 19 }, (_, i) => `events-${i + 8}`), "events-aa"].sort());
 		expect(gaps.filter((p) => p.gap!.ghost).map((p) => p.id).sort()).toEqual(["events-12", "events-13", "events-16"]);
 	});
 
@@ -148,7 +148,18 @@ describe("Disaster events panels 11, 12, 13 and 16 (Analytics ee73e61f)", () => 
 		completeness: { eventsInScope: 40, rows: [{ key: "glide" as const, label: "GLIDE number", events: 10 }, { key: "specific_hazard" as const, label: "Specific hazard", events: 0 }] },
 		divisionsPerEvent: { bins: [{ label: "1", events: 20 }, { label: "2 to 4", events: 5 }], eventsWithoutDivision: 15 },
 		bySector: { rows: [{ sectorId: "s1", label: "Housing", events: 7 }], eventsWithoutSector: 33 },
-		meta: Object.fromEntries(["register", "completeness", "divisionsPerEvent", "bySector"].map((k) => [k, { method: "m", notApplied: [] }])) as never,
+		exceedance: {
+			measure: "deaths" as never,
+			years: 20,
+			points: [
+				{ eventId: "e1", name: "Floods 2024", value: 120, rank: 1, perYear: 0.05, returnPeriodYears: 20 },
+				{ eventId: "e2", name: "Drought 2019", value: 10, rank: 2, perYear: 0.1, returnPeriodYears: 10 },
+			],
+			eventsNotReported: 3,
+			tooFewEvents: true,
+		},
+		season: { cells: [{ year: 2024, month: 2, events: 4 }], eventsWithoutMonth: 2 },
+		meta: Object.fromEntries(["register", "completeness", "divisionsPerEvent", "bySector", "exceedance", "season"].map((k) => [k, { method: "m", notApplied: [] }])) as never,
 	};
 	const withMore = eventDashboardPanels(ctx, D, { source: "DELTA Angola", scope: "Angola", provisional: false, more });
 
@@ -166,6 +177,18 @@ describe("Disaster events panels 11, 12, 13 and 16 (Analytics ee73e61f)", () => 
 		expect(html).toContain("10 of 40");
 		expect(html).toContain("0 of 40");
 	});
+
+	it("draws exceedance only from ten events, and always says it is not a risk model", () => {
+		const p = withMore.find((x) => x.id === "events-17")!;
+		const html = renderToString(<>{p.render!()}</>).replace(/<!-- -->/g, "");
+		expect(html).toContain("too few for a return period");
+		expect(html).not.toContain("<circle");
+		expect(p.exportData!.notes).toContain("Counts of recorded events only. Not a hazard or risk model.");
+		const enough = eventDashboardPanels(ctx, D, { source: "DELTA Angola", scope: "Angola", provisional: false, more: { ...more, exceedance: { ...more.exceedance, tooFewEvents: false } } });
+		expect(renderToString(<>{enough.find((x) => x.id === "events-17")!.render!()}</>).match(/<circle/g)).toHaveLength(2);
+	});
+
+
 
 	it("says how many events the register lists, and counts what panels 13 and 16 leave out", () => {
 		expect(withMore.find((p) => p.id === "events-11")!.exportData!.notes).toContain("Newest 1 of 40 events in scope.");

@@ -10,6 +10,7 @@ import { getEventMap } from "~/backend.server/models/analytics/dashboard/eventMa
 import { getTenantOutline, neighbourOutlines, worldBoundariesUrl } from "~/backend.server/models/geo/tenantExtent";
 import { getEventPanels1to7 } from "~/backend.server/models/analytics/dashboard/eventPanels.server";
 import { getEventPanels8to16 } from "~/backend.server/models/analytics/dashboard/eventPanels8to16.server";
+import { getImpactSources } from "~/backend.server/models/analytics/dashboard/impactSources.server";
 import { getRecordsByApproval } from "~/backend.server/models/analytics/dashboard/recordsByApproval.server";
 import { getSendaiSection } from "~/backend.server/models/analytics/dashboard/sendaiPanels.server";
 import { getHazardEventPanels1to7 } from "~/backend.server/models/analytics/dashboard/hazardEventPanels.server";
@@ -39,6 +40,7 @@ import { sectorDashboardPanels } from "~/frontend/analytics/dashboard/panels/sec
 import { impactDashboardPanels } from "~/frontend/analytics/dashboard/panels/impact/impactDashboardPanels";
 import type { DashboardPanel } from "~/frontend/analytics/dashboard/types";
 import {
+	events8to16FromFirstRecord,
 	eventsFromFirstRecord,
 	hazardEventsFromFirstRecord,
 	impact1to4FromFirstRecord,
@@ -54,6 +56,7 @@ import type { ImpactPanels1to4 } from "~/utils/dashboard/impactPanels";
 import type { EventMapPayload } from "~/utils/dashboard/eventMap";
 import type { EventPanels1to7 } from "~/utils/dashboard/eventPanels";
 import type { EventPanels8to16 } from "~/utils/dashboard/eventPanels8to16";
+import type { ImpactSources } from "~/utils/dashboard/impactSources";
 import type { HazardEventPanels1to7 } from "~/utils/dashboard/hazardEventPanels";
 import type { ImpactMapPayload } from "~/utils/dashboard/impactMap";
 import type { SectorPanels1to7 } from "~/utils/dashboard/sectorPanels";
@@ -106,6 +109,8 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request, p
 					getImpactPanels1to4(query, ctx),
 					getImpactPanels5to16(query, ctx),
 					getImpactMap(query, ctx),
+					// DI-18 Reporting sources (Analytics fe24a633).
+					getImpactSources(query, ctx),
 				])
 			: null;
 	const events = view === "disaster_event" ? await getEventPanels1to7(query, ctx) : null;
@@ -181,6 +186,7 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request, p
 		impact: impact?.[0] ?? null,
 		impactMore: impact?.[1] ?? null,
 		impactMap: impact?.[2] ?? null,
+		impactSources: impact?.[3] ?? null,
 		audience,
 	};
 });
@@ -248,9 +254,10 @@ export default function AnalysisDashboard() {
 				country: ld.country,
 				// A place filter makes every figure sub-national: no Sendai codes (TR-060).
 				subnational: Boolean(query.where.geo || query.where.region),
+				sources: ld.impactSources as ImpactSources | null,
 			})
 		: events
-			? eventDashboardPanels(ctx, events, { ...opts, map: ld.eventMap as EventMapPayload | null, more: ld.eventsMore as EventPanels8to16 | null })
+			? eventDashboardPanels(ctx, events, { ...opts, map: ld.eventMap as EventMapPayload | null, more: ld.eventsMore ? events8to16FromFirstRecord(ld.eventsMore as EventPanels8to16, firstYear) : null })
 			: hazardEvents
 				? hazardEventDashboardPanels(ctx, hazardEvents, { ...opts, signedIn: ld.signedIn })
 				: sectors

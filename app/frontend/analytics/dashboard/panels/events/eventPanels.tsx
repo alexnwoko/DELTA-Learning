@@ -649,5 +649,74 @@ export function eventPanels8to16(ctx: ViewContext, d: EventPanels8to16, common: 
 		),
 	};
 
-	return [register, completeness, perEvent, bySector];
+	return [register, completeness, perEvent, bySector, exceedancePanel(ctx, d, common)];
+}
+
+/**
+ * DE-17 Exceedance and return period (Analytics fe24a633): how often an
+ * event of each size or larger occurs in the period recorded. Empirical
+ * counts on log-log axes; under ten events it says so and draws nothing.
+ * Not a hazard or risk model.
+ */
+function exceedancePanel(ctx: ViewContext, d: EventPanels8to16, common: (title: string) => Common): DashboardPanel {
+	const t = ctx.t;
+	const n = (x: number) => x.toLocaleString(ctx.lang);
+	const title = tr(t, "dashboard.events_17", "Exceedance and return period");
+	const x = d.exceedance;
+	const measure = effectLabel(t, x.measure as never);
+	const notModel = tr(t, "dashboard.exceedance_not_model", "Counts of recorded events only. Not a hazard or risk model.");
+	const exp: PanelExport = {
+		rows: x.points.map((p) => ({ label: p.name, series: tr(t, "dashboard.return_period_years", "Return period (years)"), value: p.returnPeriodYears, valueState: p.returnPeriodYears === null ? "not_reported" : "reported", unit: `${measure}: ${n(p.value)}` })),
+		method: d.meta.exceedance.method,
+		notes: panelNotes(d.meta.exceedance, [
+			notModel,
+			x.eventsNotReported > 0 ? tr(t, "dashboard.exceedance_left_out", "{n} events report no {measure} and are left out.", { n: n(x.eventsNotReported), measure }) : undefined,
+		]),
+	};
+	const W = 480, H = 220, L = 48, B = 32, T = 8, R = 12;
+	const pts = x.points.filter((p) => p.value > 0 && p.returnPeriodYears !== null && p.returnPeriodYears > 0);
+	const lx = (v: number) => Math.log10(v);
+	const [x0, x1] = [Math.floor(Math.min(...pts.map((p) => lx(p.value)), 0)), Math.ceil(Math.max(...pts.map((p) => lx(p.value)), 1))];
+	const [y0, y1] = [Math.floor(Math.min(...pts.map((p) => lx(p.returnPeriodYears!)), 0)), Math.ceil(Math.max(...pts.map((p) => lx(p.returnPeriodYears!)), 1))];
+	const sx = (v: number) => L + ((lx(v) - x0) / Math.max(1, x1 - x0)) * (W - L - R);
+	const sy = (v: number) => H - B - ((lx(v) - y0) / Math.max(1, y1 - y0)) * (H - B - T);
+	const ticks = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, i) => 10 ** (a + i));
+	return {
+		id: "events-17",
+		n: 17,
+		title,
+		exportData: exp,
+		render: () => (
+			<Frame common={common(title)} exp={exp}>
+				{x.tooFewEvents || pts.length === 0 ? (
+					<p className="m-0 text-sm">{tr(t, "dashboard.exceedance_too_few", "Fewer than ten events report {measure}, too few for a return period.", { measure })}</p>
+				) : (
+					<svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={title} fontSize={10} className="block max-w-full">
+						{ticks(x0, x1).map((v) => (
+							<g key={`x${v}`}>
+								<line x1={sx(v)} x2={sx(v)} y1={T} y2={H - B} stroke={DASHBOARD_RAMP[1]} />
+								<text x={sx(v)} y={H - B + 14} textAnchor="middle" fill="currentColor">{n(v)}</text>
+							</g>
+						))}
+						{ticks(y0, y1).map((v) => (
+							<g key={`y${v}`}>
+								<line x1={L} x2={W - R} y1={sy(v)} y2={sy(v)} stroke={DASHBOARD_RAMP[1]} />
+								<text x={L - 4} y={sy(v) + 3} textAnchor="end" fill="currentColor">{n(v)}</text>
+							</g>
+						))}
+						{pts.map((p) => (
+							<circle key={p.eventId} cx={sx(p.value)} cy={sy(p.returnPeriodYears!)} r={3.5} fill={DASHBOARD_RAMP[3]}>
+								<title>{`${p.name}: ${measure} ${n(p.value)}, ${tr(t, "dashboard.once_in", "about once in {y} years", { y: n(Math.round(p.returnPeriodYears! * 10) / 10) })}`}</title>
+							</circle>
+						))}
+						<text x={(L + W - R) / 2} y={H - 2} textAnchor="middle" fill="currentColor">{measure}</text>
+						<text x={10} y={(T + H - B) / 2} textAnchor="middle" fill="currentColor" transform={`rotate(-90 10 ${(T + H - B) / 2})`}>
+							{tr(t, "dashboard.return_period_years", "Return period (years)")}
+						</text>
+					</svg>
+				)}
+				<p className="m-0 text-xs text-brand-text-muted">{notModel}</p>
+			</Frame>
+		),
+	};
 }

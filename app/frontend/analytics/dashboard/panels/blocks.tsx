@@ -188,3 +188,4 @@ export function RowBars({ ctx, label, rows, series, notReportedText }: RowBarsPr
 		</div>
 	);
 }
+
