@@ -364,9 +364,13 @@ export default function Screen() {
 							</div>
 							{/* Data Entry pages share one section heading (Alex, 2026-10-19). */}
 							{isDataEntryPath(location.pathname) && !hideMainNavigation ? (
-								<div className="mg-container pt-6 print:pt-0">
-									{/* mg-container: the same width and padding as the page content below. */}
-									<PageBrand ctx={ctx} section="data" />
+								<div className="w-full">
+									{/* One level below main, as the content is: print.css zeroes the
+									    padding of main's own children, so mg-container keeps its side
+									    padding on paper too (Geoportal's print measurement). */}
+									<div className="mg-container pt-6 print:pt-0">
+										<PageBrand ctx={ctx} section="data" />
+									</div>
 								</div>
 							) : null}
 							<div className="w-full py-8 print:pt-0">
