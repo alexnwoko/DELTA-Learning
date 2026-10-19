@@ -676,7 +676,7 @@ export default function GeoportalPage() {
 
 	return (
 		<MainContainer title={title} showHeader={false}>
-			<div className="geo-page py-2">
+			<div className="geo-page py-2 print:pt-0">
 				<div className="flex flex-wrap items-center justify-between gap-2">
 					{/* The section heading, shared with Data Entry and Analysis (Alex, 2026-10-19). */}
 					<PageBrand ctx={ctx} section="geoportal" />
