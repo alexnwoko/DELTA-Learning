@@ -1184,8 +1184,9 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 							padding: "10px",
 							borderRadius: "5px",
 							boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.3)",
-							// Alex, 2026-10-18: two points smaller (14px is 10.5pt).
-							fontSize: "8.5pt",
+							// Alex: two points smaller on 2026-10-18 (10.5pt to 8.5pt) and
+							// again on 2026-10-19 (6.5pt, about 8.7px).
+							fontSize: "6.5pt",
 							lineHeight: "1.5",
 							whiteSpace: "nowrap",
 						}}
