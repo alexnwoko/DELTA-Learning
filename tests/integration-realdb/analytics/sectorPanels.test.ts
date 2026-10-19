@@ -12,6 +12,7 @@ import {
 	SECTOR_IDS,
 } from "~/backend.server/models/analytics/dashboard/sectorPanels.server";
 import { DEFAULT_QUERY } from "~/utils/deltaQuery";
+import { clearDashboardCache } from "~/backend.server/models/analytics/dashboard/dashboardCache.server";
 
 // D1 Sectors view panels 1 to 7 against seeded records:
 // a: 2020, type 1042, 700 dwellings destroyed (Housing)
@@ -169,5 +170,28 @@ describe("getSectorPanels1to7", () => {
 		);
 		expect(sub.sendai.nationalOnly).toBe(false);
 		expect(sub.sendai.rows.every((r) => r.code === null)).toBe(true);
+	});
+
+	it("SEC-10: counts sectors per record and the pairs reported together", async () => {
+		await dr.execute(sql`
+			INSERT INTO sector_disaster_records_relation (sector_id, disaster_record_id, with_damage)
+			VALUES (${SECTOR_IDS.health}, ${rec.c}, true)`);
+		clearDashboardCache(ids.countryAccountId);
+		try {
+			const p = await getSectorPanels1to7(DEFAULT_QUERY, ctx());
+			const bins = Object.fromEntries(p.multiSector.bins.map((b) => [b.label, b.records]));
+			expect(p.multiSector.recordsWithSector).toBe(3);
+			expect(bins).toMatchObject({ "1 sector": 2, "2": 1 });
+			expect(p.multiSector.pairs).toHaveLength(1);
+			expect(p.multiSector.pairs[0].records).toBe(1);
+			expect([p.multiSector.pairs[0].a.sectorId, p.multiSector.pairs[0].b.sectorId].sort()).toEqual(
+				[SECTOR_IDS.health, SECTOR_IDS.industry].sort(),
+			);
+		} finally {
+			await dr.execute(sql`
+				DELETE FROM sector_disaster_records_relation
+				WHERE disaster_record_id = ${rec.c} AND sector_id = ${SECTOR_IDS.health}`);
+			clearDashboardCache(ids.countryAccountId);
+		}
 	});
 });
