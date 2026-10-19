@@ -8,9 +8,11 @@ const ctx = { t: createMockTranslator() };
 
 describe("section page headings", () => {
 	it("names the three sections", () => {
-		expect(brandTitle(ctx, "data")).toBe("Delta Resilience | Data Entry");
+		expect(brandTitle(ctx, "data", "Mozambique")).toBe("Data Entry\u2002|\u2002Mozambique");
+		expect(brandTitle(ctx, "analysis", "Mozambique")).toBe("Data Analysis\u2002|\u2002Mozambique");
+		expect(brandTitle(ctx, "geoportal", "Mozambique")).toBe("Geoportal\u2002|\u2002Mozambique");
+		// No country: the section alone.
 		expect(brandTitle(ctx, "analysis")).toBe("Data Analysis");
-		expect(brandTitle(ctx, "geoportal")).toBe("Delta Resilience | Geoportal");
 	});
 
 	it("is the page's h1, styled in capitals and extra bold by CSS", () => {

@@ -300,6 +300,7 @@ export default function AnalysisDashboard() {
 					) : undefined
 				}
 				summary={summary}
+				country={ld.country || null}
 				rail={
 					<HazardRail
 						ctx={ctx}
