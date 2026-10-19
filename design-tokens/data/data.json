@@ -507,6 +507,11 @@
 				"$type": "color",
 				"$value": "#ffffff",
 				"$description": "Layers on the canvas: view bar, rail, filter row, cards (FE-Proposal-03)."
+			},
+			"hover": {
+				"$type": "color",
+				"$value": "#0095fd",
+				"$description": "Hover border of buttons and filter controls, the same blue in every brand theme (Alex, 2026-10-20). 3.13:1 on white (WCAG 1.4.11); on the hover tint it is 2.88:1, and the fill change also marks hover."
 			}
 		},
 		"sfm": {
