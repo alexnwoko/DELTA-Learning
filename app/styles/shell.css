@@ -39,3 +39,14 @@
 	outline-offset: var(--delta-brand-focus-ring-offset);
 	border-radius: 0.25rem;
 }
+
+/* Section page headings (Alex, 2026-10-19): capitals, extra bold, 19.75pt
+   (the Analysis heading's 15.75pt plus 4pt), in the dashboard ink. */
+.delta-page-brand {
+	font-size: 19.75pt;
+	font-weight: 800;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+	line-height: 1.15;
+	color: var(--delta-data-dashboard-ink);
+}

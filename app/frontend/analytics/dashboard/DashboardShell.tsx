@@ -14,6 +14,7 @@ import type { QueryDimension } from "~/utils/deltaQuery";
 import { PanelGrid } from "./PanelGrid";
 import { collapsesGaps, type DashboardPanel } from "./types";
 import { DASHBOARD_VIEWS, type DashboardView } from "./views";
+import { PageBrand } from "~/frontend/PageBrand";
 
 export function dimensionLabel(ctx: ViewContext, dimension: QueryDimension): string {
 	switch (dimension) {
@@ -90,9 +91,7 @@ export function DashboardShell({
 		<div data-print="flow" className="flex flex-col gap-4 text-brand-text">
 			<header className="flex flex-wrap items-start justify-between gap-3">
 				<div className="flex min-w-0 flex-col gap-1">
-					<h1 className="m-0 text-2xl font-semibold">
-						{t({ code: "dashboard.title", msg: "Analysis" })}
-					</h1>
+					<PageBrand ctx={ctx} section="analysis" />
 					<p className="m-0 text-sm text-brand-text-muted">{summary}</p>
 				</div>
 				<div className="flex flex-wrap items-center gap-2">
