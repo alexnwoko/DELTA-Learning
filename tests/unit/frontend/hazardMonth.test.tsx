@@ -1,11 +1,11 @@
-// Hazard by month (Alex, 2026-10-19): clusters by calendar month, years
-// pooled, switching between occurrences and people affected; rare severe
-// months ringed; blank months never read as 0.
+// Hazard by month heatmap (Alex, 2026-10-19): specific hazards under their
+// cluster, 12 months plus "Month unknown", a row total, sort by the switch,
+// rare months ringed, blank months never 0, source default days named.
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { hazardMonthExport, hazardMonthPanel } from "~/frontend/analytics/dashboard/panels/hazardMonth";
+import { hazardMonthExport, hazardMonthPanel, orderRows, TOP_ROWS } from "~/frontend/analytics/dashboard/panels/hazardMonth";
 import type { ViewContext } from "~/frontend/context";
-import type { HazardMonth } from "~/utils/dashboard/hazardMonth";
+import type { HazardMonth, HazardMonthRow } from "~/utils/dashboard/hazardMonth";
 import type { PanelCell } from "~/utils/dashboard/impactPanels";
 import { createMockTranslator } from "~/utils/translator";
 
@@ -17,50 +17,77 @@ const cells = (over: Record<number, { count: number; people: PanelCell; rare?: b
 		const o = over[i + 1];
 		return { month: i + 1, count: o?.count ?? 0, people: o?.people ?? people(null, "not_reported"), rare: o?.rare ?? false };
 	});
+const row = (key: string, label: string, cluster: string, all: number, p: number | null, over: Parameters<typeof cells>[0], unplaced = { placeholder: 0, noMonth: 0 }): HazardMonthRow => ({
+	key, level: "hazard", label, hipHazardId: key, hipClusterId: cluster, clusterLabel: cluster, hipTypeId: "t1",
+	total: all - unplaced.placeholder - unplaced.noMonth, allOccurrences: all,
+	people: p === null ? people(null, "not_reported") : people(p, "reported"), unplaced, cells: cells(over),
+});
 const D: HazardMonth = {
 	unit: "disaster_record",
 	measure: "affected_direct" as never,
 	rows: [
-		{ hipClusterId: "c1", label: "Flood", hipTypeId: "t1", total: 40, cells: cells({ 2: { count: 30, people: people(5000, "reported") }, 3: { count: 10, people: people(null, "not_reported") } }) },
-		{ hipClusterId: "c2", label: "Tropical cyclone", hipTypeId: "t1", total: 1, cells: cells({ 1: { count: 1, people: people(90000, "reported"), rare: true } }) },
+		row("fl", "Flooding", "Water-related", 40, 5000, { 7: { count: 30, people: people(5000, "reported") }, 8: { count: 10, people: people(null, "not_reported") } }),
+		row("dr", "Drought", "Precipitation-related", 4269, 5950000, { 3: { count: 965, people: people(5950000, "reported") } }, { placeholder: 3304, noMonth: 0 }),
+		row("tc", "Tropical cyclone", "Wind-related", 1, 90000, { 1: { count: 1, people: people(90000, "reported"), rare: true } }),
 	],
 	withoutMonth: 5,
-	placeholderDates: 72,
+	placeholderDates: 7445,
+	placeholderDays: [{ day: "09-07", occurrences: 7445 }],
 	years: { from: 1990, to: 2024 },
 	meta: { method: "Rare: at most 2 occurrences and 5 times the median.", notApplied: [] },
 };
-const common = { source: "DELTA Angola", scope: "Angola", provisional: false };
+const common = { source: "DELTA Ethiopia", scope: "Ethiopia", provisional: false };
 
-describe("Hazard by month", () => {
+describe("Hazard by month heatmap", () => {
 	const panel = hazardMonthPanel(ctx, D, "impact-hazard-month", 28, common);
 	const html = renderToString(<>{panel.render!()}</>).replace(/<!-- -->/g, "");
 
-	it("opens on occurrences, with a two-way switch to people", () => {
+	it("opens on occurrences, with a switch to People directly affected", () => {
 		expect(html).toContain("Number of records");
+		expect(html).toContain("People directly affected");
 		expect(html).toMatch(/aria-checked="true"/);
-		expect(html).toContain(">30</td>");
 	});
 
-	it("rings a rare severe month and says so for screen readers", () => {
+	it("keeps a drought dated only by a source default visible in Month unknown", () => {
+		expect(html).toContain("Month unknown");
+		expect(html).toContain(">3,304</td>");
+		expect(html.indexOf("Drought")).toBeLessThan(html.indexOf("Flooding"));
+	});
+
+	it("puts each hazard under its cluster heading, with a row total", () => {
+		expect(html).toMatch(/aria-expanded="true"[^>]*>.*Precipitation-related/);
+		expect(html).toContain("4,269");
+	});
+
+	it("rings a rare severe month and leaves empty months blank, never 0", () => {
 		expect(html).toContain("outline:2px solid");
-		expect(html).toContain("rare and severe");
-	});
-
-	it("leaves months with none blank, never 0", () => {
 		expect(html).not.toContain(">0</td>");
 	});
 
-	it("sorts clusters by total, largest first", () => {
-		expect(html.indexOf("Flood")).toBeLessThan(html.indexOf("Tropical cyclone"));
+	it("sorts by people when the switch is on people", () => {
+		expect(orderRows(D.rows, "people").map((r) => r.key)).toEqual(["dr", "tc", "fl"]);
+		expect(orderRows(D.rows, "count").map((r) => r.key)).toEqual(["dr", "fl", "tc"]);
 	});
 
-	it("exports both counts for every month, with the placeholder dates counted in the notes", () => {
+	it("keeps the top 20 by people, leaving out hazards with no people figure, and says Top 20", () => {
+		const many = { ...D, rows: [
+			...Array.from({ length: TOP_ROWS + 3 }, (_, i) => row(`h${i}`, `Hazard ${i}`, `Cluster ${i}`, 10, 1000 - i, { 1: { count: 1, people: people(1000 - i, "reported") } })),
+			row("np", "No people", "Cluster np", 999, null, { 2: { count: 999, people: people(null, "not_reported") } }),
+		] };
+		const h = renderToString(<>{hazardMonthPanel(ctx, many, "x", 1, common).render!()}</>).replace(/<!-- -->/g, "");
+		expect(h).toContain("Top 20");
+		expect(h).toContain(">Hazard 19</th>");
+		expect(h).not.toContain(">Hazard 20</th>");
+		expect(h).not.toContain(">No people</th>");
+		expect(h).not.toContain("Show all");
+	});
+
+
+	it("names each source default day in the notes, and exports month unknown and totals", () => {
 		const exp = hazardMonthExport(ctx, D);
-		// Only months with occurrences: Flood Feb and Mar, Tropical cyclone Jan, each with both counts.
-		expect(exp.rows).toHaveLength(3 * 2);
-		expect(exp.notes).toContain("72 sit on a placeholder date and are left out, not counted in any month.");
-		expect(exp.notes).toContain("5 have no start month and are left out.");
-		expect(exp.notes).toContain("1990 to 2024, all years together.");
-		expect(exp.rows.find((r) => r.label === "Flood, Mar" && r.series !== "Records")!.valueState).toBe("not_reported");
+		expect(exp.notes).toContain("7,445 records dated September 7, a source default: month unknown.");
+		expect(exp.rows.some((r) => r.label === "Drought, Month unknown" && r.value === 3304)).toBe(true);
+		expect(exp.rows.some((r) => r.label === "Drought, Total" && r.value === 4269)).toBe(true);
+		expect(exp.rows.find((r) => r.label === "Flooding, Aug" && r.series !== "Records")!.valueState).toBe("not_reported");
 	});
 });

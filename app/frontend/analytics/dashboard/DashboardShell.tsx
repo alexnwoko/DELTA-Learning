@@ -15,6 +15,9 @@ import { PanelGrid } from "./PanelGrid";
 import { collapsesGaps, type DashboardPanel } from "./types";
 import { DASHBOARD_VIEWS, type DashboardView } from "./views";
 import { PageBrand } from "~/frontend/PageBrand";
+import { PanelIcon } from "~/frontend/charts/PanelIcon";
+import { VIEW_ICONS } from "~/frontend/charts/dashboardIcons";
+import { SECONDARY_BUTTON } from "~/frontend/buttonStyles";
 
 export function dimensionLabel(ctx: ViewContext, dimension: QueryDimension): string {
 	switch (dimension) {
@@ -84,15 +87,27 @@ export function DashboardShell({
 	about,
 }: DashboardShellProps) {
 	const t = ctx.t;
+	// The view buttons (FE-Proposal-03, Alex 2026-10-19): bold, 2pt larger,
+	// at least 44 x 44 px, with distinct hover, pressed, selected, focus and
+	// disabled states; the selected one is filled in the dashboard ink.
 	const tabClass =
-		"cursor-pointer border-b-4 border-transparent px-3 py-2 text-sm font-semibold text-brand-text-muted outline-none data-[hovered]:text-brand-text data-[selected]:border-brand-interactive data-[selected]:text-brand-text data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:-outline-offset-2 data-[focus-visible]:outline-brand-focus-ring";
+		"group inline-flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center gap-2 rounded-lg px-4 text-[1.0625rem] font-bold leading-tight text-data-dashboard-ink outline-none transition-[background-color,color,box-shadow] duration-150 motion-reduce:transition-none data-[hovered]:bg-data-dashboard-border data-[pressed]:bg-data-dashboard-accent data-[selected]:bg-data-dashboard-ink data-[selected]:text-brand-text-on-interactive data-[selected]:shadow-[inset_0_-3px_0_var(--delta-data-dashboard-accent)] data-[selected]:data-[hovered]:bg-data-dashboard-ink data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50";
+	// The scope line as chips: querySummary joins its parts with " · ".
+	const chips = summary.split(" · ").filter(Boolean);
 
 	return (
-		<div data-print="flow" className="flex flex-col gap-4 text-brand-text">
+		<div data-print="flow" className="delta-dashboard-canvas flex flex-col gap-4 text-brand-text">
 			<header className="flex flex-wrap items-start justify-between gap-3">
 				<div className="flex min-w-0 flex-col gap-1">
 					<PageBrand ctx={ctx} section="analysis" />
-					<p className="m-0 text-sm text-brand-text-muted">{summary}</p>
+					<ul aria-label={t({ code: "dashboard.scope", msg: "Scope" })} className="m-0 flex list-none flex-wrap gap-1.5 p-0">
+						{chips.map((c, i) => (
+							<li key={c}
+								className={`rounded-full border border-data-dashboard-border bg-data-dashboard-surface px-2.5 py-0.5 text-sm text-data-dashboard-ink ${i === 0 ? "font-extrabold" : "font-semibold"}`}>
+								{c}
+							</li>
+						))}
+					</ul>
 				</div>
 				<div className="flex flex-wrap items-center gap-2">
 					{basisControl}
@@ -100,7 +115,7 @@ export function DashboardShell({
 						<a
 							href={reviewHref}
 							data-print="hide"
-							className="rounded border border-brand-border-control bg-brand-surface px-3 py-1 text-sm text-brand-interactive no-underline hover:bg-brand-surface-subtle focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus-ring"
+							className={SECONDARY_BUTTON}
 						>
 							{t({ code: "dashboard.review_flagged", msg: "Review flagged records" })}
 						</a>
@@ -137,10 +152,13 @@ export function DashboardShell({
 				<TabList
 					aria-label={t({ code: "dashboard.view", msg: "What to analyse" })}
 					data-print="hide"
-					className="flex flex-wrap gap-1 border-b border-brand-border"
+					className="delta-layer flex w-max max-w-full flex-wrap gap-1 self-start p-1 max-sm:grid max-sm:w-full max-sm:grid-cols-2"
 				>
 					{DASHBOARD_VIEWS.map((v) => (
 						<Tab key={v} id={v} className={tabClass}>
+							<span className="inline-flex text-data-dashboard-icon group-data-[hovered]:text-data-dashboard-ink group-data-[selected]:text-brand-text-on-interactive">
+								<PanelIcon name={VIEW_ICONS[v]} size={22} colour="currentColor" />
+							</span>
 							{viewLabel(ctx, v)}
 						</Tab>
 					))}
@@ -165,7 +183,7 @@ export function DashboardShell({
 							{viewLabel(ctx, v)}
 						</h2>
 						{map && (
-							<div className="min-h-[260px] overflow-hidden rounded border border-brand-border">{map}</div>
+							<div className="delta-layer min-h-[260px] overflow-hidden">{map}</div>
 						)}
 						<PanelGrid ctx={ctx} panels={panels} collapseGaps={collapsesGaps(v)} />
 					</TabPanel>

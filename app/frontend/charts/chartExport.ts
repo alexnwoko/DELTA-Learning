@@ -179,6 +179,11 @@ export function standaloneChartSvg(
 		text: "#1a1a1a",
 		background: "#ffffff",
 	},
+	/**
+	 * The DELTA Resilience logo as a data URI, drawn top right (Alex,
+	 * 2026-10-19), so the file carries it offline; none when unavailable.
+	 */
+	logo?: { href: string; width: number; height: number },
 ): string {
 	const font = style.fontFamily ?? "system-ui, sans-serif";
 	const pad = 16;
@@ -203,6 +208,9 @@ export function standaloneChartSvg(
 		`<title>${escapeXml(meta.title)}</title>` +
 		`<rect width="100%" height="100%" fill="${style.background}"/>` +
 		`<text x="${pad}" y="${pad + 18}" font-size="16" font-weight="600">${escapeXml(meta.title)}</text>` +
+		(logo
+			? `<image href="${escapeXml(logo.href)}" x="${width - pad - (logo.width * 24) / logo.height}" y="${pad}" width="${(logo.width * 24) / logo.height}" height="24" preserveAspectRatio="xMaxYMin meet"><title>DELTA Resilience</title></image>`
+			: "") +
 		inner +
 		footer +
 		`</svg>`

@@ -10,9 +10,8 @@ import { PanelIcon, PanelIconContext } from "~/frontend/charts/PanelIcon";
 import type { ViewContext } from "~/frontend/context";
 import { GhostChart, type GhostShape } from "./GhostChart";
 import { panelPosition, panelUnderMore, type DashboardPanel, type PanelGap } from "./types";
+import { SECONDARY_BUTTON } from "~/frontend/buttonStyles";
 
-const focusRing =
-	"data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring";
 
 export interface PanelGridProps {
 	ctx: ViewContext;
@@ -49,8 +48,8 @@ function PanelCard({ ctx, panel }: { ctx: ViewContext; panel: DashboardPanel }) 
 				data-panel-state={panel.gap.ghost ? "ghost" : "gap"}
 				className={`flex min-w-0 flex-col gap-2 rounded border border-dashed border-brand-border-control bg-brand-surface-subtle p-4${panel.wide ? " lg:col-span-2" : ""}`}
 			>
-				<h3 id={headingId} className="delta-panel-title m-0 flex items-center gap-2 text-base">
-					<span className="delta-panel-iconbox flex h-16 w-16 shrink-0 items-center justify-center rounded border">
+				<h3 id={headingId} className="delta-panel-title m-0 flex items-center gap-2 text-[1.0625rem]">
+					<span className="delta-panel-iconbox flex h-16 w-16 shrink-0 items-center justify-center rounded-[0.714rem] border">
 						<PanelIcon name={panelIcon(panel.id)} size={35} />
 					</span>
 					{panel.title}
@@ -65,7 +64,8 @@ function PanelCard({ ctx, panel }: { ctx: ViewContext; panel: DashboardPanel }) 
 		<div
 			id={panel.id}
 			data-panel-state="ready"
-			className={`delta-panel-card flex min-w-0 break-inside-avoid flex-col rounded border bg-brand-surface p-4${panel.wide ? " lg:col-span-2" : ""}`}
+			data-print="flow"
+			className={`delta-layer flex min-w-0 break-inside-avoid flex-col p-4${panel.wide ? " lg:col-span-2" : ""}`}
 		>
 			<PanelIconContext.Provider value={panelIcon(panel.id)}>{panel.render?.()}</PanelIconContext.Provider>
 		</div>
@@ -138,7 +138,7 @@ export function NotYetAvailableStrip({ ctx, panels }: { ctx: ViewContext; panels
 
 function Grid({ ctx, panels }: { ctx: ViewContext; panels: DashboardPanel[] }) {
 	return (
-		<div className="grid grid-cols-1 gap-4 lg:grid-cols-2 print:grid-cols-1">
+		<div data-print="flow" className="grid grid-cols-1 gap-4 lg:grid-cols-2 print:grid-cols-1">
 			{panels.map((p) => (
 				<PanelCard key={p.id} ctx={ctx} panel={p} />
 			))}
@@ -169,7 +169,7 @@ export function PanelGrid({ ctx, panels, collapseGaps }: PanelGridProps) {
 							<Button
 								slot="trigger"
 								data-print="hide"
-								className={`self-start rounded border border-brand-border-control bg-brand-surface px-3 py-1 text-sm text-brand-interactive data-[hovered]:bg-brand-surface-subtle ${focusRing}`}
+								className={`self-start ${SECONDARY_BUTTON}`}
 							>
 								{isExpanded
 									? ctx.t({ code: "dashboard.show_fewer", msg: "Show fewer panels" })

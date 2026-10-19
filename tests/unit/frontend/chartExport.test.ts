@@ -162,3 +162,25 @@ describe("dashboardCsv (D1, ruling D6)", () => {
 		expect(combined).toEqual(single);
 	});
 });
+
+describe("standaloneChartSvg logo (Alex, 2026-10-19)", () => {
+	const chart = '<svg width="400" height="200"><rect width="10" height="10"/></svg>';
+	it("draws the logo top right, 24 px tall, when given one", () => {
+		const svg = standaloneChartSvg(chart, { width: 400, height: 200 }, META, ROWS, undefined, { href: "data:image/png;base64,AAAA", width: 705, height: 130 });
+		expect(svg).toMatch(/<image href="data:image\/png;base64,AAAA" x="[\d.]+" y="16" width="[\d.]+" height="24"/);
+		expect(svg).toContain("<title>DELTA Resilience</title>");
+	});
+	it("leaves it out when there is none", () => {
+		expect(standaloneChartSvg(chart, { width: 400, height: 200 }, META, ROWS)).not.toContain("<image");
+	});
+});
+
+describe("chart notes small print (Alex, 2026-10-19)", () => {
+	it("finds the bold label of a labelled note, and none in a plain sentence", async () => {
+		const { noteLabel } = await import("~/frontend/charts/ChartFrame");
+		expect(noteLabel("Source: DELTA")).toBe("Source");
+		expect(noteLabel("Method: Sum per category over rows")).toBe("Method");
+		expect(noteLabel("0 of 534 records carry a breakdown; totals are not sums.")).toBeNull();
+		expect(noteLabel("An event in several provinces counts in each: rows do not add up.")).toBeNull();
+	});
+});

@@ -24,6 +24,24 @@
 		color: var(--delta-brand-text) !important;
 	}
 
+	/* Paper is white: no canvas tint, no layer shadows (FE-Proposal-03). */
+	main {
+		background: none !important;
+	}
+	.delta-layer {
+		box-shadow: none !important;
+	}
+
+	/* Every level of the dashboard prints as plain blocks (data-print="flow"
+	   on grids, cards and figures), and a scrolling box opens in full, so a
+	   card pushed to the next page pushes "About the data" down with it
+	   instead of being drawn under it (Alex, 2026-10-19, second report). */
+	.delta-dashboard-canvas .overflow-x-auto,
+	.delta-dashboard-canvas .overflow-auto {
+		overflow: visible !important;
+		max-height: none !important;
+	}
+
 	header:has(~ main),
 	main ~ footer,
 	nav,
