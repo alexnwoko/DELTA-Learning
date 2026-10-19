@@ -112,13 +112,14 @@ export default function RegularMenuBar({
 			{/* <div className="w-8 h-8 md:w-10 md:h-10 bg-[#004F91] rounded-lg flex items-center justify-center shrink-0">
                 <i className="pi pi-globe text-white !text-base md:!text-2xl"></i>
             </div> */}
-			{/* The DELTA Resilience logo (Alex, 2026-10-19; DELTA Logos/DELTA_option1.png),
-			    on every page, Data, Analysis and Geoportal included. */}
+			{/* The DELTA Resilience logo (Alex, 2026-10-19), on every page, Data,
+			    Analysis and Geoportal included: option 1 at full quality, from
+			    "DELTA Logo – 1st version – 29 SEP 2026.docx" (705 x 130 px). */}
 			<img
 				src="/assets/images/delta-resilience-logo.png"
 				alt="DELTA Resilience: Disaster Event Loss and Damage Tracking and Analysis for Resilience"
-				width={220}
-				height={43}
+				width={705}
+				height={130}
 				className="h-8 w-auto shrink-0 md:h-10"
 			/>
 			<Divider layout="vertical" className="hidden md:block" />
