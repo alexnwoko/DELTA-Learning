@@ -40,6 +40,7 @@ import { authLoaderGetOptionalUserForFrontend } from "./utils/auth";
 import { Toast } from "primereact/toast";
 import RegularMenuBar from "./components/RegularMenuBar";
 import { isDataEntryPath, PageBrand } from "./frontend/PageBrand";
+import { getTenantOutline } from "./backend.server/models/geo/tenantExtent";
 import SuperAdminMenuBar from "./components/SuperAdminMenuBar";
 import InactivityWarning from "./components/InactivityWarning";
 import {
@@ -143,6 +144,15 @@ export const loader = async (
 	// The dictionary loads as a cached, versioned script, not inline data.
 	const translationsSrc = translationsScriptSrc(lang);
 
+	// The country after the Data Entry page title (Alex, 2026-10-20): the
+	// instance settings, else the country account's own name (cached).
+	let brandCountry: string | null = null;
+	if (!onAdminRoute && isDataEntryPath(new URL(request.url).pathname)) {
+		const accountId = await getCountryAccountsIdFromSession(request);
+		brandCountry =
+			((settings?.countryName as string | undefined) || (accountId ? (await getTenantOutline(accountId)).name : null)) ?? null;
+	}
+
 	return Response.json(
 		{
 			common: {
@@ -150,6 +160,7 @@ export const loader = async (
 				user: userForFrontend,
 			},
 			translationsSrc,
+			brandCountry,
 			isLoggedIn: onAdminRoute ? isSuperAdmin : !!userForRoute,
 			isCountryAccountSelected,
 			activeInstanceCount,
@@ -203,6 +214,7 @@ export default function Screen() {
 		// isSuperAdmin,
 		// isFormAuthSupported,
 		translationsSrc,
+		brandCountry,
 		isCountryAccountSelected,
 		activeInstanceCount,
 	} = loaderData;
@@ -373,7 +385,7 @@ export default function Screen() {
 									    padding of main's own children, so mg-container keeps its side
 									    padding on paper too (Geoportal's print measurement). */}
 									<div className="mg-container pt-6 print:pt-0">
-										<PageBrand ctx={ctx} section="data" />
+										<PageBrand ctx={ctx} section="data" country={brandCountry} />
 									</div>
 								</div>
 							) : null}

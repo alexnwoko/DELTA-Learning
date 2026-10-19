@@ -1,9 +1,7 @@
-// The page heading of each main section (Alex, 2026-10-19): "Delta
-// Resilience | Data Entry", "Data Analysis" (2026-10-20) and "Delta
-// Resilience | Geoportal", in capitals,
-// extra bold, 4pt above the Analysis heading's old size (text-2xl, 21px,
-// 15.75pt, so 19.75pt). The words stay in normal case for screen readers
-// and translation; the capitals are CSS.
+// The page heading of each main section (Alex, 2026-10-19 and 20): the
+// section and the country, "Data Analysis | Mozambique", in capitals, extra
+// bold, 17.75pt, with 2pt of padding above the text and 1pt below. The words
+// stay in normal case for screen readers and translation; the capitals are CSS.
 import { useLocation } from "react-router";
 import type { ViewContext } from "~/frontend/context";
 
@@ -23,21 +21,37 @@ export function useIsDataEntryPage(): boolean {
 	return isDataEntryPath(useLocation().pathname);
 }
 
-export function brandTitle(ctx: Pick<ViewContext, "t">, section: BrandSection): string {
-	// Analysis reads "Data Analysis" alone (Alex, 2026-10-20); the logo above names DELTA Resilience.
-	if (section === "analysis") return ctx.t({ code: "brand.data_analysis", msg: "Data Analysis" });
-	const name = ctx.t({ code: "brand.name", msg: "Delta Resilience" });
+/**
+ * "Data Entry | Mozambique", "Data Analysis | Mozambique", "Geoportal |
+ * Mozambique" (Alex, 2026-10-20): the section, then the country; the logo
+ * above names DELTA Resilience. No country, the section alone.
+ */
+export function brandTitle(ctx: Pick<ViewContext, "t">, section: BrandSection, country?: string | null): string {
 	const part =
 		section === "data"
 			? ctx.t({ code: "brand.data_entry", msg: "Data Entry" })
-			: ctx.t({ code: "brand.geoportal", msg: "Geoportal" });
-	return `${name} | ${part}`;
+			: section === "analysis"
+				? ctx.t({ code: "brand.data_analysis", msg: "Data Analysis" })
+				: ctx.t({ code: "brand.geoportal", msg: "Geoportal" });
+	// En spaces round the bar, the spacing Alex wrote.
+	return country ? `${part}\u2002|\u2002${country}` : part;
 }
 
-export function PageBrand({ ctx, section, className = "" }: { ctx: Pick<ViewContext, "t">; section: BrandSection; className?: string }) {
+export function PageBrand({
+	ctx,
+	section,
+	country,
+	className = "",
+}: {
+	ctx: Pick<ViewContext, "t">;
+	section: BrandSection;
+	/** The instance's country, shown after the section. */
+	country?: string | null;
+	className?: string;
+}) {
 	return (
 		<h1 className={`delta-page-brand m-0 ${className}`} data-brand-section={section}>
-			{brandTitle(ctx, section)}
+			{brandTitle(ctx, section, country)}
 		</h1>
 	);
 }
