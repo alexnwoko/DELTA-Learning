@@ -4,6 +4,7 @@ import type { ViewContext } from "~/frontend/context";
 import type { ImpactPanels1to4 } from "~/utils/dashboard/impactPanels";
 import type { ImpactPanels5to16 } from "~/utils/dashboard/impactPanels5to16";
 import { emptyViewPanel } from "../../panelCell";
+import { comingSoonPanels } from "../../comingSoon";
 import { arrangeByLayout } from "../../layout";
 import type { DashboardPanel } from "../../types";
 import { CoverageWaffle, waffleExport } from "./CoverageWaffle";
@@ -113,5 +114,7 @@ export function impactDashboardPanels(
 				subnational: later.subnational,
 			})
 		: [];
-	return arrangeImpactPanels([...ready, ...rest]);
+	// Unbuilt features (Alex, 2026-10-19): Features Coming Soon.
+	const built = [...ready, ...rest];
+	return arrangeImpactPanels([...built, ...comingSoonPanels(ctx, "impact", IMPACT_LAYOUT, built)]);
 }

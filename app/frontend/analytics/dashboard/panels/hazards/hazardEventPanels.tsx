@@ -17,6 +17,7 @@ import { RowBars, ShadedTable, shadeFor } from "../blocks";
 import { countCell } from "../events/eventPanels";
 import { YearColumns } from "../impact/ImpactTimeline";
 import { arrangeByLayout, HAZARD_EVENTS_LAYOUT } from "../../layout";
+import { comingSoonPanels, hazardGreyText } from "../../comingSoon";
 
 type T = ViewContext["t"];
 const tr = (t: T, code: string, msg: string, r?: Record<string, unknown>) => t({ code, msg }, r);
@@ -110,13 +111,10 @@ export function hazardEventDashboardPanels(
 	const n = (x: number) => x.toLocaleString(ctx.lang);
 	const title = (k: number, msg: string) => tr(t, `dashboard.hazard_events_${k}`, msg);
 
-	const question = (k: number) =>
-		tr(t, `dashboard.hazard_events_q${k}`, HAZARD_EVENT_PANELS[k - 1].question);
 
 	// G-01: a notice across the view, then every panel as a grey placeholder
 	// in the shape it will take, so the view shows what it will carry.
 	if (d.empty) {
-		const needs = tr(t, "dashboard.needs_hazard_events", "No data yet: needs hazardous-event records.");
 		// The notice stays first; the placeholders follow the agreed layout.
 		return [
 			{
@@ -137,10 +135,15 @@ export function hazardEventDashboardPanels(
 						id: `hazard-events-${p.n}`,
 						n: p.n,
 						title: title(p.n, p.title),
-						gap: { text: `${question(p.n)} ${needs}`, ghost: p.ghost },
+						// What the panel will show, in small print (reassessment 4.2).
+						gap: { text: hazardGreyText(ctx, p.n), ghost: p.ghost },
 					}),
 				),
 				HAZARD_EVENTS_LAYOUT,
+			),
+			// The hazard features with no panel yet (map, 17 to 20): Features Coming Soon.
+			...comingSoonPanels(ctx, "hazard-events", HAZARD_EVENTS_LAYOUT, []).filter(
+				(f) => !HAZARD_EVENT_PANELS.some((p) => `hazard-events-${p.n}` === f.id),
 			),
 		];
 	}
@@ -338,16 +341,7 @@ export function hazardEventDashboardPanels(
 		exportData: exports[k],
 		render: () => views[k](common(titles[k]), exports[k]),
 	}));
-	return arrangeByLayout([
-		...drawn,
-		...HAZARD_EVENT_PANELS.filter((p) => p.n > 7).map((p): DashboardPanel => ({
-			id: `hazard-events-${p.n}`,
-			n: p.n,
-			title: titles[p.n],
-			gap:
-				p.n === 16
-					? { code: "G-19", text: tr(t, "dashboard.g19", "Magnitude is free text with no unit field."), ghost: p.ghost }
-					: { code: "D1 hazardous events", text: `${question(p.n)} ${tr(t, "dashboard.panel_in_build", "This panel is being built.")}`, ghost: p.ghost },
-		})),
-	], HAZARD_EVENTS_LAYOUT);
+	// Unbuilt features (Alex, 2026-10-19): a grey placeholder in their slot,
+	// the rest in Features Coming Soon.
+	return arrangeByLayout([...drawn, ...comingSoonPanels(ctx, "hazard-events", HAZARD_EVENTS_LAYOUT, drawn)], HAZARD_EVENTS_LAYOUT);
 }

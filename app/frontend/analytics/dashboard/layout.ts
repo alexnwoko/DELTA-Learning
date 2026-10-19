@@ -25,11 +25,10 @@ export const EVENTS_LAYOUT: readonly string[] = [
 	"events-2", "events-12", // Records grouped into disaster events | Reporting completeness of disaster events
 ];
 /**
- * "Official warning recorded, by hazard" is left out until the flag can say
- * "not reported": it defaults to false, so every event would read as having
- * had no warning (FE-Proposal-02, decision 6).
+ * "Official warning recorded, by hazard" has no slot: its flag defaults to
+ * false and cannot say "not reported" (EWS-01), so it is listed in Features
+ * Coming Soon as waiting for warning data.
  */
-export const EVENTS_DROPPED: readonly string[] = ["events-14"];
 
 export const HAZARD_EVENTS_LAYOUT: readonly string[] = [
 	"hazard-events-1", "hazard-events-7", // at a glance | Ranked by divisions

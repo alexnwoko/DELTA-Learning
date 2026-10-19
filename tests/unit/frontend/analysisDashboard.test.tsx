@@ -148,8 +148,9 @@ describe("Disaster impact panels 1 to 4 on the example payload", () => {
 	const panels = impactDashboardPanels(ctx, IMPACT_PANELS_FIXTURE, "EXAMPLE DATA");
 
 	it("number panels 1 to 4 alone without the second payload", () => {
-		expect(panels.map((p) => p.n).sort((a, b) => a - b)).toEqual([1, 2, 3, 4]);
-		expect(panels.every((p) => p.render && p.exportData)).toBe(true);
+		const drawn = panels.filter((p) => !p.gap);
+		expect(drawn.map((p) => p.n).sort((a, b) => a - b)).toEqual([1, 2, 3, 4]);
+		expect(drawn.every((p) => p.render && p.exportData)).toBe(true);
 	});
 
 	it("headline tiles show state words and coverage, and refuse money", () => {
@@ -285,11 +286,11 @@ describe("Disaster impact layout (Alex, 2026-10-18)", () => {
 	});
 
 	it("puts the unlisted panels under Show more, in number order", () => {
-		expect(all.filter((p) => p.more).map((p) => p.id)).toEqual(["impact-5", "impact-11", "impact-13", "impact-14", "impact-15"]);
+		expect(all.filter((p) => p.more && !p.gap).map((p) => p.id)).toEqual(["impact-5", "impact-11", "impact-13", "impact-14", "impact-15"]);
 	});
 
 	it("draws the grid in that order, with only those eleven before Show more", () => {
-		const html = renderToString(<PanelGrid ctx={ctx} panels={all.filter((p) => p.id !== "impact-5")} collapseGaps={false} />);
+		const html = renderToString(<PanelGrid ctx={ctx} panels={all.filter((p) => p.id !== "impact-5")} collapseGaps />);
 		const ids = [...html.matchAll(/id="(impact-\d+)"/g)].map((m) => m[1]);
 		expect(ids.slice(0, 4)).toEqual(["impact-1", "impact-7", "impact-4", "impact-3"]);
 		expect(html).toContain("Show 4 more panels");
@@ -304,8 +305,11 @@ describe("Disaster impact panels 5 to 16 on the example payload", () => {
 	const html = (n: number) => text(renderToString(<>{all.find((p) => p.n === n)!.render!()}</>));
 
 	it("number 16 drawn panels with export data", () => {
-		expect(all.map((p) => p.n).sort((a, b) => a - b)).toEqual(Array.from({ length: 16 }, (_, i) => i + 1));
-		expect(all.every((p) => p.render && p.exportData && !p.gap)).toBe(true);
+		const drawn = all.filter((p) => !p.gap);
+		expect(drawn.map((p) => p.n).sort((a, b) => a - b)).toEqual(Array.from({ length: 16 }, (_, i) => i + 1));
+		expect(drawn.every((p) => p.render && p.exportData)).toBe(true);
+		// The rest are Features Coming Soon (reassessment 4.4): DI-18 to DI-27.
+		expect(all.filter((p) => p.gap).map((p) => p.id)).toEqual(Array.from({ length: 10 }, (_, i) => `impact-${i + 18}`));
 	});
 
 	it("5: names the country in the notice, keeps dwelling inputs code-free, lists refusals", () => {

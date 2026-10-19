@@ -33,14 +33,17 @@ describe("Hazardous events, G-01", () => {
 	it("shows the reason across the view, then all 16 panels as grey placeholders with no figures", () => {
 		const panels = hazardEventDashboardPanels(ctx, empty, { ...opts, signedIn: true });
 		// The notice first, then the placeholders in the agreed layout (FE-Proposal-02); the rest under Show more.
-		expect(panels.map((p) => p.n)).toEqual([0, 1, 7, 5, 3, 8, 9, 2, 4, 6, 12, 10, 11, 13, 14, 15, 16]);
+		expect(panels.slice(0, 17).map((p) => p.n)).toEqual([0, 1, 7, 5, 3, 8, 9, 2, 4, 6, 12, 10, 11, 13, 14, 15, 16]);
+		// Then the map and 17 to 20, listed in Features Coming Soon (no ghost).
+		expect(panels.slice(17).map((p) => p.id)).toEqual(["hazard-events-m0", "hazard-events-17", "hazard-events-18", "hazard-events-19", "hazard-events-20"]);
+		expect(panels.slice(17).every((p) => p.gap && !p.gap.ghost)).toBe(true);
 		expect(panels[0]).toMatchObject({ wide: true, gap: { code: "G-01" } });
-		expect(panels.slice(1).every((p) => p.gap?.ghost && !p.render && !p.exportData)).toBe(true);
+		expect(panels.slice(1, 17).every((p) => p.gap?.ghost && !p.render && !p.exportData)).toBe(true);
 		const raw = renderToString(<PanelGrid ctx={ctx} panels={panels} collapseGaps />);
 		const html = text(raw);
 		expect(html).toContain("No hazardous events recorded. Migrated data holds none");
 		expect(html).toContain("(G-01)");
-		expect(html).toContain("needs hazardous-event records");
+		expect(html).toContain("Hazardous events starting each year; waits for hazardous-event records.");
 		expect(raw.match(/data-panel-state="ghost"/g)).toHaveLength(16);
 		expect(raw).toContain('aria-hidden="true"');
 		expect(html).not.toContain("Not yet available");
@@ -56,9 +59,10 @@ describe("Hazardous events panels 1 to 7", () => {
 	const panels = hazardEventDashboardPanels(ctx, D, { ...opts, signedIn: false });
 	const html = (n: number) => text(renderToString(<>{panels.find((p) => p.n === n)!.render!()}</>));
 
-	it("draw 1 to 7; 8 to 15 being built and 16 held at G-19", () => {
+	it("draw 1 to 7; 8, 9 and 12 hold grey slots; the rest list as coming soon", () => {
 		expect(panels.filter((p) => p.render).map((p) => p.n).sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7]);
-		expect(panels.find((p) => p.n === 16)!.gap!.code).toBe("G-19");
+		expect(panels.filter((p) => p.gap?.ghost).map((p) => p.id).sort()).toEqual(["hazard-events-12", "hazard-events-8", "hazard-events-9"]);
+		expect(panels.find((p) => p.id === "hazard-events-16")!.gap!.text).toContain("waits for numeric magnitude");
 	});
 
 	it("1: shares read as n of the events in scope", () => {
