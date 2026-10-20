@@ -74,7 +74,10 @@ import {
 	refusalBody,
 } from "~/backend.server/models/geo/queries";
 import { authLoaderWithPerm, hasPermission } from "~/utils/auth";
-import { getCountryAccountsIdFromSession } from "~/utils/session";
+import {
+	getCountryAccountsIdFromSession,
+	getCountrySettingsFromSession,
+} from "~/utils/session";
 import { serializeDeltaQuery, type DeltaQuery } from "~/utils/deltaQuery";
 import {
 	resolveLayeredMapState,
@@ -87,6 +90,7 @@ import { PrintButton } from "~/frontend/print/PrintButton";
 import { basemapLayers } from "~/utils/basemap.server";
 import { listRegions } from "~/backend.server/models/geo/regions";
 import {
+	getTenantOutline,
 	mapDataVersion,
 	worldBoundariesUrl,
 } from "~/backend.server/models/geo/tenantExtent";
@@ -177,6 +181,13 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 	const lang = args.params.lang || "en";
 	const url = new URL(args.request.url);
 	const levels = await adminLevels(countryAccountsId);
+	// The page heading names the country (Alex, 2026-10-20): the instance
+	// settings, else the country account's own name, as on Analysis.
+	const settings = await getCountrySettingsFromSession(args.request);
+	const countryName =
+		(settings?.countryName as string | undefined) ||
+		(await getTenantOutline(countryAccountsId)).name ||
+		null;
 	// Roll-ups start at level 1, never at a level-0 country outline.
 	const defaultLevel = levels.find((l) => l >= 1) ?? levels[0] ?? 1;
 	if (!url.searchParams.get("level")) {
@@ -300,6 +311,7 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 			housing: housing ? { destroyed: housing[0], damaged: housing[1] } : null,
 			areaKm2,
 			placeOptions,
+			countryName,
 			refusal: null,
 		};
 	} catch (err) {
@@ -324,6 +336,7 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 					level: number;
 					parentId: string | null;
 				}[],
+				countryName,
 				refusal: refusalBody(err.refusal, err.meta),
 			};
 		}
@@ -679,7 +692,7 @@ export default function GeoportalPage() {
 			<div className="geo-page py-2 print:pt-0">
 				<div className="flex flex-wrap items-center justify-between gap-2">
 					{/* The section heading, shared with Data Entry and Analysis (Alex, 2026-10-19). */}
-					<PageBrand ctx={ctx} section="geoportal" />
+					<PageBrand ctx={ctx} section="geoportal" country={data.countryName} />
 					<div className="flex items-center gap-2" data-print="hide">
 						<span role="status" className="text-xs text-brand-text-muted">
 							{copied}
