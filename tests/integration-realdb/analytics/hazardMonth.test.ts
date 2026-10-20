@@ -154,7 +154,9 @@ describe("getHazardMonth", () => {
 			expect(d.people.value).toBe(2000);
 			expect(p.placeholderDays[0]).toEqual({ day: "09-07", occurrences: 10 });
 			// Records coded only to a cluster keep a cluster row.
-			expect(p.rows.find((x) => x.key === "cluster:1053")!.level).toBe("cluster");
+			const c = p.rows.find((x) => x.key === "cluster:1053")!;
+			expect(c.level).toBe("cluster");
+			expect(c.label).toContain("(specific hazard not recorded)");
 		} finally {
 			const all = sql.join(drought.map((x) => sql`${x}`), sql`, `);
 			await dr.execute(sql`DELETE FROM human_category_presence WHERE record_id IN (${all})`);
