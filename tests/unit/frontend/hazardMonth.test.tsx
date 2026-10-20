@@ -54,10 +54,12 @@ describe("Hazard by month heatmap", () => {
 		expect(html.indexOf("Drought")).toBeLessThan(html.indexOf("Flooding"));
 	});
 
-	it("puts each hazard under its cluster heading, with a row total", () => {
-		expect(html).toMatch(/aria-expanded="true"[^>]*>.*Precipitation-related/);
+	it("lists the specific hazards directly, the cluster only as a tooltip, with a row total", () => {
+		expect(html).not.toContain(`scope="colgroup"`);
+		expect(html).toMatch(/<th scope="row" title="Precipitation-related"[^>]*>Drought<\/th>/);
 		expect(html).toContain("4,269");
 	});
+
 
 	it("rings a rare severe month and leaves empty months blank, never 0", () => {
 		expect(html).toContain("outline:2px solid");

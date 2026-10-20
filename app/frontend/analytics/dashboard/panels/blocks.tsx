@@ -116,8 +116,9 @@ const WIDTH = 380;
 export function RowBars({ ctx, label, rows, series, notReportedText }: RowBarsProps) {
 	const max = Math.max(1, ...rows.flatMap((r) => r.bars.map((b) => reportedValue(b.cell) ?? 0)));
 	const track = WIDTH - LABEL_W - 70;
+	// Rows sit close (Alex, 2026-10-20): a single bar takes 18 px, a 6 px gap.
 	const groupH = (r: RowBarsProps["rows"][number]) =>
-		Math.max(30, r.bars.length * (BAR_H + BAR_GAP) + (r.note ? 14 : 0) + 6);
+		Math.max(18, r.bars.length * (BAR_H + BAR_GAP) + (r.note ? 14 : 0) + 6);
 	let y = 2;
 	const placed = rows.map((r) => {
 		const top = y;

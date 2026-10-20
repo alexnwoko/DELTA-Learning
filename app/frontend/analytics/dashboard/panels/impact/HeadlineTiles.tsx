@@ -125,7 +125,8 @@ export function HeadlineTiles({ ctx, title, tiles, meta, source, scope, provisio
 							)}
 							{tile.sparkline.length > 0 && (
 								<span className="mt-1 flex flex-1 flex-col gap-0.5">
-									<span className="relative block min-h-7 flex-1">
+									{/* 50% taller bars (Alex, 2026-10-20): 37 px at least, then the tile's free space. */}
+									<span className="relative block min-h-[37px] flex-1">
 										<Sparkline points={tile.sparkline} />
 									</span>
 									<span className="text-xs text-brand-text-muted">

@@ -217,9 +217,9 @@ export default function AnalysisDashboard() {
 	const view = ld.view as DashboardView;
 	const source = `DELTA ${ld.country}`.trim();
 	const filterOptions = ld.filterOptions as DashboardFilterOptions;
-	// Year charts start at the country's first record year; under a place
-	// filter, at the place's first year with a record (Alex, 2026-10-18).
-	const firstYear: FirstYear = query.where.geo || query.where.region ? null : filterOptions.years.min;
+	// Every chart starts at its own first period with data (Alex, 2026-10-20),
+	// not at the country's first record year.
+	const firstYear: FirstYear = null;
 	const impact = ld.impact ? impact1to4FromFirstRecord(ld.impact as ImpactPanels1to4, firstYear) : null;
 	const impactMore = ld.impactMore ? impact5to16FromFirstRecord(ld.impactMore as ImpactPanels5to16, firstYear) : null;
 	const events = ld.events ? eventsFromFirstRecord(ld.events as EventPanels1to7, firstYear) : null;
@@ -300,6 +300,7 @@ export default function AnalysisDashboard() {
 					) : undefined
 				}
 				summary={summary}
+				country={ld.country || null}
 				rail={
 					<HazardRail
 						ctx={ctx}

@@ -3,7 +3,7 @@
 // section's palette.
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { fromFirstRecord, impact1to4FromFirstRecord } from "~/frontend/analytics/dashboard/firstRecord";
+import { fromFirstMonth, fromFirstRecord, impact1to4FromFirstRecord } from "~/frontend/analytics/dashboard/firstRecord";
 import { Sparkline } from "~/frontend/analytics/dashboard/panels/impact/HeadlineTiles";
 import { YearColumns } from "~/frontend/analytics/dashboard/panels/impact/ImpactTimeline";
 import { DASHBOARD_BAR, DASHBOARD_RAMP, SFM_BAR, SFM_RAMP } from "~/frontend/charts/sectionPalette";
@@ -39,6 +39,18 @@ describe("year charts start at the first record", () => {
 		expect(d.timeline.years.every((y) => y.year >= 2023)).toBe(true);
 		expect(d.timeline.annotations.every((a) => a.year >= 2023)).toBe(true);
 		expect(d.timeline.byHazard.every((h) => h.years.every((y) => y.year >= 2023))).toBe(true);
+	});
+});
+
+describe("month grids start at the first month with data (Alex, 2026-10-20)", () => {
+	it("drops the empty months before it and keeps later gaps", () => {
+		const cells = [
+			{ year: 2020, month: 11, n: 0 }, { year: 2020, month: 12, n: 0 },
+			{ year: 2021, month: 1, n: 0 }, { year: 2021, month: 2, n: 4 },
+			{ year: 2021, month: 3, n: 0 }, { year: 2021, month: 4, n: 2 },
+		];
+		expect(fromFirstMonth(cells, (c) => c.n > 0).map((c) => `${c.year}-${c.month}`)).toEqual(["2021-2", "2021-3", "2021-4"]);
+		expect(fromFirstMonth(cells.slice(0, 3), (c) => c.n > 0)).toEqual([]);
 	});
 });
 

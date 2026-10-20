@@ -40,6 +40,7 @@ import { authLoaderGetOptionalUserForFrontend } from "./utils/auth";
 import { Toast } from "primereact/toast";
 import RegularMenuBar from "./components/RegularMenuBar";
 import { isDataEntryPath, PageBrand } from "./frontend/PageBrand";
+import { getTenantOutline } from "./backend.server/models/geo/tenantExtent";
 import SuperAdminMenuBar from "./components/SuperAdminMenuBar";
 import InactivityWarning from "./components/InactivityWarning";
 import {
@@ -143,6 +144,15 @@ export const loader = async (
 	// The dictionary loads as a cached, versioned script, not inline data.
 	const translationsSrc = translationsScriptSrc(lang);
 
+	// The country after the Data Entry page title (Alex, 2026-10-20): the
+	// instance settings, else the country account's own name (cached).
+	let brandCountry: string | null = null;
+	if (!onAdminRoute && isDataEntryPath(new URL(request.url).pathname)) {
+		const accountId = await getCountryAccountsIdFromSession(request);
+		brandCountry =
+			((settings?.countryName as string | undefined) || (accountId ? (await getTenantOutline(accountId)).name : null)) ?? null;
+	}
+
 	return Response.json(
 		{
 			common: {
@@ -150,6 +160,7 @@ export const loader = async (
 				user: userForFrontend,
 			},
 			translationsSrc,
+			brandCountry,
 			isLoggedIn: onAdminRoute ? isSuperAdmin : !!userForRoute,
 			isCountryAccountSelected,
 			activeInstanceCount,
@@ -203,6 +214,7 @@ export default function Screen() {
 		// isSuperAdmin,
 		// isFormAuthSupported,
 		translationsSrc,
+		brandCountry,
 		isCountryAccountSelected,
 		activeInstanceCount,
 	} = loaderData;
@@ -350,7 +362,10 @@ export default function Screen() {
 						<main id="main" tabIndex={-1} className="flex-1 w-full">
 							{/* On paper the top bar is hidden, so the logo heads every printed page,
 							    twice the screen size, 2pt above the page heading (Alex, 2026-10-19). */}
-							<div className="delta-print-logo hidden print:block mx-auto max-w-8xl px-4 md:px-6 lg:px-8">
+							<div className="delta-print-logo hidden print:block w-full">
+								{/* One level below main, like the heading and content, so on paper
+								    the logo and rule keep mg-container's side padding and line up. */}
+								<div className="mg-container">
 								<img
 									src="/assets/images/delta-resilience-logo.png"
 									alt="DELTA Resilience: Disaster Event Loss and Damage Tracking and Analysis for Resilience"
@@ -361,6 +376,7 @@ export default function Screen() {
 								/>
 								{/* A rule under the logo on paper (Alex, 2026-10-19). */}
 								<hr className="m-0 mb-[2pt] border-0 border-t border-data-dashboard-ink" />
+								</div>
 							</div>
 							{/* Data Entry pages share one section heading (Alex, 2026-10-19). */}
 							{isDataEntryPath(location.pathname) && !hideMainNavigation ? (
@@ -369,7 +385,7 @@ export default function Screen() {
 									    padding of main's own children, so mg-container keeps its side
 									    padding on paper too (Geoportal's print measurement). */}
 									<div className="mg-container pt-6 print:pt-0">
-										<PageBrand ctx={ctx} section="data" />
+										<PageBrand ctx={ctx} section="data" country={brandCountry} />
 									</div>
 								</div>
 							) : null}
