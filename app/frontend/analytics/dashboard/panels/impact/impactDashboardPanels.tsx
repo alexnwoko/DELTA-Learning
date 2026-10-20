@@ -6,6 +6,8 @@ import type { ImpactPanels5to16 } from "~/utils/dashboard/impactPanels5to16";
 import type { ImpactSources } from "~/utils/dashboard/impactSources";
 import type { HazardMonth } from "~/utils/dashboard/hazardMonth";
 import { hazardMonthPanel } from "../hazardMonth";
+import type { EstimatedDisaggregation } from "~/utils/dashboard/estimatedDisaggregation";
+import { estimatedSplitPanel } from "./EstimatedSplit";
 import { ChartFrame } from "~/frontend/charts/ChartFrame";
 import { cellRow, panelNotes } from "../../panelCell";
 import { RowBars } from "../blocks";
@@ -33,6 +35,7 @@ export const IMPACT_LAYOUT: readonly string[] = [
 	"impact-10", "impact-9", // Houses destroyed and damaged | People displaced, evacuated and relocated
 	"impact-2", "impact-12", // Coverage of the records | Reporting completeness and precision
 	"impact-16", "impact-hazard-month", // Disaster impact by sex and age disaggregation | Hazard by month
+	"impact-estimated", // Estimated sex and age split (Alex, 2026-10-19), beside nothing reported
 ];
 
 /** Places each panel by IMPACT_LAYOUT; the rest follow, under "Show more". */
@@ -44,7 +47,7 @@ export function impactDashboardPanels(
 	ctx: ViewContext,
 	data: ImpactPanels1to4,
 	source: string,
-	later?: { data: ImpactPanels5to16; country: string; subnational?: boolean; sources?: ImpactSources | null; hazardMonth?: HazardMonth | null },
+	later?: { data: ImpactPanels5to16; country: string; subnational?: boolean; sources?: ImpactSources | null; hazardMonth?: HazardMonth | null; estimated?: EstimatedDisaggregation | null },
 ): DashboardPanel[] {
 	const t = (code: string, msg: string) => ctx.t({ code, msg });
 	// No record in scope: one frame, never tiles and bars of 0 (Alex, 2026-10-17).
@@ -123,7 +126,8 @@ export function impactDashboardPanels(
 	// Unbuilt features (Alex, 2026-10-19): Features Coming Soon.
 	const sources = later?.sources ? [impactSourcesPanel(ctx, later.sources, common)] : [];
 	const months = later?.hazardMonth ? [hazardMonthPanel(ctx, later.hazardMonth, "impact-hazard-month", 28, common)] : [];
-	const built = [...ready, ...rest, ...sources, ...months];
+	const estimate = later?.estimated ? [estimatedSplitPanel(ctx, later.estimated)] : [];
+	const built = [...ready, ...rest, ...sources, ...months, ...estimate];
 	return arrangeImpactPanels([...built, ...comingSoonPanels(ctx, "impact", IMPACT_LAYOUT, built)]);
 }
 
