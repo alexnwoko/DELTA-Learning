@@ -173,7 +173,7 @@ function SelectField(props: {
 			className="flex flex-col gap-1 min-w-0"
 		>
 			<Label className="text-[0.8125rem] font-bold text-data-dashboard-ink">{props.label}</Label>
-			<Button className="border border-brand-border-control rounded-[8px] px-2 py-1 min-h-[40px] text-start min-w-36 max-w-64 truncate bg-brand-surface data-[hovered]:border-data-dashboard-hover data-[hovered]:bg-data-dashboard-tint data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring">
+			<Button className="border border-brand-border-control geo-control rounded-[8px] px-2 py-1 min-h-[40px] text-start min-w-36 max-w-64 truncate bg-brand-surface data-[hovered]:border-data-dashboard-hover data-[hovered]:bg-data-dashboard-tint data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring">
 				<SelectValue />
 			</Button>
 			<Popover className="bg-brand-surface border border-brand-border-control rounded shadow">
@@ -217,7 +217,7 @@ function DateField(props: {
 			<Label className="text-[0.8125rem] font-bold text-data-dashboard-ink">{props.label}</Label>
 			<Input
 				placeholder="YYYY"
-				className="border border-brand-border-control rounded-[8px] px-2 py-1 min-h-[40px] w-28 data-[hovered]:border-data-dashboard-hover data-[hovered]:bg-data-dashboard-tint data-[invalid]:border-brand-danger"
+				className="border border-brand-border-control geo-control rounded-[8px] px-2 py-1 min-h-[40px] w-28 data-[hovered]:border-data-dashboard-hover data-[hovered]:bg-data-dashboard-tint data-[invalid]:border-brand-danger"
 			/>
 			<FieldError className="text-xs text-brand-danger">
 				{props.t({
@@ -255,7 +255,7 @@ function PlaceField(props: {
 			<Label className="text-[0.8125rem] font-bold text-data-dashboard-ink">
 				{t({ code: "geoportal.place.area", msg: "Area" })}
 			</Label>
-			<Button className="border border-brand-border-control rounded-[8px] px-2 py-1 min-h-[40px] text-start min-w-36 max-w-64 truncate bg-brand-surface data-[hovered]:border-data-dashboard-hover data-[hovered]:bg-data-dashboard-tint data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring">
+			<Button className="border border-brand-border-control geo-control rounded-[8px] px-2 py-1 min-h-[40px] text-start min-w-36 max-w-64 truncate bg-brand-surface data-[hovered]:border-data-dashboard-hover data-[hovered]:bg-data-dashboard-tint data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring">
 				<SelectValue />
 			</Button>
 			<Popover className="bg-brand-surface border border-brand-border-control rounded shadow">
@@ -366,6 +366,14 @@ function ChipGroup(props: {
 		</div>
 	);
 }
+
+/**
+ * The Dimension buttons in the Analysis view-button style (DashboardShell
+ * tabClass; Alex, 2026-10-20): bold, 44px tall, 32px side padding; the
+ * selected one in dashboard ink with the accent bar under it.
+ */
+const DIMENSION_BUTTON =
+	"inline-flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center rounded-lg px-[32px] text-[1.0625rem] font-bold leading-tight text-data-dashboard-ink outline-none transition-[background-color,color,box-shadow] duration-150 motion-reduce:transition-none data-[hovered]:bg-data-dashboard-border data-[pressed]:bg-data-dashboard-accent data-[selected]:bg-data-dashboard-ink data-[selected]:text-brand-text-on-interactive data-[selected]:shadow-[inset_0_-3px_0_var(--delta-data-dashboard-accent)] data-[selected]:data-[hovered]:bg-data-dashboard-ink data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50";
 
 function Group(props: { label: string; children: React.ReactNode }) {
 	return (
@@ -743,233 +751,238 @@ export function GeoFilterBar(props: GeoFilterBarProps) {
 					)}
 				</p>
 			)}
-			<Group label={t({ code: "geoportal.group.what", msg: "What" })}>
-				{props.dimensionControl !== "none" && (
-					<div className="flex flex-col gap-1">
-						<span className="text-[0.8125rem] font-bold text-data-dashboard-ink" id="geo-dim-label">
-							{t({ code: "geoportal.group.dimension", msg: "Dimension" })}
-						</span>
-						<ToggleButtonGroup
-							aria-labelledby="geo-dim-label"
-							selectionMode="single"
-							disallowEmptySelection
-							isDisabled={locks.has("dimension")}
-							selectedKeys={[query.dimension]}
-							onSelectionChange={(keys) => {
-								const [first] = Array.from(keys);
-								if (first) setDimension(first as QueryDimension);
-							}}
-							className="flex rounded border border-brand-border-control overflow-hidden"
-						>
-							{(Object.keys(GEO_DIMENSION_LABELS) as QueryDimension[]).map(
-								(d) => (
-									<ToggleButton
-										key={d}
-										id={d}
-										className="px-3 py-1 bg-brand-surface data-[selected]:bg-brand-interactive data-[selected]:text-brand-text-on-interactive data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:-outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
-									>
-										{t(GEO_DIMENSION_LABELS[d])}
-									</ToggleButton>
-								),
-							)}
-						</ToggleButtonGroup>
-					</div>
-				)}
-				{measureOptions && measureOptions.length > 0 && (
-					<SelectField
-						label={t({ code: "geoportal.group.measure", msg: "Measure" })}
-						value={query.measure ?? measureOptions[0].id}
-						options={measureOptions}
-						onChange={(m) => set({ measure: m as DeltaQuery["measure"] })}
-					/>
-				)}
-				{props.chips && props.chips.options.length > 0 && (
-					<ChipGroup
-						chips={props.chips}
-						selected={selectedChips(query, props.chips)}
-						isDisabled={
-							(props.chips.kind === "hip_type" && locks.has("hazard")) ||
-							(props.chips.kind === "effect" && locks.has("effect")) ||
-							(props.chips.kind === "sector" && locks.has("sector"))
-						}
-						onChange={(sel) =>
-							props.onChange({
-								query: applyChips(query, props.chips as ChipSet, sel),
-								level,
-							})
-						}
-						t={t}
-					/>
-				)}
-			</Group>
-
-			<Group label={t({ code: "geoportal.group.where", msg: "Where" })}>
-				{props.place && (
-					<PlaceField
-						place={props.place}
-						value={placeKey(query)}
-						isDisabled={locks.has("place")}
-						onChange={(k) =>
-							props.onChange({ query: applyPlace(query, k), level })
-						}
-						t={t}
-					/>
-				)}
-				{props.levelControl !== false && (
-					<SelectField
-						label={t({ code: "geoportal.group.level", msg: "Map level" })}
-						value={String(level)}
-						options={props.levels.map((l) => ({
-							id: String(l),
-							label: t(
-								{ code: "geoportal.dossier.level", msg: "Admin level {n}" },
-								{ n: l },
-							),
-						}))}
-						onChange={(l) => props.onChange({ query, level: Number(l) })}
-					/>
-				)}
-			</Group>
-
-			<Group label={t({ code: "geoportal.group.when", msg: "When" })}>
-				<SelectField
-					label={t({ code: "geoportal.when.period", msg: "Period" })}
-					isDisabled={locks.has("period")}
-					value={
-						presets.find((p) => p.from === from && p.to === to)?.id ?? "custom"
-					}
-					options={[
-						...presets.map((p) => ({ id: p.id, label: p.label })),
-						{
-							id: "custom",
-							label: t({ code: "geoportal.when.custom", msg: "Custom" }),
-							disabled: true,
-						},
-					]}
-					onChange={(id) => {
-						const p = presets.find((x) => x.id === id);
-						if (p) setTime(p.from || undefined, p.to || undefined);
-					}}
-				/>
-				<DateField
-					label={t({ code: "geoportal.when.from", msg: "From" })}
-					value={from}
-					onCommit={(v) => setTime(v || undefined, to || undefined)}
-					t={t}
-					isDisabled={locks.has("period")}
-				/>
-				<DateField
-					label={t({ code: "geoportal.when.to", msg: "To" })}
-					value={to}
-					onCommit={(v) => setTime(from || undefined, v || undefined)}
-					t={t}
-					isDisabled={locks.has("period")}
-				/>
-			</Group>
-
-			{tree && !locks.has("hazard") && (
-				<Group label={t({ code: "geoportal.group.hazard", msg: "Hazard" })}>
-					<SelectField
-						label={t({ code: "geoportal.hazard.type", msg: "Hazard type" })}
-						value={typeId ?? ALL}
-						options={[
-							{
-								id: ALL,
-								label: t({ code: "geoportal.hazard.all", msg: "All hazards" }),
-							},
-							...tree.types.map((n) => ({
-								id: n.id,
-								label: count(n),
-								disabled: n.recordCountSubtree === 0,
-							})),
-						]}
-						onChange={(id) => setHazard(id === ALL ? {} : { typeId: id })}
-					/>
-					{typeId && (
+			<div className="w-full">
+					{props.dimensionControl !== "none" && (
+						<div className="flex flex-col gap-1">
+							<span className="sr-only" id="geo-dim-label">
+								{t({ code: "geoportal.group.dimension", msg: "Dimension" })}
+							</span>
+							<ToggleButtonGroup
+								aria-labelledby="geo-dim-label"
+								selectionMode="single"
+								disallowEmptySelection
+								isDisabled={locks.has("dimension")}
+								selectedKeys={[query.dimension]}
+								onSelectionChange={(keys) => {
+									const [first] = Array.from(keys);
+									if (first) setDimension(first as QueryDimension);
+								}}
+								className="delta-layer inline-flex flex-wrap gap-1 p-1"
+							>
+								{(Object.keys(GEO_DIMENSION_LABELS) as QueryDimension[]).map(
+									(d) => (
+										<ToggleButton
+											key={d}
+											id={d}
+											className={DIMENSION_BUTTON}
+										>
+											{t(GEO_DIMENSION_LABELS[d])}
+										</ToggleButton>
+									),
+								)}
+							</ToggleButtonGroup>
+						</div>
+					)}
+			</div>
+			{/* Row 2 (Alex, 2026-10-20): Hazard type, Measure, Map level, Period,
+			    From, To; controls 10% lower (36px). */}
+			<div className="w-full flex flex-wrap items-end gap-x-6 gap-y-2 [&_.geo-control]:min-h-[36px]">
+				{tree && !locks.has("hazard") && (
+					<Group label={t({ code: "geoportal.group.hazard", msg: "Hazard" })}>
 						<SelectField
-							label={t({ code: "geoportal.hazard.cluster", msg: "Cluster" })}
-							value={clusterId ?? ALL}
+							label={t({ code: "geoportal.hazard.type", msg: "Hazard type" })}
+							value={typeId ?? ALL}
 							options={[
 								{
 									id: ALL,
-									label: t({
-										code: "geoportal.hazard.all_in_type",
-										msg: "All in this type",
-									}),
+									label: t({ code: "geoportal.hazard.all", msg: "All hazards" }),
 								},
-								...tree.clusters
-									.filter((c) => c.typeId === typeId)
-									.map((n) => ({
-										id: n.id,
-										label: count(n),
-										disabled: n.recordCountSubtree === 0,
-									})),
+								...tree.types.map((n) => ({
+									id: n.id,
+									label: count(n),
+									disabled: n.recordCountSubtree === 0,
+								})),
 							]}
-							onChange={(id) =>
-								setHazard(id === ALL ? { typeId } : { clusterId: id })
-							}
+							onChange={(id) => setHazard(id === ALL ? {} : { typeId: id })}
 						/>
-					)}
-					{clusterId && (
-						<SelectField
-							label={t({ code: "geoportal.hazard.hazard", msg: "Hazard" })}
-							value={hz.hazardId ?? ALL}
-							options={[
-								{
-									id: ALL,
-									label: t({
-										code: "geoportal.hazard.all_in_cluster",
-										msg: "All in this cluster",
-									}),
-								},
-								...tree.hazards
-									.filter((h) => h.clusterId === clusterId)
-									.map((n) => ({
-										id: n.id,
-										label: `${n.code} ${count(n)}`,
-										disabled: n.recordCountSubtree === 0,
-									})),
-							]}
-							onChange={(id) =>
-								setHazard(id === ALL ? { clusterId } : { hazardId: id })
-							}
-						/>
-					)}
-				</Group>
-			)}
-
-			{props.canReview && (
-				<Group label={t({ code: "geoportal.group.basis", msg: "Basis" })}>
-					<Checkbox
-						isSelected={query.scope.basis === "provisional"}
-						onChange={(on) =>
-							set({
-								scope: {
-									...query.scope,
-									basis: on ? "provisional" : "published",
-								},
-							})
-						}
-						className="flex items-center gap-2 text-sm pb-1"
-					>
-						{({ isSelected }) => (
-							<>
-								<span
-									aria-hidden="true"
-									className={`inline-flex items-center justify-center w-4 h-4 border rounded text-xs leading-none ${isSelected ? "bg-brand-interactive border-brand-interactive text-brand-text-on-interactive" : "bg-brand-surface border-brand-border-control"}`}
-								>
-									{isSelected ? "✓" : ""}
-								</span>
-								{t({
-									code: "geoportal.basis.provisional",
-									msg: "Include data not yet published (Provisional)",
-								})}
-							</>
+						{typeId && (
+							<SelectField
+								label={t({ code: "geoportal.hazard.cluster", msg: "Cluster" })}
+								value={clusterId ?? ALL}
+								options={[
+									{
+										id: ALL,
+										label: t({
+											code: "geoportal.hazard.all_in_type",
+											msg: "All in this type",
+										}),
+									},
+									...tree.clusters
+										.filter((c) => c.typeId === typeId)
+										.map((n) => ({
+											id: n.id,
+											label: count(n),
+											disabled: n.recordCountSubtree === 0,
+										})),
+								]}
+								onChange={(id) =>
+									setHazard(id === ALL ? { typeId } : { clusterId: id })
+								}
+							/>
 						)}
-					</Checkbox>
-				</Group>
-			)}
+						{clusterId && (
+							<SelectField
+								label={t({ code: "geoportal.hazard.hazard", msg: "Hazard" })}
+								value={hz.hazardId ?? ALL}
+								options={[
+									{
+										id: ALL,
+										label: t({
+											code: "geoportal.hazard.all_in_cluster",
+											msg: "All in this cluster",
+										}),
+									},
+									...tree.hazards
+										.filter((h) => h.clusterId === clusterId)
+										.map((n) => ({
+											id: n.id,
+											label: `${n.code} ${count(n)}`,
+											disabled: n.recordCountSubtree === 0,
+										})),
+								]}
+								onChange={(id) =>
+									setHazard(id === ALL ? { clusterId } : { hazardId: id })
+								}
+							/>
+						)}
+					</Group>
+				)}
 
+				<Group label={t({ code: "geoportal.group.what", msg: "What" })}>
+					{measureOptions && measureOptions.length > 0 && (
+						<SelectField
+							label={t({ code: "geoportal.group.measure", msg: "Measure" })}
+							value={query.measure ?? measureOptions[0].id}
+							options={measureOptions}
+							onChange={(m) => set({ measure: m as DeltaQuery["measure"] })}
+						/>
+					)}
+					{props.chips && props.chips.options.length > 0 && (
+						<ChipGroup
+							chips={props.chips}
+							selected={selectedChips(query, props.chips)}
+							isDisabled={
+								(props.chips.kind === "hip_type" && locks.has("hazard")) ||
+								(props.chips.kind === "effect" && locks.has("effect")) ||
+								(props.chips.kind === "sector" && locks.has("sector"))
+							}
+							onChange={(sel) =>
+								props.onChange({
+									query: applyChips(query, props.chips as ChipSet, sel),
+									level,
+								})
+							}
+							t={t}
+						/>
+					)}
+				</Group>
+
+				<Group label={t({ code: "geoportal.group.where", msg: "Where" })}>
+					{props.levelControl !== false && (
+						<SelectField
+							label={t({ code: "geoportal.group.level", msg: "Map level" })}
+							value={String(level)}
+							options={props.levels.map((l) => ({
+								id: String(l),
+								label: t(
+									{ code: "geoportal.dossier.level", msg: "Admin level {n}" },
+									{ n: l },
+								),
+							}))}
+							onChange={(l) => props.onChange({ query, level: Number(l) })}
+						/>
+					)}
+					{props.place && (
+						<PlaceField
+							place={props.place}
+							value={placeKey(query)}
+							isDisabled={locks.has("place")}
+							onChange={(k) =>
+								props.onChange({ query: applyPlace(query, k), level })
+							}
+							t={t}
+						/>
+					)}
+				</Group>
+
+				<Group label={t({ code: "geoportal.group.when", msg: "When" })}>
+					<SelectField
+						label={t({ code: "geoportal.when.period", msg: "Period" })}
+						isDisabled={locks.has("period")}
+						value={
+							presets.find((p) => p.from === from && p.to === to)?.id ?? "custom"
+						}
+						options={[
+							...presets.map((p) => ({ id: p.id, label: p.label })),
+							{
+								id: "custom",
+								label: t({ code: "geoportal.when.custom", msg: "Custom" }),
+								disabled: true,
+							},
+						]}
+						onChange={(id) => {
+							const p = presets.find((x) => x.id === id);
+							if (p) setTime(p.from || undefined, p.to || undefined);
+						}}
+					/>
+					<DateField
+						label={t({ code: "geoportal.when.from", msg: "From" })}
+						value={from}
+						onCommit={(v) => setTime(v || undefined, to || undefined)}
+						t={t}
+						isDisabled={locks.has("period")}
+					/>
+					<DateField
+						label={t({ code: "geoportal.when.to", msg: "To" })}
+						value={to}
+						onCommit={(v) => setTime(from || undefined, v || undefined)}
+						t={t}
+						isDisabled={locks.has("period")}
+					/>
+				</Group>
+
+				{props.canReview && (
+					<Group label={t({ code: "geoportal.group.basis", msg: "Basis" })}>
+						<Checkbox
+							isSelected={query.scope.basis === "provisional"}
+							onChange={(on) =>
+								set({
+									scope: {
+										...query.scope,
+										basis: on ? "provisional" : "published",
+									},
+								})
+							}
+							className="flex items-center gap-2 text-sm pb-1"
+						>
+							{({ isSelected }) => (
+								<>
+									<span
+										aria-hidden="true"
+										className={`inline-flex items-center justify-center w-4 h-4 border rounded text-xs leading-none ${isSelected ? "bg-brand-interactive border-brand-interactive text-brand-text-on-interactive" : "bg-brand-surface border-brand-border-control"}`}
+									>
+										{isSelected ? "✓" : ""}
+									</span>
+									{t({
+										code: "geoportal.basis.provisional",
+										msg: "Include data not yet published (Provisional)",
+									})}
+								</>
+							)}
+						</Checkbox>
+					</Group>
+				)}
+			</div>
 			{(locks.size > 0 || (props.notApplied?.length ?? 0) > 0) && (
 				<ul
 					className="w-full flex flex-wrap gap-1 text-xs"
