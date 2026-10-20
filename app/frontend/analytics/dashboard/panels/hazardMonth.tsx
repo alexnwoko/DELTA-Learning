@@ -1,5 +1,5 @@
 // Hazard by month (Alex, 2026-10-19; heatmap redesign approved the same
-// day): one row per specific HIPs hazard under its cluster heading, the 12
+// day): one row per specific HIPs hazard (no cluster headings, 2026-10-20), the 12
 // calendar months with years pooled, a 13th "Month unknown" column so a
 // hazard dated only by a source default (Ethiopia's drought on 7 September)
 // never disappears, and a row-total bar. One switch moves every box between
@@ -8,7 +8,7 @@
 // month is blank, never 0. Only hazards with a reported number of people
 // affected, the top 20 by it (Alex, 2026-10-19).
 import { useState } from "react";
-import { Button, ToggleButton, ToggleButtonGroup } from "react-aria-components";
+import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
 import { ChartFrame } from "~/frontend/charts/ChartFrame";
 import type { ChartExportRow } from "~/frontend/charts/chartExport";
 import { DASHBOARD_RAMP } from "~/frontend/charts/sectionPalette";
@@ -55,14 +55,14 @@ export function topHazards(rows: HazardMonthRow[]): HazardMonthRow[] {
 		.slice(0, TOP_ROWS);
 }
 
-/** Rows in display order: clusters by their largest row, rows within by the switch. */
+/**
+ * Rows in display order: the specific hazards themselves, sorted by the
+ * switch (Alex, 2026-10-20: the direct hazard, not its grouping; the
+ * cluster is only a tooltip on the row).
+ */
 export function orderRows(rows: HazardMonthRow[], mode: Mode): HazardMonthRow[] {
 	const size = (r: HazardMonthRow) => (mode === "people" ? reported(r.people) ?? -1 : r.allOccurrences);
-	const sorted = [...rows].sort((a, b) => size(b) - size(a) || a.label.localeCompare(b.label));
-	const groupOf = (r: HazardMonthRow) => r.clusterLabel ?? r.label;
-	const order: string[] = [];
-	for (const r of sorted) if (!order.includes(groupOf(r))) order.push(groupOf(r));
-	return order.flatMap((g) => sorted.filter((r) => groupOf(r) === g));
+	return [...rows].sort((a, b) => size(b) - size(a) || a.label.localeCompare(b.label));
 }
 
 function peopleLabel(ctx: ViewContext, d: HazardMonth): string {
@@ -112,7 +112,6 @@ function HazardMonthView({ ctx, d, title, exp, common }: { ctx: ViewContext; d: 
 	const t = ctx.t;
 	const n = (x: number) => x.toLocaleString(ctx.lang);
 	const [mode, setMode] = useState<Mode>("count");
-	const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 	const months = monthNames(ctx.lang);
 	const occLabel = d.unit === "disaster_event" ? t({ code: "dashboard.mode_events", msg: "Number of events" }) : t({ code: "dashboard.mode_records", msg: "Number of records" });
 	const pLabel = peopleLabel(ctx, d);
@@ -125,20 +124,6 @@ function HazardMonthView({ ctx, d, title, exp, common }: { ctx: ViewContext; d: 
 	const max = Math.max(0, ...shown.flatMap((r) => [...r.cells.map((c) => value(c) ?? 0), mode === "count" ? unknownMonth(r) : 0]));
 	const maxTotal = Math.max(1, ...shown.map((r) => rowTotal(r) ?? 0));
 	const anyRare = shown.some((r) => r.cells.some((c) => c.rare));
-	const groupOf = (r: HazardMonthRow) => r.clusterLabel ?? r.label;
-	const groups: { name: string; rows: HazardMonthRow[] }[] = [];
-	for (const r of shown) {
-		const g = groups.find((x) => x.name === groupOf(r));
-		if (g) g.rows.push(r);
-		else groups.push({ name: groupOf(r), rows: [r] });
-	}
-	const toggle = (g: string) =>
-		setCollapsed((s) => {
-			const next = new Set(s);
-			if (next.has(g)) next.delete(g);
-			else next.add(g);
-			return next;
-		});
 
 	return (
 		<ChartFrame ctx={ctx} title={title} rows={exp.rows}
@@ -177,66 +162,48 @@ function HazardMonthView({ ctx, d, title, exp, common }: { ctx: ViewContext; d: 
 							<th scope="col" className="px-1 py-1 text-start font-semibold">{t({ code: "dashboard.total", msg: "Total" })}</th>
 						</tr>
 					</thead>
-					{groups.map((g) => {
-						const isOpen = !collapsed.has(g.name);
-						// A heading only when the cluster holds specific hazards (a lone row names itself).
-						const heading = g.rows.length > 1 || g.rows[0].level === "hazard";
-						return (
-							<tbody key={g.name}>
-								{heading && (
-									<tr>
-										<th scope="colgroup" colSpan={15} className="px-1 pt-2 pb-0.5 text-start">
-											<Button onPress={() => toggle(g.name)} aria-expanded={isOpen}
-												className={`delta-panel-title inline-flex items-center gap-1 rounded text-xs uppercase tracking-wide ${focusRing}`}>
-												<span aria-hidden="true">{isOpen ? "▾" : "▸"}</span>
-												{g.name}
-											</Button>
-										</th>
-									</tr>
-								)}
-								{isOpen && g.rows.map((r) => {
-									const tot = rowTotal(r);
+					<tbody>
+						{shown.map((r) => {
+							const tot = rowTotal(r);
+							return (
+								<tr key={r.key}>
+									<th scope="row" title={r.clusterLabel ?? undefined} className="px-1 py-1 text-start font-normal whitespace-nowrap">{r.label}</th>
+									{r.cells.map((c) => {
+									const v = value(c);
+									const hover = `${r.label}, ${months[c.month - 1]}: ${n(c.count)} · ${pLabel} ${cellText(ctx, c.people)}${c.rare ? ` · ${rare}` : ""}`;
 									return (
-										<tr key={r.key}>
-											<th scope="row" className="px-1 py-1 ps-3 text-start font-normal whitespace-nowrap">{r.label}</th>
-											{r.cells.map((c) => {
-												const v = value(c);
-												const hover = `${r.label}, ${months[c.month - 1]}: ${n(c.count)} · ${pLabel} ${cellText(ctx, c.people)}${c.rare ? ` · ${rare}` : ""}`;
-												return (
-													<td key={c.month} title={hover}
-														className="h-7 min-w-8 border border-brand-border px-0.5 text-center tabular-nums"
-														style={{
-															background: shadeFor(v, max),
-															// Rare and severe: a dark ring in both modes, so it stays found.
-															outline: c.rare ? `2px solid ${DASHBOARD_RAMP[4]}` : undefined,
-															outlineOffset: c.rare ? "-2px" : undefined,
-														}}>
-														{v !== null ? n(v) : ""}
-														{c.rare && <span aria-hidden="true" className="ms-0.5">◆</span>}
-														{c.rare && <span className="sr-only">{rare}</span>}
-													</td>
-												);
-											})}
-											{/* People are not split by month for undated occurrences: the box counts occurrences only. */}
-											<td className="h-7 min-w-10 border border-dashed border-brand-border px-0.5 text-center tabular-nums text-brand-text-muted"
-												title={`${r.label}, ${unknown}: ${n(unknownMonth(r))}`}>
-												{mode === "count" && unknownMonth(r) > 0 ? n(unknownMonth(r)) : ""}
-											</td>
-											<td className="min-w-24 px-1 py-1">
-												<span className="flex items-center gap-1">
-													<svg width="60" height="8" aria-hidden="true" focusable="false" className="shrink-0">
-														<rect x={0} y={0} width={60} height={8} rx={4} fill={DASHBOARD_RAMP[1]} />
-														{tot !== null && tot > 0 && <rect x={0} y={0} width={Math.max(2, (tot / maxTotal) * 60)} height={8} rx={4} fill={DASHBOARD_RAMP[3]} />}
-													</svg>
-													<span className="tabular-nums">{tot !== null ? n(tot) : cellText(ctx, r.people)}</span>
-												</span>
-											</td>
-										</tr>
+										<td key={c.month} title={hover}
+											className="h-7 min-w-8 border border-brand-border px-0.5 text-center tabular-nums"
+											style={{
+												background: shadeFor(v, max),
+												// Rare and severe: a dark ring in both modes, so it stays found.
+												outline: c.rare ? `2px solid ${DASHBOARD_RAMP[4]}` : undefined,
+												outlineOffset: c.rare ? "-2px" : undefined,
+											}}>
+											{v !== null ? n(v) : ""}
+											{c.rare && <span aria-hidden="true" className="ms-0.5">◆</span>}
+											{c.rare && <span className="sr-only">{rare}</span>}
+										</td>
 									);
 								})}
-							</tbody>
-						);
-					})}
+								{/* People are not split by month for undated occurrences: the box counts occurrences only. */}
+								<td className="h-7 min-w-10 border border-dashed border-brand-border px-0.5 text-center tabular-nums text-brand-text-muted"
+									title={`${r.label}, ${unknown}: ${n(unknownMonth(r))}`}>
+									{mode === "count" && unknownMonth(r) > 0 ? n(unknownMonth(r)) : ""}
+								</td>
+								<td className="min-w-24 px-1 py-1">
+									<span className="flex items-center gap-1">
+										<svg width="60" height="8" aria-hidden="true" focusable="false" className="shrink-0">
+											<rect x={0} y={0} width={60} height={8} rx={4} fill={DASHBOARD_RAMP[1]} />
+											{tot !== null && tot > 0 && <rect x={0} y={0} width={Math.max(2, (tot / maxTotal) * 60)} height={8} rx={4} fill={DASHBOARD_RAMP[3]} />}
+										</svg>
+										<span className="tabular-nums">{tot !== null ? n(tot) : cellText(ctx, r.people)}</span>
+									</span>
+								</td>
+								</tr>
+							);
+						})}
+					</tbody>
 				</table>
 			</div>
 			<p className="m-0 text-xs text-brand-text-muted">

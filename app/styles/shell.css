@@ -50,6 +50,9 @@
 	letter-spacing: 0.02em;
 	line-height: 1.15;
 	color: var(--delta-data-dashboard-ink);
+	/* 2pt above the text and 1pt below (Alex, 2026-10-20). */
+	padding-top: 2pt;
+	padding-bottom: 1pt;
 }
 
 /* On paper the logo sits 2pt above the page heading (Alex, 2026-10-19):
