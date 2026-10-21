@@ -78,6 +78,12 @@ export interface BasemapLayer {
 	thirdParty: boolean;
 	/** Plain note shown next to a third-party option. */
 	note: { code: string; msg: string } | null;
+	/**
+	 * [west, south, east, north] in degrees where the layer has tiles, or
+	 * null when unknown. The map asks for tiles only inside it, so a country
+	 * tile set does not cause requests (and 404s) across the world.
+	 */
+	extent?: [number, number, number, number] | null;
 	/** Self-hosted logo the provider's terms require, or null. */
 	logo: string | null;
 	/** Google only: session and viewport endpoints and the session body. */
