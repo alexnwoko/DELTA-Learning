@@ -40,6 +40,7 @@ import { authLoaderGetOptionalUserForFrontend } from "./utils/auth";
 import { Toast } from "primereact/toast";
 import RegularMenuBar from "./components/RegularMenuBar";
 import { isDataEntryPath, PageBrand } from "./frontend/PageBrand";
+import { isStaleChunkError, shouldReloadForStaleChunk } from "./utils/staleChunk";
 import { getTenantOutline } from "./backend.server/models/geo/tenantExtent";
 import SuperAdminMenuBar from "./components/SuperAdminMenuBar";
 import InactivityWarning from "./components/InactivityWarning";
@@ -415,6 +416,18 @@ export default function Screen() {
 
 export function ErrorBoundary() {
 	const error = useRouteError();
+	// Code from before a redeploy or restart: reload once instead of showing an error.
+	const staleChunk = isStaleChunkError(error);
+	useEffect(() => {
+		if (!staleChunk) return;
+		let storage: Storage | null = null;
+		try {
+			storage = window.sessionStorage;
+		} catch {
+			storage = null;
+		}
+		if (shouldReloadForStaleChunk(storage, Date.now())) window.location.reload();
+	}, [staleChunk]);
 
 	const isDev = process.env.NODE_ENV === "development";
 	// Runtime env vars unavailable client-side via process.env — must be serialised through the root loader

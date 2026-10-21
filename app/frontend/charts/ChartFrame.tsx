@@ -118,7 +118,8 @@ export function ChartFrame({ ctx, title, meta, rows, formatValue, pictures = tru
 	const icon = usePanelIcon();
 	const chartRef = useRef<HTMLDivElement>(null);
 	const fullMeta = (): ChartExportMeta => ({ ...meta, title, generatedAt: new Date() });
-	const notes = exportNotes({ ...meta, title, generatedAt: new Date() }, rows).filter(
+	// Each note once: a caveat named by two sources (TR-152) is not repeated.
+	const notes = [...new Set(exportNotes({ ...meta, title, generatedAt: new Date() }, rows))].filter(
 		(note) => !note.startsWith("Generated ") && !quietNotes.includes(note),
 	);
 	const hasSeries = rows.some((r) => r.series);
