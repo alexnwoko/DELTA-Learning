@@ -4,7 +4,7 @@
 // calls an outside tile host (NFR-041). Without the directory there is no
 // basemap: maps draw boundaries only and say so.
 import path from "node:path";
-import { promises as fs } from "node:fs";
+import { promises as fs, readdirSync } from "node:fs";
 
 import {
 	BASEMAP_ATTRIBUTION,
@@ -80,6 +80,59 @@ export async function readTile(
 	}
 }
 
+const extentCache = new Map<string, [number, number, number, number] | null>();
+
+/**
+ * The area a z/x/y tile directory covers, in degrees [west, south, east,
+ * north], read once from the directory listing at one zoom (8, or the
+ * deepest below it) and kept for the life of the server. Null when the
+ * directory cannot be read.
+ */
+export function tileDirExtent(dir: string): [number, number, number, number] | null {
+	if (extentCache.has(dir)) return extentCache.get(dir) ?? null;
+	let result: [number, number, number, number] | null = null;
+	try {
+		const zooms = readdirSync(dir)
+			.filter((d) => /^\d+$/.test(d))
+			.map(Number)
+			.filter((z) => z <= 8)
+			.sort((a, b) => b - a);
+		const z = zooms[0];
+		if (z !== undefined) {
+			const xs = readdirSync(path.join(dir, String(z)))
+				.filter((d) => /^\d+$/.test(d))
+				.map(Number);
+			let yMin = Infinity;
+			let yMax = -Infinity;
+			for (const x of xs) {
+				for (const f of readdirSync(path.join(dir, String(z), String(x)))) {
+					const y = Number(f.split(".")[0]);
+					if (Number.isFinite(y)) {
+						yMin = Math.min(yMin, y);
+						yMax = Math.max(yMax, y);
+					}
+				}
+			}
+			if (xs.length && Number.isFinite(yMin)) {
+				const n = 2 ** z;
+				const lon = (x: number) => (x / n) * 360 - 180;
+				const lat = (y: number) =>
+					(Math.atan(Math.sinh(Math.PI * (1 - (2 * y) / n))) * 180) / Math.PI;
+				result = [
+					lon(Math.min(...xs)),
+					lat(yMax + 1),
+					lon(Math.max(...xs) + 1),
+					lat(yMin),
+				];
+			}
+		}
+	} catch {
+		result = null;
+	}
+	extentCache.set(dir, result);
+	return result;
+}
+
 /**
  * The basemap the maps may offer, or null. BASEMAP_TILE_URL may point at
  * another path on the DELTA origin; any other host is refused (SEC-20).
@@ -137,6 +190,11 @@ export function basemapLayers(
 			...common,
 			tileSize: 256,
 			thirdParty: false,
+			// Only where the installed tiles are (a country set, not the world).
+			extent: (() => {
+				const dir = basemapTileDir();
+				return dir ? tileDirExtent(dir) : null;
+			})(),
 			note: null,
 			logo: null,
 			google: null,
