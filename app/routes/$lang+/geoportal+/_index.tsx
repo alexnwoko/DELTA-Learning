@@ -134,6 +134,7 @@ function useGeometry<T>(src: string | null): { data: T | null; failed: boolean }
 }
 
 type BoundaryCollection = {
+	type?: "FeatureCollection";
 	features: {
 		properties: {
 			divisionId: string;
@@ -405,7 +406,14 @@ const UNPLACED_REASONS: Record<string, { code: string; msg: string }> = {
 	},
 };
 
-const EMPTY_BOUNDARIES: BoundaryCollection = { features: [] };
+// An empty collection while the area shapes download. It must say it is a
+// FeatureCollection: OpenLayers reads a bare { features } as one feature
+// with no geometry type and throws ("Unsupported GeoJSON type: undefined"),
+// which broke client-side navigation to the geoportal (Alex, 2026-10-21).
+const EMPTY_BOUNDARIES: BoundaryCollection = {
+	type: "FeatureCollection",
+	features: [],
+};
 
 export default function GeoportalPage() {
 	const data = useLoaderData<typeof loader>();

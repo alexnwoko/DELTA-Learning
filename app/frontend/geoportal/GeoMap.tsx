@@ -410,6 +410,10 @@ export function GeoMap({
 				source: source ?? undefined,
 				visible: false,
 				zIndex: 0,
+				// Tiles only where the layer has them (a country set).
+				extent: b.extent
+					? transformExtent(b.extent, "EPSG:4326", "EPSG:3857")
+					: undefined,
 			});
 			if (source) watchTiles(source);
 			bases.set(b.id, tl);
@@ -563,10 +567,15 @@ export function GeoMap({
 		const source = layer.getSource();
 		if (!source) return;
 		source.clear();
-		const features = new GeoJSON().readFeatures(boundaries, {
-			dataProjection: "EPSG:4326",
-			featureProjection: "EPSG:3857",
-		});
+		// Always read as a collection: a bare { features } (no type) would be
+		// taken for one feature without geometry and throw.
+		const features = new GeoJSON().readFeatures(
+			{ type: "FeatureCollection", features: boundaries.features },
+			{
+				dataProjection: "EPSG:4326",
+				featureProjection: "EPSG:3857",
+			},
+		);
 		source.addFeatures(features);
 		const symbolSource = symbolLayerRef.current?.getSource();
 		symbolSource?.clear();
