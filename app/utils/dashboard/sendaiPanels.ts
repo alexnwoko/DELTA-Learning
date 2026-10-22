@@ -22,7 +22,7 @@ export interface SendaiGap {
 	reason: string;
 }
 
-/** S0: Targets A and B counts. Rates (A-1, B-1) are refused for want of a population figure. */
+/** S0: Targets A and B counts. B-1 is refused (needs household size and livelihoods); A-1 is a rate in A1. */
 export interface SendaiS0 {
 	indicators: {
 		code: "A-2" | "A-3" | "B-2" | null;
@@ -36,9 +36,36 @@ export interface SendaiS0 {
 	refused: { code: string | null; reason: string }[];
 }
 
+/**
+ * Sendai A-1 for one year: (deaths + missing) per 100,000 people, national
+ * only (TR-060), using the population figure for that year from the
+ * reference store. The value state follows deaths and missing; a year with
+ * no population figure carries the reason and no value, never 0.
+ */
+export interface SendaiA1Rate {
+	value: number | null;
+	valueState: PanelCell["valueState"];
+	per: 100000;
+	/** Set when the rate is not computed, with the reason. */
+	refusal: string | null;
+	/** The population figure used, with its source and release. */
+	denominator: {
+		year: number;
+		value: number;
+		source: string;
+		release: string;
+	} | null;
+}
+
 /** A1: deaths and missing persons per year, with the annual average over the years shown. */
 export interface SendaiA1 {
-	years: { year: number; deaths: PanelCell; missing: PanelCell }[];
+	years: {
+		year: number;
+		deaths: PanelCell;
+		missing: PanelCell;
+		/** Sendai A-1; null under a place filter (national only). */
+		rate: SendaiA1Rate | null;
+	}[];
 	reference: {
 		from: number;
 		to: number;

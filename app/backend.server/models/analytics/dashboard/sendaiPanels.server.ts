@@ -26,6 +26,13 @@ import {
 import { sectorHitsCtes } from "~/backend.server/models/analytics/dashboard/sectorPanels.server";
 import type { DeltaQuery } from "~/utils/deltaQuery";
 import { measureValue } from "~/utils/valueState";
+import { getPopulationDenominator } from "~/backend.server/models/ref/denominator";
+import {
+	A1_METHOD,
+	ratePer100k,
+	sumMeasures,
+} from "~/backend.server/models/ref/rates";
+import type { SendaiA1Rate } from "~/utils/dashboard/sendaiPanels";
 import type { PanelCell, PanelMeta } from "~/utils/dashboard/impactPanels";
 import type { SendaiSection, SendaiSlot } from "~/utils/dashboard/sendaiPanels";
 
@@ -175,6 +182,50 @@ export async function computeSendai(
 		coverage: coverageText,
 		notApplied,
 	});
+	// Sendai A-1 per year, national only, from the reference store (TR-152).
+	const a1Rates = new Map<number, SendaiA1Rate>();
+	if (national) {
+		const results = await Promise.all(
+			years.map(async (year) => {
+				const r = byYear.find((x) => x.year === year)!;
+				const denominator = await getPopulationDenominator(
+					ctx.countryAccountsId,
+					{ divisionId: null, year },
+				);
+				const sum = sumMeasures([r.measures.deaths, r.measures.missing]);
+				const rate = ratePer100k(
+					{ ...sum, provenance: { year, method: A1_METHOD } },
+					denominator,
+					A1_METHOD,
+				);
+				const out: SendaiA1Rate = rate.ok
+					? {
+							value:
+								rate.value === null ? null : Math.round(rate.value * 100) / 100,
+							valueState: rate.valueState as SendaiA1Rate["valueState"],
+							per: 100000,
+							refusal: null,
+							denominator: {
+								year: rate.denominator.year,
+								value: rate.denominator.value,
+								source: rate.denominator.provenance.source.name,
+								release: rate.denominator.provenance.release.version,
+							},
+						}
+					: {
+							value: null,
+							valueState: "not_reported",
+							per: 100000,
+							refusal: rate.refusal.reason,
+							denominator: null,
+						};
+				return [year, out] as const;
+			}),
+		);
+		for (const [y, r] of results) a1Rates.set(y, r);
+	}
+	const a1Computed = [...a1Rates.values()].some((r) => r.refusal === null);
+
 	const placeNote = national
 		? ""
 		: " Sub-national figures. Not a Sendai indicator value (TR-060).";
@@ -229,20 +280,32 @@ export async function computeSendai(
 			],
 			directlyAffected: m.affected_direct,
 			refused: [
-				{
-					code: code("A-1"),
-					reason: "Rates need a population denominator (TR-152)",
-				},
+				...(a1Computed
+					? []
+					: [
+							{
+								code: code("A-1"),
+								reason: national
+									? "A-1 needs a population figure for the years shown; none is held for this country (TR-152)."
+									: "A-1 is a national indicator; sub-national rates are not Sendai values (TR-060).",
+							},
+						]),
 				{
 					code: code("B-1"),
-					reason: "Rates need a population denominator (TR-152)",
+					reason:
+						"B-1 needs average household size and livelihoods disrupted, neither held; directly affected per 100,000 is not B-1.",
 				},
 			],
 		},
 		a1: {
 			years: years.map((year) => {
 				const r = byYear.find((x) => x.year === year)!;
-				return { year, deaths: r.measures.deaths, missing: r.measures.missing };
+				return {
+					year,
+					deaths: r.measures.deaths,
+					missing: r.measures.missing,
+					rate: a1Rates.get(year) ?? null,
+				};
 			}),
 			reference,
 		},

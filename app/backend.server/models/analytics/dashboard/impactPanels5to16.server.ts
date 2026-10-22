@@ -316,8 +316,16 @@ export async function computeGetImpactPanels5to16(
 			{ inputTo: "B-4", label: "Houses destroyed", cell: housesAll.destroyed },
 		],
 		refused: [
-			{ code: "A-1", reason: "Rates need a population denominator (TR-152)" },
-			{ code: "B-1", reason: "Rates need a population denominator (TR-152)" },
+			{
+				code: "A-1",
+				reason:
+					"A-1 (deaths and missing per 100,000) is shown per year in the Sendai section, with its population figure (TR-152)",
+			},
+			{
+				code: "B-1",
+				reason:
+					"B-1 needs average household size and livelihoods disrupted, neither held; directly affected per 100,000 is not B-1",
+			},
 			{
 				code: "B-1 count",
 				reason:
