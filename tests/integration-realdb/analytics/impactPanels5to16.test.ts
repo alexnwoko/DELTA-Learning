@@ -10,6 +10,7 @@ import {
 import {
 	getImpactMap,
 	getImpactPanels5to16,
+	showByLevels,
 } from "~/backend.server/models/analytics/dashboard/impactPanels5to16.server";
 import { DEFAULT_QUERY } from "~/utils/deltaQuery";
 
@@ -30,7 +31,7 @@ const rec = {
 	c: randomUUID(),
 	d: randomUUID(),
 };
-const div = { d1: randomUUID(), d2: randomUUID() };
+const div = { d1: randomUUID(), d2: randomUUID(), d3: randomUUID() };
 const dsg = randomUUID();
 
 const ctx = () => ({
@@ -62,8 +63,11 @@ describe("getImpactPanels5to16", () => {
 			(${div.d1}, ${ids.countryAccountId}, '{"en":"North"}', 1),
 			(${div.d2}, ${ids.countryAccountId}, '{"en":"South"}', 1)`);
 		await dr.execute(sql`
+			INSERT INTO division (id, country_accounts_id, name, level, parent_id) VALUES
+			(${div.d3}, ${ids.countryAccountId}, '{"en":"North East"}', 2, ${div.d1})`);
+		await dr.execute(sql`
 			INSERT INTO disaster_records_division (disaster_record_id, division_id) VALUES
-			(${rec.a}, ${div.d1}), (${rec.d}, ${div.d1}), (${rec.d}, ${div.d2})`);
+			(${rec.a}, ${div.d1}), (${rec.a}, ${div.d3}), (${rec.d}, ${div.d1}), (${rec.d}, ${div.d2})`);
 		await dr.execute(sql`
 			INSERT INTO damages (record_id, sector_id, asset_id, unit, td_damage_amount)
 			VALUES (${rec.d}, ${HOUSING}, ${HOUSE_ASSET}, 'number_count', 700)`);
@@ -90,6 +94,9 @@ describe("getImpactPanels5to16", () => {
 		);
 		await dr.execute(
 			sql`DELETE FROM disaster_records WHERE country_accounts_id = ${ids.countryAccountId}`,
+		);
+		await dr.execute(
+			sql`DELETE FROM division WHERE country_accounts_id = ${ids.countryAccountId} AND level = 2`,
 		);
 		await dr.execute(
 			sql`DELETE FROM division WHERE country_accounts_id = ${ids.countryAccountId}`,
@@ -119,6 +126,23 @@ describe("getImpactPanels5to16", () => {
 		expect(byName["No division recorded"].valueState).toBe("zero_confirmed");
 		expect(p.rankedDivisions.multiDivisionRecords).toBe(1);
 		expect(p.rankedDivisions.rest).toBeNull();
+	});
+
+	it("shows by districts: records roll up to level 2, and records placed above it are counted apart", async () => {
+		const p = await getImpactPanels5to16(
+			{ ...DEFAULT_QUERY, showBy: 2 },
+			ctx(),
+		);
+		const byName = Object.fromEntries(
+			p.rankedDivisions.rows.map((r) => [r.name, r.cell]),
+		);
+		expect(byName["North East"].value).toBe(40);
+		expect(byName.North).toBeUndefined();
+		expect(byName["Not recorded at this level"].value).toBe(5);
+	});
+
+	it("offers the tenant's admin levels for Show by", async () => {
+		expect(await showByLevels(ids.countryAccountId)).toEqual([1, 2]);
 	});
 
 	it("lists the largest record first and splits risk by the GAR rule", async () => {

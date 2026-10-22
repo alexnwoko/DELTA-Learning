@@ -29,7 +29,12 @@ import {
 	rankValue,
 	type ImpactPanelsContext,
 } from "~/backend.server/models/analytics/dashboard/impactPanels.server";
-import type { DeltaQuery, QueryHumanEffect } from "~/utils/deltaQuery";
+import {
+	showByLevel,
+	type DeltaQuery,
+	type QueryHumanEffect,
+	type ShowByLevel,
+} from "~/utils/deltaQuery";
 import { measureValue } from "~/utils/valueState";
 import type {
 	ImpactPanels1to4,
@@ -105,12 +110,19 @@ export const housesCte = sql`houses AS (
 	GROUP BY 1
 )`;
 
-/** Each record's level-1 divisions (a record in several counts in each). */
-export function recordDivisionsCte(countryAccountsId: string): SQL {
+/**
+ * Each record's divisions at the "Show by" level (level 1 unless the query
+ * says), as rec_l1 (record_id, l1_id). A record in several counts in each; a
+ * record placed only above the level has no row.
+ */
+export function recordDivisionsCte(
+	countryAccountsId: string,
+	level: ShowByLevel = 1,
+): SQL {
 	return sql`div_up AS (
 		SELECT "id", "id" AS l1_id
 		FROM "division"
-		WHERE "level" = 1 AND "country_accounts_id" = ${countryAccountsId}
+		WHERE "level" = ${level} AND "country_accounts_id" = ${countryAccountsId}
 		UNION ALL
 		SELECT d."id", u.l1_id
 		FROM "division" d
@@ -173,7 +185,7 @@ async function groupedMeasures(
 	opts: { divisions?: boolean } = {},
 ) {
 	const divs = opts.divisions
-		? sql`, ${recordDivisionsCte(filters.countryAccountsId)}`
+		? sql`, ${recordDivisionsCte(filters.countryAccountsId, filters.divisionLevel)}`
 		: sql``;
 	const divJoin = opts.divisions
 		? sql`LEFT JOIN rec_l1 rl ON rl.record_id = fr.record_id`
@@ -196,13 +208,25 @@ async function groupedMeasures(
 	}));
 }
 
+/** The "Show by" levels a tenant can offer: its admin levels 1 to 3 that hold divisions. */
+export async function showByLevels(
+	countryAccountsId: string,
+): Promise<ShowByLevel[]> {
+	const res = await rows(sql`
+		SELECT DISTINCT "level" AS level FROM "division"
+		WHERE "country_accounts_id" = ${countryAccountsId} AND "level" BETWEEN 1 AND 3
+		ORDER BY 1`);
+	return res.map((r) => num(r.level) as ShowByLevel);
+}
+
 export async function divisionNames(
 	countryAccountsId: string,
+	level: ShowByLevel = 1,
 ): Promise<Map<string, string>> {
 	const res = await rows(sql`
 		SELECT "id"::text AS id, COALESCE("name" ->> 'en', "national_id", "id"::text) AS name
 		FROM "division"
-		WHERE "level" = 1 AND "country_accounts_id" = ${countryAccountsId}`);
+		WHERE "level" = ${level} AND "country_accounts_id" = ${countryAccountsId}`);
 	return new Map(res.map((r) => [r.id as string, r.name as string]));
 }
 
@@ -249,7 +273,7 @@ export async function computeGetImpactPanels5to16(
 		getHumanEffectsGrouped(filters, "hipType"),
 		getHumanEffectsGrouped(filters, "year"),
 		hipTypeLabels(),
-		divisionNames(ctx.countryAccountsId),
+		divisionNames(ctx.countryAccountsId, showByLevel(query)),
 	]);
 	const typeLabel = (id: string | null) =>
 		id === null ? "No HIPs type" : (labels.get(id) ?? `HIPs type ${id}`);
@@ -354,7 +378,7 @@ export async function computeGetImpactPanels5to16(
 		{ divisions: true },
 	);
 	const multi = await rows(sql`
-		WITH RECURSIVE ${fr}, ${recordDivisionsCte(ctx.countryAccountsId)}
+		WITH RECURSIVE ${fr}, ${recordDivisionsCte(ctx.countryAccountsId, showByLevel(query))}
 		SELECT COUNT(*) AS n FROM (
 			SELECT record_id FROM rec_l1 GROUP BY 1 HAVING COUNT(*) > 1
 		) m`);
@@ -363,7 +387,9 @@ export async function computeGetImpactPanels5to16(
 			divisionId: (r.k1 as string | null) ?? "none",
 			name:
 				r.k1 === null
-					? "No division recorded"
+					? showByLevel(query) === 1
+						? "No division recorded"
+						: "Not recorded at this level"
 					: (divNames.get(r.k1 as string) ?? `Division ${r.k1}`),
 			cell: r.measures[measure],
 		}))
@@ -832,7 +858,7 @@ export async function computeGetImpactMap(
 			divisions: true,
 		}),
 		rows(sql`
-			WITH RECURSIVE ${fr}, ${housesCte}, ${recordDivisionsCte(ctx.countryAccountsId)}
+			WITH RECURSIVE ${fr}, ${housesCte}, ${recordDivisionsCte(ctx.countryAccountsId, showByLevel(query))}
 			SELECT rl.l1_id::text AS division_id,
 				SUM(h.td) FILTER (WHERE h.td > 0) AS td_sum,
 				COUNT(*) FILTER (WHERE h.td > 0) AS td_reported,
@@ -843,15 +869,16 @@ export async function computeGetImpactMap(
 			LEFT JOIN houses h ON h."record_id" = rl.record_id
 			GROUP BY 1`),
 		rows(sql`
-			WITH RECURSIVE ${fr}, ${recordDivisionsCte(ctx.countryAccountsId)}
+			WITH RECURSIVE ${fr}, ${recordDivisionsCte(ctx.countryAccountsId, showByLevel(query))}
 			SELECT COUNT(*) AS n FROM (
 				SELECT record_id FROM rec_l1 GROUP BY 1 HAVING COUNT(*) > 1
 			) m`),
-		divisionNames(ctx.countryAccountsId),
+		divisionNames(ctx.countryAccountsId, showByLevel(query)),
 	]);
 	const { ids, points, shapeBy } = await levelOneAreas(
 		ctx.countryAccountsId,
 		divNames,
+		showByLevel(query),
 	);
 	const measuresBy = new Map(byDivision.map((r) => [r.k1 as string | null, r]));
 	const housesBy = new Map(houseRows.map((r) => [r.division_id as string, r]));
@@ -899,13 +926,14 @@ export async function computeGetImpactMap(
 export async function levelOneAreas(
 	countryAccountsId: string,
 	divNames?: Map<string, string>,
+	level: ShowByLevel = 1,
 ): Promise<{
 	ids: string[];
 	names: Map<string, string>;
 	points: Map<string, [number, number]>;
 	shapeBy: Map<string, unknown>;
 }> {
-	const names = divNames ?? (await divisionNames(countryAccountsId));
+	const names = divNames ?? (await divisionNames(countryAccountsId, level));
 	const ctx = { countryAccountsId };
 	const ids = [...names.keys()];
 	const [points, shapes] = await Promise.all([
@@ -920,7 +948,7 @@ export async function levelOneAreas(
 					"geojson"
 				) AS geojson
 			FROM "division"
-			WHERE "level" = 1 AND "country_accounts_id" = ${ctx.countryAccountsId}`),
+			WHERE "level" = ${level} AND "country_accounts_id" = ${ctx.countryAccountsId}`),
 	]);
 	const shapeBy = new Map(
 		shapes.map((r) => [r.id as string, r.geojson ?? null]),

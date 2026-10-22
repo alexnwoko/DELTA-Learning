@@ -2,6 +2,7 @@
 // bubbles, counted by the geoportal's eventCountsByDivision so both surfaces
 // agree. Needs the geo read model refreshed for the tenant (geo:refresh).
 
+import { showByLevel } from "~/utils/deltaQuery";
 import { cachedDashboard } from "~/backend.server/models/analytics/dashboard/dashboardCache.server";
 import { eventCountsByDivision } from "~/backend.server/models/geo/queries";
 import {
@@ -21,11 +22,11 @@ async function computeGetEventMap(
 	const [counts, areas] = await Promise.all([
 		eventCountsByDivision(ctx.countryAccountsId, {
 			query: { ...query, dimension },
-			level: 1,
+			level: showByLevel(query),
 			audience: ctx.audience,
 			notApplied: [],
 		}),
-		levelOneAreas(ctx.countryAccountsId),
+		levelOneAreas(ctx.countryAccountsId, undefined, showByLevel(query)),
 	]);
 	return {
 		dimension,

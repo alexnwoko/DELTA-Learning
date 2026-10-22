@@ -4,6 +4,7 @@
 // events with a linked record in the division, because events carry no
 // division links of their own (disaster_event_division is empty).
 
+import { showByLevel } from "~/utils/deltaQuery";
 import { cachedDashboard } from "~/backend.server/models/analytics/dashboard/dashboardCache.server";
 import { sql, type SQL } from "drizzle-orm";
 import {
@@ -144,7 +145,7 @@ async function computeGetEventPanels1to7(
 			WITH RECURSIVE ${ev}, ${lr}, ${measurePartsCtes}, ${housesCte},
 			l1 AS (
 				SELECT d."id", d."id" AS l1_id FROM "division" d
-				WHERE d."level" = 1 AND d."country_accounts_id" = ${ctx.countryAccountsId}
+				WHERE d."level" = ${showByLevel(query)} AND d."country_accounts_id" = ${ctx.countryAccountsId}
 				UNION ALL
 				SELECT d."id", l1.l1_id FROM "division" d JOIN l1 ON d."parent_id" = l1."id"
 			)
