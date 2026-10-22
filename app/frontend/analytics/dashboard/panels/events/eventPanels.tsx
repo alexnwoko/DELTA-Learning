@@ -18,7 +18,7 @@ import {
 import { dataTokens } from "~/utils/designTokens.generated";
 import { cellRow, cellText, coverageText, emptyViewPanel, panelNotes, type PanelExport } from "../../panelCell";
 import type { DashboardPanel } from "../../types";
-import { RowBars } from "../blocks";
+import { RowBars, rowFilter } from "../blocks";
 import { waffleShares } from "../impact/CoverageWaffle";
 import { YearColumns } from "../impact/ImpactTimeline";
 import { effectLabel } from "../impact/panels5to16";
@@ -444,7 +444,7 @@ export function eventDashboardPanels(
 		[5, tr(t, "dashboard.events_5", "Hazard ranking by disaster events"), byHazardExport(t, d, m.byHazard),
 			(c, e) => (
 				<Frame common={c} exp={e}>
-					<RowBars ctx={ctx} label={c.title} rows={d.byHazard.rows.map((r) => ({ key: r.hipTypeId, label: r.label, bars: [{ cell: countCell(r.events) }] }))} />
+					<RowBars ctx={ctx} label={c.title} rows={d.byHazard.rows.map((r) => ({ key: r.hipTypeId, label: r.label, bars: [{ cell: countCell(r.events) }], filter: rowFilter("hazard", r.hipTypeId) }))} />
 				</Frame>
 			)],
 		[6, tr(t, "dashboard.events_6", "Records per disaster event"), recordsPerEventExport(t, d, m.recordsPerEvent),
@@ -496,7 +496,7 @@ export function eventDivisionsPanel(ctx: ViewContext, map: EventMapPayload, comm
 		exportData: exp,
 		render: () => (
 			<Frame common={common(title)} exp={exp}>
-				<RowBars ctx={ctx} label={title} rows={shown.map((a) => ({ key: a.divisionId, label: a.name, bars: [{ cell: countCell(a.events) }] }))} />
+				<RowBars ctx={ctx} label={title} rows={shown.map((a) => ({ key: a.divisionId, label: a.name, bars: [{ cell: countCell(a.events) }], filter: rowFilter("division", a.divisionId) }))} />
 				{rest > 0 && (
 					<p className="m-0 text-sm text-brand-text-muted">
 						{tr(t, "dashboard.other_divisions_with_events", "{n} other divisions with events", { n: rest.toLocaleString(ctx.lang) })}

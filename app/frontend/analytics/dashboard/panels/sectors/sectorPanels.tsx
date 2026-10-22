@@ -17,6 +17,7 @@ import { rankedDivisionsExport, sendaiNotice } from "../impact/panels5to16";
 import { DASHBOARD_RAMP } from "~/frontend/charts/sectionPalette";
 import { comingSoonPanels } from "../../comingSoon";
 import { arrangeByLayout, SECTORS_LAYOUT } from "../../layout";
+import { rowFilter } from "../blocks";
 
 type T = ViewContext["t"];
 const tr = (t: T, code: string, msg: string, r?: Record<string, unknown>) => t({ code, msg }, r);
@@ -331,7 +332,7 @@ function sectorDivisionsPanel(ctx: ViewContext, d: SectorPanels1to7, common: (x:
 			<Frame common={common(title)} exp={exp}>
 				<RowBars ctx={ctx} label={title}
 					rows={[
-						...p.rows.map((r) => ({ key: r.divisionId, label: r.name, bars: [{ cell: r.cell }] })),
+						...p.rows.map((r) => ({ key: r.divisionId, label: r.name, bars: [{ cell: r.cell }], filter: rowFilter("division", r.divisionId) })),
 						...(p.rest
 							? [{ key: "rest", label: tr(t, "dashboard.other_divisions", "{n} other divisions", { n: p.rest.divisions }), bars: [{ cell: p.rest.cell }] }]
 							: []),

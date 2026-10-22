@@ -18,6 +18,7 @@ import { countCell } from "../events/eventPanels";
 import { YearColumns } from "../impact/ImpactTimeline";
 import { arrangeByLayout, HAZARD_EVENTS_LAYOUT } from "../../layout";
 import { comingSoonPanels, hazardGreyText } from "../../comingSoon";
+import { rowFilter } from "../blocks";
 
 type T = ViewContext["t"];
 const tr = (t: T, code: string, msg: string, r?: Record<string, unknown>) => t({ code, msg }, r);
@@ -313,7 +314,7 @@ export function hazardEventDashboardPanels(
 		),
 		5: (c, e) => (
 			<Frame common={c} exp={e}>
-				<RowBars ctx={ctx} label={c.title} rows={d.byHazard.rows.map((r) => ({ key: r.hipTypeId, label: r.label, bars: [{ cell: countCell(r.events) }] }))} />
+				<RowBars ctx={ctx} label={c.title} rows={d.byHazard.rows.map((r) => ({ key: r.hipTypeId, label: r.label, bars: [{ cell: countCell(r.events) }], filter: rowFilter("hazard", r.hipTypeId) }))} />
 			</Frame>
 		),
 		6: (c, e) => (
@@ -326,7 +327,7 @@ export function hazardEventDashboardPanels(
 		),
 		7: (c, e) => (
 			<Frame common={c} exp={e}>
-				<RowBars ctx={ctx} label={c.title} rows={d.divisions.rows.map((r) => ({ key: r.divisionId, label: r.name, bars: [{ cell: countCell(r.events) }] }))} />
+				<RowBars ctx={ctx} label={c.title} rows={d.divisions.rows.map((r) => ({ key: r.divisionId, label: r.name, bars: [{ cell: countCell(r.events) }], filter: rowFilter("division", r.divisionId) }))} />
 			</Frame>
 		),
 	};

@@ -291,6 +291,9 @@ export default function AnalysisDashboard() {
 				ctx={ctx}
 				view={view}
 				onViewChange={setView}
+				onFilterRow={(kind, id) =>
+					kind === "division" ? selectDivision(id) : go(withHazardType(query, query.where.hazard?.typeId === id ? null : id), view)
+				}
 				reviewHref={ld.canOpenReviewQueue ? ctx.url("/analytics/plausibility-review") : undefined}
 				basisControl={
 					ld.canReview ? <BasisSwitch ctx={ctx} basis={query.scope.basis} onChange={setBasis} /> : undefined

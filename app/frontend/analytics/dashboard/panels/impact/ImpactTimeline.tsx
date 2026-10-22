@@ -16,6 +16,7 @@ import { STATE_ENCODING } from "~/utils/mapState";
 import { cellRow, panelNotes, type PanelExport } from "../../panelCell";
 import { impactMeasureLabel } from "./measureLabels";
 import { DASHBOARD_BAR } from "~/frontend/charts/sectionPalette";
+import { UX } from "~/frontend/uxFeatures";
 
 type YearCell = { year: number; cell: PanelCell };
 
@@ -60,7 +61,7 @@ export function YearColumns({
 			preserveAspectRatio="xMidYMid meet"
 			role="img"
 			aria-label={label}
-			className="block max-w-full"
+			className={`block max-w-full${UX[8] ? " delta-anim" : ""}`}
 			fontSize={10}
 		>
 			<line x1={0} x2={width} y1={base + 0.5} y2={base + 0.5} stroke={dataTokens.chart.axis} />

@@ -8,6 +8,8 @@ import type { HazardRankingRow, PanelMeta } from "~/utils/dashboard/impactPanels
 import { hazardColour } from "~/utils/hazardIdentity";
 import { cellRow, cellText, coverageText, panelNotes, type PanelExport } from "../../panelCell";
 import { DASHBOARD_RAMP } from "~/frontend/charts/sectionPalette";
+import { UX } from "~/frontend/uxFeatures";
+import { rowFilter } from "../blocks";
 
 /** Splits a hazard name over at most two lines of about `max` characters. */
 export function wrapLabel(label: string, max = 22): [string, string?] {
@@ -91,7 +93,13 @@ export function HazardRanking({
 						const [line1, line2] = wrapLabel(r.label);
 						const stemEnd = LABEL_W + 4 + (value ? (value / max) * (WIDTH - LABEL_W - 70) : 0);
 						return (
-							<g key={r.hipTypeId}>
+							<g
+								key={r.hipTypeId}
+								// UX-3: the dashboard turns a click on a ranked hazard into the page filter.
+								data-filter-kind={UX[3] && rowFilter("hazard", r.hipTypeId) ? "hazard" : undefined}
+								data-filter-id={UX[3] && rowFilter("hazard", r.hipTypeId) ? r.hipTypeId : undefined}
+								style={UX[3] && rowFilter("hazard", r.hipTypeId) ? { cursor: "pointer" } : undefined}
+							>
 								<text x={0} y={y + 12} fill="currentColor" fontWeight={600}>
 									<tspan x={0}>{line1}</tspan>
 									{line2 && (
