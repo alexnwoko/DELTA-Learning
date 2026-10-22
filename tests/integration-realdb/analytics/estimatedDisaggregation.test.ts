@@ -96,4 +96,31 @@ describe("getEstimatedDisaggregation", () => {
 		expect(p.baseTotal).toBeNull();
 		expect(p.bands.every((x) => x.female.state === "suppressed" && x.female.value === null)).toBe(true);
 	});
+
+	it("falls back to people indirectly affected when a country records only that (Sri Lanka's case)", async () => {
+		const t2 = await createRefTenant();
+		const rel = await dr.execute(sql`
+			SELECT rl.id FROM ref.release rl JOIN ref.source s ON s.id = rl.source_id
+			WHERE s.name = ${ESTIMATE_REFERENCE.source} AND rl.version = ${ESTIMATE_REFERENCE.release}`);
+		const releaseId = (rel.rows[0] as { id: string }).id;
+		try {
+			for (const [code, v] of [["00_04", 200], ["30_34", 300]] as const) {
+				for (const sex of ["F", "M"]) {
+					await insertValue({ countryAccountsId: t2.countryAccountsId, releaseId, sourceStatus: "international_official", value: v, indicatorCode: `POP_${sex}_${code}`, periodStart: "2020-01-01", periodEnd: "2020-12-31" });
+				}
+			}
+			const id = randomUUID();
+			await dr.execute(sql`
+				INSERT INTO disaster_records (id, country_accounts_id, "approvalStatus", start_date, hip_type_id)
+				VALUES (${id}, ${t2.countryAccountsId}, 'published', '2020-05-01', '1042')`);
+			await dr.execute(sql`INSERT INTO human_category_presence (record_id, affected_indirect, affected_indirect_total) VALUES (${id}, true, 1000)`);
+			const p = await getEstimatedDisaggregation(DEFAULT_QUERY, { ...ctx(), countryAccountsId: t2.countryAccountsId });
+			expect(p.measure).toBe("affected_indirect");
+			expect(p.baseTotal).toBe(1000);
+			expect(p.bands.find((b) => b.band === "0-14")!.female.value).toBe(200);
+			expect(p.footnote).toContain("indirectly");
+		} finally {
+			await cleanupRefTenants([t2]);
+		}
+	});
 });

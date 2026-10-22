@@ -76,17 +76,27 @@ const FOOTNOTE = (m: EstimableMeasure) =>
 		m === "affected_direct" ? "directly" : "indirectly"
 	} affected. Not recorded data; not for targeting.`;
 
+/** Records in scope that report the measure, before any exclusion. */
+async function reportingRecords(
+	query: DeltaQuery,
+	ctx: ImpactPanelsContext,
+	measure: EstimableMeasure,
+): Promise<number> {
+	const { filters } = impactFiltersFromQuery(query, ctx);
+	const total = sql.raw(`hcp."${measure}_total"`);
+	const r = await rows(sql`
+		WITH RECURSIVE ${humanEffectsFilteredRecords(filters)}
+		SELECT COUNT(*) AS n FROM filtered_records fr
+		JOIN "human_category_presence" hcp ON hcp."record_id" = fr.record_id
+		WHERE ${total} > 0`);
+	return num(r[0]?.n);
+}
+
 async function computeEstimatedDisaggregation(
 	query: DeltaQuery,
 	ctx: ImpactPanelsContext,
 ): Promise<EstimatedDisaggregation> {
-	const { filters, notApplied } = impactFiltersFromQuery(query, ctx);
 	const asked = query.measure ?? null;
-	const measure: EstimableMeasure = (
-		ESTIMABLE_MEASURES as readonly string[]
-	).includes(asked ?? "")
-		? (asked as EstimableMeasure)
-		: "affected_direct";
 	const refused =
 		asked && !(ESTIMABLE_MEASURES as readonly string[]).includes(asked)
 			? {
@@ -95,6 +105,27 @@ async function computeEstimatedDisaggregation(
 						"Not estimated: deaths, missing, injured and displaced skew by age and sex in ways a population structure cannot show.",
 				}
 			: null;
+	if ((ESTIMABLE_MEASURES as readonly string[]).includes(asked ?? ""))
+		return estimateFor(query, ctx, asked as EstimableMeasure, refused);
+	// No measure asked: directly affected, or indirectly affected where the
+	// country records only that (Sri Lanka's DesInventar data fills afectados,
+	// never damnificados).
+	const measure: EstimableMeasure =
+		(await reportingRecords(query, ctx, "affected_direct")) > 0
+			? "affected_direct"
+			: (await reportingRecords(query, ctx, "affected_indirect")) > 0
+				? "affected_indirect"
+				: "affected_direct";
+	return estimateFor(query, ctx, measure, refused);
+}
+
+async function estimateFor(
+	query: DeltaQuery,
+	ctx: ImpactPanelsContext,
+	measure: EstimableMeasure,
+	refused: EstimatedDisaggregation["refused"],
+): Promise<EstimatedDisaggregation> {
+	const { filters, notApplied } = impactFiltersFromQuery(query, ctx);
 	const total = sql.raw(`hcp."${measure}_total"`);
 	const value = sql`CASE WHEN ${total} > 0 THEN ${total} END`;
 
