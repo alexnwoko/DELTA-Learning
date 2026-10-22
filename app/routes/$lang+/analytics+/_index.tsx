@@ -13,6 +13,7 @@ import { getEventPanels8to16 } from "~/backend.server/models/analytics/dashboard
 import { getImpactSources } from "~/backend.server/models/analytics/dashboard/impactSources.server";
 import { getHazardMonth } from "~/backend.server/models/analytics/dashboard/hazardMonth.server";
 import { getEstimatedDisaggregation } from "~/backend.server/models/analytics/dashboard/estimatedDisaggregation.server";
+import { getCostPanels } from "~/backend.server/models/analytics/dashboard/costPanels.server";
 import { getRecordsByApproval } from "~/backend.server/models/analytics/dashboard/recordsByApproval.server";
 import { getSendaiSection } from "~/backend.server/models/analytics/dashboard/sendaiPanels.server";
 import { getHazardEventPanels1to7 } from "~/backend.server/models/analytics/dashboard/hazardEventPanels.server";
@@ -61,6 +62,7 @@ import type { EventPanels8to16 } from "~/utils/dashboard/eventPanels8to16";
 import type { ImpactSources } from "~/utils/dashboard/impactSources";
 import type { HazardMonth } from "~/utils/dashboard/hazardMonth";
 import type { EstimatedDisaggregation } from "~/utils/dashboard/estimatedDisaggregation";
+import type { CostPanels } from "~/utils/dashboard/costPanels";
 import type { HazardEventPanels1to7 } from "~/utils/dashboard/hazardEventPanels";
 import type { ImpactMapPayload } from "~/utils/dashboard/impactMap";
 import type { SectorPanels1to7 } from "~/utils/dashboard/sectorPanels";
@@ -123,6 +125,8 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request, p
 					getHazardMonth(query, ctx, "disaster_record"),
 					// Estimated sex and age split (Analytics 40a0d72b).
 					getEstimatedDisaggregation(query, ctx),
+					// Disaster cost (Alex, 2026-10-22; Analytics 4b91b9ad, 183fbf12).
+					getCostPanels(query, ctx),
 				])
 			: null;
 	const events = view === "disaster_event" ? await getEventPanels1to7(query, ctx) : null;
@@ -203,6 +207,7 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request, p
 		impactSources: impact?.[3] ?? null,
 		impactHazardMonth: impact?.[4] ?? null,
 		impactEstimated: impact?.[5] ?? null,
+		impactCost: impact?.[6] ?? null,
 		audience,
 	};
 });
@@ -273,6 +278,8 @@ export default function AnalysisDashboard() {
 				sources: ld.impactSources as ImpactSources | null,
 				hazardMonth: ld.impactHazardMonth as HazardMonth | null,
 				estimated: ld.impactEstimated as EstimatedDisaggregation | null,
+				cost: ld.impactCost as CostPanels | null,
+				provisional: ld.provisional,
 			})
 		: events
 			? eventDashboardPanels(ctx, events, { ...opts, map: ld.eventMap as EventMapPayload | null, more: ld.eventsMore ? events8to16FromFirstRecord(ld.eventsMore as EventPanels8to16, firstYear) : null, hazardMonth: ld.eventsHazardMonth as HazardMonth | null })
