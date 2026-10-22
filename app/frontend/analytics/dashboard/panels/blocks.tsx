@@ -27,6 +27,25 @@ export function shadeFor(value: number | null, max: number, steps: readonly stri
 	return steps[step];
 }
 
+/**
+ * Largest first (Alex, 2026-10-22): category charts and tables read from
+ * the biggest value down. A row with no reported value follows the numbers,
+ * and the catch-all rows ("none": no division or hazard recorded; "rest":
+ * the n others) stay last, in their own order. Ordered categories (bins,
+ * age groups, decades) pass "given" and keep their natural order.
+ */
+export function isPinnedRow(key: string, pinned?: boolean): boolean {
+	return Boolean(pinned) || key === "none" || key === "rest";
+}
+
+export function sortByValueDesc<R extends { key: string; pinned?: boolean }>(rows: readonly R[], value: (r: R) => number | null, tie?: (r: R) => number): R[] {
+	const indexed = rows.map((r, i) => ({ r, i, v: value(r) }));
+	const rank = (x: (typeof indexed)[number]) => (isPinnedRow(x.r.key, x.r.pinned) ? 2 : x.v === null ? 1 : 0);
+	return indexed
+		.sort((a, b) => rank(a) - rank(b) || (rank(a) === 0 ? (b.v as number) - (a.v as number) || (tie ? tie(b.r) - tie(a.r) : 0) : 0) || a.i - b.i)
+		.map((x) => x.r);
+}
+
 export interface ShadedTableProps {
 	ctx: ViewContext;
 	/** Already translated: what the table shows, for screen readers. */
@@ -38,10 +57,24 @@ export interface ShadedTableProps {
 	normalise: "column" | "table";
 	/** Light-to-dark shades: the section palette's (default: main dashboard). */
 	shades?: readonly string[];
+	/**
+	 * Row order: by the row total (default), by the first column where the
+	 * columns are different measures that must not be added (deaths, houses),
+	 * or as given for ordered rows (decades). Columns never move.
+	 */
+	order?: "total" | "first" | "given";
 }
 
 /** A matrix as a real table; shading only ever helps the numbers. */
-export function ShadedTable({ ctx, caption, rowHeader, columns, rows, normalise, shades = SHADE_STEPS }: ShadedTableProps) {
+export function ShadedTable({ ctx, caption, rowHeader, columns, rows: given, normalise, shades = SHADE_STEPS, order = "total" }: ShadedTableProps) {
+	const total = (r: ShadedTableProps["rows"][number]) => {
+		const vs = r.cells.map(reportedValue).filter((v): v is number => v !== null);
+		return vs.length ? vs.reduce((a, b) => a + b, 0) : null;
+	};
+	const rows =
+		order === "given"
+			? given
+			: sortByValueDesc(given, order === "first" ? (r) => reportedValue(r.cells[0]) : total, (r) => total(r) ?? 0);
 	const columnMax = columns.map((_, i) => Math.max(0, ...rows.map((r) => reportedValue(r.cells[i]) ?? 0)));
 	const tableMax = Math.max(0, ...columnMax);
 	const th = "border-b border-brand-border bg-brand-surface-subtle px-2 py-1 font-semibold";
@@ -110,7 +143,15 @@ export interface RowBarsProps {
 		bars: { series?: BarSeries; cell: PanelCell }[];
 		/** UX-3: clicking the row filters the page by this division or hazard type. */
 		filter?: { kind: "division" | "hazard"; id: string };
+		/** A catch-all row ("n other sources") that stays last; "none" and "rest" keys always do. */
+		pinned?: boolean;
 	}[];
+	/**
+	 * Largest first by default, on the first bar (the lead measure: destroyed
+	 * before damaged, displaced before evacuated), ties by the row total.
+	 * "given" keeps ordered categories (bins, age groups) as they come.
+	 */
+	order?: "value" | "given";
 	/** A legend entry per series; omit for one series. */
 	series?: BarSeries[];
 	/** Words for a not-reported slot, when the panel has its own (e.g. "No records linked"). */
@@ -127,7 +168,11 @@ const WIDTH = 380;
  * record reported has no bar: its slot says the state in words. All bars
  * share one scale, so the chart never suggests that series add up.
  */
-export function RowBars({ ctx, label, rows, series, notReportedText }: RowBarsProps) {
+export function RowBars({ ctx, label, rows: given, series, notReportedText, order = "value" }: RowBarsProps) {
+	const rows =
+		order === "given"
+			? given
+			: sortByValueDesc(given, (r) => (r.bars[0] ? reportedValue(r.bars[0].cell) : null), (r) => r.bars.reduce((a, b) => a + (reportedValue(b.cell) ?? 0), 0));
 	// UX-4: a hover card with the value, its state and the records behind it.
 	const [card, setCard] = useState<{ x: number; y: number; lines: string[] } | null>(null);
 	const cardFor = (r: RowBarsProps["rows"][number]) => [

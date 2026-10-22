@@ -451,7 +451,7 @@ export function eventDashboardPanels(
 			(c, e) => (
 				<Frame common={c} exp={e}>
 					<span className="text-sm text-brand-text-muted">{tr(t, "dashboard.events_by_records", "Events by number of linked records")}</span>
-					<RowBars ctx={ctx} label={c.title} rows={d.recordsPerEvent.bins.map((b) => ({ key: b.label, label: b.label, bars: [{ cell: countCell(b.events) }] }))} />
+					<RowBars ctx={ctx} label={c.title} order="given" rows={d.recordsPerEvent.bins.map((b) => ({ key: b.label, label: b.label, bars: [{ cell: countCell(b.events) }] }))} />
 					{/* Records, not events: a separate line, never a bar on the events scale. */}
 					<p className="m-0 text-sm">
 						{tr(t, "dashboard.not_grouped_records", "Not grouped: {n} records belong to no event.", { n: d.recordsPerEvent.recordsNotGrouped.toLocaleString(ctx.lang) })}
@@ -624,7 +624,7 @@ export function eventPanels8to16(ctx: ViewContext, d: EventPanels8to16, common: 
 		exportData: divExp,
 		render: () => (
 			<Frame common={common(divTitle)} exp={divExp}>
-				<RowBars ctx={ctx} label={divTitle} rows={dpe.bins.map((b) => ({ key: b.label, label: b.label, bars: [{ cell: countCell(b.events) }] }))} />
+				<RowBars ctx={ctx} label={divTitle} order="given" rows={dpe.bins.map((b) => ({ key: b.label, label: b.label, bars: [{ cell: countCell(b.events) }] }))} />
 				{dpe.eventsWithoutDivision > 0 && <p className="m-0 text-sm text-brand-text-muted">{noDiv}</p>}
 			</Frame>
 		),
@@ -676,7 +676,7 @@ export function eventPanels8to16(ctx: ViewContext, d: EventPanels8to16, common: 
 		exportData: mixExp,
 		render: () => (
 			<Frame common={common(mixTitle)} exp={mixExp}>
-				<RowBars ctx={ctx} label={mixTitle} rows={mix.bins.map((b) => ({ key: b.label, label: b.label, bars: [{ cell: countCell(b.events) }] }))} />
+				<RowBars ctx={ctx} label={mixTitle} order="given" rows={mix.bins.map((b) => ({ key: b.label, label: b.label, bars: [{ cell: countCell(b.events) }] }))} />
 				{topPairs.length > 0 && (
 					<ul className="m-0 list-none p-0 text-sm">
 						{topPairs.map((p) => <li key={`${p.a}|${p.b}`}>{`${p.a} + ${p.b}: ${n(p.events)}`}</li>)}
