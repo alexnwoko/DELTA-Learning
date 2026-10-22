@@ -86,6 +86,15 @@ export const QUERY_REFUSALS = {
 	regionAndDivision: "REGION_AND_DIVISION",
 } as const;
 
+/** Admin levels a breakdown can be shown by: 1 provinces or states, 2 districts, 3 local areas. */
+export const SHOW_BY_LEVELS = [1, 2, 3] as const;
+export type ShowByLevel = (typeof SHOW_BY_LEVELS)[number];
+
+/** The admin level a breakdown is computed at (1 when the query does not say). */
+export function showByLevel(query: DeltaQuery): ShowByLevel {
+	return query.showBy ?? 1;
+}
+
 export interface DeltaQuery {
 	contract: typeof QUERY_CONTRACT;
 	dimension: QueryDimension;
@@ -93,6 +102,11 @@ export interface DeltaQuery {
 	measure?: QueryMeasure;
 	/** Attribution grade floor; absent means no floor. */
 	minAttGrade?: AttGradeFloor;
+	/**
+	 * "Show by" (Alex, 2026-10-22): the admin level division breakdowns and
+	 * maps are computed at. Absent means 1 (provinces or states).
+	 */
+	showBy?: ShowByLevel;
 	scope: {
 		basis: QueryBasis;
 		/** ISO date the figures are read as of; absent means now. */
@@ -182,6 +196,7 @@ const P = {
 	disasterEvent: "disasterEvent",
 	measure: "measure",
 	minAttGrade: "minAttGrade",
+	showBy: "level",
 	hazardousEvent: "hazardousEvent",
 } as const;
 
@@ -243,6 +258,14 @@ export function parseDeltaQuery(params: URLSearchParams): ParsedQuery {
 				reason: `unknown grade floor "${floor}"`,
 			});
 		}
+	}
+
+	const level = params.get(P.showBy);
+	if (level !== null && level !== "" && level !== "1") {
+		const n = Number(level);
+		if ((SHOW_BY_LEVELS as readonly number[]).includes(n))
+			query.showBy = n as ShowByLevel;
+		else issues.push({ param: P.showBy, reason: `unknown level "${level}"` });
 	}
 
 	const basis = params.get(P.basis);
@@ -360,6 +383,8 @@ export function serializeDeltaQuery(query: DeltaQuery): URLSearchParams {
 	}
 	if (query.measure) params.set(P.measure, query.measure);
 	if (query.minAttGrade) params.set(P.minAttGrade, query.minAttGrade);
+	if (query.showBy && query.showBy !== 1)
+		params.set(P.showBy, String(query.showBy));
 	if (query.scope.basis !== "published") params.set(P.basis, query.scope.basis);
 	if (query.scope.asOf) params.set(P.asOf, query.scope.asOf);
 	const w = query.where;

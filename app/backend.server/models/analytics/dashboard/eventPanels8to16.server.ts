@@ -4,6 +4,7 @@
 // sectors come from the linked disaster records, because events carry no
 // division or sector links of their own.
 
+import { showByLevel } from "~/utils/deltaQuery";
 import { cachedDashboard } from "~/backend.server/models/analytics/dashboard/dashboardCache.server";
 import { sql } from "drizzle-orm";
 import {
@@ -77,7 +78,7 @@ async function computeGetEventPanels8to16(
 	const meta = (method: string): PanelMeta => ({ method, notApplied });
 	const l1 = sql`l1 AS (
 		SELECT d."id", d."id" AS l1_id FROM "division" d
-		WHERE d."level" = 1 AND d."country_accounts_id" = ${ctx.countryAccountsId}
+		WHERE d."level" = ${showByLevel(query)} AND d."country_accounts_id" = ${ctx.countryAccountsId}
 		UNION ALL
 		SELECT d."id", l1.l1_id FROM "division" d JOIN l1 ON d."parent_id" = l1."id"
 	)`;

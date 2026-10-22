@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
+import type { ShowByLevel } from "~/utils/deltaQuery";
 import { and, eq, gte, lte, SQL, sql } from "drizzle-orm";
 import {
 	displacedHeadlineFromParts,
@@ -57,6 +58,8 @@ export interface HazardFilters {
 	toDate: string | null;
 	/** Approval basis (C23): public or signed-in, from the request. */
 	audience: ApprovalAudience;
+	/** "Show by": the admin level division breakdowns use (1 when absent). */
+	divisionLevel?: ShowByLevel;
 }
 
 /**
@@ -428,10 +431,7 @@ export function underReviewFor(
  * True when the value is above the measure's plausibility ceiling ("Under
  * review"; the value stays as recorded).
  */
-export function aboveCeiling(
-	measure: PlausibilityMeasure,
-	value: SQL,
-): SQL {
+export function aboveCeiling(measure: PlausibilityMeasure, value: SQL): SQL {
 	return sql`COALESCE(${value} > ${sql.raw(String(PLAUSIBILITY_CEILINGS[measure]))}, false)`;
 }
 

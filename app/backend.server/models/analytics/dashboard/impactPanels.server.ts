@@ -3,6 +3,7 @@
 // delta.query/1 object and returns every figure as a cell with its value
 // state and record counts (TR-076).
 
+import { showByLevel } from "~/utils/deltaQuery";
 import { sql } from "drizzle-orm";
 import { dr } from "~/db.server";
 import {
@@ -61,6 +62,7 @@ export function impactFiltersFromQuery(
 			hazardClusterId: query.where.hazard?.clusterId ?? null,
 			specificHazardId: query.where.hazard?.hazardId ?? null,
 			geographicLevelId: query.where.geo?.divisionId ?? null,
+			divisionLevel: showByLevel(query),
 			regionId: query.where.region?.regionId ?? null,
 			fromDate: query.where.time?.from ?? null,
 			toDate: query.where.time?.to ?? null,
