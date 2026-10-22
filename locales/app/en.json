@@ -5380,6 +5380,16 @@
     "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
   },
   {
+    "id": "geoportal.coarser.note",
+    "translation": "{n} of {total} {noun} are recorded only at a coarser level and are not on this map. They are never shared out to smaller areas.",
+    "description": "Placement disclosure above the map at Analysis level 2 or 3. File: app/routes/$lang+/geoportal+/_index.tsx"
+  },
+  {
+    "id": "geoportal.coarser.show_level",
+    "translation": "Switch to {level}",
+    "description": "Button: show the map at the coarsest Analysis level. File: app/routes/$lang+/geoportal+/_index.tsx"
+  },
+  {
     "id": "geoportal.dossier.whole_country",
     "translation": "Whole country",
     "description": "File: app/frontend/geoportal/GeoDossier.tsx"
@@ -5763,6 +5773,16 @@
     "id": "geoportal.unit.per_1000km2",
     "translation": "per 1,000 km²",
     "description": "File: app/routes/$lang+/geoportal+/_index.tsx"
+  },
+  {
+    "id": "geoportal.unplaced.coarser",
+    "translation": "recorded only at a coarser level than this map",
+    "description": "Reason a record is not on the map at a finer Analysis level. File: app/routes/$lang+/geoportal+/_index.tsx"
+  },
+  {
+    "id": "geoportal.unplaced.undated",
+    "translation": "no start date, so outside any chosen period",
+    "description": "Reason a record is not on the map when a period is set. File: app/routes/$lang+/geoportal+/_index.tsx"
   },
   {
     "id": "geoportal.when.last_1",

@@ -231,6 +231,8 @@ export interface GeoCell {
 export interface GeoUnattributed {
 	records: number;
 	reasons: Record<string, number>;
+	/** Records drawn on the map at this level (so "n of total" can be said). */
+	placedRecords?: number;
 }
 
 export interface GradeFloorExclusion {
@@ -443,6 +445,7 @@ export async function aggregate(
 			(SELECT COALESCE(jsonb_object_agg(reason, n), '{}'::jsonb)
 				FROM (SELECT reason, COUNT(*) AS n FROM unplaced GROUP BY reason) u) AS reasons,
 			(SELECT COUNT(*) FROM unplaced) AS unattributed,
+			(SELECT COUNT(*) FROM placed_records) AS placed_records,
 			(SELECT COUNT(*) FROM floor_excluded) AS floor_excluded,
 			(SELECT COALESCE(jsonb_object_agg(best_grade, n), '{}'::jsonb)
 				FROM (SELECT best_grade, COUNT(*) AS n FROM floor_excluded GROUP BY best_grade) f) AS floor_by_grade,
@@ -461,6 +464,7 @@ export async function aggregate(
 		cells: CellRow[];
 		reasons: Record<string, number | string>;
 		unattributed: string | number;
+		placed_records: string | number;
 		floor_excluded: string | number;
 		floor_by_grade: Record<string, number | string>;
 		run_ids: string[];
@@ -486,6 +490,7 @@ export async function aggregate(
 			reasons: Object.fromEntries(
 				Object.entries(row.reasons).map(([k, v]) => [k, Number(v)]),
 			),
+			placedRecords: Number(row.placed_records),
 		} as GeoUnattributed,
 		excludedByGradeFloor: floor
 			? ({
