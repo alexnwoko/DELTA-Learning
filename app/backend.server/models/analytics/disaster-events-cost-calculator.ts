@@ -6,12 +6,33 @@ import { disruptionTable } from "~/drizzle/schema/disruptionTable";
 import { disasterEventTable } from "~/drizzle/schema/disasterEventTable";
 import { and, eq, inArray } from "drizzle-orm";
 
+// Null is not zero: a total is null when no linked value is reported, so an
+// event with nothing recorded stays empty instead of showing 0 (1,984 events
+// held a computed 0 this way). A reported 0 still counts as 0.
 interface Totals {
-	repairCost: string;
-	replacementCost: string;
-	rehabilitationCost: string;
-	recoveryCost: string;
+	repairCost: string | null;
+	replacementCost: string | null;
+	rehabilitationCost: string | null;
+	recoveryCost: string | null;
 }
+
+/** Sum of the reported values; null when none is reported. */
+export function sumReported(
+	values: (string | number | null | undefined)[],
+): number | null {
+	let any = false;
+	let total = 0;
+	for (const v of values) {
+		if (v === null || v === undefined || v === "") continue;
+		const n = Number(v);
+		if (!Number.isFinite(n)) continue;
+		any = true;
+		total += n;
+	}
+	return any ? total : null;
+}
+
+const asText = (n: number | null) => (n === null ? null : String(n));
 
 export async function updateTotals(tx: Tx, disasterEventId: string) {
 	let totals = await calculateTotals(tx, disasterEventId);
@@ -60,10 +81,10 @@ export async function calculateTotals(
 	let recoveryCostNum = await calculateTotalRecoveryCost(tx, disasterEventId);
 
 	return {
-		repairCost: String(repairCostNum),
-		replacementCost: String(replacementCostNum),
-		rehabilitationCost: String(rehabilitationCostNum),
-		recoveryCost: String(recoveryCostNum),
+		repairCost: asText(repairCostNum),
+		replacementCost: asText(replacementCostNum),
+		rehabilitationCost: asText(rehabilitationCostNum),
+		recoveryCost: asText(recoveryCostNum),
 	};
 }
 
@@ -73,7 +94,7 @@ export async function calculateTotals(
 export const calculateTotalRepairCost = async (
 	tx: Tx,
 	disaster_event_id: string,
-): Promise<number> => {
+): Promise<number | null> => {
 	if (!disaster_event_id) {
 		throw new Error("Missing disaster_event_id");
 	}
@@ -87,7 +108,7 @@ export const calculateTotalRepairCost = async (
 
 		const recordIds = disasterRecords.map((record) => record.id);
 		if (recordIds.length === 0) {
-			return 0;
+			return null;
 		}
 
 		// Fetch all damages linked to thedisaster records
@@ -96,15 +117,7 @@ export const calculateTotalRepairCost = async (
 			.from(damagesTable)
 			.where(inArray(damagesTable.recordId, recordIds));
 
-		// Calculate total repair cost
-		let totalRepairCost = 0;
-		for (const damage of damages) {
-			totalRepairCost += damage.pdRepairCostTotal
-				? Number(damage.pdRepairCostTotal)
-				: 0;
-		}
-
-		return totalRepairCost;
+		return sumReported(damages.map((d) => d.pdRepairCostTotal));
 	} catch (error) {
 		console.error("Error fetching repair cost:", error);
 		throw new Error("Internal server error");
@@ -117,7 +130,7 @@ export const calculateTotalRepairCost = async (
 export const calculateTotalReplacementCost = async (
 	tx: Tx,
 	disaster_event_id: string,
-): Promise<number> => {
+): Promise<number | null> => {
 	if (!disaster_event_id) {
 		throw new Error("Missing disaster_event_id");
 	}
@@ -131,7 +144,7 @@ export const calculateTotalReplacementCost = async (
 
 		const recordIds = disasterRecords.map((record) => record.id);
 		if (recordIds.length === 0) {
-			return 0;
+			return null;
 		}
 
 		// Fetch all damages linked to the disaster records
@@ -140,15 +153,7 @@ export const calculateTotalReplacementCost = async (
 			.from(damagesTable)
 			.where(inArray(damagesTable.recordId, recordIds));
 
-		// Calculate total replacement cost
-		let totalReplacementCost = 0;
-		for (const damage of damages) {
-			totalReplacementCost += damage.tdReplacementCostTotal
-				? Number(damage.tdReplacementCostTotal)
-				: 0;
-		}
-
-		return totalReplacementCost;
+		return sumReported(damages.map((d) => d.tdReplacementCostTotal));
 	} catch (error) {
 		console.error("Error fetching replacement cost:", error);
 		throw new Error("Internal server error");
@@ -158,14 +163,12 @@ export const calculateTotalReplacementCost = async (
 export const calculateTotalRehabilitationCost = async (
 	tx: Tx,
 	disaster_event_id: string,
-): Promise<number> => {
+): Promise<number | null> => {
 	if (!disaster_event_id) {
 		throw new Error("Missing disaster_event_id");
 	}
 
 	try {
-		let totalRehabilitationCost = 0;
-
 		// Fetch all disaster record IDs linked to the given disaster event
 		const disasterRecords = await tx
 			.select({ id: disasterRecordsTable.id })
@@ -174,7 +177,7 @@ export const calculateTotalRehabilitationCost = async (
 
 		const recordIds = disasterRecords.map((record) => record.id);
 		if (recordIds.length === 0) {
-			return 0;
+			return null;
 		}
 
 		// Fetch all disruption linked to the disaster records
@@ -185,16 +188,7 @@ export const calculateTotalRehabilitationCost = async (
 			.from(disruptionTable)
 			.where(inArray(disruptionTable.recordId, recordIds));
 
-		// Calculate total response cost
-		for (const disruption of disruptions) {
-			// Convert values to numbers safely
-			const responseCostTotal = disruption.responseCost
-				? Number(disruption.responseCost)
-				: 0;
-			totalRehabilitationCost += responseCostTotal;
-		}
-
-		return Number(totalRehabilitationCost);
+		return sumReported(disruptions.map((d) => d.responseCost));
 	} catch (error) {
 		console.error("Error fetching repair cost:", error);
 		throw new Error("Internal server error");
@@ -208,8 +202,7 @@ export const calculateTotalRehabilitationCost = async (
  * 1. Use `sector_disaster_records_relation.damage_recovery_cost` if set
  * 2. Otherwise, sum `damages.total_recovery` for that record+sector combination
  *
- * Note: there is a bug on line 271 where `Number()` (with no argument) is added to
- * the total, which produces `NaN`. This should likely be removed.
+ * Null when no value is reported (null is not zero).
  *
  * The N+1 query pattern (one query per sector per record) could be a performance
  * issue for events with many records and sectors.
@@ -217,14 +210,12 @@ export const calculateTotalRehabilitationCost = async (
 export const calculateTotalRecoveryCost = async (
 	tx: Tx,
 	disaster_event_id: string,
-): Promise<number> => {
+): Promise<number | null> => {
 	if (!disaster_event_id) {
 		throw new Error("Missing disaster_event_id");
 	}
 
 	try {
-		let totalRecoveryCost = 0;
-
 		// Fetch all disaster record IDs linked to the given disaster event
 		const disasterRecords = await tx
 			.select({ id: disasterRecordsTable.id })
@@ -233,7 +224,7 @@ export const calculateTotalRecoveryCost = async (
 
 		const recordIds = disasterRecords.map((record) => record.id);
 		if (recordIds.length === 0) {
-			return 0;
+			return null;
 		}
 
 		//Get the recovery cost from sector_disaster_records_relation.damage_recovery_cost if exit
@@ -249,9 +240,13 @@ export const calculateTotalRecoveryCost = async (
 				inArray(sectorDisasterRecordsRelationTable.disasterRecordId, recordIds),
 			);
 
+		const parts: (string | number | null)[] = [];
 		for (const sectorDisaster of sectorDisasterRecordsRelations) {
-			if (sectorDisaster.damageRecoveryCost) {
-				totalRecoveryCost += Number(sectorDisaster.damageRecoveryCost);
+			if (
+				sectorDisaster.damageRecoveryCost !== null &&
+				sectorDisaster.damageRecoveryCost !== undefined
+			) {
+				parts.push(sectorDisaster.damageRecoveryCost);
 			} else {
 				// Check in damages.td_recovery_cost_total
 				// Fetch all damages linked to the disaster records
@@ -267,18 +262,11 @@ export const calculateTotalRecoveryCost = async (
 						),
 					);
 
-				for (const damage of damages) {
-					// Convert values to numbers safely
-					const tdReplacementCostTotal = damage.totalRecovery
-						? Number(damage.totalRecovery)
-						: 0;
-					totalRecoveryCost += tdReplacementCostTotal;
-				}
-				totalRecoveryCost += Number();
+				for (const damage of damages) parts.push(damage.totalRecovery);
 			}
 		}
 
-		return totalRecoveryCost;
+		return sumReported(parts);
 	} catch (error) {
 		console.error("Error fetching repair cost:", error);
 		throw new Error("Internal server error");
