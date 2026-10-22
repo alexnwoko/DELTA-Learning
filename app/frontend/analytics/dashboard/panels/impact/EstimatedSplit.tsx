@@ -31,17 +31,39 @@ export function estimatedSplitCsv(d: EstimatedDisaggregation, title: string): st
 	return `﻿${rows.join("\r\n")}\r\n`;
 }
 
+/**
+ * One fixed axis for every country (Alex, 2026-10-22): each bar is its
+ * share of the country's estimated total, 0 to 10% per side, so pyramids
+ * from different countries can be compared by shape. Scaling to each
+ * country's own widest bar made them all look alike.
+ */
+export const PYRAMID_AXIS_MAX = 10;
+const PYRAMID_TICKS = [2.5, 5, 7.5];
+
+/** Each group's share of the estimated total, in percent; null where suppressed. */
+export function pyramidShares(d: EstimatedDisaggregation): { group: string; female: number | null; male: number | null }[] {
+	const total = d.groups.reduce((sum, g) => sum + (est(g.female) ?? 0) + (est(g.male) ?? 0), 0);
+	const pct = (c: EstimatedCell) => {
+		const v = est(c);
+		return v === null || total <= 0 ? null : (v / total) * 100;
+	};
+	return d.groups.map((g) => ({ group: g.group, female: pct(g.female), male: pct(g.male) }));
+}
+
 function Pyramid({ ctx, d, label }: { ctx: ViewContext; d: EstimatedDisaggregation; label: string }) {
-	const n = (x: number) => Math.round(x).toLocaleString(ctx.lang);
-	const groups = [...d.groups].reverse(); // oldest on top
-	const max = Math.max(1, ...groups.flatMap((g) => [est(g.female) ?? 0, est(g.male) ?? 0]));
+	const pct = (x: number) => `${x.toLocaleString(ctx.lang, { maximumFractionDigits: 1 })}%`;
+	const shares = pyramidShares(d).reverse(); // oldest on top
 	const W = 420;
 	const MID = W / 2;
 	const LABEL = 44; // the age label sits in the middle
 	const ROW = 13;
 	const half = MID - LABEL / 2 - 4;
-	const H = groups.length * ROW + 18;
+	const TOP = 14;
+	const H = TOP + shares.length * ROW + 14;
+	const w = (share: number) => (Math.min(share, PYRAMID_AXIS_MAX) / PYRAMID_AXIS_MAX) * half;
 	const t = (code: string, msg: string) => ctx.t({ code, msg });
+	const capped = (share: number) => (share > PYRAMID_AXIS_MAX ? " ▸" : "");
+	const axisY = TOP + shares.length * ROW;
 	return (
 		<svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={label} fontSize={9} className="block max-w-full">
 			<defs>
@@ -51,25 +73,30 @@ function Pyramid({ ctx, d, label }: { ctx: ViewContext; d: EstimatedDisaggregati
 					<line x1="0" y1="0" x2="0" y2="5" stroke={DASHBOARD_RAMP[4]} strokeWidth="1.6" />
 				</pattern>
 			</defs>
+			{/* The fixed axis: gridlines at 2.5, 5 and 7.5% each side, 10% at the edge. */}
+			{[...PYRAMID_TICKS, PYRAMID_AXIS_MAX].map((tick) => (
+				<g key={tick}>
+					<line x1={MID - LABEL / 2 - w(tick)} x2={MID - LABEL / 2 - w(tick)} y1={TOP} y2={axisY} stroke={DASHBOARD_RAMP[1]} />
+					<line x1={MID + LABEL / 2 + w(tick)} x2={MID + LABEL / 2 + w(tick)} y1={TOP} y2={axisY} stroke={DASHBOARD_RAMP[1]} />
+					<text x={MID - LABEL / 2 - w(tick)} y={axisY + 10} textAnchor="middle" fill="currentColor">{pct(tick)}</text>
+					<text x={MID + LABEL / 2 + w(tick)} y={axisY + 10} textAnchor="middle" fill="currentColor">{pct(tick)}</text>
+				</g>
+			))}
 			<text x={MID - LABEL / 2 - 4} y={9} textAnchor="end" fill="currentColor" fontWeight={700}>{t("dashboard.female", "Female")}</text>
 			<text x={MID + LABEL / 2 + 4} y={9} fill="currentColor" fontWeight={700}>{t("dashboard.male", "Male")}</text>
-			{groups.map((g, i) => {
-				const y = 14 + i * ROW;
-				const f = est(g.female);
-				const m = est(g.male);
-				const fw = f === null ? 0 : (f / max) * half;
-				const mw = m === null ? 0 : (m / max) * half;
+			{shares.map((g, i) => {
+				const y = TOP + i * ROW;
 				return (
 					<g key={g.group}>
 						<text x={MID} y={y + 9} textAnchor="middle" fill="currentColor">{g.group}</text>
-						{f !== null && (
-							<rect x={MID - LABEL / 2 - fw} y={y + 1} width={fw} height={ROW - 3} fill="url(#est-hatch)">
-								<title>{`${g.group}, ${t("dashboard.female", "Female")}: ${n(f)} (${t("dashboard.estimated", "Estimated")})`}</title>
+						{g.female !== null && (
+							<rect x={MID - LABEL / 2 - w(g.female)} y={y + 1} width={w(g.female)} height={ROW - 3} fill="url(#est-hatch)">
+								<title>{`${g.group}, ${t("dashboard.female", "Female")}: ${pct(g.female)} ${t("dashboard.of_total", "of the total")}${capped(g.female)} (${t("dashboard.estimated", "Estimated")})`}</title>
 							</rect>
 						)}
-						{m !== null && (
-							<rect x={MID + LABEL / 2} y={y + 1} width={mw} height={ROW - 3} fill="url(#est-hatch)">
-								<title>{`${g.group}, ${t("dashboard.male", "Male")}: ${n(m)} (${t("dashboard.estimated", "Estimated")})`}</title>
+						{g.male !== null && (
+							<rect x={MID + LABEL / 2} y={y + 1} width={w(g.male)} height={ROW - 3} fill="url(#est-hatch)">
+								<title>{`${g.group}, ${t("dashboard.male", "Male")}: ${pct(g.male)} ${t("dashboard.of_total", "of the total")}${capped(g.male)} (${t("dashboard.estimated", "Estimated")})`}</title>
 							</rect>
 						)}
 					</g>
