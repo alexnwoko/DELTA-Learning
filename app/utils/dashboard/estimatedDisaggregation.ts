@@ -7,6 +7,7 @@
 // data, and it travels with its footnote.
 
 import type { PanelMeta } from "~/utils/dashboard/impactPanels";
+import type { DisaggregationModelId } from "~/utils/disaggregationModels";
 
 /** The measures an estimate is made for; every other measure is refused. */
 export const ESTIMABLE_MEASURES = [
@@ -36,7 +37,26 @@ export interface EstimatedDisaggregation {
 		female: EstimatedCell;
 		male: EstimatedCell;
 	}[];
-	/** Five-year groups for a pyramid, by sex. */
+	/**
+	 * The estimate in each named model (DELTA, SFM, UN, life-stage), by sex.
+	 * A band marked split takes an even share of a five-year group it only
+	 * partly covers (18 in 15-19).
+	 */
+	byModel: {
+		id: DisaggregationModelId;
+		name: string;
+		source: string;
+		bands: {
+			key: string;
+			label: string;
+			split: boolean;
+			female: EstimatedCell;
+			male: EstimatedCell;
+		}[];
+	}[];
+	/** The model a view shows first: DELTA disaggregation. */
+	defaultModel: DisaggregationModelId;
+	/** Five-year groups (21), kept for the detail table and export only. */
 	groups: { group: string; female: EstimatedCell; male: EstimatedCell }[];
 	female: EstimatedCell;
 	male: EstimatedCell;
