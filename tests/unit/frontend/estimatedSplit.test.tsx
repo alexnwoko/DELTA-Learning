@@ -4,7 +4,7 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { dashboardPanelsCsv } from "~/frontend/analytics/dashboard/DashboardDownload";
-import { estimatedSplitCsv, estimatedSplitPanel } from "~/frontend/analytics/dashboard/panels/impact/EstimatedSplit";
+import { estimatedSplitCsv, estimatedSplitPanel, pyramidShares, PYRAMID_AXIS_MAX } from "~/frontend/analytics/dashboard/panels/impact/EstimatedSplit";
 import type { ViewContext } from "~/frontend/context";
 import type { EstimatedDisaggregation } from "~/utils/dashboard/estimatedDisaggregation";
 import { createMockTranslator } from "~/utils/translator";
@@ -41,6 +41,16 @@ describe("estimated sex and age split", () => {
 	it("hatches every estimated bar and tags the panel Estimated", () => {
 		expect(html).toContain('fill="url(#est-hatch)"');
 		expect(html).toMatch(/uppercase[^>]*>Estimated<\/span>/);
+	});
+
+	it("draws each bar as a share of the total on one fixed axis, so countries compare (Alex, 2026-10-22)", () => {
+		const shares = pyramidShares(D);
+		// 0-4: 800 + 820 of 1,660 estimated in the groups; 80+: male 40, female suppressed.
+		expect(shares[0].female).toBeCloseTo((800 / 1660) * 100, 5);
+		expect(shares[1].female).toBeNull();
+		expect(PYRAMID_AXIS_MAX).toBe(10);
+		expect(html).toContain(">10%</text>");
+		expect(html).toMatch(/0-4, Female: 48.2% of the total ▸ \(Estimated\)/);
 	});
 
 	it("leaves a suppressed group without a bar", () => {
