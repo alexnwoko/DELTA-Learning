@@ -470,6 +470,8 @@ export function sendaiSectionPanels(ctx: ViewContext, d: SendaiPayload, opts: Se
 					<ShadedTable shades={SFM_RAMP.slice(0, 3)} ctx={ctx} caption={titles.c2} rowHeader={tr(t, "dashboard.decade", "Decade")}
 						columns={d.c2.sectors.map((s) => s.label)}
 						rows={d.c2.rows.map((r) => ({ key: String(r.decade), label: `${r.decade}s`, cells: r.cells }))}
+						// Decades are a time series: they keep their order.
+						order="given"
 						normalise="table" />
 				)}
 			</Frame>

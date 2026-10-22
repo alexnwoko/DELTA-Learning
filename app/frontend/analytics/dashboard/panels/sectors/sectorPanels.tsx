@@ -442,7 +442,7 @@ function multiSectorPanel(ctx: ViewContext, d: SectorPanels1to7, common: (x: str
 		exportData: exp,
 		render: () => (
 			<Frame common={common(title)} exp={exp}>
-				<RowBars ctx={ctx} label={title} rows={ms.bins.map((b) => ({ key: b.label, label: b.label, bars: [{ cell: cell(b.records) }] }))} />
+				<RowBars ctx={ctx} label={title} order="given" rows={ms.bins.map((b) => ({ key: b.label, label: b.label, bars: [{ cell: cell(b.records) }] }))} />
 				{ms.pairs.length > 0 && (
 					<ul className="m-0 list-none p-0 text-sm">
 						{ms.pairs.slice(0, 5).map((p) => <li key={`${p.a.sectorId}|${p.b.sectorId}`}>{`${p.a.label} + ${p.b.label}: ${n(p.records)}`}</li>)}

@@ -567,7 +567,10 @@ function PeriodView({ common, p, exp }: { common: Common; p: PeriodChange; exp: 
 	const t = ctx.t;
 	const val = (c: PeriodChange["rows"][number]["averageA"]) =>
 		c.valueState === "reported" || c.valueState === "zero_confirmed" ? c.value : null;
-	const drawn = p.rows.filter((r) => val(r.averageA) !== null && val(r.averageB) !== null);
+	// Largest first, by the later period (Alex, 2026-10-22).
+	const drawn = p.rows
+		.filter((r) => val(r.averageA) !== null && val(r.averageB) !== null)
+		.sort((a, b) => val(b.averageB)! - val(a.averageB)! || val(b.averageA)! - val(a.averageA)!);
 	const listed = p.rows.filter((r) => !drawn.includes(r));
 	const max = Math.max(1, ...drawn.flatMap((r) => [val(r.averageA)!, val(r.averageB)!]));
 	const W = 380;
@@ -713,6 +716,8 @@ export function impactPanels5to16(
 					<ShadedTable ctx={ctx} caption={c.title} rowHeader={tr(t, "dashboard.hazard_type", "Hazard type")}
 						columns={data.hazardEffect.effects.map((x) => effectLabel(t, x))}
 						rows={data.hazardEffect.rows.map((r) => ({ key: r.hipTypeId, label: r.label, cells: r.cells }))}
+						// Deaths, injured and affected are not added up: rows follow the first effect.
+						order="first"
 						normalise="column" />
 				</Frame>
 			)],
@@ -780,7 +785,8 @@ export function impactPanels5to16(
 			(c, e) => (
 				<Frame common={c} exp={e}>
 					<span className="text-sm text-brand-text-muted">{effectLabel(t, disaggSeries.effect)}</span>
-					<RowBars ctx={ctx} label={c.title}
+					{/* Sex and age groups are ordered categories: they keep their order. */}
+					<RowBars ctx={ctx} label={c.title} order="given"
 						rows={disaggSeries.rows.map((r, i) => ({ key: `${r.dimension}-${i}`, label: r.category, note: dimensionName(t, r.dimension), bars: [{ cell: r.cell }] }))} />
 					<p className="m-0 text-sm">
 						{tr(t, "dashboard.not_disaggregated_count", "Not disaggregated: {n} of {total} records", {

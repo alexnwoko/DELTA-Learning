@@ -155,6 +155,8 @@ export function ImpactMap({ ctx, map, scope, onSelectDivision, layers }: ImpactM
 							label: a.name,
 							cells: [a.deaths, a.dwellingsDestroyed, a.dwellingsDamaged],
 						}))}
+						// Deaths and houses are not added up: rows follow deaths.
+						order="first"
 						normalise="column"
 					/>
 				</DisclosurePanel>

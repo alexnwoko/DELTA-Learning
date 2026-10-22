@@ -165,7 +165,7 @@ function impactSourcesPanel(
 		render: () => (
 			<ChartFrame ctx={ctx} title={title} rows={exportData.rows}
 				meta={{ source: common.source, scope: common.scope, method: d.meta.method, basis: common.provisional ? "provisional" : "published", notes: exportData.notes }}>
-				<RowBars ctx={ctx} label={title} rows={rows.map((r) => ({ key: r.label, label: r.label, bars: [{ cell: recordsCell(r.n) }] }))} />
+				<RowBars ctx={ctx} label={title} rows={rows.map((r) => ({ key: r.label, label: r.label, bars: [{ cell: recordsCell(r.n) }], pinned: Boolean(d.rest) && r.label === restLabel }))} />
 				{notes.filter(Boolean).map((x) => <p key={x} className="m-0 text-xs text-brand-text-muted">{x}</p>)}
 			</ChartFrame>
 		),
