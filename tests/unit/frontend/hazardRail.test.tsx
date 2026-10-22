@@ -1,6 +1,7 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { HazardRail, withHazardType } from "~/frontend/analytics/dashboard/HazardRail";
+import { SendaiToggle } from "~/frontend/analytics/dashboard/panels/sendai/sendaiSection";
 import type { ViewContext } from "~/frontend/context";
 import type { HazardTree } from "~/frontend/geoportal/GeoFilterBar";
 import { parseDeltaQuery } from "~/utils/deltaQuery";
@@ -65,5 +66,25 @@ describe("left hazard rail (mockup option A)", () => {
 		expect(withHazardType(q, "1037").where.hazard).toEqual({ typeId: "1037" });
 		expect(withHazardType(q, null).where.hazard).toBeUndefined();
 		expect(withHazardType(q, null).where.time).toEqual({ from: "2015" });
+	});
+});
+
+describe("Sendai square in the rail (Alex, 2026-10-22)", () => {
+	const html = (on: boolean) =>
+		text(renderToString(<HazardRail ctx={ctx} tree={TREE} selected={null} onChange={() => {}} showCounts after={<SendaiToggle ctx={ctx} on={on} rail onChange={() => {}} />} />));
+
+	it("sits below the hazard types, outside the radio group, as a toggle with the full name", () => {
+		const out = html(false);
+		expect(out.indexOf("Biological")).toBeLessThan(out.indexOf("Sendai"));
+		expect(out.match(/type="radio"/g)).toHaveLength(4);
+		expect(out).toContain('aria-label="Sendai Framework Monitoring"');
+		expect(out).toContain('aria-pressed="false"');
+	});
+
+	it("takes the hazard square's shape and turns orange when on", () => {
+		const out = html(true);
+		expect(out).toContain('aria-pressed="true"');
+		expect(out).toContain("w-[88px]");
+		expect(out).toContain("data-[selected]:bg-data-sfm-on");
 	});
 });

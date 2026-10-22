@@ -73,6 +73,8 @@
 	--color-data-sfm-accent: var(--delta-data-sfm-accent);
 	--color-data-sfm-mark: var(--delta-data-sfm-mark);
 	--color-data-sfm-ink: var(--delta-data-sfm-ink);
+	--color-data-sfm-on: var(--delta-data-sfm-on);
+	--color-data-sfm-on-tint: var(--delta-data-sfm-on-tint);
 	--color-brand-interactive: var(--delta-brand-interactive);
 	--color-brand-interactive-active: var(--delta-brand-interactive-active);
 	--color-brand-secondary: var(--delta-brand-secondary);

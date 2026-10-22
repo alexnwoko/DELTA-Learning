@@ -155,6 +155,8 @@ export const dataTokens = {
 		"border": "#d6eaf7",
 		"accent": "#a8cfe3",
 		"mark": "#76a6c1",
-		"ink": "#2f4f5f"
+		"ink": "#2f4f5f",
+		"on": "#c2410c",
+		"onTint": "#fff4ed"
 	}
 };

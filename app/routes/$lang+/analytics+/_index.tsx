@@ -327,6 +327,8 @@ export default function AnalysisDashboard() {
 						}
 						// The tree counts records: no count on the two event views.
 						showCounts={view === "disaster_impact" || view === "sectors"}
+						// The Sendai square, below the hazard types, orange when on (Alex, 2026-10-22).
+						after={sendai ? <SendaiToggle ctx={ctx} on={sfm} rail onChange={(on) => go(query, view, on)} /> : undefined}
 					/>
 				}
 				filterBar={
@@ -349,9 +351,6 @@ export default function AnalysisDashboard() {
 						summary={false}
 						layout="row"
 						years={filterOptions.years}
-						end={
-							sendai ? <SendaiToggle ctx={ctx} on={sfm} onChange={(on) => go(query, view, on)} /> : undefined
-						}
 						t={geoT}
 					/>
 				}

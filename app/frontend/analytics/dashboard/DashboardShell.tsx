@@ -172,6 +172,9 @@ export function DashboardShell({
 				data-print="flow"
 				className="flex min-w-0 flex-1 flex-col gap-4"
 			>
+				{/* Frozen while the page scrolls (Alex, 2026-10-22): the views and the
+				    filters stay in sight, so what is selected is always visible. */}
+				<div data-dashboard-sticky="" className="sticky top-0 z-20 -mx-1 flex flex-col gap-2 bg-data-dashboard-canvas px-1 pb-2 pt-1 print:static">
 				<TabList
 					aria-label={t({ code: "dashboard.view", msg: "What to analyse" })}
 					data-print="hide"
@@ -186,6 +189,9 @@ export function DashboardShell({
 						</Tab>
 					))}
 				</TabList>
+				{/* Filters and the Sendai section are the same on every view. */}
+				<div id={FILTERS_ID}>{filterBar}</div>
+				</div>
 				{sfmOn && (
 					<p className="m-0 text-sm text-brand-text-muted" data-print="hide">
 						{t({
@@ -194,8 +200,6 @@ export function DashboardShell({
 						})}
 					</p>
 				)}
-				{/* Filters and the Sendai section are the same on every view. */}
-				<div id={FILTERS_ID}>{filterBar}</div>
 				{/* Only the selected panel mounts; the others hold nothing. With
 				    the Sendai toggle on, no panel mounts, so the Sendai section
 				    below sits directly under the filter bar (FR-AN-024). */}
