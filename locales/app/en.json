@@ -5685,6 +5685,36 @@
     "description": "File: app/frontend/geoportal/GeoSendai.tsx"
   },
   {
+    "id": "geoportal.show_by",
+    "translation": "Show by",
+    "description": "Label of the breakdown control: the map and rankings by country, province, district or local area. File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.show_by.country",
+    "translation": "Whole country",
+    "description": "Show by option. File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.show_by.level1",
+    "translation": "Provinces or states (admin 1)",
+    "description": "Show by option; keep \"admin 1\". File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.show_by.level2",
+    "translation": "Districts (admin 2)",
+    "description": "Show by option; keep \"admin 2\". File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.show_by.level3",
+    "translation": "Local areas (admin 3)",
+    "description": "Show by option; keep \"admin 3\". File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
+    "id": "geoportal.show_by.other",
+    "translation": "Admin level {n}",
+    "description": "Show by option for deeper levels. File: app/frontend/geoportal/GeoFilterBar.tsx"
+  },
+  {
     "id": "geoportal.summary.basis",
     "translation": "Basis: {basis}",
     "description": "File: app/frontend/geoportal/filterBarState.ts"
