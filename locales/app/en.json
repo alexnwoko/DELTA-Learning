@@ -5396,7 +5396,7 @@
   },
   {
     "id": "geoportal.dossier.events.codes",
-    "translation": "Event codes: GLIDE number on {glide} of {events} events, national code on {national}.",
+    "translation": "Event codes: GLIDE number on {glide} of {events}, national code on {national}.",
     "description": "Event identifier coverage. File: app/frontend/geoportal/GeoDossier.tsx"
   },
   {
@@ -5408,6 +5408,11 @@
     "id": "geoportal.dossier.events.per_event",
     "translation": "{linked} disaster records belong to {events} disaster events, {per} records per event on average.",
     "description": "Records per event in this area. File: app/frontend/geoportal/GeoDossier.tsx"
+  },
+  {
+    "id": "geoportal.dossier.events.per_event_one",
+    "translation": "{linked} disaster records belong to 1 disaster event.",
+    "description": "Records per event when the area has one event. File: app/frontend/geoportal/GeoDossier.tsx"
   },
   {
     "id": "geoportal.dossier.events.unlinked",

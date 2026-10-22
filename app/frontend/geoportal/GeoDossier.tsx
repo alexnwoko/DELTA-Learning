@@ -343,10 +343,15 @@ export function GeoDossier(props: {
 					{ev.events > 0 ? (
 						<p className="text-xs">
 							{t(
-								{
-									code: "geoportal.dossier.events.per_event",
-									msg: "{linked} disaster records belong to {events} disaster events, {per} records per event on average.",
-								},
+								ev.events === 1
+									? {
+											code: "geoportal.dossier.events.per_event_one",
+											msg: "{linked} disaster records belong to 1 disaster event.",
+										}
+									: {
+											code: "geoportal.dossier.events.per_event",
+											msg: "{linked} disaster records belong to {events} disaster events, {per} records per event on average.",
+										},
 								{
 									linked: fmt(ev.linkedRecords),
 									events: fmt(ev.events),
@@ -377,7 +382,7 @@ export function GeoDossier(props: {
 							{t(
 								{
 									code: "geoportal.dossier.events.codes",
-									msg: "Event codes: GLIDE number on {glide} of {events} events, national code on {national}.",
+									msg: "Event codes: GLIDE number on {glide} of {events}, national code on {national}.",
 								},
 								{
 									glide: fmt(ev.glideEvents),
