@@ -1,6 +1,7 @@
 import type { LoaderFunctionArgs } from "react-router";
 import { sql } from "drizzle-orm";
 import { dr } from "~/db.server";
+import { ensureFreshReadModel } from "~/backend.server/models/geo/freshness";
 import { approvalAudienceForBasis } from "~/backend.server/approvalAudience.server";
 import { apiAuth } from "~/backend.server/models/api_key";
 import {
@@ -67,6 +68,9 @@ export function geoLoader(handler: GeoHandler) {
 			request: args.request,
 			viaApiKey,
 		};
+		// Keep the read model in step with the records (TR-149): a background
+		// check, never waited for.
+		ensureFreshReadModel(countryAccountsId);
 		try {
 			return await handler(args, ctx);
 		} catch (err) {

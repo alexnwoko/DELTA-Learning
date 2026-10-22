@@ -19,8 +19,16 @@ import {
 import {
 	measureValue,
 	PROVISIONAL_ZERO_COVERAGE,
+	type MeasureValue,
 	type ValueState,
 } from "~/utils/valueState";
+import { getPopulationDenominator } from "~/backend.server/models/ref/denominator";
+import {
+	A1_METHOD,
+	AFFECTED_DIRECT_METHOD,
+	ratePer100k,
+	sumMeasures,
+} from "~/backend.server/models/ref/rates";
 
 // Geoportal read side (build spec s5; PD-05). Every query reads the geo
 // schema only and is scoped to one tenant. The selection is delta.query/1
@@ -28,6 +36,17 @@ import {
 // app/utils/approvalBasis.ts (TR-192). Figures are {value, value_state} with
 // record counts; records that cannot be placed are counted in the
 // unattributed block, never dropped and never redistributed (TR-072).
+
+
+/**
+ * Measures the place panel carries: the human effects, plus dwellings
+ * destroyed and damaged as inputs to Sendai B-4 and B-3 (gap review step 3).
+ */
+const DOSSIER_MEASURES = [
+	...GEO_HUMAN_MEASURES,
+	"houses_destroyed",
+	"houses_damaged",
+] as const;
 
 export const ATT_GRADES = ["A", "B", "C", "D"] as const;
 export type AttGrade = (typeof ATT_GRADES)[number];
@@ -231,6 +250,8 @@ export interface GeoCell {
 export interface GeoUnattributed {
 	records: number;
 	reasons: Record<string, number>;
+	/** Records drawn on the map at this level (so "n of total" can be said). */
+	placedRecords?: number;
 }
 
 export interface GradeFloorExclusion {
@@ -443,6 +464,7 @@ export async function aggregate(
 			(SELECT COALESCE(jsonb_object_agg(reason, n), '{}'::jsonb)
 				FROM (SELECT reason, COUNT(*) AS n FROM unplaced GROUP BY reason) u) AS reasons,
 			(SELECT COUNT(*) FROM unplaced) AS unattributed,
+			(SELECT COUNT(*) FROM placed_records) AS placed_records,
 			(SELECT COUNT(*) FROM floor_excluded) AS floor_excluded,
 			(SELECT COALESCE(jsonb_object_agg(best_grade, n), '{}'::jsonb)
 				FROM (SELECT best_grade, COUNT(*) AS n FROM floor_excluded GROUP BY best_grade) f) AS floor_by_grade,
@@ -461,6 +483,7 @@ export async function aggregate(
 		cells: CellRow[];
 		reasons: Record<string, number | string>;
 		unattributed: string | number;
+		placed_records: string | number;
 		floor_excluded: string | number;
 		floor_by_grade: Record<string, number | string>;
 		run_ids: string[];
@@ -486,6 +509,7 @@ export async function aggregate(
 			reasons: Object.fromEntries(
 				Object.entries(row.reasons).map(([k, v]) => [k, Number(v)]),
 			),
+			placedRecords: Number(row.placed_records),
 		} as GeoUnattributed,
 		excludedByGradeFloor: floor
 			? ({
@@ -767,9 +791,9 @@ async function getPlaceDossierUncached(
 
 	// All human-effect measures for this division in one pass, restricted to
 	// it, so provenance (run ids, provisional) describes this place only.
-	const agg = await aggregate(t, req, GEO_HUMAN_MEASURES, level, divisionId);
+	const agg = await aggregate(t, req, DOSSIER_MEASURES, level, divisionId);
 	const cumulative: Record<string, Omit<GeoCell, "division_id">> = {};
-	for (const measure of GEO_HUMAN_MEASURES) {
+	for (const measure of DOSSIER_MEASURES) {
 		const cell = agg.cells.get(measure)?.[0];
 		if (cell) {
 			const { division_id: _ignored, ...rest } = cell;
@@ -821,6 +845,186 @@ async function getPlaceDossierUncached(
 		hazardMix: yr.hazard_mix,
 		byYear: yr.by_year,
 		cumulative,
+		events: await eventsInArea(t, req, divisionId),
+	};
+}
+
+export interface NationalRate {
+	/** Per 100,000 people, or null with its state. */
+	value: number | null;
+	valueState: string;
+	/** Why no rate was formed, when it was refused. */
+	refusal: { code: string; reason: string } | null;
+}
+
+export interface NationalRates {
+	year: number;
+	/** Sendai A-1: deaths and missing per 100,000. */
+	a1: NationalRate;
+	/** DELTA rate of directly affected per 100,000. Not Sendai B-1. */
+	affectedDirect: NationalRate;
+	denominator: {
+		value: number;
+		source: string;
+		release: string;
+		year: number;
+	} | null;
+}
+
+/**
+ * National rates per 100,000 for the whole-country panel (gap review step 3).
+ * Rates are annual (Sendai counts effects in the year they occur), so they
+ * are formed only when the page's period is one year; otherwise null, and
+ * the panel says so. The numerators are the panel's own totals on the
+ * page's approval basis; the denominator is the Analytics population helper
+ * (R2 source order, R3 reference year, never 0 for a missing value).
+ */
+async function nationalRates(
+	countryAccountsId: string,
+	req: GeoRequest,
+	cumulative: Record<string, { value: number | null; value_state: string }>,
+): Promise<NationalRates | null> {
+	const from = req.query.where.time?.from?.slice(0, 4);
+	const to = req.query.where.time?.to?.slice(0, 4);
+	if (!from || from !== to) return null;
+	const year = Number(from);
+	const denominator = await getPopulationDenominator(countryAccountsId, {
+		divisionId: null,
+		year,
+	});
+	const mv = (m: string): MeasureValue =>
+		({
+			value: cumulative[m]?.value ?? null,
+			valueState: cumulative[m]?.value_state ?? "not_reported",
+		}) as MeasureValue;
+	const one = (parts: MeasureValue[], method: string): NationalRate => {
+		const r = ratePer100k(
+			{ ...sumMeasures(parts), provenance: { year, method } },
+			denominator,
+			method,
+		);
+		return r.ok
+			? {
+					value: r.value === null ? null : Math.round(r.value * 100) / 100,
+					valueState: r.valueState,
+					refusal: null,
+				}
+			: {
+					value: null,
+					valueState: "not_reported",
+					refusal: { code: r.refusal.code, reason: r.refusal.reason },
+				};
+	};
+	return {
+		year,
+		a1: one([mv("deaths"), mv("missing")], A1_METHOD),
+		affectedDirect: one([mv("affected_direct")], AFFECTED_DIRECT_METHOD),
+		denominator: denominator.ok
+			? {
+					value: denominator.value,
+					source: denominator.provenance.source.name,
+					release: denominator.provenance.release.version,
+					year: denominator.year,
+				}
+			: null,
+	};
+}
+
+export interface EventsInArea {
+	/** Disaster records in scope here (each once). */
+	records: number;
+	/** Of those, records that belong to a disaster event. */
+	linkedRecords: number;
+	/** Distinct disaster events those records belong to. */
+	events: number;
+	/** Events here with a GLIDE number, and with a national event code. */
+	glideEvents: number;
+	nationalCodeEvents: number;
+	/** The events with the most records here, largest first. */
+	top: {
+		id: string;
+		name: string | null;
+		glide: string | null;
+		nationalId: string | null;
+		records: number;
+	}[];
+}
+
+/**
+ * Records per event and event identity for one area, or the whole country
+ * when divisionId is null (gap review step 4; DE-2, DE-3). Read from the
+ * record atoms with the page's filters, so it agrees with the record counts
+ * beside it. Records without a disaster event are counted, never hidden:
+ * most migrated records have none.
+ */
+async function eventsInArea(
+	countryAccountsId: string,
+	req: GeoRequest,
+	divisionId: string | null,
+	topN = 5,
+): Promise<EventsInArea> {
+	const t = countryAccountsId;
+	const ranged = hasRange(req);
+	const res = await geoRead(sql`
+		WITH recs AS (
+			SELECT DISTINCT a.disaster_record_id, a.disaster_event_id
+			FROM geo.impact_atom a
+			${
+				divisionId
+					? sql`JOIN geo.division_ancestor da
+						ON da.division_id = a.division_id
+						AND da.country_accounts_id = ${t}
+						AND da.ancestor_id = ${divisionId}`
+					: sql``
+			}
+			WHERE ${scopeFilters(t, req)}
+				AND a.measure = 'records'
+				AND ${ranged ? dateInRange(req) : sql`true`}
+				AND ${gradeFloor(req.query.minAttGrade)}
+		),
+		ev AS (
+			SELECT disaster_event_id AS id, COUNT(*) AS n
+			FROM recs WHERE disaster_event_id IS NOT NULL
+			GROUP BY disaster_event_id
+		)
+		SELECT
+			(SELECT COUNT(DISTINCT disaster_record_id) FROM recs) AS records,
+			(SELECT COALESCE(SUM(n), 0) FROM ev) AS linked_records,
+			(SELECT COUNT(*) FROM ev) AS events,
+			(SELECT COUNT(*) FROM ev JOIN disaster_event e ON e.id = ev.id
+				WHERE COALESCE(e.glide, '') <> '') AS glide_events,
+			(SELECT COUNT(*) FROM ev JOIN disaster_event e ON e.id = ev.id
+				WHERE COALESCE(e.national_disaster_id, '') <> '') AS national_events,
+			(SELECT COALESCE(jsonb_agg(jsonb_build_object(
+					'id', x.id, 'name', x.name, 'glide', x.glide,
+					'nationalId', x.national_id, 'records', x.n
+				) ORDER BY x.n DESC, x.id), '[]'::jsonb)
+				FROM (
+					SELECT ev.id, ev.n,
+						NULLIF(COALESCE(NULLIF(e.name_national, ''), e.name_global_or_regional), '') AS name,
+						NULLIF(e.glide, '') AS glide,
+						NULLIF(e.national_disaster_id, '') AS national_id
+					FROM ev JOIN disaster_event e ON e.id = ev.id
+					WHERE e.country_accounts_id = ${t}
+					ORDER BY ev.n DESC, ev.id
+					LIMIT ${topN}
+				) x) AS top
+	`);
+	const r = res.rows[0] as {
+		records: string | number;
+		linked_records: string | number;
+		events: string | number;
+		glide_events: string | number;
+		national_events: string | number;
+		top: EventsInArea["top"];
+	};
+	return {
+		records: Number(r.records),
+		linkedRecords: Number(r.linked_records),
+		events: Number(r.events),
+		glideEvents: Number(r.glide_events),
+		nationalCodeEvents: Number(r.national_events),
+		top: r.top.map((e) => ({ ...e, records: Number(e.records) })),
 	};
 }
 
@@ -1139,7 +1343,7 @@ async function getCountryDossierUncached(
 			FROM geo.impact_atom a
 			WHERE ${scopeFilters(t, req)}
 				AND a.measure IN (${sql.join(
-					["records", ...GEO_HUMAN_MEASURES].map((m) => sql`${m}`),
+					["records", ...DOSSIER_MEASURES].map((m) => sql`${m}`),
 					sql`, `,
 				)})
 				AND ${ranged ? dateInRange(req) : sql`true`}
@@ -1207,7 +1411,7 @@ async function getCountryDossierUncached(
 	}
 	const byMeasure = new Map(row.cells.map((c) => [c.measure, toCell(c)]));
 	const cumulative: Record<string, Omit<GeoCell, "division_id">> = {};
-	for (const measure of GEO_HUMAN_MEASURES) {
+	for (const measure of DOSSIER_MEASURES) {
 		const cell = byMeasure.get(measure);
 		if (cell) {
 			const { division_id: _ignored, ...rest } = cell;
@@ -1256,6 +1460,8 @@ async function getCountryDossierUncached(
 		hazardMix: row.hazard_mix,
 		byYear: row.by_year,
 		cumulative,
+		events: await eventsInArea(countryAccountsId, req, null),
+		rates: await nationalRates(countryAccountsId, req, cumulative),
 	};
 }
 

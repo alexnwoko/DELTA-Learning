@@ -39,6 +39,23 @@ export interface DossierData {
 	byYear: { year: number; recordCount: number }[];
 	cumulative: Record<string, DossierCell>;
 	meta: { boundaryVersion: string; provisional: boolean };
+	/** National rates for a one-year period, whole country only (step 3). */
+	rates?: import("~/frontend/geoportal/GeoSendai").GeoSendaiRates | null;
+	/** Records per event and event identity (gap review step 4). */
+	events?: {
+		records: number;
+		linkedRecords: number;
+		events: number;
+		glideEvents: number;
+		nationalCodeEvents: number;
+		top: {
+			id: string;
+			name: string | null;
+			glide: string | null;
+			nationalId: string | null;
+			records: number;
+		}[];
+	};
 }
 
 const TILES: GeoHumanMeasure[] = ["deaths", "affected_direct", "displaced"];
@@ -150,6 +167,7 @@ export function GeoDossier(props: {
 }) {
 	const t = props.t ?? plainT;
 	const { division, recurrence, cumulative } = props.data;
+	const ev = props.data.events;
 	const tile = (label: string, unit: string, text: string) => (
 		<div className="border border-brand-border rounded p-2 min-w-0">
 			<p className="text-xs text-brand-text-muted">
@@ -314,6 +332,97 @@ export function GeoDossier(props: {
 							</li>
 						))}
 					</ul>
+				</div>
+			)}
+
+			{ev && ev.records > 0 && (
+				<div>
+					<h3 className="font-semibold">
+						{t({ code: "geoportal.dossier.events", msg: "Disaster events" })}
+					</h3>
+					{ev.events > 0 ? (
+						<p className="text-xs">
+							{t(
+								{
+									code: "geoportal.dossier.events.per_event",
+									msg: "{linked} disaster records belong to {events} disaster events, {per} records per event on average.",
+								},
+								{
+									linked: fmt(ev.linkedRecords),
+									events: fmt(ev.events),
+									per: (ev.linkedRecords / ev.events).toLocaleString(undefined, {
+										maximumFractionDigits: 1,
+									}),
+								},
+							)}
+						</p>
+					) : null}
+					<p className="text-xs text-brand-text-muted">
+						{t(
+							{
+								code: "geoportal.dossier.events.unlinked",
+								msg: "{n} of {total} disaster records ({pct}%) belong to no disaster event, so event counts here are not a count of every disaster.",
+							},
+							{
+								n: fmt(ev.records - ev.linkedRecords),
+								total: fmt(ev.records),
+								pct: Math.round(
+									(100 * (ev.records - ev.linkedRecords)) / ev.records,
+								),
+							},
+						)}
+					</p>
+					{ev.events > 0 && (
+						<p className="text-xs text-brand-text-muted">
+							{t(
+								{
+									code: "geoportal.dossier.events.codes",
+									msg: "Event codes: GLIDE number on {glide} of {events} events, national code on {national}.",
+								},
+								{
+									glide: fmt(ev.glideEvents),
+									events: fmt(ev.events),
+									national: fmt(ev.nationalCodeEvents),
+								},
+							)}
+						</p>
+					)}
+					{ev.top.length > 0 && (
+						<ul className="text-xs mt-1">
+							{ev.top.map((e) => (
+								<li key={e.id} className="flex justify-between gap-2">
+									<span className="min-w-0">
+										<span className="block truncate">
+											{e.name ??
+												t({
+													code: "geoportal.dossier.events.unnamed",
+													msg: "Unnamed event",
+												})}
+										</span>
+										{((e.glide && e.glide !== e.name) || e.nationalId) && (
+											<span className="block text-brand-text-muted">
+												{[
+													// Migrated events are often named by their GLIDE number.
+													e.glide && e.glide !== e.name && `GLIDE ${e.glide}`,
+													e.nationalId &&
+														t(
+															{
+																code: "geoportal.dossier.events.national",
+																msg: "National code {code}",
+															},
+															{ code: e.nationalId },
+														),
+												]
+													.filter(Boolean)
+													.join(" · ")}
+											</span>
+										)}
+									</span>
+									<span className="tabular-nums shrink-0">{fmt(e.records)}</span>
+								</li>
+							))}
+						</ul>
+					)}
 				</div>
 			)}
 

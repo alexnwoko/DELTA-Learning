@@ -97,6 +97,8 @@ import {
 import { divisionAreasKm2 } from "~/backend.server/models/analytics/divisionAreas";
 import { selectableBasemaps, type BasemapLayerId } from "~/utils/basemap";
 import { PageBrand } from "~/frontend/PageBrand";
+import { ensureFreshReadModel } from "~/backend.server/models/geo/freshness";
+import { showByLabel } from "~/frontend/geoportal/GeoFilterBar";
 
 // OpenLayers loads with the map, not with the page (NFR-130).
 const GeoMap = lazy(() =>
@@ -182,6 +184,8 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 	const lang = args.params.lang || "en";
 	const url = new URL(args.request.url);
 	const levels = await adminLevels(countryAccountsId);
+	// TR-149: refresh the map data in the background when records changed.
+	const freshness = ensureFreshReadModel(countryAccountsId);
 	// The page heading names the country (Alex, 2026-10-20): the instance
 	// settings, else the country account's own name, as on Analysis.
 	const settings = await getCountrySettingsFromSession(args.request);
@@ -313,6 +317,7 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 			areaKm2,
 			placeOptions,
 			countryName,
+			freshness,
 			refusal: null,
 		};
 	} catch (err) {
@@ -338,6 +343,7 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 					parentId: string | null;
 				}[],
 				countryName,
+				freshness,
 				refusal: refusalBody(err.refusal, err.meta),
 			};
 		}
@@ -404,6 +410,14 @@ const UNPLACED_REASONS: Record<string, { code: string; msg: string }> = {
 		code: "geoportal.unplaced.members",
 		msg: "its disaster impacts have no area",
 	},
+	coarser_than_level: {
+		code: "geoportal.unplaced.coarser",
+		msg: "recorded only at a coarser level than this map",
+	},
+	undated: {
+		code: "geoportal.unplaced.undated",
+		msg: "no start date, so outside any chosen period",
+	},
 };
 
 // An empty collection while the area shapes download. It must say it is a
@@ -459,6 +473,12 @@ export default function GeoportalPage() {
 	const measure = query.measure ?? "records";
 	const info = geoMeasureInfo(measure);
 	const isEventDim = query.dimension !== "disaster_impact";
+	// Records held only at a coarser level than the map's Analysis level.
+	const coarsestLevel = Math.min(...(data.levels.length ? data.levels : [1]));
+	const coarserCount =
+		choropleth && data.level > coarsestLevel
+			? Number(choropleth.unattributed.reasons.coarser_than_level ?? 0)
+			: 0;
 	const reportedNoun = isEventDim
 		? t({ code: "geoportal.unit.events", msg: "events" })
 		: t({ code: "geoportal.unit.disaster_impacts", msg: "disaster impacts" });
@@ -795,6 +815,17 @@ export default function GeoportalPage() {
 								{n.text}
 							</p>
 						))}
+						{data.freshness === "updating" && (
+							<p
+								role="status"
+								className="text-sm border-l-4 border-brand-border-control bg-brand-surface-subtle px-2 py-1 my-1"
+							>
+								{t({
+									code: "geoportal.freshness.updating",
+									msg: "The map data is being updated with recent changes to records. Reload in a few minutes for the latest figures.",
+								})}
+							</p>
+						)}
 						{choropleth.meta.provisional && (
 							<p className="text-sm border-l-4 border-data-notice-provisional-border bg-data-notice-provisional-background px-2 py-1 my-1">
 								{t({
@@ -835,6 +866,45 @@ export default function GeoportalPage() {
 										})}
 									</Button>
 								)}
+							</div>
+						)}
+
+						{/* Placement disclosure (gap review step 2, OD-3 a): at a finer
+						    Analysis level, records held only at a coarser level are not
+						    on the map. Say how many, never share them out (TR-077). */}
+						{coarserCount > 0 && (
+							<div
+								role="status"
+								className="text-sm border-l-4 border-data-map-not-applied-note-border bg-data-map-not-applied-note-background px-2 py-1 my-1 flex flex-wrap items-center gap-2"
+							>
+								<span>
+									{t(
+										{
+											code: "geoportal.coarser.note",
+											msg: "{n} of {total} {noun} are recorded only at a coarser level and are not on this map. They are never shared out to smaller areas.",
+										},
+										{
+											n: coarserCount.toLocaleString(),
+											total: (
+												(choropleth.unattributed.placedRecords ?? 0) +
+												choropleth.unattributed.records
+											).toLocaleString(),
+											noun: reportedNoun,
+										},
+									)}
+								</span>
+								<Button
+									onPress={() => onFilters({ query, level: coarsestLevel })}
+									className="border border-brand-border-control rounded px-2 py-0.5 bg-brand-surface data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
+								>
+									{t(
+										{
+											code: "geoportal.coarser.show_level",
+											msg: "Switch to {level}",
+										},
+										{ level: showByLabel(coarsestLevel, t) },
+									)}
+								</Button>
 							</div>
 						)}
 
@@ -1139,6 +1209,7 @@ export default function GeoportalPage() {
 														<GeoSendai
 															cumulative={dossier.cumulative}
 															level={dossier.division.level}
+															rates={dossier.rates ?? null}
 															analysisHref={`/${lang}/analytics?${serializeDeltaQuery(
 																dossier.division.id === "country"
 																	? withPlace(query, null)
