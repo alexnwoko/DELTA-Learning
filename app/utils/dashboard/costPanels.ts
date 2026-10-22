@@ -68,6 +68,23 @@ export interface CostPanels {
 		 */
 		projectionNotCosted: Money | null;
 	}[];
+	/**
+	 * Per start year, from the first year with a value to the last year with
+	 * a record; years between with no record are present with 0 records and
+	 * an empty total. Empty when no record carries a value.
+	 */
+	byYear: {
+		year: number;
+		records: number;
+		costedRecords: number;
+		notCostedRecords: number;
+		/** Empty (null) when no record that year carries a value; never 0. */
+		total: Money;
+	}[];
+	/** Records with no start year: in every other figure, not in byYear. */
+	recordsNoYear: number;
+	/** Records dated before the first year with a value: counted, not drawn. */
+	recordsBeforeFirstYear: number;
 	projectionNote: string;
 	meta: PanelMeta;
 }

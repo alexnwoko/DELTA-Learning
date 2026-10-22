@@ -111,6 +111,21 @@ describe("getCostPanels", () => {
 		});
 	});
 
+	it("gives costs by year from the first year with a value; earlier records counted", async () => {
+		const p = await getCostPanels(DEFAULT_QUERY, ctx());
+		expect(p.byYear).toEqual([
+			{
+				year: 2020,
+				records: 4,
+				costedRecords: 3,
+				notCostedRecords: 1,
+				total: { local: 30000, usd: 600 },
+			},
+		]);
+		expect(p.recordsNoYear).toBe(0);
+		expect(p.recordsBeforeFirstYear).toBe(1);
+	});
+
 	it("gives costs by hazard and holds back the projection under 10 records", async () => {
 		const p = await getCostPanels(DEFAULT_QUERY, ctx());
 		const flood = p.byHazard.find((r) => r.key === "94492")!;
