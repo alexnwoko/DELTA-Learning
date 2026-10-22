@@ -557,6 +557,12 @@ describe("geoportal read model (G1)", () => {
 			).toBe(13);
 			expect(lvl2.multiDivisionRecords).toBe(1);
 			expect(lvl2.caption).toMatch(/more than one area/);
+			// Placement disclosure (gap review step 2): drawn plus not drawn
+			// is every record in scope, so the page can say "n of total".
+			expect(lvl2.unattributed.placedRecords).toBe(10);
+			expect(
+				(lvl2.unattributed.placedRecords ?? 0) + lvl2.unattributed.records,
+			).toBe(13);
 		});
 
 		it("grades attribution: B by national id, C by import id, A when covered by one division", async () => {
