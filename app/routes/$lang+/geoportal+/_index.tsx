@@ -97,6 +97,7 @@ import {
 import { divisionAreasKm2 } from "~/backend.server/models/analytics/divisionAreas";
 import { selectableBasemaps, type BasemapLayerId } from "~/utils/basemap";
 import { PageBrand } from "~/frontend/PageBrand";
+import { ensureFreshReadModel } from "~/backend.server/models/geo/freshness";
 import { showByLabel } from "~/frontend/geoportal/GeoFilterBar";
 
 // OpenLayers loads with the map, not with the page (NFR-130).
@@ -183,6 +184,8 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 	const lang = args.params.lang || "en";
 	const url = new URL(args.request.url);
 	const levels = await adminLevels(countryAccountsId);
+	// TR-149: refresh the map data in the background when records changed.
+	const freshness = ensureFreshReadModel(countryAccountsId);
 	// The page heading names the country (Alex, 2026-10-20): the instance
 	// settings, else the country account's own name, as on Analysis.
 	const settings = await getCountrySettingsFromSession(args.request);
@@ -314,6 +317,7 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 			areaKm2,
 			placeOptions,
 			countryName,
+			freshness,
 			refusal: null,
 		};
 	} catch (err) {
@@ -339,6 +343,7 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 					parentId: string | null;
 				}[],
 				countryName,
+				freshness,
 				refusal: refusalBody(err.refusal, err.meta),
 			};
 		}
@@ -810,6 +815,17 @@ export default function GeoportalPage() {
 								{n.text}
 							</p>
 						))}
+						{data.freshness === "updating" && (
+							<p
+								role="status"
+								className="text-sm border-l-4 border-brand-border-control bg-brand-surface-subtle px-2 py-1 my-1"
+							>
+								{t({
+									code: "geoportal.freshness.updating",
+									msg: "The map data is being updated with recent changes to records. Reload in a few minutes for the latest figures.",
+								})}
+							</p>
+						)}
 						{choropleth.meta.provisional && (
 							<p className="text-sm border-l-4 border-data-notice-provisional-border bg-data-notice-provisional-background px-2 py-1 my-1">
 								{t({

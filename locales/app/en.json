@@ -5440,6 +5440,11 @@
     "description": "File: app/frontend/geoportal/GeoFilterBar.tsx"
   },
   {
+    "id": "geoportal.freshness.updating",
+    "translation": "The map data is being updated with recent changes to records. Reload in a few minutes for the latest figures.",
+    "description": "Shown while the geoportal read model refreshes in the background (TR-149). File: app/routes/$lang+/geoportal+/_index.tsx"
+  },
+  {
     "id": "geoportal.legend.bars_scale",
     "translation": "Longest bar: {value}. A dashed slot is not reported.",
     "description": "File: app/frontend/geoportal/GeoLegend.tsx"
