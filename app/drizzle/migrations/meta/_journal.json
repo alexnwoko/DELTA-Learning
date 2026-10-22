@@ -519,6 +519,13 @@
       "when": 1792324800000,
       "tag": "20261019090000_ref_population_age_sex_indicators",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1792328400000,
+      "tag": "20261022090000_ref_exchange_rate_indicator",
+      "breakpoints": true
     }
   ]
 }
