@@ -5,9 +5,14 @@ import { formatNumberWithoutDecimals } from "~/utils/currency";
 import { Tooltip } from "primereact/tooltip";
 import { ViewContext } from "~/frontend/context";
 import type { ValueState } from "~/utils/valueState";
+import { ChartFrame } from "~/frontend/charts/ChartFrame";
+import type { ChartExportRow } from "~/frontend/charts/chartExport";
+import { type MapScopeQuery, scopeLabel } from "~/utils/mapState";
 
 interface HumanAffectsProps {
 	ctx: ViewContext;
+	/** The query behind the figures: source, scope and basis for chart exports (TR-245). */
+	scope?: MapScopeQuery;
 	totalPeopleAffected: number | null;
 	/** True when only some components of the composite were reported. */
 	totalPeopleAffectedPartial?: boolean;
@@ -67,19 +72,30 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 	valueStates,
 	flaggedRecords,
 	genderCoverage,
+	scope,
 	ageCoverage,
 }) => {
 	// A null figure is never shown as 0 (TR-076). It is either not reported,
-	// or too few records confirm zero to show a zero (V-5).
+	// or too few records confirm zero to show a zero (PD-04:596). The label
+	// names the state (PD-04:619); the tooltip gives the reason.
 	const formatFigure = (v: number | null, state?: ValueState) =>
-		v !== null
-			? formatNumberWithoutDecimals(v)
-			: state === "insufficient_reporting"
-				? ctx.t({
-						code: "analysis.insufficient_reporting",
-						msg: "Too few records confirm zero",
-					})
-				: ctx.t({ code: "analysis.not_reported", msg: "Not reported" });
+		v !== null ? (
+			formatNumberWithoutDecimals(v)
+		) : state === "insufficient_reporting" ? (
+			<span
+				title={ctx.t({
+					code: "analysis.too_few_confirm_zero",
+					msg: "Too few records confirm zero",
+				})}
+			>
+				{ctx.t({
+					code: "analysis.insufficient_reporting",
+					msg: "Insufficient reporting",
+				})}
+			</span>
+		) : (
+			ctx.t({ code: "analysis.not_reported", msg: "Not reported" })
+		);
 
 	// TODO: translate
 	const data = [
@@ -132,12 +148,60 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 				{ctx.t(
 					{
 						code: "analysis.records_flagged_for_review",
-						msg: "({n} record(s) flagged for review)",
+						msg: "({n} disaster impact(s) flagged for review)",
 					},
 					{ n },
 				)}
 			</span>
 		) : null;
+
+	// Chart frame pilot (TR-245): the sex breakdown exports with its source,
+	// scope, method, basis and coverage. A category no record reported is
+	// null with its state, never 0 (TR-076).
+	const coverageText = (
+		c: { recordsWithBreakdown: number; recordsTotal: number } | undefined,
+	) =>
+		c
+			? ctx.t(
+					{
+						code: "analysis.breakdown_coverage",
+						msg: "Based on {with} of {total} records with this breakdown",
+					},
+					{ with: c.recordsWithBreakdown, total: c.recordsTotal },
+				)
+			: null;
+	const sexBreakdownMeta = (q: MapScopeQuery) => {
+		const label = scopeLabel(q);
+		const note = coverageText(genderCoverage);
+		return {
+			source: `DELTA Resilience${label.tenant ? `, ${label.tenant}` : ""}`,
+			scope: label.text,
+			method:
+				"Sum over records that carry a sex breakdown; sex-only rows; people relocated after the event left out",
+			basis: label.provisional
+				? ("provisional" as const)
+				: ("published" as const),
+			notes: note ? [note] : [],
+		};
+	};
+	const sexRow = (label: string, value: number | null): ChartExportRow => ({
+		label,
+		value,
+		valueState:
+			value === null
+				? "not_reported"
+				: value === 0
+					? "zero_confirmed"
+					: "reported",
+	});
+	const sexBreakdownRows = (): ChartExportRow[] => [
+		sexRow(ctx.t({ code: "analysis.men", msg: "Men" }), noOfMen),
+		sexRow(ctx.t({ code: "analysis.women", msg: "Women" }), noOfWomen),
+		sexRow(
+			ctx.t({ code: "analysis.non_binary", msg: "Non-binary" }),
+			noOfNonBinary,
+		),
+	];
 
 	const coverageNote = (
 		c: { recordsWithBreakdown: number; recordsTotal: number } | undefined,
@@ -483,10 +547,27 @@ const HumanAffects: React.FC<HumanAffectsProps> = ({
 						</h3>
 						{hasGenderData ? (
 							<>
-								<HorizontalBarChart
-									data={data}
-									imgSrc="/assets/icons/Male&Female.svg"
-								/>
+								{scope ? (
+									<ChartFrame
+										ctx={ctx}
+										title={ctx.t({
+											code: "analysis.men_and_women_affected",
+											msg: "Men and women affected",
+										})}
+										meta={sexBreakdownMeta(scope)}
+										rows={sexBreakdownRows()}
+									>
+										<HorizontalBarChart
+											data={data}
+											imgSrc="/assets/icons/Male&Female.svg"
+										/>
+									</ChartFrame>
+								) : (
+									<HorizontalBarChart
+										data={data}
+										imgSrc="/assets/icons/Male&Female.svg"
+									/>
+								)}
 								{coverageNote(genderCoverage)}
 							</>
 						) : (

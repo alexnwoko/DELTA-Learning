@@ -1,0 +1,197 @@
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { sql } from "drizzle-orm";
+import { randomUUID } from "crypto";
+import { dr } from "~/db.server";
+import {
+	createTestIds,
+	createTestUser,
+	cleanupTestUser,
+} from "../test-helpers";
+import {
+	getSectorPanels1to7,
+	SECTOR_IDS,
+} from "~/backend.server/models/analytics/dashboard/sectorPanels.server";
+import { DEFAULT_QUERY } from "~/utils/deltaQuery";
+import { clearDashboardCache } from "~/backend.server/models/analytics/dashboard/dashboardCache.server";
+
+// D1 Sectors view panels 1 to 7 against seeded records:
+// a: 2020, type 1042, 700 dwellings destroyed (Housing)
+// b: 2020, type 1042, health flag with damage, losses not recorded
+// c: 2021, type 1037, industry flag with damage and losses
+// d: 2022, no type, no sector effect
+
+const HOUSE_ASSET = "e2f26abf-a73c-4149-9bc7-fbed4eaa148f";
+const ids = createTestIds();
+ids.userEmail = ids.userEmail.replace("@", "-sectorpanels@");
+const rec = {
+	a: randomUUID(),
+	b: randomUUID(),
+	c: randomUUID(),
+	d: randomUUID(),
+};
+
+const div = { n1: randomUUID(), n2: randomUUID() };
+
+const ctx = () => ({
+	countryAccountsId: ids.countryAccountId,
+	audience: "public" as const,
+	tenantName: "Testland",
+	provisional: false,
+});
+
+describe("getSectorPanels1to7", () => {
+	beforeAll(async () => {
+		await createTestUser(ids);
+		const recs: [string, string, string | null][] = [
+			[rec.a, "2020-03-01", "1042"],
+			[rec.b, "2020-07-01", "1042"],
+			[rec.c, "2021-05-01", "1037"],
+			[rec.d, "2022", null],
+		];
+		for (const [id, start, type] of recs) {
+			await dr.execute(sql`
+				INSERT INTO disaster_records (id, country_accounts_id, "approvalStatus", start_date, hip_type_id)
+				VALUES (${id}, ${ids.countryAccountId}, 'published', ${start}, ${type})`);
+		}
+		await dr.execute(sql`
+			INSERT INTO damages (record_id, sector_id, asset_id, unit, td_damage_amount)
+			VALUES (${rec.a}, ${SECTOR_IDS.housing}, ${HOUSE_ASSET}, 'number_count', 700)`);
+		await dr.execute(sql`
+			INSERT INTO sector_disaster_records_relation (sector_id, disaster_record_id, with_damage, with_losses)
+			VALUES (${SECTOR_IDS.health}, ${rec.b}, true, NULL),
+				(${SECTOR_IDS.industry}, ${rec.c}, true, true)`);
+		await dr.execute(sql`
+			INSERT INTO division (id, country_accounts_id, name, level) VALUES
+			(${div.n1}, ${ids.countryAccountId}, '{"en":"North"}', 1),
+			(${div.n2}, ${ids.countryAccountId}, '{"en":"South"}', 1)`);
+		await dr.execute(sql`
+			INSERT INTO disaster_records_division (disaster_record_id, division_id) VALUES
+			(${rec.a}, ${div.n1}), (${rec.b}, ${div.n1}), (${rec.c}, ${div.n2}), (${rec.c}, ${div.n1})`);
+	});
+
+	afterAll(async () => {
+		const all = sql.join(
+			Object.values(rec).map((r) => sql`${r}`),
+			sql`, `,
+		);
+		await dr.execute(sql`DELETE FROM damages WHERE record_id IN (${all})`);
+		await dr.execute(
+			sql`DELETE FROM disaster_records_division WHERE disaster_record_id IN (${all})`,
+		);
+		await dr.execute(
+			sql`DELETE FROM sector_disaster_records_relation WHERE disaster_record_id IN (${all})`,
+		);
+		await dr.execute(
+			sql`DELETE FROM disaster_records WHERE country_accounts_id = ${ids.countryAccountId}`,
+		);
+		await dr.execute(
+			sql`DELETE FROM division WHERE country_accounts_id = ${ids.countryAccountId}`,
+		);
+		await cleanupTestUser(ids);
+	});
+
+	it("ranks divisions by records reporting sector damage, keeping unplaced records apart", async () => {
+		const p = await getSectorPanels1to7(DEFAULT_QUERY, ctx());
+		const by = Object.fromEntries(p.rankedDivisions.rows.map((r) => [r.name, r.cell]));
+		expect(by.North.value).toBe(3);
+		expect(by.South.value).toBe(1);
+		// d is placed nowhere and answers nothing: not reported, never 0.
+		expect(by["No division recorded"].valueState).toBe("not_reported");
+		expect(by["No division recorded"].value).toBeNull();
+		expect(p.rankedDivisions.multiDivisionRecords).toBe(1);
+		expect(p.rankedDivisions.rows[0].name).toBe("North");
+	});
+
+	it("counts per sector the records answering each question", async () => {
+		const p = await getSectorPanels1to7(DEFAULT_QUERY, ctx());
+		expect(p.completeness.recordsTotal).toBe(4);
+		const row = (id: string) => p.completeness.rows.find((r) => r.sector.sectorId === id)!;
+		expect(row(SECTOR_IDS.industry)).toMatchObject({ damage: { yes: 1, no: 0 }, losses: { yes: 1, no: 0 } });
+		expect(row(SECTOR_IDS.health)).toMatchObject({ damage: { yes: 1, no: 0 }, losses: { yes: 0, no: 0 } });
+		expect(row(SECTOR_IDS.housing).damage.yes).toBe(1);
+		expect(row(SECTOR_IDS.agriculture).damage).toEqual({ yes: 0, no: 0 });
+	});
+
+	it("gives headline tiles with damage and losses apart, and money as G-06", async () => {
+		const p = await getSectorPanels1to7(DEFAULT_QUERY, ctx());
+		expect(p.empty).toBeNull();
+		expect(p.headline.recordsAnySector.value).toBe(3);
+		expect(p.headline.sectorsLinked.linked).toBe(3);
+		expect(p.headline.dwellingsDestroyed.value).toBe(700);
+		expect(p.headline.dwellingsDamaged.valueState).toBe("not_reported");
+		expect(p.headline.losses.value).toBe(1);
+		expect(p.headline.money.code).toBe("G-06");
+	});
+
+	it("lists every level-2 sector, with unlinked sectors as not reported, never 0", async () => {
+		const p = await getSectorPanels1to7(DEFAULT_QUERY, ctx());
+		const all = p.reporting.groups.flatMap((g) => g.rows);
+		expect(all).toHaveLength(20);
+		const by = Object.fromEntries(all.map((r) => [r.sector.label, r.records]));
+		expect(by.Health.value).toBe(1);
+		expect(by.Agriculture.value).toBeNull();
+		expect(by.Agriculture.valueState).toBe("not_reported");
+		const health = p.effectTypes.rows.find((r) => r.sector.label === "Health")!;
+		expect(health.losses.valueState).toBe("not_reported");
+		expect(health.damageMoney.code).toBe("G-06");
+	});
+
+	it("builds hazard by sector, sector by year and dwellings", async () => {
+		const p = await getSectorPanels1to7(DEFAULT_QUERY, ctx());
+		const col = p.hazardBySector.sectors.findIndex(
+			(s) => s.label === "Industry",
+		);
+		const row = p.hazardBySector.rows.find((r) => r.hipTypeId === "1037")!;
+		expect(row.cells[col].value).toBe(1);
+		const housing = p.byYear.series.find((s) => s.sector.label === "Housing")!;
+		expect(housing.years.map((y) => [y.year, y.records.value])).toEqual([
+			[2020, 1],
+		]);
+		const d1042 = p.dwellings.rows.find((r) => r.key === "1042")!;
+		expect(d1042.destroyed.value).toBe(700);
+	});
+
+	it("says no records are in scope instead of drawing zeros", async () => {
+		const p = await getSectorPanels1to7(
+			{ ...DEFAULT_QUERY, where: { hazard: { typeId: "1041" } } },
+			ctx(),
+		);
+		expect(p.empty?.reason).toBe("No records in scope for these filters.");
+	});
+
+	it("drops Sendai codes under a place filter (TR-060)", async () => {
+		const national = await getSectorPanels1to7(DEFAULT_QUERY, ctx());
+		expect(national.sendai.rows.map((r) => r.code)).toContain("C-4");
+		const c4 = national.sendai.rows.find((r) => r.code === "C-4")!;
+		expect([c4.held?.value, c4.status]).toEqual([700, "MONEY"]);
+		const sub = await getSectorPanels1to7(
+			{ ...DEFAULT_QUERY, where: { geo: { divisionId: randomUUID() } } },
+			ctx(),
+		);
+		expect(sub.sendai.nationalOnly).toBe(false);
+		expect(sub.sendai.rows.every((r) => r.code === null)).toBe(true);
+	});
+
+	it("SEC-10: counts sectors per record and the pairs reported together", async () => {
+		await dr.execute(sql`
+			INSERT INTO sector_disaster_records_relation (sector_id, disaster_record_id, with_damage)
+			VALUES (${SECTOR_IDS.health}, ${rec.c}, true)`);
+		clearDashboardCache(ids.countryAccountId);
+		try {
+			const p = await getSectorPanels1to7(DEFAULT_QUERY, ctx());
+			const bins = Object.fromEntries(p.multiSector.bins.map((b) => [b.label, b.records]));
+			expect(p.multiSector.recordsWithSector).toBe(3);
+			expect(bins).toMatchObject({ "1 sector": 2, "2": 1 });
+			expect(p.multiSector.pairs).toHaveLength(1);
+			expect(p.multiSector.pairs[0].records).toBe(1);
+			expect([p.multiSector.pairs[0].a.sectorId, p.multiSector.pairs[0].b.sectorId].sort()).toEqual(
+				[SECTOR_IDS.health, SECTOR_IDS.industry].sort(),
+			);
+		} finally {
+			await dr.execute(sql`
+				DELETE FROM sector_disaster_records_relation
+				WHERE disaster_record_id = ${rec.c} AND sector_id = ${SECTOR_IDS.health}`);
+			clearDashboardCache(ids.countryAccountId);
+		}
+	});
+});

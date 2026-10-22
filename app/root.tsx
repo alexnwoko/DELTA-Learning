@@ -9,6 +9,7 @@ import {
 	Scripts,
 	useLocation,
 	useMatches,
+	useNavigation,
 } from "react-router";
 
 import {
@@ -20,7 +21,7 @@ import {
 	getCountryAccountsIdFromSession,
 } from "~/utils/session";
 
-import { useContext, useEffect, useRef } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { I18nContext } from "react-i18next";
 
 import allStylesHref from "./styles/all.css?url";
@@ -31,14 +32,18 @@ import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
 import { PrimeReactProvider } from "primereact/api";
 
-import { loadTranslations } from "./backend.server/translations";
-import { createTranslationScript } from "./frontend/translations";
+import { translationsScriptSrc } from "./backend.server/translationsScript.server";
 import { getLanguageAllowDefault } from "./utils/lang.backend";
 import { ViewContext } from "./frontend/context";
 import { isAdminRoute } from "./utils/url.backend";
 import { authLoaderGetOptionalUserForFrontend } from "./utils/auth";
 import { Toast } from "primereact/toast";
 import RegularMenuBar from "./components/RegularMenuBar";
+import { isDataEntryPath, PageBrand } from "./frontend/PageBrand";
+import { AnalysisLoader, loaderSection } from "./frontend/AnalysisLoader";
+import { UX } from "./frontend/uxFeatures";
+import { isStaleChunkError, shouldReloadForStaleChunk } from "./utils/staleChunk";
+import { getTenantOutline } from "./backend.server/models/geo/tenantExtent";
 import SuperAdminMenuBar from "./components/SuperAdminMenuBar";
 import InactivityWarning from "./components/InactivityWarning";
 import {
@@ -139,7 +144,17 @@ export const loader = async (
 			: null
 		: await authLoaderGetOptionalUserForFrontend(routeArgs);
 
-	const translations = loadTranslations(lang);
+	// The dictionary loads as a cached, versioned script, not inline data.
+	const translationsSrc = translationsScriptSrc(lang);
+
+	// The country after the Data Entry page title (Alex, 2026-10-20): the
+	// instance settings, else the country account's own name (cached).
+	let brandCountry: string | null = null;
+	if (!onAdminRoute && isDataEntryPath(new URL(request.url).pathname)) {
+		const accountId = await getCountryAccountsIdFromSession(request);
+		brandCountry =
+			((settings?.countryName as string | undefined) || (accountId ? (await getTenantOutline(accountId)).name : null)) ?? null;
+	}
 
 	return Response.json(
 		{
@@ -147,7 +162,8 @@ export const loader = async (
 				lang,
 				user: userForFrontend,
 			},
-			translations,
+			translationsSrc,
+			brandCountry,
 			isLoggedIn: onAdminRoute ? isSuperAdmin : !!userForRoute,
 			isCountryAccountSelected,
 			activeInstanceCount,
@@ -178,6 +194,9 @@ export default function Screen() {
 	const loaderData = useLoaderData();
 	const location = useLocation();
 	const matches = useMatches();
+	const navigation = useNavigation();
+	const [routeProgressVisible, setRouteProgressVisible] = useState(false);
+	const [routeProgressStarted, setRouteProgressStarted] = useState(false);
 	let ctx = new ViewContext();
 	const onAdminRoute = location.pathname.startsWith(ctx.url("/admin/"));
 	const hideMainNavigation = matches.some((match) => {
@@ -197,8 +216,8 @@ export default function Screen() {
 		userRole,
 		// isSuperAdmin,
 		// isFormAuthSupported,
-		lang,
-		translations,
+		translationsSrc,
+		brandCountry,
 		isCountryAccountSelected,
 		activeInstanceCount,
 	} = loaderData;
@@ -220,6 +239,35 @@ export default function Screen() {
 		}
 	}, [flashMessage]);
 
+	useEffect(() => {
+		if (navigation.state === "idle") {
+			if (!routeProgressStarted) {
+				return;
+			}
+
+			const hideTimer = window.setTimeout(() => {
+				setRouteProgressVisible(false);
+				setRouteProgressStarted(false);
+			}, 300);
+
+			return () => window.clearTimeout(hideTimer);
+		}
+
+		const showTimer = window.setTimeout(() => {
+			setRouteProgressStarted(true);
+			setRouteProgressVisible(true);
+		}, 150);
+
+		return () => window.clearTimeout(showTimer);
+	}, [navigation.state, routeProgressStarted]);
+
+	// The waiting screen for Analysis and Geoportal (Alex, 2026-10-22). UX-1:
+	// a change within the same page (a filter or a view) keeps the page and
+	// shows a sheen on each card instead of the full-screen wait.
+	const loadingSection =
+		routeProgressVisible && navigation.location ? loaderSection(navigation.location.pathname) : null;
+	const refreshingInPlace = UX[1] && loadingSection !== null && loadingSection === loaderSection(location.pathname);
+
 	return (
 		<html
 			lang={loaderData.common.lang}
@@ -232,11 +280,8 @@ export default function Screen() {
 				<link rel="icon" type="image/x-icon" href="/favicon.ico" />
 				<Meta />
 				<Links />
-				<script
-					dangerouslySetInnerHTML={{
-						__html: createTranslationScript(lang, translations),
-					}}
-				/>
+				{/* Blocking on purpose: t() needs the dictionary before hydration. */}
+				<script src={translationsSrc} />
 				<script
 					type="application/json"
 					id="i18n-resource-bundle"
@@ -246,10 +291,46 @@ export default function Screen() {
 				/>
 			</head>
 			<body>
+				<style>
+					{`
+						@keyframes route-progress-bar {
+							0% {
+								transform: translateX(-90%);
+								opacity: 0.7;
+							}
+							50% {
+								transform: translateX(35%);
+								opacity: 1;
+							}
+							100% {
+								transform: translateX(120%);
+								opacity: 0.7;
+							}
+						}
+
+						@media (prefers-reduced-motion: reduce) {
+							.route-progress-bar {
+								animation: none !important;
+							}
+						}
+					`}
+				</style>
 				<Toast
 					ref={toast}
 					position={loaderData.common.lang === "ar" ? "top-left" : "top-right"}
 				/>
+				{/* The waiting screen while Analysis or Geoportal loads (Alex, 2026-10-22). */}
+				{loadingSection && !refreshingInPlace ? <AnalysisLoader ctx={ctx} section={loadingSection} /> : null}
+				{routeProgressVisible ? (
+					<div className="fixed inset-x-0 top-0 z-[9999] h-1 w-full overflow-hidden bg-slate-200">
+						<div
+							className="route-progress-bar h-full w-1/3 rounded-r-full bg-[#004F91] shadow-[0_0_12px_rgba(0,79,145,0.6)]"
+							style={{
+								animation: "route-progress-bar 1.2s ease-in-out infinite",
+							}}
+						/>
+					</div>
+				) : null}
 				<PrimeReactProvider
 					value={{
 						ripple: true,
@@ -257,6 +338,12 @@ export default function Screen() {
 				>
 					<InactivityWarning ctx={ctx} loggedIn={isLoggedIn} />
 					<div className="min-h-screen flex flex-col bg-white">
+						{/* WCAG 2.4.1: skip the menu bar to the page content. */}
+						{!hideMainNavigation ? (
+							<a href="#main" className="delta-skip-link">
+								{ctx.t({ code: "common.skip_to_main", msg: "Skip to main content" })}
+							</a>
+						) : null}
 						{/* Header */}
 						{!hideMainNavigation ? (
 							<header className="w-full bg-white border-b border-gray-200">
@@ -284,8 +371,37 @@ export default function Screen() {
 						) : null}
 
 						{/* Main Content */}
-						<main className="flex-1 w-full">
-							<div className="w-full py-8">
+						<main id="main" tabIndex={-1} data-dashboard-refreshing={refreshingInPlace ? "" : undefined} className="flex-1 w-full">
+							{/* On paper the top bar is hidden, so the logo heads every printed page,
+							    twice the screen size, 2pt above the page heading (Alex, 2026-10-19). */}
+							<div className="delta-print-logo hidden print:block w-full">
+								{/* One level below main, like the heading and content, so on paper
+								    the logo and rule keep mg-container's side padding and line up. */}
+								<div className="mg-container">
+								<img
+									src="/assets/images/delta-resilience-logo.png"
+									alt="DELTA Resilience: Disaster Event Loss and Damage Tracking and Analysis for Resilience"
+									width={705}
+									height={130}
+									// The 2pt gaps are margins: print.css zeroes padding inside main.
+									className="mb-[2pt] h-20 w-auto"
+								/>
+								{/* A rule under the logo on paper (Alex, 2026-10-19). */}
+								<hr className="m-0 mb-[2pt] border-0 border-t border-data-dashboard-ink" />
+								</div>
+							</div>
+							{/* Data Entry pages share one section heading (Alex, 2026-10-19). */}
+							{isDataEntryPath(location.pathname) && !hideMainNavigation ? (
+								<div className="w-full">
+									{/* One level below main, as the content is: print.css zeroes the
+									    padding of main's own children, so mg-container keeps its side
+									    padding on paper too (Geoportal's print measurement). */}
+									<div className="mg-container pt-6 print:pt-0">
+										<PageBrand ctx={ctx} section="data" country={brandCountry} />
+									</div>
+								</div>
+							) : null}
+							<div className="w-full py-8 print:pt-0">
 								<Outlet />
 							</div>
 						</main>
@@ -311,6 +427,18 @@ export default function Screen() {
 
 export function ErrorBoundary() {
 	const error = useRouteError();
+	// Code from before a redeploy or restart: reload once instead of showing an error.
+	const staleChunk = isStaleChunkError(error);
+	useEffect(() => {
+		if (!staleChunk) return;
+		let storage: Storage | null = null;
+		try {
+			storage = window.sessionStorage;
+		} catch {
+			storage = null;
+		}
+		if (shouldReloadForStaleChunk(storage, Date.now())) window.location.reload();
+	}, [staleChunk]);
 
 	const isDev = process.env.NODE_ENV === "development";
 	// Runtime env vars unavailable client-side via process.env — must be serialised through the root loader

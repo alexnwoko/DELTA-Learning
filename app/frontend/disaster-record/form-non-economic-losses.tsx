@@ -93,14 +93,14 @@ export function DisasterRecordsForm(props: DisasterRecordsFormProps) {
 				path={route}
 				edit={props.edit}
 				id={props.id}
-				title={ctx.t({ code: "disaster_records", msg: "Disaster records" })}
+				title={ctx.t({ code: "disaster_records", msg: "Disaster impacts" })}
 				editLabel={ctx.t({
 					code: "disaster_records.edit",
-					msg: "Edit disaster record",
+					msg: "Edit disaster impact",
 				})}
 				addLabel={ctx.t({
 					code: "disaster_records.add",
-					msg: "Add disaster record",
+					msg: "Add disaster impact",
 				})}
 				errors={props.errors}
 				fields={props.fields}
@@ -128,7 +128,7 @@ export function DisasterRecordsView(props: DisasterRecordsViewProps) {
 			id={item?.id || ""}
 			title={ctx.t({
 				code: "disaster_records",
-				msg: "Disaster records",
+				msg: "Disaster impacts",
 			})}
 		>
 			<FieldsView

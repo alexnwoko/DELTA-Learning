@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { getGeographicImpact } from "~/backend.server/models/analytics/geographicImpact";
+import type { ApprovalAudience } from "~/utils/approvalBasis";
 
 // Input validation schema
 const GeographicImpactQuerySchema = z.object({
@@ -40,6 +41,7 @@ type GeographicImpactFilters = {
 
 export async function handleGeographicImpactQuery(
 	countryAccountsId: string,
+	audience: ApprovalAudience,
 	params: unknown,
 ) {
 	try {
@@ -60,7 +62,11 @@ export async function handleGeographicImpactQuery(
 		};
 
 		// Get GeoJSON data with all filters and tenant isolation
-		const result = await getGeographicImpact(countryAccountsId, filters);
+		const result = await getGeographicImpact(
+			countryAccountsId,
+			audience,
+			filters,
+		);
 
 		return result;
 	} catch (error) {

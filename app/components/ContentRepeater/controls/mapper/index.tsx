@@ -7,6 +7,8 @@ import {
 	checkShapeAgainstDivisions,
 } from "~/utils/spatialUtils";
 import { ViewContext } from "~/frontend/context";
+import { inlineBasemapScript } from "~/utils/leafletBasemap";
+import { absoluteAssetUrl, LEAFLET_CSS, LEAFLET_JS, MAP_MARKER_ICON, MAP_MARKER_ICON_ANCHOR } from "~/utils/leafletAssets";
 
 declare namespace L {
 	export const map: any;
@@ -30,8 +32,6 @@ declare namespace L {
 	export const latLngBounds: any;
 }
 
-const glbMapperJS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-const glbMapperCSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
 const glbColors = {
 	polygon: "#0074D9",
 	line: "#FF851B",
@@ -41,9 +41,9 @@ const glbColors = {
 	geographic_level: "#fc9003",
 };
 const glbMarkerIcon = {
-	iconUrl: "https://maps.google.com/mapfiles/ms/icons/red-dot.png", // Replace with your marker icon if necessary
+	iconUrl: MAP_MARKER_ICON,
 	iconSize: [20, 20],
-	iconAnchor: [5, 20],
+	iconAnchor: MAP_MARKER_ICON_ANCHOR,
 	popupAnchor: [0, -20],
 	shadowUrl: null, // Remove shadow
 	className: "custom-leaflet-marker", // Add a custom class
@@ -101,15 +101,25 @@ export const renderMapperDialog = (
 							className="mapper-menu"
 							style={{
 								display: "flex",
-								justifyContent: "space-between",
-								padding: "10px",
+								flexWrap: "wrap",
+								alignItems: "center",
+								gap: "8px",
+								padding: "8px",
 								background: "#777",
 							}}
 						>
 							<input
 								type="text"
 								id={`${id}_mapper_search`}
-								style={{ flex: 1, marginRight: "10px" }}
+								style={{
+									flex: "1 1 260px",
+									minWidth: "160px",
+									border: "1px solid rgba(0, 0, 0, 0.35)",
+									borderRadius: "6px",
+									background: "#fff",
+									padding: "0.5rem 0.75rem",
+									boxSizing: "border-box",
+								}}
 								onKeyDown={(e) => {
 									if (e.key === "Enter") {
 										e.preventDefault();
@@ -131,7 +141,7 @@ export const renderMapperDialog = (
 											}
 										}
 										fetch(
-											`https://nominatim.openstreetmap.org/search?q=${query}&format=json`,
+											`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json`,
 										)
 											.then((response) => response.json())
 											.then((data) => {
@@ -189,7 +199,16 @@ export const renderMapperDialog = (
 							/>
 							<select
 								id={`${id}_mapper_modeSelect`}
-								style={{ width: "20%", marginRight: "10px" }}
+								style={{
+									flex: "0 1 220px",
+									minWidth: "160px",
+									width: "auto",
+									border: "1px solid rgba(0, 0, 0, 0.35)",
+									borderRadius: "6px",
+									background: "#fff",
+									padding: "0.5rem 0.75rem",
+									boxSizing: "border-box",
+								}}
 								onChange={(e) => {
 									const newMode = e.target.value;
 									const newModeText =
@@ -302,13 +321,18 @@ export const renderMapperDialog = (
 							</select>
 							<div
 								id={`${id}_mapper_buttons`}
-								style={{ display: "flex", gap: "10px" }}
+								style={{
+									display: "flex",
+									flexWrap: "wrap",
+									gap: "8px",
+									marginLeft: "auto",
+								}}
 							>
 								<button
 									type="button"
 									id={`${id}_mapper_clearCoords`}
 									className="mg-button mg-button--small mg-button-system"
-									style={{ fontSize: "1.2rem", padding: "0.4rem 1.1rem" }}
+									style={{ fontSize: "1rem", padding: "0.4rem 0.9rem" }}
 									onClick={() => {
 										resetDrawing();
 
@@ -329,7 +353,7 @@ export const renderMapperDialog = (
 									type="button"
 									id={`${id}_mapper_undoAction`}
 									className="mg-button mg-button--small mg-button-system"
-									style={{ fontSize: "1.2rem", padding: "0.4rem 1.1rem" }}
+									style={{ fontSize: "1rem", padding: "0.4rem 0.9rem" }}
 									onClick={() => {
 										const L = (window as any).L || null;
 
@@ -424,7 +448,7 @@ export const renderMapperDialog = (
 									type="button"
 									id={`${id}_mapper_getCoords`}
 									className="mg-button mg-button--small mg-button-primary"
-									style={{ fontSize: "1.2rem", padding: "0.4rem 1.1rem" }}
+									style={{ fontSize: "1rem", padding: "0.4rem 0.9rem" }}
 									onClick={() => {
 										const field = dialogMapRef.current?.mapperField;
 
@@ -858,7 +882,7 @@ export const previewMap = (items: any) => {
       <html lang="en">
       <head>
         <title>Map preview</title>
-        <link rel="stylesheet" href="${glbMapperCSS}" />
+        <link rel="stylesheet" href="${absoluteAssetUrl(LEAFLET_CSS)}" />
         <style>
           #map {
             position: relative;
@@ -870,7 +894,7 @@ export const previewMap = (items: any) => {
       </head>
       <body>
         <div id="map"></div>
-        <script src="${glbMapperJS}"></script>
+        <script src="${absoluteAssetUrl(LEAFLET_JS)}"></script>
         <script>
         const adjustZoomBasedOnDistance = (map, geoJsonLayers) => {
           const L = window.L;
@@ -912,9 +936,7 @@ export const previewMap = (items: any) => {
 
             const map = L.map("map", { preferCanvas: true }); //.setView([43.833, 87.616], 2);
 
-            L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-                attribution: "",
-            }).addTo(map);
+			${inlineBasemapScript("map")}
 
             const items = \`${items}\`;
             const boundsArray = [];
@@ -943,7 +965,7 @@ export const previewMap = (items: any) => {
                         pointToLayer: (feature, latlng) => {
                             if (feature.geometry.type === "Point") {
                               const marker = L.marker(latlng, {
-                                icon: L.icon(${JSON.stringify(glbMarkerIcon)}),
+                                icon: L.icon(${JSON.stringify({ ...glbMarkerIcon, iconUrl: absoluteAssetUrl(MAP_MARKER_ICON) })}),
                               });
 
                               // Bind popup only for markers

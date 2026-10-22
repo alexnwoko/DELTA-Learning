@@ -873,7 +873,7 @@ export const action = authActionWithPerm("EditData", async (actionArgs) => {
 					);
 					if (updateResult.ok !== true) {
 						throw new Error(
-							`Failed to link disaster record ${linkedRecordId} to disaster event ${eventId}`,
+							`Failed to link disaster impact ${linkedRecordId} to disaster event ${eventId}`,
 						);
 					}
 				}
@@ -891,7 +891,7 @@ export const action = authActionWithPerm("EditData", async (actionArgs) => {
 						);
 						if (updateResult.ok !== true) {
 							throw new Error(
-								`Failed to unlink disaster record ${linkedRecordId} from disaster event ${eventId}`,
+								`Failed to unlink disaster impact ${linkedRecordId} from disaster event ${eventId}`,
 							);
 						}
 					}

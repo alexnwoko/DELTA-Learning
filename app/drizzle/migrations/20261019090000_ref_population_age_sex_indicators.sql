@@ -1,0 +1,50 @@
+-- E1 population layer: indicator codes for population by sex and five-year
+-- age group (UN DESA WPP 2024 AgeGrp: 0-4 ... 95-99, 100+), so the sex and
+-- age structure of each country can be held in ref.value and the estimated
+-- sex and age split of people affected (Alex, 2026-10-19) and rates by age
+-- can be computed. The groups add up to any band (0-14, 15-64, 65+).
+-- Reference data only: no table changes.
+INSERT INTO "ref"."indicator" ("code", "name", "family", "quantity_type", "unit") VALUES
+	('POP_F_00_04', 'Female population aged 0-4', 'population', 'extensive', 'persons'),
+	('POP_F_05_09', 'Female population aged 5-9', 'population', 'extensive', 'persons'),
+	('POP_F_10_14', 'Female population aged 10-14', 'population', 'extensive', 'persons'),
+	('POP_F_15_19', 'Female population aged 15-19', 'population', 'extensive', 'persons'),
+	('POP_F_20_24', 'Female population aged 20-24', 'population', 'extensive', 'persons'),
+	('POP_F_25_29', 'Female population aged 25-29', 'population', 'extensive', 'persons'),
+	('POP_F_30_34', 'Female population aged 30-34', 'population', 'extensive', 'persons'),
+	('POP_F_35_39', 'Female population aged 35-39', 'population', 'extensive', 'persons'),
+	('POP_F_40_44', 'Female population aged 40-44', 'population', 'extensive', 'persons'),
+	('POP_F_45_49', 'Female population aged 45-49', 'population', 'extensive', 'persons'),
+	('POP_F_50_54', 'Female population aged 50-54', 'population', 'extensive', 'persons'),
+	('POP_F_55_59', 'Female population aged 55-59', 'population', 'extensive', 'persons'),
+	('POP_F_60_64', 'Female population aged 60-64', 'population', 'extensive', 'persons'),
+	('POP_F_65_69', 'Female population aged 65-69', 'population', 'extensive', 'persons'),
+	('POP_F_70_74', 'Female population aged 70-74', 'population', 'extensive', 'persons'),
+	('POP_F_75_79', 'Female population aged 75-79', 'population', 'extensive', 'persons'),
+	('POP_F_80_84', 'Female population aged 80-84', 'population', 'extensive', 'persons'),
+	('POP_F_85_89', 'Female population aged 85-89', 'population', 'extensive', 'persons'),
+	('POP_F_90_94', 'Female population aged 90-94', 'population', 'extensive', 'persons'),
+	('POP_F_95_99', 'Female population aged 95-99', 'population', 'extensive', 'persons'),
+	('POP_F_100P', 'Female population aged 100 and over', 'population', 'extensive', 'persons'),
+	('POP_M_00_04', 'Male population aged 0-4', 'population', 'extensive', 'persons'),
+	('POP_M_05_09', 'Male population aged 5-9', 'population', 'extensive', 'persons'),
+	('POP_M_10_14', 'Male population aged 10-14', 'population', 'extensive', 'persons'),
+	('POP_M_15_19', 'Male population aged 15-19', 'population', 'extensive', 'persons'),
+	('POP_M_20_24', 'Male population aged 20-24', 'population', 'extensive', 'persons'),
+	('POP_M_25_29', 'Male population aged 25-29', 'population', 'extensive', 'persons'),
+	('POP_M_30_34', 'Male population aged 30-34', 'population', 'extensive', 'persons'),
+	('POP_M_35_39', 'Male population aged 35-39', 'population', 'extensive', 'persons'),
+	('POP_M_40_44', 'Male population aged 40-44', 'population', 'extensive', 'persons'),
+	('POP_M_45_49', 'Male population aged 45-49', 'population', 'extensive', 'persons'),
+	('POP_M_50_54', 'Male population aged 50-54', 'population', 'extensive', 'persons'),
+	('POP_M_55_59', 'Male population aged 55-59', 'population', 'extensive', 'persons'),
+	('POP_M_60_64', 'Male population aged 60-64', 'population', 'extensive', 'persons'),
+	('POP_M_65_69', 'Male population aged 65-69', 'population', 'extensive', 'persons'),
+	('POP_M_70_74', 'Male population aged 70-74', 'population', 'extensive', 'persons'),
+	('POP_M_75_79', 'Male population aged 75-79', 'population', 'extensive', 'persons'),
+	('POP_M_80_84', 'Male population aged 80-84', 'population', 'extensive', 'persons'),
+	('POP_M_85_89', 'Male population aged 85-89', 'population', 'extensive', 'persons'),
+	('POP_M_90_94', 'Male population aged 90-94', 'population', 'extensive', 'persons'),
+	('POP_M_95_99', 'Male population aged 95-99', 'population', 'extensive', 'persons'),
+	('POP_M_100P', 'Male population aged 100 and over', 'population', 'extensive', 'persons')
+ON CONFLICT ("code") DO NOTHING;
