@@ -40,6 +40,7 @@ import { authLoaderGetOptionalUserForFrontend } from "./utils/auth";
 import { Toast } from "primereact/toast";
 import RegularMenuBar from "./components/RegularMenuBar";
 import { isDataEntryPath, PageBrand } from "./frontend/PageBrand";
+import { AnalysisLoader, loaderSection } from "./frontend/AnalysisLoader";
 import { isStaleChunkError, shouldReloadForStaleChunk } from "./utils/staleChunk";
 import { getTenantOutline } from "./backend.server/models/geo/tenantExtent";
 import SuperAdminMenuBar from "./components/SuperAdminMenuBar";
@@ -310,6 +311,10 @@ export default function Screen() {
 					ref={toast}
 					position={loaderData.common.lang === "ar" ? "top-left" : "top-right"}
 				/>
+				{/* The waiting screen while Analysis or Geoportal loads (Alex, 2026-10-22). */}
+				{routeProgressVisible && navigation.location && loaderSection(navigation.location.pathname) ? (
+					<AnalysisLoader ctx={ctx} section={loaderSection(navigation.location.pathname) ?? "analysis"} />
+				) : null}
 				{routeProgressVisible ? (
 					<div className="fixed inset-x-0 top-0 z-[9999] h-1 w-full overflow-hidden bg-slate-200">
 						<div

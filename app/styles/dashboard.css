@@ -60,3 +60,33 @@ main:has(.delta-dashboard-canvas) {
 .delta-coming-soon {
 	color: var(--delta-data-dashboard-slate);
 }
+
+/* The Analysis waiting screen (Alex, 2026-10-22): blue dots rolling round,
+   each fading in turn. */
+.delta-loader-ring {
+	animation: delta-loader-roll 2.4s linear infinite;
+}
+.delta-loader-dot {
+	fill: var(--delta-data-dashboard-icon);
+	animation: delta-loader-fade 1.2s ease-in-out infinite;
+}
+@keyframes delta-loader-roll {
+	to {
+		transform: rotate(360deg);
+	}
+}
+@keyframes delta-loader-fade {
+	0%,
+	100% {
+		opacity: 0.25;
+	}
+	50% {
+		opacity: 1;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.delta-loader-ring,
+	.delta-loader-dot {
+		animation: none;
+	}
+}
