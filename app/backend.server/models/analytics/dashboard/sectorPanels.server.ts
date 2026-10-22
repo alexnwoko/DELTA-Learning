@@ -5,6 +5,7 @@
 // in the sector or below it. Losses and disruption read their own flags;
 // they are never merged with damage. Money is gap G-06.
 
+import { showByLevel } from "~/utils/deltaQuery";
 import { cachedDashboard } from "~/backend.server/models/analytics/dashboard/dashboardCache.server";
 import { sql, type SQL } from "drizzle-orm";
 import {
@@ -196,7 +197,7 @@ async function computeGetSectorPanels1to7(
 		hipTypeLabels(),
 		// Ranked by divisions: each record once per level-1 division.
 		rows(sql`
-				WITH RECURSIVE ${fr}, ${sectorHitsCtes}, ${recordDivisionsCte(ctx.countryAccountsId)},
+				WITH RECURSIVE ${fr}, ${sectorHitsCtes}, ${recordDivisionsCte(ctx.countryAccountsId, showByLevel(query))},
 				rec_dmg AS (
 					SELECT fr.record_id, bool_or(h.dmg) AS yes, bool_or(h.dmg IS FALSE) AS no
 					FROM filtered_records fr
@@ -211,11 +212,11 @@ async function computeGetSectorPanels1to7(
 				LEFT JOIN rec_l1 rl ON rl.record_id = d.record_id
 				GROUP BY 1`),
 		rows(sql`
-				WITH RECURSIVE ${fr}, ${recordDivisionsCte(ctx.countryAccountsId)}
+				WITH RECURSIVE ${fr}, ${recordDivisionsCte(ctx.countryAccountsId, showByLevel(query))}
 				SELECT COUNT(*) AS n FROM (
 					SELECT record_id FROM rec_l1 GROUP BY 1 HAVING COUNT(*) > 1
 				) m`),
-		divisionNames(ctx.countryAccountsId),
+		divisionNames(ctx.countryAccountsId, showByLevel(query)),
 		// Records with several sectors: the sorted level-2 sectors per record.
 		rows(sql`
 				WITH RECURSIVE ${fr}, ${sectorHitsCtes}
@@ -253,7 +254,9 @@ async function computeGetSectorPanels1to7(
 			divisionId: (r.k as string | null) ?? "none",
 			name:
 				r.k === null
-					? "No division recorded"
+					? showByLevel(query) === 1
+						? "No division recorded"
+						: "Not recorded at this level"
 					: (divNames.get(r.k as string) ?? `Division ${r.k}`),
 			cell: flagCell(r.yes, r.no, num(r.records)),
 		}))
