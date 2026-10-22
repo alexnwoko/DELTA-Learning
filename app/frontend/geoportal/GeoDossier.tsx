@@ -39,6 +39,8 @@ export interface DossierData {
 	byYear: { year: number; recordCount: number }[];
 	cumulative: Record<string, DossierCell>;
 	meta: { boundaryVersion: string; provisional: boolean };
+	/** National rates for a one-year period, whole country only (step 3). */
+	rates?: import("~/frontend/geoportal/GeoSendai").GeoSendaiRates | null;
 	/** Records per event and event identity (gap review step 4). */
 	events?: {
 		records: number;

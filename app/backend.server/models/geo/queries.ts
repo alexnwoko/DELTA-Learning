@@ -19,8 +19,16 @@ import {
 import {
 	measureValue,
 	PROVISIONAL_ZERO_COVERAGE,
+	type MeasureValue,
 	type ValueState,
 } from "~/utils/valueState";
+import { getPopulationDenominator } from "~/backend.server/models/ref/denominator";
+import {
+	A1_METHOD,
+	AFFECTED_DIRECT_METHOD,
+	ratePer100k,
+	sumMeasures,
+} from "~/backend.server/models/ref/rates";
 
 // Geoportal read side (build spec s5; PD-05). Every query reads the geo
 // schema only and is scoped to one tenant. The selection is delta.query/1
@@ -28,6 +36,17 @@ import {
 // app/utils/approvalBasis.ts (TR-192). Figures are {value, value_state} with
 // record counts; records that cannot be placed are counted in the
 // unattributed block, never dropped and never redistributed (TR-072).
+
+
+/**
+ * Measures the place panel carries: the human effects, plus dwellings
+ * destroyed and damaged as inputs to Sendai B-4 and B-3 (gap review step 3).
+ */
+const DOSSIER_MEASURES = [
+	...GEO_HUMAN_MEASURES,
+	"houses_destroyed",
+	"houses_damaged",
+] as const;
 
 export const ATT_GRADES = ["A", "B", "C", "D"] as const;
 export type AttGrade = (typeof ATT_GRADES)[number];
@@ -772,9 +791,9 @@ async function getPlaceDossierUncached(
 
 	// All human-effect measures for this division in one pass, restricted to
 	// it, so provenance (run ids, provisional) describes this place only.
-	const agg = await aggregate(t, req, GEO_HUMAN_MEASURES, level, divisionId);
+	const agg = await aggregate(t, req, DOSSIER_MEASURES, level, divisionId);
 	const cumulative: Record<string, Omit<GeoCell, "division_id">> = {};
-	for (const measure of GEO_HUMAN_MEASURES) {
+	for (const measure of DOSSIER_MEASURES) {
 		const cell = agg.cells.get(measure)?.[0];
 		if (cell) {
 			const { division_id: _ignored, ...rest } = cell;
@@ -827,6 +846,87 @@ async function getPlaceDossierUncached(
 		byYear: yr.by_year,
 		cumulative,
 		events: await eventsInArea(t, req, divisionId),
+	};
+}
+
+export interface NationalRate {
+	/** Per 100,000 people, or null with its state. */
+	value: number | null;
+	valueState: string;
+	/** Why no rate was formed, when it was refused. */
+	refusal: { code: string; reason: string } | null;
+}
+
+export interface NationalRates {
+	year: number;
+	/** Sendai A-1: deaths and missing per 100,000. */
+	a1: NationalRate;
+	/** DELTA rate of directly affected per 100,000. Not Sendai B-1. */
+	affectedDirect: NationalRate;
+	denominator: {
+		value: number;
+		source: string;
+		release: string;
+		year: number;
+	} | null;
+}
+
+/**
+ * National rates per 100,000 for the whole-country panel (gap review step 3).
+ * Rates are annual (Sendai counts effects in the year they occur), so they
+ * are formed only when the page's period is one year; otherwise null, and
+ * the panel says so. The numerators are the panel's own totals on the
+ * page's approval basis; the denominator is the Analytics population helper
+ * (R2 source order, R3 reference year, never 0 for a missing value).
+ */
+async function nationalRates(
+	countryAccountsId: string,
+	req: GeoRequest,
+	cumulative: Record<string, { value: number | null; value_state: string }>,
+): Promise<NationalRates | null> {
+	const from = req.query.where.time?.from?.slice(0, 4);
+	const to = req.query.where.time?.to?.slice(0, 4);
+	if (!from || from !== to) return null;
+	const year = Number(from);
+	const denominator = await getPopulationDenominator(countryAccountsId, {
+		divisionId: null,
+		year,
+	});
+	const mv = (m: string): MeasureValue =>
+		({
+			value: cumulative[m]?.value ?? null,
+			valueState: cumulative[m]?.value_state ?? "not_reported",
+		}) as MeasureValue;
+	const one = (parts: MeasureValue[], method: string): NationalRate => {
+		const r = ratePer100k(
+			{ ...sumMeasures(parts), provenance: { year, method } },
+			denominator,
+			method,
+		);
+		return r.ok
+			? {
+					value: r.value === null ? null : Math.round(r.value * 100) / 100,
+					valueState: r.valueState,
+					refusal: null,
+				}
+			: {
+					value: null,
+					valueState: "not_reported",
+					refusal: { code: r.refusal.code, reason: r.refusal.reason },
+				};
+	};
+	return {
+		year,
+		a1: one([mv("deaths"), mv("missing")], A1_METHOD),
+		affectedDirect: one([mv("affected_direct")], AFFECTED_DIRECT_METHOD),
+		denominator: denominator.ok
+			? {
+					value: denominator.value,
+					source: denominator.provenance.source.name,
+					release: denominator.provenance.release.version,
+					year: denominator.year,
+				}
+			: null,
 	};
 }
 
@@ -1243,7 +1343,7 @@ async function getCountryDossierUncached(
 			FROM geo.impact_atom a
 			WHERE ${scopeFilters(t, req)}
 				AND a.measure IN (${sql.join(
-					["records", ...GEO_HUMAN_MEASURES].map((m) => sql`${m}`),
+					["records", ...DOSSIER_MEASURES].map((m) => sql`${m}`),
 					sql`, `,
 				)})
 				AND ${ranged ? dateInRange(req) : sql`true`}
@@ -1311,7 +1411,7 @@ async function getCountryDossierUncached(
 	}
 	const byMeasure = new Map(row.cells.map((c) => [c.measure, toCell(c)]));
 	const cumulative: Record<string, Omit<GeoCell, "division_id">> = {};
-	for (const measure of GEO_HUMAN_MEASURES) {
+	for (const measure of DOSSIER_MEASURES) {
 		const cell = byMeasure.get(measure);
 		if (cell) {
 			const { division_id: _ignored, ...rest } = cell;
@@ -1361,6 +1461,7 @@ async function getCountryDossierUncached(
 		byYear: row.by_year,
 		cumulative,
 		events: await eventsInArea(countryAccountsId, req, null),
+		rates: await nationalRates(countryAccountsId, req, cumulative),
 	};
 }
 
