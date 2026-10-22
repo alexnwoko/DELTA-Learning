@@ -10,6 +10,7 @@ import {
 import { getSendaiSection } from "~/backend.server/models/analytics/dashboard/sendaiPanels.server";
 import { SECTOR_IDS } from "~/backend.server/models/analytics/dashboard/sectorPanels.server";
 import { DEFAULT_QUERY } from "~/utils/deltaQuery";
+import { clearDashboardCache } from "~/backend.server/models/analytics/dashboard/dashboardCache.server";
 
 // Sendai section against seeded records:
 // a: 2020, type 1042, 40 deaths, 2 missing, 700 dwellings destroyed, 3 hospitals in the source
@@ -121,5 +122,48 @@ describe("getSendaiSection", () => {
 		expect(s.s0.inputs.every((i) => i.inputTo === null)).toBe(true);
 		expect(s.s0.refused.every((r) => r.code === null)).toBe(true);
 		expect(s.meta.s0.method).toContain("Not a Sendai indicator value");
+	});
+
+	it("computes A-1 per year where a population figure is held, and says why where it is not", async () => {
+		const name = `A-1 test population ${randomUUID().slice(0, 8)}`;
+		const src = await dr.execute(sql`
+			INSERT INTO ref.source (name, licence, redistribution_rule, source_status)
+			VALUES (${name}, 'CC BY 3.0 IGO', 'display_and_redistribute', 'international_official') RETURNING id`);
+		const sourceId = (src.rows[0] as { id: string }).id;
+		const rel = await dr.execute(sql`
+			INSERT INTO ref.release (source_id, source_status, version) VALUES (${sourceId}, 'international_official', 'T1') RETURNING id`);
+		const releaseId = (rel.rows[0] as { id: string }).id;
+		await dr.execute(sql`
+			INSERT INTO ref.value (country_accounts_id, division_id, key_scheme, boundary_vintage, indicator_code,
+				quantity_type, release_id, source_status, period_start, period_end, value, value_state, method, grade)
+			VALUES (${ids.countryAccountId}, NULL, 'iso3', 'national', 'POP_TOTAL', 'extensive', ${releaseId},
+				'international_official', '2020-01-01', '2020-12-31', 1000000, 'reported', 'as_published', 'REF-B')`);
+		clearDashboardCache(ids.countryAccountId);
+		try {
+			const p = await getSendaiSection(DEFAULT_QUERY, ctx());
+			const y2020 = p.a1.years.find((y) => y.year === 2020)!;
+			expect(y2020.rate).toMatchObject({ value: 4.2, valueState: "reported", refusal: null, per: 100000 });
+			expect(y2020.rate!.denominator).toMatchObject({ year: 2020, value: 1000000, source: name, release: "T1" });
+			const y2021 = p.a1.years.find((y) => y.year === 2021)!;
+			expect(y2021.rate!.value).toBeNull();
+			expect(y2021.rate!.refusal).toBeTruthy();
+			const refused = p.s0.refused.map((r) => r.code);
+			expect(refused).not.toContain("A-1");
+			expect(refused).toContain("B-1");
+			// Each refusal reason is distinct (one note per reason on screen).
+			const reasons = p.s0.refused.map((r) => r.reason);
+			expect(new Set(reasons).size).toBe(reasons.length);
+		} finally {
+			await dr.execute(sql`DELETE FROM ref.value WHERE release_id = ${releaseId}`);
+			await dr.execute(sql`DELETE FROM ref.release WHERE id = ${releaseId}`);
+			await dr.execute(sql`DELETE FROM ref.source WHERE id = ${sourceId}`);
+			clearDashboardCache(ids.countryAccountId);
+		}
+	});
+
+	it("lists each refusal reason once, so no note repeats on screen", async () => {
+		const p = await getSendaiSection(DEFAULT_QUERY, ctx());
+		const reasons = p.s0.refused.map((r) => r.reason);
+		expect(new Set(reasons).size).toBe(reasons.length);
 	});
 });
