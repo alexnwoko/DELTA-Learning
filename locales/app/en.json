@@ -5390,6 +5390,36 @@
     "description": "Button: show the map at the coarsest Analysis level. File: app/routes/$lang+/geoportal+/_index.tsx"
   },
   {
+    "id": "geoportal.dossier.events",
+    "translation": "Disaster events",
+    "description": "Place panel heading. File: app/frontend/geoportal/GeoDossier.tsx"
+  },
+  {
+    "id": "geoportal.dossier.events.codes",
+    "translation": "Event codes: GLIDE number on {glide} of {events} events, national code on {national}.",
+    "description": "Event identifier coverage. File: app/frontend/geoportal/GeoDossier.tsx"
+  },
+  {
+    "id": "geoportal.dossier.events.national",
+    "translation": "National code {code}",
+    "description": "National disaster event code. File: app/frontend/geoportal/GeoDossier.tsx"
+  },
+  {
+    "id": "geoportal.dossier.events.per_event",
+    "translation": "{linked} disaster records belong to {events} disaster events, {per} records per event on average.",
+    "description": "Records per event in this area. File: app/frontend/geoportal/GeoDossier.tsx"
+  },
+  {
+    "id": "geoportal.dossier.events.unlinked",
+    "translation": "{n} of {total} disaster records ({pct}%) belong to no disaster event, so event counts here are not a count of every disaster.",
+    "description": "Share of records without an event. File: app/frontend/geoportal/GeoDossier.tsx"
+  },
+  {
+    "id": "geoportal.dossier.events.unnamed",
+    "translation": "Unnamed event",
+    "description": "Event with no name. File: app/frontend/geoportal/GeoDossier.tsx"
+  },
+  {
     "id": "geoportal.dossier.whole_country",
     "translation": "Whole country",
     "description": "File: app/frontend/geoportal/GeoDossier.tsx"

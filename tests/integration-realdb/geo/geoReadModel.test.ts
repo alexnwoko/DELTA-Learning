@@ -948,6 +948,13 @@ describe("geoportal read model (G1)", () => {
 			expect(d!.cumulative.deaths.value_state).toBe("reported");
 			expect(d!.hazardMix).toContainEqual({ hipTypeId, recordCount: 1 });
 			expect(d!.meta.migrationRunIds).toEqual(["run-test-1"]);
+			// Records per event (gap review step 4): r1 to e1, r3 and r10 to e2,
+			// r4 to e4; the other six records belong to no event.
+			expect(d!.events.records).toBe(10);
+			expect(d!.events.linkedRecords).toBe(4);
+			expect(d!.events.events).toBe(3);
+			expect(d!.events.glideEvents).toBe(0);
+			expect(d!.events.top[0]).toMatchObject({ id: ev.e2, records: 2 });
 		});
 
 		it("describes only its own place: no run ids from elsewhere", async () => {

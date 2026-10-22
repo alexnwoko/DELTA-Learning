@@ -826,6 +826,105 @@ async function getPlaceDossierUncached(
 		hazardMix: yr.hazard_mix,
 		byYear: yr.by_year,
 		cumulative,
+		events: await eventsInArea(t, req, divisionId),
+	};
+}
+
+export interface EventsInArea {
+	/** Disaster records in scope here (each once). */
+	records: number;
+	/** Of those, records that belong to a disaster event. */
+	linkedRecords: number;
+	/** Distinct disaster events those records belong to. */
+	events: number;
+	/** Events here with a GLIDE number, and with a national event code. */
+	glideEvents: number;
+	nationalCodeEvents: number;
+	/** The events with the most records here, largest first. */
+	top: {
+		id: string;
+		name: string | null;
+		glide: string | null;
+		nationalId: string | null;
+		records: number;
+	}[];
+}
+
+/**
+ * Records per event and event identity for one area, or the whole country
+ * when divisionId is null (gap review step 4; DE-2, DE-3). Read from the
+ * record atoms with the page's filters, so it agrees with the record counts
+ * beside it. Records without a disaster event are counted, never hidden:
+ * most migrated records have none.
+ */
+async function eventsInArea(
+	countryAccountsId: string,
+	req: GeoRequest,
+	divisionId: string | null,
+	topN = 5,
+): Promise<EventsInArea> {
+	const t = countryAccountsId;
+	const ranged = hasRange(req);
+	const res = await geoRead(sql`
+		WITH recs AS (
+			SELECT DISTINCT a.disaster_record_id, a.disaster_event_id
+			FROM geo.impact_atom a
+			${
+				divisionId
+					? sql`JOIN geo.division_ancestor da
+						ON da.division_id = a.division_id
+						AND da.country_accounts_id = ${t}
+						AND da.ancestor_id = ${divisionId}`
+					: sql``
+			}
+			WHERE ${scopeFilters(t, req)}
+				AND a.measure = 'records'
+				AND ${ranged ? dateInRange(req) : sql`true`}
+				AND ${gradeFloor(req.query.minAttGrade)}
+		),
+		ev AS (
+			SELECT disaster_event_id AS id, COUNT(*) AS n
+			FROM recs WHERE disaster_event_id IS NOT NULL
+			GROUP BY disaster_event_id
+		)
+		SELECT
+			(SELECT COUNT(DISTINCT disaster_record_id) FROM recs) AS records,
+			(SELECT COALESCE(SUM(n), 0) FROM ev) AS linked_records,
+			(SELECT COUNT(*) FROM ev) AS events,
+			(SELECT COUNT(*) FROM ev JOIN disaster_event e ON e.id = ev.id
+				WHERE COALESCE(e.glide, '') <> '') AS glide_events,
+			(SELECT COUNT(*) FROM ev JOIN disaster_event e ON e.id = ev.id
+				WHERE COALESCE(e.national_disaster_id, '') <> '') AS national_events,
+			(SELECT COALESCE(jsonb_agg(jsonb_build_object(
+					'id', x.id, 'name', x.name, 'glide', x.glide,
+					'nationalId', x.national_id, 'records', x.n
+				) ORDER BY x.n DESC, x.id), '[]'::jsonb)
+				FROM (
+					SELECT ev.id, ev.n,
+						NULLIF(COALESCE(NULLIF(e.name_national, ''), e.name_global_or_regional), '') AS name,
+						NULLIF(e.glide, '') AS glide,
+						NULLIF(e.national_disaster_id, '') AS national_id
+					FROM ev JOIN disaster_event e ON e.id = ev.id
+					WHERE e.country_accounts_id = ${t}
+					ORDER BY ev.n DESC, ev.id
+					LIMIT ${topN}
+				) x) AS top
+	`);
+	const r = res.rows[0] as {
+		records: string | number;
+		linked_records: string | number;
+		events: string | number;
+		glide_events: string | number;
+		national_events: string | number;
+		top: EventsInArea["top"];
+	};
+	return {
+		records: Number(r.records),
+		linkedRecords: Number(r.linked_records),
+		events: Number(r.events),
+		glideEvents: Number(r.glide_events),
+		nationalCodeEvents: Number(r.national_events),
+		top: r.top.map((e) => ({ ...e, records: Number(e.records) })),
 	};
 }
 
@@ -1261,6 +1360,7 @@ async function getCountryDossierUncached(
 		hazardMix: row.hazard_mix,
 		byYear: row.by_year,
 		cumulative,
+		events: await eventsInArea(countryAccountsId, req, null),
 	};
 }
 
