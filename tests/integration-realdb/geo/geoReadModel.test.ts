@@ -17,6 +17,7 @@ import {
 	getDivisionTile,
 	getHazardTree,
 	getPlaceDossier,
+	getCountryDossier,
 	GeoRefusalError,
 	type GeoCell,
 	type GeoRequest,
@@ -919,6 +920,32 @@ describe("geoportal read model (G1)", () => {
 			expect(
 				(await getDivisionTile(ids.countryAccountId, 1, 3, 4, 3, "en")).length,
 			).toBeGreaterThan(0);
+		});
+	});
+
+	describe("national Sendai rates in the country panel (gap review step 3)", () => {
+		it("forms annual rates only for a one-year period, refusing with a reason", async () => {
+			const oneYear = await getCountryDossier(
+				ids.countryAccountId,
+				req({ from: "2020", to: "2020" }),
+				"en",
+			);
+			expect(oneYear.rates).not.toBeNull();
+			expect(oneYear.rates!.year).toBe(2020);
+			// The test tenant has no population loaded: a refusal, never 0.
+			expect(oneYear.rates!.a1.value).toBeNull();
+			expect(oneYear.rates!.a1.refusal?.code).toBe("POPULATION_MISSING_FOR_YEAR");
+			expect(oneYear.rates!.denominator).toBeNull();
+			// Dwellings travel with the panel as Sendai B-3 and B-4 inputs.
+			expect(oneYear.cumulative).toHaveProperty("houses_destroyed");
+			expect(oneYear.cumulative).toHaveProperty("houses_damaged");
+
+			const span = await getCountryDossier(
+				ids.countryAccountId,
+				req({ from: "2019", to: "2021" }),
+				"en",
+			);
+			expect(span.rates).toBeNull();
 		});
 	});
 

@@ -1193,6 +1193,7 @@ export default function GeoportalPage() {
 														<GeoSendai
 															cumulative={dossier.cumulative}
 															level={dossier.division.level}
+															rates={dossier.rates ?? null}
 															analysisHref={`/${lang}/analytics?${serializeDeltaQuery(
 																dossier.division.id === "country"
 																	? withPlace(query, null)

@@ -5640,14 +5640,24 @@
     "description": "File: app/frontend/geoportal/GeoSendai.tsx"
   },
   {
+    "id": "geoportal.sendai.a1",
+    "translation": "Deaths and missing per 100,000 (A-1)",
+    "description": "Sendai block of the place panel. File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
     "id": "geoportal.sendai.a_note",
-    "translation": "Deaths and missing are shown apart, never added. Rates per 100,000 wait for a population denominator.",
+    "translation": "Deaths and missing are shown apart; only the A-1 rate adds them, as the Sendai guidance does.",
     "description": "File: app/frontend/geoportal/GeoSendai.tsx"
   },
   {
     "id": "geoportal.sendai.affected_direct",
-    "translation": "Directly affected",
+    "translation": "Directly affected, as recorded",
     "description": "File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
+    "id": "geoportal.sendai.affected_rate",
+    "translation": "Directly affected per 100,000 (DELTA rate, not Sendai B-1)",
+    "description": "Sendai block of the place panel. File: app/frontend/geoportal/GeoSendai.tsx"
   },
   {
     "id": "geoportal.sendai.b",
@@ -5656,7 +5666,7 @@
   },
   {
     "id": "geoportal.sendai.b_note",
-    "translation": "Each part keeps its own state; no combined Target B figure is formed.",
+    "translation": "No B-1 total is formed: it also needs people per household and livelihoods (B-5). Dwelling counts are inputs, not people.",
     "description": "File: app/frontend/geoportal/GeoSendai.tsx"
   },
   {
@@ -5681,7 +5691,7 @@
   },
   {
     "id": "geoportal.sendai.deaths",
-    "translation": "Deaths",
+    "translation": "Deaths (A-2)",
     "description": "File: app/frontend/geoportal/GeoSendai.tsx"
   },
   {
@@ -5690,13 +5700,23 @@
     "description": "File: app/frontend/geoportal/GeoSendai.tsx"
   },
   {
+    "id": "geoportal.sendai.houses_damaged",
+    "translation": "Dwellings damaged (input to B-3)",
+    "description": "Sendai block of the place panel. File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
+    "id": "geoportal.sendai.houses_destroyed",
+    "translation": "Dwellings destroyed (input to B-4)",
+    "description": "Sendai block of the place panel. File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
     "id": "geoportal.sendai.injured",
-    "translation": "Injured",
+    "translation": "Injured or ill (B-2)",
     "description": "File: app/frontend/geoportal/GeoSendai.tsx"
   },
   {
     "id": "geoportal.sendai.missing",
-    "translation": "Missing",
+    "translation": "Missing (A-3)",
     "description": "File: app/frontend/geoportal/GeoSendai.tsx"
   },
   {
@@ -5708,6 +5728,36 @@
     "id": "geoportal.sendai.open_region",
     "translation": "Open the region {name} in Analysis",
     "description": "File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
+    "id": "geoportal.sendai.population",
+    "translation": "Population {value} ({source}, {release}).",
+    "description": "Sendai block of the place panel. File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
+    "id": "geoportal.sendai.rate_one_year",
+    "translation": "Rates per 100,000 are annual: set From and To to the same year to see them.",
+    "description": "Sendai block of the place panel. File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
+    "id": "geoportal.sendai.rate_refused",
+    "translation": "not formed ({reason})",
+    "description": "Sendai block of the place panel. File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
+    "id": "geoportal.sendai.rate_subnational",
+    "translation": "Rates per 100,000 are national: sub-national population is not loaded.",
+    "description": "Sendai block of the place panel. File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
+    "id": "geoportal.sendai.recorded",
+    "translation": "Also recorded (no Sendai indicator code)",
+    "description": "Sendai block of the place panel. File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
+    "id": "geoportal.sendai.recorded_note",
+    "translation": "Displaced, evacuated and relocated people are not part of Sendai Target B.",
+    "description": "Sendai block of the place panel. File: app/frontend/geoportal/GeoSendai.tsx"
   },
   {
     "id": "geoportal.sendai.reported_by",
