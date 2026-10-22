@@ -4,7 +4,7 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { dashboardPanelsCsv } from "~/frontend/analytics/dashboard/DashboardDownload";
-import { estimatedSplitCsv, estimatedSplitPanel, pyramidShares, PYRAMID_AXIS_MAX } from "~/frontend/analytics/dashboard/panels/impact/EstimatedSplit";
+import { estimatedSplitCsv, estimatedSplitPanel, pickModel, pyramidShares, PYRAMID_AXIS_MAX } from "~/frontend/analytics/dashboard/panels/impact/EstimatedSplit";
 import type { ViewContext } from "~/frontend/context";
 import type { EstimatedDisaggregation } from "~/utils/dashboard/estimatedDisaggregation";
 import { createMockTranslator } from "~/utils/translator";
@@ -25,6 +25,30 @@ const D: EstimatedDisaggregation = {
 		{ group: "0-4", female: e(800), male: e(820) },
 		{ group: "80+", female: e(null), male: e(40) },
 	],
+	// Four named models (Alex, 2026-10-22; Analytics edaa715b), DELTA first.
+	byModel: [
+		{
+			id: "delta",
+			name: "DELTA disaggregation",
+			source: "Alex Nwoko, DELTA product ruling, 2026-10-22",
+			bands: [
+				{ key: "0-4", label: "Young children (0-4)", split: false, female: e(800), male: e(820) },
+				{ key: "5-17", label: "Children (5-17)", split: true, female: e(1400), male: e(1480) },
+				{ key: "18-64", label: "Adults (18-64)", split: true, female: e(2600), male: e(2500) },
+				{ key: "65+", label: "Older persons (65+)", split: false, female: e(null), male: e(180) },
+			],
+		},
+		{
+			id: "un",
+			name: "UN disaggregation",
+			source: "UN five-year age groups, UN DESA World Population Prospects 2024",
+			bands: [
+				{ key: "0-4", label: "0-4", split: false, female: e(800), male: e(820) },
+				{ key: "80+", label: "80+", split: false, female: e(null), male: e(40) },
+			],
+		},
+	],
+	defaultModel: "delta",
 	female: e(5020),
 	male: e(4980),
 	excluded: { biological: 1, underReview: 2, noYear: 3, before1950: 0, noReference: 0 },
@@ -43,18 +67,37 @@ describe("estimated sex and age split", () => {
 		expect(html).toMatch(/uppercase[^>]*>Estimated<\/span>/);
 	});
 
-	it("draws each bar as a share of the total on one fixed axis, so countries compare (Alex, 2026-10-22)", () => {
-		const shares = pyramidShares(D);
-		// 0-4: 800 + 820 of 1,660 estimated in the groups; 80+: male 40, female suppressed.
-		expect(shares[0].female).toBeCloseTo((800 / 1660) * 100, 5);
-		expect(shares[1].female).toBeNull();
-		expect(PYRAMID_AXIS_MAX).toBe(10);
-		expect(html).toContain(">10%</text>");
-		expect(html).toMatch(/0-4, Female: 48.2% of the total ▸ \(Estimated\)/);
+	it("opens on the DELTA model, names it, and offers the four models (Alex, 2026-10-22)", () => {
+		expect(pickModel(D, null)?.id).toBe("delta");
+		expect(pickModel(D, "un")?.id).toBe("un");
+		expect(html).toContain('aria-label="Estimated sex and age split, DELTA disaggregation"');
+		expect(html).toContain("DELTA disaggregation: Alex Nwoko, DELTA product ruling, 2026-10-22.");
+		expect(html).toContain('aria-label="UN disaggregation"');
+		// The DELTA button is the selected one (a radio in a single-choice group).
+		const delta = html.match(/<button[^>]*aria-label="DELTA disaggregation"[^>]*>/)?.[0] ?? "";
+		expect(delta).toMatch(/aria-(checked|pressed)="true"|data-selected="true"/);
 	});
 
-	it("leaves a suppressed group without a bar", () => {
-		expect(html.match(/fill="url\(#est-hatch\)"/g)).toHaveLength(3);
+	it("draws each band as a share of the model's total on the model's fixed axis", () => {
+		const shares = pyramidShares(pickModel(D, "delta")!);
+		const total = 800 + 820 + 1400 + 1480 + 2600 + 2500 + 180;
+		expect(shares[0].female).toBeCloseTo((800 / total) * 100, 5);
+		expect(shares[3].female).toBeNull();
+		expect(PYRAMID_AXIS_MAX.delta).toBe(40);
+		expect(PYRAMID_AXIS_MAX.un).toBe(10);
+		expect(html).toContain(">40%</text>");
+		// UN groups on 10%: 0-4 female is 800 of 1,660, past the edge, so capped and marked.
+		expect(pyramidShares(pickModel(D, "un")!)[0].female).toBeCloseTo((800 / 1660) * 100, 5);
+	});
+
+	it("marks a band that takes a share of a five-year group, with the note", () => {
+		expect(html).toContain(">5-17*</text>");
+		expect(html).toContain("Children (5-17)*");
+		expect(html).toContain("* Includes an even share of ages 15-19 (the source gives five-year groups).");
+	});
+
+	it("leaves a suppressed band without a bar", () => {
+		expect(html.match(/fill="url\(#est-hatch\)"/g)).toHaveLength(7);
 	});
 
 	it("carries the footnote, the not-for-targeting line and what was left out, in small print", () => {
