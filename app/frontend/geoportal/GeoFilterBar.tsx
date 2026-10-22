@@ -36,11 +36,9 @@ import {
 	applyPlace,
 	lockedFacets,
 	periodPresets,
-	withPlace,
 	yearOptions,
 	PLACE_ALL,
 	placeKey,
-	placeLevels,
 	querySummary,
 	selectedChips,
 	type ChipSet,
@@ -368,6 +366,25 @@ function ChipGroup(props: {
 }
 
 /**
+ * Plain names for the "Show by" levels (Alex, 2026-10-22): the area type
+ * first, the admin level in brackets for people who know the term.
+ */
+export function showByLabel(level: number, t: GeoT): string {
+	switch (level) {
+		case 0:
+			return t({ code: "geoportal.show_by.country", msg: "Whole country" });
+		case 1:
+			return t({ code: "geoportal.show_by.level1", msg: "Provinces or states (admin 1)" });
+		case 2:
+			return t({ code: "geoportal.show_by.level2", msg: "Districts (admin 2)" });
+		case 3:
+			return t({ code: "geoportal.show_by.level3", msg: "Local areas (admin 3)" });
+		default:
+			return t({ code: "geoportal.show_by.other", msg: "Admin level {n}" }, { n: level });
+	}
+}
+
+/**
  * The Dimension buttons in the Analysis view-button style (DashboardShell
  * tabClass; Alex, 2026-10-20): bold, 44px tall, 32px side padding; the
  * selected one in dashboard ink with the accent bar under it.
@@ -467,20 +484,13 @@ export function GeoFilterBar(props: GeoFilterBarProps) {
 		const yFrom = from.slice(0, 4);
 		const yTo = to.slice(0, 4);
 		const anyYear = t({ code: "geoportal.row.any_year", msg: "Any" });
-		const divisions = props.place?.divisions ?? [];
-		const regions = props.place?.regions ?? [];
-		const pl = placeLevels(query, divisions);
-		const firstDivision = pl.first.startsWith("d:") ? pl.first.slice(2) : null;
-		const level2 = firstDivision
-			? divisions.filter((d) => d.level === 2 && d.parentId === firstDivision)
-			: [];
 		const allLabel = (code: string, msg: string) => ({
 			id: ALL,
 			label: t({ code, msg }),
 		});
 		return (
-			<div className="geo-filter-bar geo-filter-row flex flex-col gap-2 py-2">
-				<div className="flex flex-wrap items-end delta-layer p-[12px] gap-x-3 gap-y-2.5">
+			<div className="geo-filter-bar geo-filter-row flex flex-col gap-1.5 py-1">
+				<div className="flex flex-wrap items-end delta-layer px-[12px] py-[8px] gap-x-3 gap-y-1.5 [&_.geo-control]:min-h-[36px]">
 					{props.dimensionControl !== "none" && (
 						<SelectField
 							label={t({ code: "geoportal.group.dimension", msg: "Dimension" })}
@@ -593,59 +603,29 @@ export function GeoFilterBar(props: GeoFilterBarProps) {
 							/>
 						</>
 					)}
+					{/* One Area picker (provinces, districts, regions), as on the
+					    Geoportal; "Show by" sets the breakdown (Alex, 2026-10-22). */}
 					{props.place && (
-						<>
-							<SelectField
-								label={t({
-									code: "geoportal.row.place_1",
-									msg: "Place, level 1",
-								})}
-								value={pl.first}
-								isDisabled={locks.has("place")}
-								options={[
-									{
-										id: PLACE_ALL,
-										label: t({
-											code: "geoportal.row.whole_country",
-											msg: "All of the country",
-										}),
-									},
-									...divisions
-										.filter((d) => d.level === 1)
-										.map((d) => ({ id: `d:${d.id}`, label: d.name })),
-									...regions.map((r) => ({
-										id: `r:${r.regionId}`,
-										label: t(
-											{ code: "geoportal.row.region", msg: "Region: {name}" },
-											{ name: r.name },
-										),
-									})),
-								]}
-								onChange={(k) =>
-									props.onChange({ query: applyPlace(query, k), level })
-								}
-							/>
-							<SelectField
-								label={t({ code: "geoportal.row.place_2", msg: "Level 2" })}
-								value={pl.second ?? ALL}
-								isDisabled={!firstDivision || locks.has("place")}
-								options={[
-									allLabel("geoportal.row.all_level_2", "All"),
-									...level2.map((d) => ({ id: `d:${d.id}`, label: d.name })),
-								]}
-								onChange={(k) =>
-									props.onChange({
-										query:
-											k === ALL
-												? withPlace(query, {
-														divisionId: firstDivision as string,
-													})
-												: applyPlace(query, k),
-										level,
-									})
-								}
-							/>
-						</>
+						<PlaceField
+							place={props.place}
+							value={placeKey(query)}
+							isDisabled={locks.has("place")}
+							onChange={(k) =>
+								props.onChange({ query: applyPlace(query, k), level })
+							}
+							t={t}
+						/>
+					)}
+					{props.levelControl !== false && props.levels.length > 1 && (
+						<SelectField
+							label={t({ code: "geoportal.show_by", msg: "Show by" })}
+							value={String(level)}
+							options={props.levels.map((l) => ({
+								id: String(l),
+								label: showByLabel(l, t),
+							}))}
+							onChange={(l) => props.onChange({ query, level: Number(l) })}
+						/>
 					)}
 					{props.canReview && (
 						<Checkbox
@@ -890,14 +870,11 @@ export function GeoFilterBar(props: GeoFilterBarProps) {
 				<Group label={t({ code: "geoportal.group.where", msg: "Where" })}>
 					{props.levelControl !== false && (
 						<SelectField
-							label={t({ code: "geoportal.group.level", msg: "Map level" })}
+							label={t({ code: "geoportal.show_by", msg: "Show by" })}
 							value={String(level)}
 							options={props.levels.map((l) => ({
 								id: String(l),
-								label: t(
-									{ code: "geoportal.dossier.level", msg: "Admin level {n}" },
-									{ n: l },
-								),
+								label: showByLabel(l, t),
 							}))}
 							onChange={(l) => props.onChange({ query, level: Number(l) })}
 						/>
