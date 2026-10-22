@@ -139,7 +139,7 @@ async function computeCostPanels(
 	// One pass: the hazard rows and the overall row (grouping sets).
 	const [grouped, events] = await Promise.all([
 		rows(sql`${base}
-			SELECT GROUPING(rv.k) AS is_total, rv.k,
+			SELECT GROUPING(rv.k, rv.year) AS g, rv.k, rv.year,
 				COALESCE(hz."name_en", cl."name_en" || ' (specific hazard not recorded)', 'Hazard not coded') AS label,
 				COUNT(*) AS total,
 				COUNT(*) FILTER (WHERE usd IS NOT NULL OR lcl IS NOT NULL) AS costed,
@@ -164,15 +164,17 @@ async function computeCostPanels(
 			FROM rv
 			LEFT JOIN "hip_hazard" hz ON hz."id" = rv.k
 			LEFT JOIN "hip_cluster" cl ON 'cluster:' || cl."id" = rv.k
-			GROUP BY GROUPING SETS ((rv.k, hz."name_en", cl."name_en"), ())`),
+			GROUP BY GROUPING SETS ((rv.k, hz."name_en", cl."name_en"), (rv.year), ())`),
 		rows(sql`${base}
 			SELECT COUNT(DISTINCT ev) AS total,
 				COUNT(DISTINCT ev) FILTER (WHERE usd IS NOT NULL OR lcl IS NOT NULL) AS costed
 			FROM rv WHERE ev IS NOT NULL`),
 	]);
-	const overall = grouped.filter((r) => num(r.is_total) === 1);
+	// GROUPING(k, year): 1 = hazard rows, 2 = year rows, 3 = overall.
+	const overall = grouped.filter((r) => num(r.g) === 3);
+	const yearRows = grouped.filter((r) => num(r.g) === 2);
 	const byHazard = grouped
-		.filter((r) => num(r.is_total) === 0 && num(r.costed) > 0)
+		.filter((r) => num(r.g) === 1 && num(r.costed) > 0)
 		.sort(
 			(a, b) =>
 				num(b.costed) - num(a.costed) ||
@@ -188,6 +190,28 @@ async function computeCostPanels(
 			total: t as number | string,
 		});
 	const ppN = num(o.pp_n);
+	const dated = yearRows.filter((r) => r.year != null);
+	// The chart starts at the first year with a value (charts start where
+	// their data starts); earlier records are counted, not drawn.
+	const costedYears = dated.filter((r) => num(r.costed) > 0);
+	const firstYear = Math.min(...costedYears.map((r) => num(r.year)));
+	const lastYear = Math.max(...dated.map((r) => num(r.year)));
+	const perYear = new Map(dated.map((r) => [num(r.year), r]));
+	const byYear: CostPanels["byYear"] = [];
+	for (let y = firstYear; costedYears.length > 0 && y <= lastYear; y++) {
+		const r = perYear.get(y);
+		byYear.push({
+			year: y,
+			records: num(r?.total),
+			costedRecords: num(r?.costed),
+			notCostedRecords: num(r?.not_costed),
+			total:
+				r && num(r.costed) > 0
+					? money(r.lcl_sum, r.usd_sum)
+					: { local: null, usd: null },
+		});
+	}
+	const noYear = yearRows.find((r) => r.year == null);
 	const name = currencyName(currency);
 
 	return {
@@ -260,6 +284,11 @@ async function computeCostPanels(
 						: null,
 			};
 		}),
+		byYear,
+		recordsNoYear: num(noYear?.total),
+		recordsBeforeFirstYear: dated
+			.filter((r) => costedYears.length > 0 && num(r.year) < firstYear)
+			.reduce((n, r) => n + num(r.total), 0),
 		projectionNote: `Illustrative only: if the records with no value cost what the costed records of the same hazard cost per person affected (median, at least ${COST_PER_PERSON_MIN_RECORDS} records), this is the order of magnitude. Not a loss estimate: costed records are not a random sample, and the figure is never added to any total.`,
 		meta: {
 			method: `Per disaster record, the source-reported value (DesInventar valorloc in ${currency}, or valorus in US dollars where no usable local value exists). Local values are taken to be in ${currency}; US dollars use the World Bank official rate (PA.NUS.FCRF) for the record's start year. Left out and counted: local values dated before the country's change of currency unit, local values equal to the dollar value in a non-dollar country, and years with no rate. Cost per person uses ${peopleMeasure} over records reporting both.`,
