@@ -41,6 +41,7 @@ import { Toast } from "primereact/toast";
 import RegularMenuBar from "./components/RegularMenuBar";
 import { isDataEntryPath, PageBrand } from "./frontend/PageBrand";
 import { AnalysisLoader, loaderSection } from "./frontend/AnalysisLoader";
+import { UX } from "./frontend/uxFeatures";
 import { isStaleChunkError, shouldReloadForStaleChunk } from "./utils/staleChunk";
 import { getTenantOutline } from "./backend.server/models/geo/tenantExtent";
 import SuperAdminMenuBar from "./components/SuperAdminMenuBar";
@@ -260,6 +261,13 @@ export default function Screen() {
 		return () => window.clearTimeout(showTimer);
 	}, [navigation.state, routeProgressStarted]);
 
+	// The waiting screen for Analysis and Geoportal (Alex, 2026-10-22). UX-1:
+	// a change within the same page (a filter or a view) keeps the page and
+	// shows a sheen on each card instead of the full-screen wait.
+	const loadingSection =
+		routeProgressVisible && navigation.location ? loaderSection(navigation.location.pathname) : null;
+	const refreshingInPlace = UX[1] && loadingSection !== null && loadingSection === loaderSection(location.pathname);
+
 	return (
 		<html
 			lang={loaderData.common.lang}
@@ -312,9 +320,7 @@ export default function Screen() {
 					position={loaderData.common.lang === "ar" ? "top-left" : "top-right"}
 				/>
 				{/* The waiting screen while Analysis or Geoportal loads (Alex, 2026-10-22). */}
-				{routeProgressVisible && navigation.location && loaderSection(navigation.location.pathname) ? (
-					<AnalysisLoader ctx={ctx} section={loaderSection(navigation.location.pathname) ?? "analysis"} />
-				) : null}
+				{loadingSection && !refreshingInPlace ? <AnalysisLoader ctx={ctx} section={loadingSection} /> : null}
 				{routeProgressVisible ? (
 					<div className="fixed inset-x-0 top-0 z-[9999] h-1 w-full overflow-hidden bg-slate-200">
 						<div
@@ -365,7 +371,7 @@ export default function Screen() {
 						) : null}
 
 						{/* Main Content */}
-						<main id="main" tabIndex={-1} className="flex-1 w-full">
+						<main id="main" tabIndex={-1} data-dashboard-refreshing={refreshingInPlace ? "" : undefined} className="flex-1 w-full">
 							{/* On paper the top bar is hidden, so the logo heads every printed page,
 							    twice the screen size, 2pt above the page heading (Alex, 2026-10-19). */}
 							<div className="delta-print-logo hidden print:block w-full">
