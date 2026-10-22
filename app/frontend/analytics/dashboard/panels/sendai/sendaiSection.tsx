@@ -22,6 +22,7 @@ import { STATE_ENCODING } from "~/utils/mapState";
 import { cellRow, cellText, coverageText, noRecordsText, panelNotes, type PanelExport } from "../../panelCell";
 import type { DashboardPanel } from "../../types";
 import { ShadedTable } from "../blocks";
+import { RAIL_ITEM_BASE } from "../../HazardRail";
 import { sendaiNotice, subnationalNote } from "../impact/panels5to16";
 import { SFM_BAR, SFM_RAMP } from "~/frontend/charts/sectionPalette";
 
@@ -643,7 +644,11 @@ export function focusSendaiHeading(doc: Pick<Document, "getElementById"> = docum
  * which stays where it was, so the reader keeps their place. A page opened
  * with sfm=1, or reached with Back, moves no focus.
  */
-export function SendaiToggle({ ctx, on, onChange }: { ctx: ViewContext; on: boolean; onChange: (on: boolean) => void }) {
+/**
+ * The Sendai toggle. In the rail (Alex, 2026-10-22) it is a square like the
+ * hazard items, below them, orange when on; it shows the Sendai section.
+ */
+export function SendaiToggle({ ctx, on, onChange, rail = false }: { ctx: ViewContext; on: boolean; onChange: (on: boolean) => void; rail?: boolean }) {
 	const button = useRef<HTMLButtonElement>(null);
 	// The state this button asked for, until the page shows it.
 	const asked = useRef<boolean | null>(null);
@@ -662,9 +667,21 @@ export function SendaiToggle({ ctx, on, onChange }: { ctx: ViewContext; on: bool
 				onChange(next);
 			}}
 			data-print="hide"
-			className="rounded border-2 border-brand-interactive bg-brand-surface px-3 py-1.5 text-sm font-semibold text-brand-interactive data-[hovered]:bg-brand-surface-subtle data-[selected]:bg-brand-interactive data-[selected]:text-brand-text-on-interactive data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
+			aria-label={rail ? ctx.t({ code: "dashboard.sfm_title", msg: "Sendai Framework Monitoring" }) : undefined}
+			className={
+				rail
+					? `${RAIL_ITEM_BASE} border-data-sfm-on/40 text-data-sfm-on data-[hovered]:border-data-sfm-on data-[hovered]:bg-data-sfm-on-tint data-[selected]:border-data-sfm-on data-[selected]:bg-data-sfm-on data-[selected]:font-extrabold data-[selected]:text-white`
+					: "rounded border-2 border-brand-interactive bg-brand-surface px-3 py-1.5 text-sm font-semibold text-brand-interactive data-[hovered]:bg-brand-surface-subtle data-[selected]:bg-brand-interactive data-[selected]:text-brand-text-on-interactive data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
+			}
 		>
-			{ctx.t({ code: "dashboard.sfm_title", msg: "Sendai Framework Monitoring" })}
+			{rail ? (
+				<>
+					<PanelIcon name={SECTION_ICONS.sendai} size={26} colour="currentColor" />
+					<span aria-hidden="true">{ctx.t({ code: "dashboard.rail_sendai", msg: "Sendai" })}</span>
+				</>
+			) : (
+				ctx.t({ code: "dashboard.sfm_title", msg: "Sendai Framework Monitoring" })
+			)}
 		</ToggleButton>
 	);
 }

@@ -44,20 +44,29 @@ export interface HazardRailProps {
 	onChange: (typeId: string | null) => void;
 	/** Show the record count per type (record views); false on event views. */
 	showCounts: boolean;
+	/** Below the hazard types: the Sendai square (Alex, 2026-10-22). */
+	after?: React.ReactNode;
 }
 
-export function HazardRail({ ctx, tree, selected, onChange, showCounts }: HazardRailProps) {
+/** One square for every rail item, the hazard types and the Sendai button alike. */
+export const RAIL_ITEM_BASE =
+	"group relative flex w-[88px] shrink-0 cursor-pointer flex-col items-center gap-1 rounded-lg border border-transparent px-1 py-2 text-center text-[7.5pt] font-semibold text-data-dashboard-ink transition-colors duration-150 motion-reduce:transition-none data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring data-[disabled]:cursor-default data-[disabled]:opacity-50";
+
+export function HazardRail({ ctx, tree, selected, onChange, showCounts, after }: HazardRailProps) {
 	const t = ctx.t;
 	const n = (x: number) => x.toLocaleString(ctx.lang);
 	const item =
-		"group relative flex w-[88px] shrink-0 cursor-pointer flex-col items-center gap-1 rounded-lg border border-transparent px-1 py-2 text-center text-[7.5pt] font-semibold text-data-dashboard-ink transition-colors duration-150 motion-reduce:transition-none data-[hovered]:border-data-dashboard-hover data-[hovered]:bg-data-dashboard-tint data-[selected]:border-brand-interactive data-[selected]:bg-data-dashboard-tint data-[selected]:font-extrabold data-[selected]:before:absolute data-[selected]:before:inset-y-2 data-[selected]:before:-start-px data-[selected]:before:w-1 data-[selected]:before:rounded-e data-[selected]:before:bg-brand-interactive data-[selected]:before:content-[''] data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring data-[disabled]:cursor-default data-[disabled]:opacity-50";
+		`${RAIL_ITEM_BASE} data-[hovered]:border-data-dashboard-hover data-[hovered]:bg-data-dashboard-tint data-[selected]:border-brand-interactive data-[selected]:bg-data-dashboard-tint data-[selected]:font-extrabold data-[selected]:before:absolute data-[selected]:before:inset-y-2 data-[selected]:before:-start-px data-[selected]:before:w-1 data-[selected]:before:rounded-e data-[selected]:before:bg-brand-interactive data-[selected]:before:content-['']`;
 	const types = tree?.types ?? [];
 	return (
+		<div
+			data-print="hide"
+			className="delta-layer flex shrink-0 flex-row gap-1 overflow-x-auto p-2 lg:sticky lg:top-2 lg:flex-col lg:self-start lg:overflow-visible"
+		>
 		<RadioGroup
 			value={selected ?? ALL_HAZARDS}
 			onChange={(v) => onChange(v === ALL_HAZARDS ? null : v)}
-			data-print="hide"
-			className="delta-layer flex shrink-0 flex-row gap-1 overflow-x-auto p-2 lg:sticky lg:top-2 lg:flex-col lg:self-start lg:overflow-visible"
+			className="flex flex-row gap-1 lg:flex-col"
 		>
 			<Label className="sr-only">{t({ code: "dashboard.rail_label", msg: "Hazard type" })}</Label>
 			<Radio value={ALL_HAZARDS} className={item}>
@@ -99,6 +108,14 @@ export function HazardRail({ ctx, tree, selected, onChange, showCounts }: Hazard
 				);
 			})}
 		</RadioGroup>
+		{after && (
+			<>
+				{/* A rule sets the Sendai square apart from the hazard filter. */}
+				<span aria-hidden="true" className="mx-1 w-px shrink-0 self-stretch bg-data-dashboard-border lg:mx-2 lg:my-1 lg:h-px lg:w-auto" />
+				{after}
+			</>
+		)}
+		</div>
 	);
 }
 

@@ -95,4 +95,6 @@
   --delta-data-sfm-accent: #a8cfe3; /** Decorative accents only (1.65:1 on white). */
   --delta-data-sfm-mark: #76a6c1; /** Decorative rules only: 2.63:1 on white is below 3:1, so never an icon or text. */
   --delta-data-sfm-ink: #2f4f5f; /** Sendai titles, subtitles and icons: 8.73:1 on white. */
+  --delta-data-sfm-on: #c2410c; /** The Sendai rail button when on (Alex, 2026-10-22: orange): fill under white text and icon, 5.18:1. */
+  --delta-data-sfm-on-tint: #fff4ed; /** The Sendai rail button on hover, a pale orange behind the orange icon. */
 }

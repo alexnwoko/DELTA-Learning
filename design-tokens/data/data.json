@@ -540,6 +540,16 @@
 				"$type": "color",
 				"$value": "#2f4f5f",
 				"$description": "Sendai titles, subtitles and icons: 8.73:1 on white."
+			},
+			"on": {
+				"$type": "color",
+				"$value": "#c2410c",
+				"$description": "The Sendai rail button when on (Alex, 2026-10-22: orange): fill under white text and icon, 5.18:1."
+			},
+			"on-tint": {
+				"$type": "color",
+				"$value": "#fff4ed",
+				"$description": "The Sendai rail button on hover, a pale orange behind the orange icon."
 			}
 		}
 	}
