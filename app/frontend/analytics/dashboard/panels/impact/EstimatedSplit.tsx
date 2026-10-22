@@ -123,6 +123,13 @@ function Pyramid({ ctx, model, label }: { ctx: ViewContext; model: Model; label:
 								<title>{`${g.label}${mark}, ${t("dashboard.male", "Male")}: ${pct(g.male)} ${t("dashboard.of_total", "of the total")}${capped(g.male)} (${t("dashboard.estimated", "Estimated")})`}</title>
 							</rect>
 						)}
+						{/* A bar past the axis edge is clamped and says its value at the edge (Analytics, 2026-10-22). */}
+						{g.female !== null && g.female > max && (
+							<text x={MID - LABEL / 2 - half + 3} y={y + bar / 2 + 4} fill="white" fontWeight={700} stroke={DASHBOARD_RAMP[4]} strokeWidth={2.5} paintOrder="stroke">{`◂ ${pct(g.female)}`}</text>
+						)}
+						{g.male !== null && g.male > max && (
+							<text x={MID + LABEL / 2 + half - 3} y={y + bar / 2 + 4} textAnchor="end" fill="white" fontWeight={700} stroke={DASHBOARD_RAMP[4]} strokeWidth={2.5} paintOrder="stroke">{`${pct(g.male)} ▸`}</text>
+						)}
 					</g>
 				);
 			})}

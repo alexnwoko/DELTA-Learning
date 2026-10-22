@@ -127,3 +127,13 @@ describe("estimated sex and age split", () => {
 		expect(h).not.toContain("est-hatch\"");
 	});
 });
+
+describe("a bar past its model's axis", () => {
+	it("is clamped at the edge and shows its value there", () => {
+		// UN groups on a 10% axis: 0-4 female is 48.2% of 1,660.
+		const un = { ...D, defaultModel: "un" as const };
+		const h = renderToString(<>{estimatedSplitPanel(ctx, un).render!()}</>).replace(/<!-- -->/g, "");
+		expect(h).toContain("◂ 48.2%");
+		expect(h).toContain("49.4% ▸");
+	});
+});
