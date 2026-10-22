@@ -5686,7 +5686,7 @@
   },
   {
     "id": "geoportal.show_by",
-    "translation": "Show by",
+    "translation": "Analysis level",
     "description": "Label of the breakdown control: the map and rankings by country, province, district or local area. File: app/frontend/geoportal/GeoFilterBar.tsx"
   },
   {

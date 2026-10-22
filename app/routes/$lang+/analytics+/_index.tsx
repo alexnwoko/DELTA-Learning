@@ -14,6 +14,8 @@ import { getImpactSources } from "~/backend.server/models/analytics/dashboard/im
 import { getHazardMonth } from "~/backend.server/models/analytics/dashboard/hazardMonth.server";
 import { getEstimatedDisaggregation } from "~/backend.server/models/analytics/dashboard/estimatedDisaggregation.server";
 import { getCostPanels } from "~/backend.server/models/analytics/dashboard/costPanels.server";
+import { showByLevels } from "~/backend.server/models/analytics/dashboard/impactPanels5to16.server";
+import { levelAwareContext } from "~/frontend/analytics/dashboard/showBy";
 import { getRecordsByApproval } from "~/backend.server/models/analytics/dashboard/recordsByApproval.server";
 import { getSendaiSection } from "~/backend.server/models/analytics/dashboard/sendaiPanels.server";
 import { getHazardEventPanels1to7 } from "~/backend.server/models/analytics/dashboard/hazardEventPanels.server";
@@ -71,6 +73,7 @@ import type { DashboardFilterOptions } from "~/frontend/analytics/dashboard/filt
 import type { ImpactPanels5to16 } from "~/utils/dashboard/impactPanels5to16";
 import {
 	parseDeltaQuery,
+	showByLevel,
 	type DeltaQuery,
 } from "~/utils/deltaQuery";
 import { selectableBasemaps } from "~/utils/basemap";
@@ -179,6 +182,8 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request, p
 		: null;
 	// The shared filter bar's options: hazard tree, divisions and regions.
 	const filterOptions = await getDashboardFilterOptions(countryAccountsId, query, audience, routeParams.lang ?? "en");
+	// "Show by": the admin levels this country holds divisions at (Analytics 4a79f16c).
+	const levels = await showByLevels(countryAccountsId);
 	// For the G-00 notice: only the published basis can be empty this way.
 	const approvalCounts = query.scope.basis === "published" ? await getRecordsByApproval(query, ctx) : null;
 	return {
@@ -192,6 +197,7 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request, p
 		eventMap,
 		mapLayers,
 		filterOptions,
+		levels,
 		sendai,
 		sfm,
 		approvalCounts: approvalCounts as ApprovalCounts | null,
@@ -227,6 +233,9 @@ export default function AnalysisDashboard() {
 	const view = ld.view as DashboardView;
 	const source = `DELTA ${ld.country}`.trim();
 	const filterOptions = ld.filterOptions as DashboardFilterOptions;
+	// Titles that name the division level follow "Show by" ("Ranked by districts").
+	const level = showByLevel(query);
+	const pctx = levelAwareContext(ctx, level);
 	// Every chart starts at its own first period with data (Alex, 2026-10-20),
 	// not at the country's first record year.
 	const firstYear: FirstYear = null;
@@ -270,7 +279,7 @@ export default function AnalysisDashboard() {
 	const sendai = ld.sendai ? sendaiFromFirstRecord(ld.sendai as SendaiSection, firstYear) : null;
 	const sendaiPanels = sendai ? sendaiSectionPanels(ctx, sendai, { source, scope: summary, country: ld.country }) : [];
 	const viewPanels: DashboardPanel[] = impact
-		? impactDashboardPanels(ctx, impact, source, {
+		? impactDashboardPanels(pctx, impact, source, {
 				data: impactMore as ImpactPanels5to16,
 				country: ld.country,
 				// A place filter makes every figure sub-national: no Sendai codes (TR-060).
@@ -282,11 +291,11 @@ export default function AnalysisDashboard() {
 				provisional: ld.provisional,
 			})
 		: events
-			? eventDashboardPanels(ctx, events, { ...opts, map: ld.eventMap as EventMapPayload | null, more: ld.eventsMore ? events8to16FromFirstRecord(ld.eventsMore as EventPanels8to16, firstYear) : null, hazardMonth: ld.eventsHazardMonth as HazardMonth | null })
+			? eventDashboardPanels(pctx, events, { ...opts, map: ld.eventMap as EventMapPayload | null, more: ld.eventsMore ? events8to16FromFirstRecord(ld.eventsMore as EventPanels8to16, firstYear) : null, hazardMonth: ld.eventsHazardMonth as HazardMonth | null })
 			: hazardEvents
-				? hazardEventDashboardPanels(ctx, hazardEvents, { ...opts, signedIn: ld.signedIn })
+				? hazardEventDashboardPanels(pctx, hazardEvents, { ...opts, signedIn: ld.signedIn })
 				: sectors
-					? sectorDashboardPanels(ctx, sectors, { ...opts, country: ld.country })
+					? sectorDashboardPanels(pctx, sectors, { ...opts, country: ld.country })
 					: [];
 	// The Sendai section shows the Targets A and B counts (S0): the impact
 	// panel 5 table would repeat it, so it leaves the view list then.
@@ -334,19 +343,20 @@ export default function AnalysisDashboard() {
 				filterBar={
 					<GeoFilterBar
 						query={query}
-						level={1}
-						levels={[1]}
+						level={level}
+						levels={(ld.levels as number[] | undefined) ?? [1]}
 						// The header's Basis switch is the one basis control on this page.
 						canReview={false}
-						onChange={({ query: next }) =>
-							go(next, view)
+						onChange={({ query: next, level: nextLevel }) =>
+							go({ ...next, showBy: nextLevel === 2 || nextLevel === 3 ? nextLevel : undefined }, view)
 						}
 						hazardTree={filterOptions.hazardTree}
 						dimensionControl="none"
 						measures={measuresFor(view)}
 						chips={chipsFor(view, { hazardTree: filterOptions.hazardTree, sectors: sectorChips })}
 						place={filterOptions.place}
-						levelControl={false}
+						// "Show by", offered when the country has more than one admin level.
+						levelControl
 						notApplied={notApplied}
 						summary={false}
 						layout="row"
@@ -358,9 +368,9 @@ export default function AnalysisDashboard() {
 				map={
 					// An empty view shows its one frame, with no map of empty areas.
 					panels.some((p) => p.id.endsWith("-empty")) ? undefined : ld.impactMap ? (
-						<ImpactMap ctx={ctx} map={ld.impactMap as ImpactMapPayload} scope={mapScope} onSelectDivision={selectDivision} layers={ld.mapLayers ?? undefined} />
+						<ImpactMap ctx={pctx} map={ld.impactMap as ImpactMapPayload} scope={mapScope} onSelectDivision={selectDivision} layers={ld.mapLayers ?? undefined} />
 					) : ld.eventMap ? (
-						<EventMap ctx={ctx} map={ld.eventMap as EventMapPayload} scope={mapScope} onSelectDivision={selectDivision} layers={ld.mapLayers ?? undefined} />
+						<EventMap ctx={pctx} map={ld.eventMap as EventMapPayload} scope={mapScope} onSelectDivision={selectDivision} layers={ld.mapLayers ?? undefined} />
 					) : undefined
 				}
 				sendai={sendai ? <SendaiSectionView ctx={ctx} d={sendai} panels={sendaiPanels} country={ld.country} /> : undefined}

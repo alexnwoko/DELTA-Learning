@@ -169,8 +169,8 @@ describe("GeoFilterBar", () => {
 		expect(html).toContain("Dimension");
 		expect(html).toContain('aria-labelledby="geo-dim-label"');
 		expect(html).toContain("Deaths");
-		// "Show by" with plain level names (Alex, 2026-10-22).
-		expect(html).toContain("Show by");
+		// "Analysis level" (Alex renamed "Show by", 2026-10-22) with plain level names (Alex, 2026-10-22).
+		expect(html).toContain("Analysis level");
 		expect(html).toContain("Provinces or states (admin 1)");
 		expect(html).not.toContain("Map level");
 	});
@@ -1006,7 +1006,7 @@ describe("filter bar row layout for the Analysis page (Alex 2026-10-17)", () => 
 		expect(html).not.toContain("Map level");
 		// One Area picker, not "Place, level 1" and "Level 2" (Alex, 2026-10-22).
 		expect(html).not.toContain("Level 2");
-		expect(html).not.toContain("Show by"); // levelControl={false}
+		expect(html).not.toContain("Analysis level"); // levelControl={false}
 	});
 
 	it("offers Show by in the row when the page asks for it", () => {
@@ -1023,9 +1023,9 @@ describe("filter bar row layout for the Analysis page (Alex 2026-10-17)", () => 
 				place={{ divisions }}
 			/>,
 		);
-		expect(html).toContain("Show by");
+		expect(html).toContain("Analysis level");
 		expect(html).toContain("Districts (admin 2)");
-		expect(html.indexOf("Area")).toBeLessThan(html.indexOf("Show by"));
+		expect(html.indexOf("Area")).toBeLessThan(html.indexOf("Analysis level"));
 	});
 });
 
