@@ -37,8 +37,8 @@ const D: SendaiSection = {
 	},
 	a1: {
 		years: [
-			{ year: 2022, deaths: c(110, "reported", 30, 60), missing: c(4, "reported", 3, 60) },
-			{ year: 2023, deaths: c(null, "not_reported", 0, 55), missing: c(null, "not_reported", 0, 55) },
+			{ year: 2022, deaths: c(110, "reported", 30, 60), missing: c(4, "reported", 3, 60), rate: null },
+			{ year: 2023, deaths: c(null, "not_reported", 0, 55), missing: c(null, "not_reported", 0, 55), rate: null },
 		],
 		reference: { from: 2005, to: 2015, years: 11, deaths: c(60, "reported", 100, 300) },
 	},
