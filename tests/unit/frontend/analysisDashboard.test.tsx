@@ -279,16 +279,23 @@ describe("Disaster impact layout (Alex, 2026-10-18)", () => {
 		country: "Angola",
 	});
 
-	it("shows eleven panels two a row in the agreed order, with the new titles", () => {
+	it("shows the panels in the agreed order (Alex, 2026-10-22: coverage and completeness last)", () => {
+		// The fixture has no estimate payload, so row 2 right (Estimated sex and age split) is absent here.
 		const shown = all.filter((p) => !p.more && p.id !== "impact-5");
 		expect(shown.map((p) => p.title)).toEqual([
 			"Human effects at a glance", "Ranked by divisions",
 			"Hazard ranking by disaster impact", "Human effects by year",
 			"Hazard by human effect", "Hazard by sector",
 			"Houses destroyed and damaged", "People displaced, evacuated and relocated",
-			"Coverage of the records", "Reporting completeness and precision",
 			"Disaster impact by sex and age disaggregation", "Hazard by month",
+			"Coverage of the records", "Reporting completeness and precision",
 		]);
+	});
+
+	it("puts the estimated split in row 2, right, when it has data", async () => {
+		const { IMPACT_LAYOUT } = await import("~/frontend/analytics/dashboard/panels/impact/impactDashboardPanels");
+		expect(IMPACT_LAYOUT.slice(0, 4)).toEqual(["impact-1", "impact-7", "impact-4", "impact-estimated"]);
+		expect(IMPACT_LAYOUT.slice(-2)).toEqual(["impact-2", "impact-12"]);
 	});
 
 	it("puts the unlisted panels under Show more, in number order", () => {

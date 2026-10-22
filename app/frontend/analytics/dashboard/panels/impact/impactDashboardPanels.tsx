@@ -30,12 +30,12 @@ import { impactPanels5to16 } from "./panels5to16";
  */
 export const IMPACT_LAYOUT: readonly string[] = [
 	"impact-1", "impact-7", // Human effects at a glance | Ranked by divisions
-	"impact-4", "impact-3", // Hazard ranking by disaster impact | Human effects by year
-	"impact-6", "impact-8", // Hazard by human effect | Hazard by sector
-	"impact-10", "impact-9", // Houses destroyed and damaged | People displaced, evacuated and relocated
-	"impact-2", "impact-12", // Coverage of the records | Reporting completeness and precision
-	"impact-16", "impact-hazard-month", // Disaster impact by sex and age disaggregation | Hazard by month
-	"impact-estimated", // Estimated sex and age split (Alex, 2026-10-19), beside nothing reported
+	"impact-4", "impact-estimated", // Hazard ranking by disaster impact | Estimated sex and age split (Alex, 2026-10-22)
+	"impact-3", "impact-6", // Human effects by year | Hazard by human effect
+	"impact-8", "impact-10", // Hazard by sector | Houses destroyed and damaged
+	"impact-9", "impact-16", // People displaced, evacuated and relocated | sex and age disaggregation
+	"impact-hazard-month", // Hazard by month, full width (13 columns)
+	"impact-2", "impact-12", // Coverage of the records | Reporting completeness and precision, last before Sendai (Alex, 2026-10-22)
 ];
 
 /** Places each panel by IMPACT_LAYOUT; the rest follow, under "Show more". */
@@ -125,7 +125,7 @@ export function impactDashboardPanels(
 		: [];
 	// Unbuilt features (Alex, 2026-10-19): Features Coming Soon.
 	const sources = later?.sources ? [impactSourcesPanel(ctx, later.sources, common)] : [];
-	const months = later?.hazardMonth ? [hazardMonthPanel(ctx, later.hazardMonth, "impact-hazard-month", 28, common)] : [];
+	const months = later?.hazardMonth ? [{ ...hazardMonthPanel(ctx, later.hazardMonth, "impact-hazard-month", 28, common), wide: true }] : [];
 	const estimate = later?.estimated ? [estimatedSplitPanel(ctx, later.estimated)] : [];
 	const built = [...ready, ...rest, ...sources, ...months, ...estimate];
 	return arrangeImpactPanels([...built, ...comingSoonPanels(ctx, "impact", IMPACT_LAYOUT, built)]);
