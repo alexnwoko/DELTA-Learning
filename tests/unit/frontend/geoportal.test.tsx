@@ -169,7 +169,10 @@ describe("GeoFilterBar", () => {
 		expect(html).toContain("Dimension");
 		expect(html).toContain('aria-labelledby="geo-dim-label"');
 		expect(html).toContain("Deaths");
-		expect(html).toContain("Admin level 1");
+		// "Show by" with plain level names (Alex, 2026-10-22).
+		expect(html).toContain("Show by");
+		expect(html).toContain("Provinces or states (admin 1)");
+		expect(html).not.toContain("Map level");
 	});
 
 	it("offers the provisional basis to reviewers only", () => {
@@ -993,8 +996,7 @@ describe("filter bar row layout for the Analysis page (Alex 2026-10-17)", () => 
 			"HIPs type",
 			"HIPs cluster",
 			"Hazard",
-			"Place, level 1",
-			"Level 2",
+			"Area",
 			"Sendai Framework Monitoring",
 		];
 		const positions = order.map((label) => html.indexOf(label));
@@ -1002,6 +1004,28 @@ describe("filter bar row layout for the Analysis page (Alex 2026-10-17)", () => 
 		expect([...positions].sort((a, b) => a - b)).toEqual(positions);
 		expect(html).not.toContain("Last 10 years"); // no presets in the row
 		expect(html).not.toContain("Map level");
+		// One Area picker, not "Place, level 1" and "Level 2" (Alex, 2026-10-22).
+		expect(html).not.toContain("Level 2");
+		expect(html).not.toContain("Show by"); // levelControl={false}
+	});
+
+	it("offers Show by in the row when the page asks for it", () => {
+		const html = renderToString(
+			<GeoFilterBar
+				layout="row"
+				query={{ ...DEFAULT_QUERY, measure: "deaths" }}
+				level={2}
+				levels={[0, 1, 2, 3]}
+				canReview={false}
+				onChange={() => {}}
+				dimensionControl="none"
+				measures={null}
+				place={{ divisions }}
+			/>,
+		);
+		expect(html).toContain("Show by");
+		expect(html).toContain("Districts (admin 2)");
+		expect(html.indexOf("Area")).toBeLessThan(html.indexOf("Show by"));
 	});
 });
 
