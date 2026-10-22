@@ -618,7 +618,7 @@ export function GeoFilterBar(props: GeoFilterBarProps) {
 					)}
 					{props.levelControl !== false && props.levels.length > 1 && (
 						<SelectField
-							label={t({ code: "geoportal.show_by", msg: "Show by" })}
+							label={t({ code: "geoportal.show_by", msg: "Analysis level" })}
 							value={String(level)}
 							options={props.levels.map((l) => ({
 								id: String(l),
@@ -870,7 +870,7 @@ export function GeoFilterBar(props: GeoFilterBarProps) {
 				<Group label={t({ code: "geoportal.group.where", msg: "Where" })}>
 					{props.levelControl !== false && (
 						<SelectField
-							label={t({ code: "geoportal.show_by", msg: "Show by" })}
+							label={t({ code: "geoportal.show_by", msg: "Analysis level" })}
 							value={String(level)}
 							options={props.levels.map((l) => ({
 								id: String(l),
