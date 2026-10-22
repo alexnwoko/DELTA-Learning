@@ -26,6 +26,11 @@ import {
 } from "~/backend.server/models/analytics/dashboard/impactPanels5to16.server";
 import type { DeltaQuery } from "~/utils/deltaQuery";
 import {
+	DEFAULT_DISAGGREGATION_MODEL,
+	DISAGGREGATION_MODELS,
+	bandFromFiveYearGroups,
+} from "~/utils/disaggregationModels";
+import {
 	ESTIMABLE_MEASURES,
 	type EstimableMeasure,
 	type EstimatedCell,
@@ -55,6 +60,9 @@ const groupCode = (sex: "F" | "M", g: string) =>
 				.split("-")
 				.map((x) => x.padStart(2, "0"))
 				.join("_")}`;
+/** First year of age of a five-year group key ("15-19" -> 15, "100+" -> 100). */
+const groupFrom = (g: string) => Number(g.replace("+", "").split("-")[0]);
+
 const bandOf = (g: string): "0-14" | "15-64" | "65+" => {
 	const lo = Number(g.replace("+", "").split("-")[0]);
 	return lo < 15 ? "0-14" : lo < 65 ? "15-64" : "65+";
@@ -210,6 +218,31 @@ async function estimateFor(
 			female: cell(codesOf("F", (g) => bandOf(g) === band)),
 			male: cell(codesOf("M", (g) => bandOf(g) === band)),
 		})),
+		byModel: DISAGGREGATION_MODELS.map((m) => {
+			const groupsOf = (sex: "F" | "M") =>
+				new Map(
+					GROUPS.map((g) => [groupFrom(g), sums.get(groupCode(sex, g)) ?? 0]),
+				);
+			const f = groupsOf("F");
+			const mm = groupsOf("M");
+			return {
+				id: m.id,
+				name: m.name,
+				source: m.source,
+				bands: m.ageBands.map((band) => {
+					const fb = bandFromFiveYearGroups(f, band);
+					const mb = bandFromFiveYearGroups(mm, band);
+					return {
+						key: band.key,
+						label: band.label,
+						split: fb.split,
+						female: est(has ? fb.value : null),
+						male: est(has ? mb.value : null),
+					};
+				}),
+			};
+		}),
+		defaultModel: DEFAULT_DISAGGREGATION_MODEL,
 		groups: GROUPS.map((group) => ({
 			group,
 			female: cell([groupCode("F", group)]),
@@ -222,7 +255,7 @@ async function estimateFor(
 		footnote: FOOTNOTE(measure),
 		notForTargeting: true,
 		meta: {
-			method: `Estimate: for each start year, reported ${measure} in the records in scope multiplied by the country's share of population in each sex and five-year age group that year (${ESTIMATE_REFERENCE.source}, ${ESTIMATE_REFERENCE.release}), then summed; rounded to three significant figures. Left out and counted: Biological records, records under review, records with no start year or before ${FIRST_REFERENCE_YEAR}, and years with no reference structure. Deaths, missing, injured and displaced are not estimated. Not recorded data; not for targeting.`,
+			method: `Estimate: for each start year, reported ${measure} in the records in scope multiplied by the country's share of population in each sex and five-year age group that year (${ESTIMATE_REFERENCE.source}, ${ESTIMATE_REFERENCE.release}), then summed; rounded to three significant figures. Shown in four named models (DELTA, SFM, UN, life-stage); where a band edge falls inside a five-year group (18 in 15-19) the group is split evenly across its five years and the band is marked split. Left out and counted: Biological records, records under review, records with no start year or before ${FIRST_REFERENCE_YEAR}, and years with no reference structure. Deaths, missing, injured and displaced are not estimated. Not recorded data; not for targeting.`,
 			notApplied,
 		},
 	};
