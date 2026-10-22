@@ -90,3 +90,45 @@ main:has(.delta-dashboard-canvas) {
 		animation: none;
 	}
 }
+
+/* UX-8 (Alex, 2026-10-22): bars glide to their new length when a filter
+   changes; none under reduced motion. */
+.delta-anim path,
+.delta-anim rect {
+	transition: d 300ms ease, width 300ms ease, x 300ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+	.delta-anim path,
+	.delta-anim rect {
+		transition: none;
+	}
+}
+
+/* UX-1 (Alex, 2026-10-22): while a filter change loads, each card shows a
+   soft moving sheen over its last figures instead of a full-screen wait. */
+main[data-dashboard-refreshing] .delta-layer {
+	position: relative;
+}
+main[data-dashboard-refreshing] .delta-layer::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	pointer-events: none;
+	background: linear-gradient(100deg, rgb(240 246 255 / 70%) 30%, rgb(255 255 255 / 90%) 50%, rgb(240 246 255 / 70%) 70%);
+	background-size: 200% 100%;
+	animation: delta-sheen 1.2s linear infinite;
+}
+@keyframes delta-sheen {
+	from {
+		background-position: 100% 0;
+	}
+	to {
+		background-position: -100% 0;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	main[data-dashboard-refreshing] .delta-layer::after {
+		animation: none;
+	}
+}
