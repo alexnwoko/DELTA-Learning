@@ -18,6 +18,7 @@ import { PageBrand } from "~/frontend/PageBrand";
 import { PanelIcon } from "~/frontend/charts/PanelIcon";
 import { VIEW_ICONS } from "~/frontend/charts/dashboardIcons";
 import { SECONDARY_BUTTON } from "~/frontend/buttonStyles";
+import { DashboardTools, FILTERS_ID, WhatChanged } from "./DashboardTools";
 
 export function dimensionLabel(ctx: ViewContext, dimension: QueryDimension): string {
 	switch (dimension) {
@@ -127,8 +128,10 @@ export function DashboardShell({
 					)}
 					{download}
 					<PrintButton ctx={ctx} />
+					<DashboardTools ctx={ctx} onViewChange={onViewChange} viewsDisabled={sfmOn} />
 				</div>
 			</header>
+			<WhatChanged ctx={ctx} summary={summary} />
 
 			{provisional && (
 				<p
@@ -177,7 +180,7 @@ export function DashboardShell({
 					</p>
 				)}
 				{/* Filters and the Sendai section are the same on every view. */}
-				{filterBar}
+				<div id={FILTERS_ID}>{filterBar}</div>
 				{/* Only the selected panel mounts; the others hold nothing. With
 				    the Sendai toggle on, no panel mounts, so the Sendai section
 				    below sits directly under the filter bar (FR-AN-024). */}
