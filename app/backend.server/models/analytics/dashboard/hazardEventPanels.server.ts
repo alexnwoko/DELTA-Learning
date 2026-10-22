@@ -2,6 +2,7 @@
 // loader behind ~/utils/dashboard/hazardEventPanels. Events are filtered on
 // their own fields: tenant, approval basis, HIPs, start year and division.
 
+import { showByLevel } from "~/utils/deltaQuery";
 import { cachedDashboard } from "~/backend.server/models/analytics/dashboard/dashboardCache.server";
 import { sql, type SQL } from "drizzle-orm";
 import {
@@ -80,7 +81,7 @@ async function computeGetHazardEventPanels1to7(
 	const hev = hazardEventsCte(filters);
 	const divTree = sql`l1 AS (
 		SELECT d."id", d."id" AS l1_id FROM "division" d
-		WHERE d."level" = 1 AND d."country_accounts_id" = ${ctx.countryAccountsId}
+		WHERE d."level" = ${showByLevel(query)} AND d."country_accounts_id" = ${ctx.countryAccountsId}
 		UNION ALL
 		SELECT d."id", l1.l1_id FROM "division" d JOIN l1 ON d."parent_id" = l1."id"
 	)`;
@@ -103,7 +104,7 @@ async function computeGetHazardEventPanels1to7(
 			JOIN l1 ON l1."id" = hed."division_id"
 			JOIN "division" d ON d."id" = l1.l1_id`),
 		rows(sql`SELECT COUNT(*) AS n FROM "division"
-			WHERE "level" = 1 AND "country_accounts_id" = ${ctx.countryAccountsId}`),
+			WHERE "level" = ${showByLevel(query)} AND "country_accounts_id" = ${ctx.countryAccountsId}`),
 		hipTypeLabels(),
 	]);
 	const typeLabel = (id: string | null) =>

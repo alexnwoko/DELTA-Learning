@@ -55,6 +55,18 @@ describe("delta.query/1", () => {
 		expect(parseDeltaQuery(serializeDeltaQuery(query)).query).toEqual(query);
 	});
 
+	it("reads the Show by level, defaults to 1 and refuses an unknown level", () => {
+		expect(q("").query.showBy).toBeUndefined();
+		expect(q("level=1").query.showBy).toBeUndefined();
+		expect(q("level=3").query.showBy).toBe(3);
+		expect(serializeDeltaQuery(q("level=2").query).toString()).toBe("level=2");
+		const bad = q("level=7");
+		expect(bad.query.showBy).toBeUndefined();
+		expect(bad.issues).toEqual([
+			{ param: "level", reason: 'unknown level "7"' },
+		]);
+	});
+
 	it("reads one measure and refuses a list", () => {
 		expect(q("measure=houses_damaged").query.measure).toBe("houses_damaged");
 		const many = q("measure=deaths&measure=injured");
