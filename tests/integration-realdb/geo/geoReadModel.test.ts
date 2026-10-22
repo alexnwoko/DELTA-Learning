@@ -17,6 +17,7 @@ import {
 	getDivisionTile,
 	getHazardTree,
 	getPlaceDossier,
+	getCountryDossier,
 	GeoRefusalError,
 	type GeoCell,
 	type GeoRequest,
@@ -557,6 +558,12 @@ describe("geoportal read model (G1)", () => {
 			).toBe(13);
 			expect(lvl2.multiDivisionRecords).toBe(1);
 			expect(lvl2.caption).toMatch(/more than one area/);
+			// Placement disclosure (gap review step 2): drawn plus not drawn
+			// is every record in scope, so the page can say "n of total".
+			expect(lvl2.unattributed.placedRecords).toBe(10);
+			expect(
+				(lvl2.unattributed.placedRecords ?? 0) + lvl2.unattributed.records,
+			).toBe(13);
 		});
 
 		it("grades attribution: B by national id, C by import id, A when covered by one division", async () => {
@@ -916,6 +923,32 @@ describe("geoportal read model (G1)", () => {
 		});
 	});
 
+	describe("national Sendai rates in the country panel (gap review step 3)", () => {
+		it("forms annual rates only for a one-year period, refusing with a reason", async () => {
+			const oneYear = await getCountryDossier(
+				ids.countryAccountId,
+				req({ from: "2020", to: "2020" }),
+				"en",
+			);
+			expect(oneYear.rates).not.toBeNull();
+			expect(oneYear.rates!.year).toBe(2020);
+			// The test tenant has no population loaded: a refusal, never 0.
+			expect(oneYear.rates!.a1.value).toBeNull();
+			expect(oneYear.rates!.a1.refusal?.code).toBe("POPULATION_MISSING_FOR_YEAR");
+			expect(oneYear.rates!.denominator).toBeNull();
+			// Dwellings travel with the panel as Sendai B-3 and B-4 inputs.
+			expect(oneYear.cumulative).toHaveProperty("houses_destroyed");
+			expect(oneYear.cumulative).toHaveProperty("houses_damaged");
+
+			const span = await getCountryDossier(
+				ids.countryAccountId,
+				req({ from: "2019", to: "2021" }),
+				"en",
+			);
+			expect(span.rates).toBeNull();
+		});
+	});
+
 	describe("G3 place dossier", () => {
 		it("summarises a division and its descendants, with grades", async () => {
 			const d = await getPlaceDossier(
@@ -942,6 +975,13 @@ describe("geoportal read model (G1)", () => {
 			expect(d!.cumulative.deaths.value_state).toBe("reported");
 			expect(d!.hazardMix).toContainEqual({ hipTypeId, recordCount: 1 });
 			expect(d!.meta.migrationRunIds).toEqual(["run-test-1"]);
+			// Records per event (gap review step 4): r1 to e1, r3 and r10 to e2,
+			// r4 to e4; the other six records belong to no event.
+			expect(d!.events.records).toBe(10);
+			expect(d!.events.linkedRecords).toBe(4);
+			expect(d!.events.events).toBe(3);
+			expect(d!.events.glideEvents).toBe(0);
+			expect(d!.events.top[0]).toMatchObject({ id: ev.e2, records: 2 });
 		});
 
 		it("describes only its own place: no run ids from elsewhere", async () => {
