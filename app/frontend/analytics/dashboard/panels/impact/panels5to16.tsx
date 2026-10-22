@@ -32,6 +32,7 @@ import { cellRow, cellText, coverageText, panelNotes, type PanelExport } from ".
 import type { DashboardPanel } from "../../types";
 import { RowBars, ShadedTable, shadeFor, type BarSeries } from "../blocks";
 import { DASHBOARD_BAR, DASHBOARD_RAMP } from "~/frontend/charts/sectionPalette";
+import { rowFilter } from "../blocks";
 
 type T = ViewContext["t"];
 const tr = (t: T, code: string, msg: string, r?: Record<string, unknown>) => t({ code, msg }, r);
@@ -720,7 +721,7 @@ export function impactPanels5to16(
 				<Frame common={c} exp={e}>
 					<RowBars ctx={ctx} label={c.title}
 						rows={[
-							...data.rankedDivisions.rows.map((r) => ({ key: r.divisionId, label: r.name, bars: [{ cell: r.cell }] })),
+							...data.rankedDivisions.rows.map((r) => ({ key: r.divisionId, label: r.name, bars: [{ cell: r.cell }], filter: rowFilter("division", r.divisionId) })),
 							...(data.rankedDivisions.rest
 								? [{ key: "rest", label: tr(t, "dashboard.other_divisions", "{n} other divisions", { n: data.rankedDivisions.rest.divisions }), bars: [{ cell: data.rankedDivisions.rest.cell }] }]
 								: []),

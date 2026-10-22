@@ -5,7 +5,9 @@
 import type { ViewContext } from "~/frontend/context";
 import { roundedBarPath } from "~/frontend/charts/roundedBar";
 import type { PanelCell } from "~/utils/dashboard/impactPanels";
-import { cellText } from "../panelCell";
+import { cellText, coverageText } from "../panelCell";
+import { UX } from "~/frontend/uxFeatures";
+import { useState } from "react";
 import { DASHBOARD_BAR, DASHBOARD_RAMP } from "~/frontend/charts/sectionPalette";
 
 const reportedValue = (cell: PanelCell): number | null =>
@@ -92,11 +94,23 @@ export interface BarSeries {
 	fill: string;
 }
 
+/** UX-3: a row's filter, except for the "none" and "rest" rows, which name no single place or type. */
+export function rowFilter(kind: "division" | "hazard", id: string | null | undefined): { kind: "division" | "hazard"; id: string } | undefined {
+	return id && id !== "none" && id !== "rest" ? { kind, id } : undefined;
+}
+
 export interface RowBarsProps {
 	ctx: ViewContext;
 	/** Already translated: the chart in words, for screen readers. */
 	label: string;
-	rows: { key: string; label: string; note?: string; bars: { series?: BarSeries; cell: PanelCell }[] }[];
+	rows: {
+		key: string;
+		label: string;
+		note?: string;
+		bars: { series?: BarSeries; cell: PanelCell }[];
+		/** UX-3: clicking the row filters the page by this division or hazard type. */
+		filter?: { kind: "division" | "hazard"; id: string };
+	}[];
 	/** A legend entry per series; omit for one series. */
 	series?: BarSeries[];
 	/** Words for a not-reported slot, when the panel has its own (e.g. "No records linked"). */
@@ -114,6 +128,13 @@ const WIDTH = 380;
  * share one scale, so the chart never suggests that series add up.
  */
 export function RowBars({ ctx, label, rows, series, notReportedText }: RowBarsProps) {
+	// UX-4: a hover card with the value, its state and the records behind it.
+	const [card, setCard] = useState<{ x: number; y: number; lines: string[] } | null>(null);
+	const cardFor = (r: RowBarsProps["rows"][number]) => [
+		r.label,
+		...r.bars.map((b) => `${b.series && series && series.length > 1 ? `${b.series.name}: ` : ""}${cellText(ctx, b.cell)} · ${coverageText(ctx, b.cell)}`),
+		...(r.filter && UX[3] ? [ctx.t({ code: "dashboard.click_to_filter", msg: "Click to filter the page" })] : []),
+	];
 	const max = Math.max(1, ...rows.flatMap((r) => r.bars.map((b) => reportedValue(b.cell) ?? 0)));
 	const track = WIDTH - LABEL_W - 70;
 	// Rows sit close (Alex, 2026-10-20): a single bar takes 18 px, a 6 px gap.
@@ -126,7 +147,7 @@ export function RowBars({ ctx, label, rows, series, notReportedText }: RowBarsPr
 		return { r, top };
 	});
 	return (
-		<div className="flex flex-col gap-2">
+		<div className="relative flex flex-col gap-2">
 			{series && series.length > 1 && (
 				<ul className="m-0 flex list-none flex-wrap gap-3 p-0 text-sm">
 					{series.map((s) => (
@@ -145,10 +166,26 @@ export function RowBars({ ctx, label, rows, series, notReportedText }: RowBarsPr
 				role="img"
 				aria-label={label}
 				fontSize={11}
-				className="block max-w-full"
+				// UX-8: bars glide to new values (the delta-anim class, dashboard.css).
+				className={`block max-w-full${UX[8] ? " delta-anim" : ""}`}
+				onMouseLeave={() => setCard(null)}
 			>
 				{placed.map(({ r, top }) => (
-					<g key={r.key}>
+					<g
+						key={r.key}
+						// UX-3: the click is caught by the dashboard and sets the page filter.
+						data-filter-kind={UX[3] && r.filter ? r.filter.kind : undefined}
+						data-filter-id={UX[3] && r.filter ? r.filter.id : undefined}
+						style={UX[3] && r.filter ? { cursor: "pointer" } : undefined}
+						onMouseMove={
+							UX[4]
+								? (e) => {
+										const box = (e.currentTarget.ownerSVGElement?.parentElement ?? e.currentTarget).getBoundingClientRect();
+										setCard({ x: e.clientX - box.left + 12, y: e.clientY - box.top + 12, lines: cardFor(r) });
+									}
+								: undefined
+						}
+					>
 						<text x={0} y={top + 11} fill="currentColor" fontWeight={600}>
 							{r.label.length > 22 ? `${r.label.slice(0, 21)}…` : r.label}
 							<title>{r.label}</title>
@@ -186,6 +223,17 @@ export function RowBars({ ctx, label, rows, series, notReportedText }: RowBarsPr
 					</g>
 				))}
 			</svg>
+			{UX[4] && card && (
+				<div
+					aria-hidden="true"
+					data-print="hide"
+					className="delta-layer pointer-events-none absolute z-10 max-w-64 px-2.5 py-1.5 text-xs text-data-dashboard-ink"
+					style={{ insetInlineStart: card.x, top: card.y }}
+				>
+					<span className="delta-panel-title block">{card.lines[0]}</span>
+					{card.lines.slice(1).map((l) => <span key={l} className="block">{l}</span>)}
+				</div>
+			)}
 		</div>
 	);
 }

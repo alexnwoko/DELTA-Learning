@@ -19,6 +19,7 @@ import { PanelIcon } from "~/frontend/charts/PanelIcon";
 import { VIEW_ICONS } from "~/frontend/charts/dashboardIcons";
 import { SECONDARY_BUTTON } from "~/frontend/buttonStyles";
 import { DashboardTools, FILTERS_ID, WhatChanged } from "./DashboardTools";
+import { UX } from "~/frontend/uxFeatures";
 
 export function dimensionLabel(ctx: ViewContext, dimension: QueryDimension): string {
 	switch (dimension) {
@@ -56,6 +57,8 @@ export interface DashboardShellProps {
 	sendai?: React.ReactNode;
 	/** Toggle on: only the Sendai section shows; the view buttons are disabled (FR-AN-022, 023). */
 	sfmOn?: boolean;
+	/** UX-3: a click on a ranked division or hazard row sets the page filter. */
+	onFilterRow?: (kind: "division" | "hazard", id: string) => void;
 	/** The shared filter bar (GeoFilterBar, owned by Geoportal). */
 	filterBar?: React.ReactNode;
 	/** Map M0, drawn through MapChart. */
@@ -84,6 +87,7 @@ export function DashboardShell({
 	rail,
 	sendai,
 	sfmOn = false,
+	onFilterRow,
 	filterBar,
 	map,
 	panels,
@@ -102,7 +106,18 @@ export function DashboardShell({
 	const chips = summary.split(" · ").filter(Boolean);
 
 	return (
-		<div data-print="flow" className="delta-dashboard-canvas flex flex-col gap-4 text-brand-text">
+		// UX-3: rows that name a division or hazard (data-filter-*) filter the page on click.
+		<div
+			data-print="flow"
+			className="delta-dashboard-canvas flex flex-col gap-4 text-brand-text"
+			onClick={(e) => {
+				if (!UX[3] || !onFilterRow) return;
+				const row = (e.target as Element).closest?.("[data-filter-kind]");
+				const kind = row?.getAttribute("data-filter-kind");
+				const id = row?.getAttribute("data-filter-id");
+				if ((kind === "division" || kind === "hazard") && id) onFilterRow(kind, id);
+			}}
+		>
 			<header className="flex flex-wrap items-start justify-between gap-3">
 				<div className="flex min-w-0 flex-col gap-1">
 					<PageBrand ctx={ctx} section="analysis" country={country} />
