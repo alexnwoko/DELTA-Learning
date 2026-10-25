@@ -17,4 +17,4 @@
 - [x] 3.6 Gate 9: skipped, no `app/routes/` or `presentation/` change
 - [x] 3.7 Gate 10: second-opinion review (fresh subagent)
 - [x] 3.8 Regression: full unit suite 643/644; the one failure (`countryAccountService.clone.test.ts`) also fails on base `c3652821`, so it is pre-existing
-- [ ] 3.9 Real-DB ref tier (`yarn test:run3 tests/integration-realdb/ref`): not run; needs a free test database
+- [x] 3.9 Real-DB ref tier on testdb1: 63/63, run with BM-2

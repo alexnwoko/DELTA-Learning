@@ -47,6 +47,7 @@ const provenance = {
 const denom: DenominatorResult = {
 	ok: true,
 	year: 2024,
+	yearBasis: "start_year_fallback",
 	value: 2_000_000,
 	provenance,
 };
@@ -59,6 +60,7 @@ const missingDenom: DenominatorResult = {
 		countryAccountsId: "t1",
 		divisionId: null,
 		year: 2024,
+		yearBasis: "start_year_fallback",
 		boundaryVintage: null,
 	},
 };
@@ -126,6 +128,7 @@ describe("ratePer100k", () => {
 		const zero: DenominatorResult = {
 			ok: true,
 			year: 2024,
+			yearBasis: "start_year_fallback",
 			value: 0,
 			provenance: { ...provenance, value: 0, valueState: "zero_confirmed" },
 		};

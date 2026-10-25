@@ -122,6 +122,18 @@ describe("sendaiRatesForYear", () => {
 		expect(res.undated.measures.deaths.value).toBe(9);
 	});
 
+	it("labels and counts the records placed by the start-year fallback", async () => {
+		const res = await sendaiRatesForYear(t.countryAccountsId, 2024);
+		// TR-154: the two published 2024 records have no effect date.
+		expect(res.yearBasis).toEqual({
+			basis: "start_year_fallback",
+			records: 2,
+		});
+		expect(res.a1.ok && res.a1.denominator.yearBasis).toBe(
+			"start_year_fallback",
+		);
+	});
+
 	it("computes the affected-direct analytical rate (not B-1)", async () => {
 		const res = await sendaiRatesForYear(t.countryAccountsId, 2024);
 		expect(res.affected_direct_per_100k.ok).toBe(true);

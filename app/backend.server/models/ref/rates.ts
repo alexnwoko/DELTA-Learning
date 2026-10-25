@@ -16,6 +16,8 @@ import {
 	type DenominatorRefusalCode,
 	type DenominatorResult,
 	type ReferenceProvenance,
+	DEFAULT_YEAR_BASIS,
+	type YearBasis,
 } from "~/backend.server/models/ref/denominator";
 
 // E1 (Enrichment Data Integration, section 7.2): rates per 100,000 people.
@@ -72,6 +74,7 @@ export type RateResult =
 			numerator: RateNumerator;
 			denominator: {
 				year: number;
+				yearBasis: YearBasis;
 				value: number;
 				provenance: ReferenceProvenance;
 			};
@@ -156,6 +159,7 @@ export function ratePer100k(
 		numerator,
 		denominator: {
 			year: denominator.year,
+			yearBasis: denominator.yearBasis,
 			value: denominator.value,
 			provenance: denominator.provenance,
 		},
@@ -223,6 +227,12 @@ export const AFFECTED_DIRECT_METHOD = "delta_affected_direct_rate";
 export interface SendaiNumerators {
 	/** Records whose year is the requested year. */
 	measures: Record<SendaiMeasure, MeasureValue>;
+	/**
+	 * How those records were placed in the year, and how many were placed by
+	 * the labelled start-year fallback (TR-154: labelled and counted). Every
+	 * record is a fallback until records carry effect dates.
+	 */
+	yearBasis: { basis: YearBasis; records: number };
 	/**
 	 * Records on the basis whose start date has no year. They are never
 	 * counted in any year; their totals are shown here instead.
@@ -317,6 +327,10 @@ export async function sendaiNumeratorsForYear(
 	const undatedRow = rows.find((r) => r.scope === "undated") ?? {};
 	return {
 		measures: measuresFromRow(yearRow),
+		yearBasis: {
+			basis: DEFAULT_YEAR_BASIS,
+			records: Number(yearRow.records_total ?? 0),
+		},
 		undated: {
 			records: Number(undatedRow.records_total ?? 0),
 			measures: measuresFromRow(undatedRow),
@@ -336,6 +350,8 @@ export interface SendaiRates {
 	 * (AFFECTED_DIRECT_METHOD). Not Sendai B-1.
 	 */
 	affected_direct_per_100k: RateResult;
+	/** Year basis of the numerators and how many records rest on it. */
+	yearBasis: SendaiNumerators["yearBasis"];
 	/** Records with no year: never in a rate, shown as totals only. */
 	undated: SendaiNumerators["undated"];
 }
@@ -352,7 +368,11 @@ export async function sendaiRatesForYear(
 	const audience: ApprovalAudience = "official";
 	const [numerators, denominator] = await Promise.all([
 		sendaiNumeratorsForYear(countryAccountsId, year, audience),
-		getPopulationDenominator(countryAccountsId, { divisionId: null, year }),
+		getPopulationDenominator(countryAccountsId, {
+			divisionId: null,
+			year,
+			yearBasis: DEFAULT_YEAR_BASIS,
+		}),
 	]);
 	const { deaths, missing, affected_direct } = numerators.measures;
 	const basis = {
@@ -360,6 +380,7 @@ export async function sendaiRatesForYear(
 		countryAccountsId,
 		year,
 		yearRule: "record start date year, proxy for the year of the effect",
+		yearBasis: numerators.yearBasis,
 		source: "human_category_presence",
 	};
 
@@ -389,6 +410,7 @@ export async function sendaiRatesForYear(
 		denominator,
 		a1,
 		affected_direct_per_100k: affectedDirect,
+		yearBasis: numerators.yearBasis,
 		undated: numerators.undated,
 	};
 }

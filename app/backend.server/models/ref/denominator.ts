@@ -16,8 +16,10 @@ import {
 //
 // - R2: the official national series first, then international official
 //   estimates (UN WPP, WDI), then modelled values, each labelled.
-// - R3: the reference year is the event start year; the value's period must
-//   cover a date in that year.
+// - R3: the reference year is the year of occurrence (TR-154, ER-3). Records
+//   hold no per-effect date yet, so callers pass the record start year and
+//   the result is labelled start_year_fallback; the value's period must cover
+//   a date in that year.
 // - R7: null is not zero. A missing denominator is refused with the PD-05
 //   code DENOMINATOR_MISSING (TR-154); this module never returns 0 for a
 //   missing value.
@@ -25,6 +27,17 @@ import {
 //   on another vintage is refused, not crosswalked.
 
 export const POPULATION_INDICATOR = "POP_TOTAL";
+
+/** How the year of a denominator was chosen (TR-154, FR-BAS-600). */
+export type YearBasis = "effect_date" | "start_year_fallback";
+
+/** The basis used until records carry effect dates (D-BM-04). */
+export const DEFAULT_YEAR_BASIS: YearBasis = "start_year_fallback";
+
+export const YEAR_BASIS_LABELS: Record<YearBasis, string> = {
+	effect_date: "Year of occurrence, from the effect date",
+	start_year_fallback: "Record start year (fallback: no effect date)",
+};
 
 // DENOMINATOR_MISSING is reserved in the PD-05 refusal envelope.
 // BOUNDARY_VINTAGE_MISMATCH is a DELTA extension (TR-153, NFR-111):
@@ -75,20 +88,29 @@ export interface DenominatorRefusal {
 	countryAccountsId: string;
 	divisionId: string | null;
 	year: number;
+	yearBasis: YearBasis;
 	boundaryVintage: string | null;
 	/** For BOUNDARY_VINTAGE_MISMATCH: the vintages that do hold a value. */
 	availableVintages?: string[];
 }
 
 export type DenominatorResult =
-	| { ok: true; year: number; value: number; provenance: ReferenceProvenance }
+	| {
+			ok: true;
+			year: number;
+			yearBasis: YearBasis;
+			value: number;
+			provenance: ReferenceProvenance;
+	  }
 	| { ok: false; refusal: DenominatorRefusal };
 
 export interface PopulationDenominatorOptions {
 	/** null for the national denominator. */
 	divisionId: string | null;
-	/** Event start year (R3). */
+	/** Year of occurrence (R3). */
 	year: number;
+	/** Defaults to start_year_fallback until records carry effect dates. */
+	yearBasis?: YearBasis;
 	/** Boundary vintage of the records the rate is computed for (R9). */
 	boundaryVintage?: string | null;
 }
@@ -226,6 +248,7 @@ export function choosePopulationDenominator(
 	opts: PopulationDenominatorOptions,
 ): DenominatorResult {
 	const vintage = opts.boundaryVintage ?? null;
+	const yearBasis = opts.yearBasis ?? DEFAULT_YEAR_BASIS;
 	const refuse = (
 		code: DenominatorRefusalCode,
 		reason: string,
@@ -238,6 +261,7 @@ export function choosePopulationDenominator(
 			countryAccountsId,
 			divisionId: opts.divisionId,
 			year: opts.year,
+			yearBasis,
 			boundaryVintage: vintage,
 			...(availableVintages ? { availableVintages } : {}),
 		},
@@ -275,6 +299,7 @@ export function choosePopulationDenominator(
 	return {
 		ok: true,
 		year: opts.year,
+		yearBasis,
 		value: best.value as number,
 		provenance: toProvenance(best),
 	};
