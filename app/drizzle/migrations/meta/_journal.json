@@ -526,6 +526,20 @@
       "when": 1792328400000,
       "tag": "20261022090000_ref_exchange_rate_indicator",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1792332000000,
+      "tag": "20261026090000_ref_contract_v0_3",
+      "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1792335600000,
+      "tag": "20261026100000_ref_contract_v0_3_validate",
+      "breakpoints": true
     }
   ]
 }

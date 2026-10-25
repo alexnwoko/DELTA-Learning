@@ -76,6 +76,16 @@ const EXPECTED_CHECKS = [
 	"ref_value_price_basis_check",
 	"ref_source_redistribution_rule_check",
 	"ref_source_status_check",
+	// Contract v0.3 (BM-3, D-BM-05)
+	"ref_release_grid_resolution_check",
+	"ref_value_monetary_check",
+	"ref_value_constant_base_year_check",
+	"ref_value_quality_flags_check",
+	"ref_value_coarse_grid_grade_check",
+	"ref_value_cell_coverage_sum_check",
+	"ref_value_interpolation_grade_check",
+	"ref_value_interval_type_required_check",
+	"ref_value_redistribution_rule_check",
 ];
 
 describe("ref schema DDL", () => {

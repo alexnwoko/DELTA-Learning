@@ -94,13 +94,14 @@ export async function insertValue(v: {
 	keyScheme?: string;
 	lowerBound?: number | null;
 	upperBound?: number | null;
+	intervalType?: string | null;
 }): Promise<string> {
 	const keyScheme = v.keyScheme ?? (v.divisionId ? "national_id" : "iso3");
 	const res = await dr.execute(sql`
 		INSERT INTO ref.value (
 			country_accounts_id, division_id, key_scheme, boundary_vintage, indicator_code,
 			quantity_type, release_id, source_status, period_start, period_end, value,
-			value_state, lower_bound, upper_bound, method, grade
+			value_state, lower_bound, upper_bound, interval_type, method, grade
 		) VALUES (
 			${v.countryAccountsId}, ${v.divisionId ?? null}::uuid, ${keyScheme},
 			${v.boundaryVintage ?? "national"}, ${v.indicatorCode ?? "POP_TOTAL"},
@@ -108,6 +109,7 @@ export async function insertValue(v: {
 			${v.periodStart ?? "2024-01-01"}::date, ${v.periodEnd ?? "2024-12-31"}::date,
 			${v.value}::double precision, ${v.valueState ?? "reported"},
 			${v.lowerBound ?? null}::double precision, ${v.upperBound ?? null}::double precision,
+			${v.intervalType ?? null},
 			${v.method ?? "as_published"},
 			${v.grade ?? "REF-B"}
 		) RETURNING id

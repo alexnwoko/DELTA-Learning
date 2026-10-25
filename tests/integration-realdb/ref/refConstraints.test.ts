@@ -228,6 +228,7 @@ describe("ref.value CHECK constraints", () => {
 			value: 10,
 			periodStart: "2019-01-01",
 			periodEnd: "2019-12-31",
+			intervalType: "ci95",
 		};
 		expect(await pgError(insertValue({ ...base, lowerBound: 11 }))).toContain(
 			"ref_value_lower_bound_check",
