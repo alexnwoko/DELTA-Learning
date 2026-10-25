@@ -140,7 +140,8 @@ describe("validateReferenceValueCells", () => {
 			"areal_interpolation",
 			"raked_to_official",
 		]) {
-			expect(errorsOf({ ...wpp, method })).toEqual([]);
+			// v0.3 rule 5: interpolated and raked values take REF-C or REF-D.
+			expect(errorsOf({ ...wpp, method, grade: "REF-C" })).toEqual([]);
 		}
 		expect(errorsOf({ ...wpp, method: "weighted_mean" })[0]).toContain(
 			"method: 'weighted_mean'",
@@ -163,48 +164,156 @@ describe("validateReferenceValueCells", () => {
 	});
 
 	it("v0.2: requires lower_bound <= value <= upper_bound", () => {
+		const ci = { ...wpp, interval_type: "ci95" };
 		expect(
-			errorsOf({ ...wpp, lower_bound: "900000", upper_bound: "1100000" }),
+			errorsOf({ ...ci, lower_bound: "900000", upper_bound: "1100000" }),
 		).toEqual([]);
-		expect(errorsOf({ ...wpp, lower_bound: "1000001" })).toEqual([
+		expect(errorsOf({ ...ci, lower_bound: "1000001" })).toEqual([
 			"lower_bound: must not exceed value",
 		]);
-		expect(errorsOf({ ...wpp, upper_bound: "999999" })).toEqual([
+		expect(errorsOf({ ...ci, upper_bound: "999999" })).toEqual([
 			"upper_bound: must not be below value",
 		]);
 	});
 
-	it("v0.2: money values need currency and price basis", () => {
+	it("v0.3: money values need currency, price basis and unit multiplier", () => {
 		const gdp = {
 			...wpp,
 			indicator_code: "GDP_CURRENT_USD",
 			family: "economic",
 			unit: "USD",
+			is_monetary: "true",
 		};
 		expect(errorsOf(gdp)).toEqual([
 			"currency: required for a money value",
 			"price_basis: required for a money value",
+			"unit_mult: required for a money value",
 		]);
 		expect(
-			errorsOf({ ...gdp, currency: "USD", price_basis: "current" }),
+			errorsOf({
+				...gdp,
+				currency: "USD",
+				price_basis: "current",
+				unit_mult: "0",
+			}),
 		).toEqual([]);
 		expect(
-			errorsOf({ ...gdp, currency: "usd", price_basis: "nominal" }).length,
+			errorsOf({
+				...gdp,
+				currency: "usd",
+				price_basis: "nominal",
+				unit_mult: "0",
+			}).length,
 		).toBe(2);
+		// An exchange rate carries a currency but is not a money amount.
+		expect(
+			errorsOf({
+				...gdp,
+				is_monetary: "",
+				currency: "AOA",
+				unit: "AOA per USD",
+			}),
+		).toEqual([]);
 	});
 
-	it("v0.2: climate driver values need the index version", () => {
+	it("v0.3: constant prices need a base year", () => {
+		expect(
+			errorsOf({
+				...wpp,
+				family: "economic",
+				is_monetary: "true",
+				currency: "AOA",
+				price_basis: "constant",
+				unit_mult: "6",
+			}),
+		).toEqual(["base_year: required for constant prices"]);
+	});
+
+	it("v0.3: is_monetary is true, false or empty", () => {
+		expect(errorsOf({ ...wpp, is_monetary: "yes" })).toEqual([
+			"is_monetary: must be true, false or empty",
+		]);
+		expect(errorsOf({ ...wpp, is_monetary: "false" })).toEqual([]);
+	});
+
+	it("v0.3: climate driver values need the index version, global key and no vintage", () => {
 		const oni = {
 			...wpp,
 			indicator_code: "ENSO_ONI",
 			family: "climate_driver",
 			quantity_type: "index",
 			unit: "degC",
+			division_key: "GLOBAL",
+			key_scheme: "global",
+			boundary_vintage: "not_applicable",
 		};
 		expect(errorsOf(oni)).toEqual([
 			"index_version: required for a climate driver value",
 		]);
 		expect(errorsOf({ ...oni, index_version: "ONI v5" })).toEqual([]);
+		expect(
+			errorsOf({
+				...oni,
+				index_version: "ONI v5",
+				key_scheme: "iso3",
+				boundary_vintage: "national",
+			}),
+		).toEqual([
+			"key_scheme: a climate driver value uses the global key",
+			"boundary_vintage: a climate driver value carries not_applicable",
+		]);
+	});
+
+	it("v0.3: quality flags, coarse grid grade and coverage sum", () => {
+		const grid = {
+			...worldpopNotReported,
+			value: "500",
+			value_state: "reported",
+		};
+		expect(errorsOf({ ...grid, quality_flags: "coarse_grid" })).toEqual([
+			"grade: a coarse_grid value takes REF-D",
+		]);
+		expect(
+			errorsOf({ ...grid, quality_flags: "coarse_grid", grade: "REF-D" }),
+		).toEqual([]);
+		expect(errorsOf({ ...grid, quality_flags: "tiny" })).toEqual([
+			"quality_flags: 'tiny' is not one of coarse_grid",
+		]);
+		expect(
+			errorsOf({
+				...grid,
+				quality_flags: "coarse_grid;coarse_grid",
+				grade: "REF-D",
+			}),
+		).toEqual(["quality_flags: each flag appears once"]);
+		expect(errorsOf({ ...grid, cell_coverage_sum: "-0.5" })).toEqual([
+			"cell_coverage_sum: must be a number of at least 0, or empty",
+		]);
+		expect(errorsOf({ ...grid, cell_coverage_sum: "3.25" })).toEqual([]);
+	});
+
+	it("v0.3: interpolated or raked values take REF-C or REF-D", () => {
+		expect(errorsOf({ ...wpp, method: "raked_to_official" })).toEqual([
+			"grade: areal_interpolation and raked_to_official take REF-C or REF-D",
+		]);
+	});
+
+	it("v0.3: a bound needs an interval type", () => {
+		expect(errorsOf({ ...wpp, lower_bound: "900000" })).toEqual([
+			"interval_type: required when a bound is given",
+		]);
+		expect(
+			errorsOf({ ...wpp, lower_bound: "900000", interval_type: "ci95" }),
+		).toEqual([]);
+	});
+
+	it("v0.3: accepts the share-alike rule on a value", () => {
+		expect(
+			errorsOf({ ...wpp, redistribution_rule: "redistribute_share_alike" }),
+		).toEqual([]);
+		expect(errorsOf({ ...wpp, redistribution_rule: "excluded" })).toHaveLength(
+			1,
+		);
 	});
 
 	it("v0.2: base_year and unit_mult are integers; key validity is ordered", () => {

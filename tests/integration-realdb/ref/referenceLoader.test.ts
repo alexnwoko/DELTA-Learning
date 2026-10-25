@@ -284,4 +284,117 @@ describe("reference CSV loader", () => {
 		expect(report.rowsRead).toBe(6);
 		expect(report.inserted + report.updated + report.unchanged).toBe(0);
 	});
+
+	// BM-3b (contract v0.3, SEC-19 rules 6 and 7, TR-151, TR-162).
+	async function registerSource(name: string, rule: string) {
+		await dr.execute(sql`
+			INSERT INTO ref.source (name, licence, redistribution_rule, source_status)
+			VALUES (${name}, 'mixed', ${rule}, 'modelled')
+		`);
+	}
+
+	const gridRow = (over: Record<string, string>) =>
+		row({
+			division_key: `N-${tag}`,
+			key_scheme: "national_id",
+			boundary_vintage: "V1",
+			method: "zonal_sum",
+			grade: "REF-C",
+			licence: "mixed",
+			source_status: "modelled",
+			value: "1200",
+			...over,
+		});
+
+	it("loads no value from an excluded source", async () => {
+		await registerSource(`Excluded ${tag}`, "excluded");
+		const report = await loadReferenceCsv(
+			csv([
+				gridRow({
+					source: `Excluded ${tag}`,
+					period_start: "2019-01-01",
+					period_end: "2019-12-31",
+				}),
+			]),
+		);
+		expect(report.inserted).toBe(0);
+		expect(report.rejected[0].errors[0]).toContain("excluded");
+	});
+
+	it("stores each row's own rule for a per_resource source", async () => {
+		await registerSource(`Mixed ${tag}`, "per_resource");
+		const report = await loadReferenceCsv(
+			csv([
+				gridRow({
+					source: `Mixed ${tag}`,
+					redistribution_rule: "redistribute_share_alike",
+					period_start: "2019-01-01",
+					period_end: "2019-12-31",
+				}),
+				gridRow({
+					source: `Mixed ${tag}`,
+					redistribution_rule: "analysis_only",
+					period_start: "2018-01-01",
+					period_end: "2018-12-31",
+				}),
+			]),
+		);
+		expect(report.rejected).toEqual([]);
+		expect(report.inserted).toBe(2);
+		const res = await dr.execute(sql`
+			SELECT v.redistribution_rule FROM ref.value v
+			JOIN ref.release r ON r.id = v.release_id
+			JOIN ref.source s ON s.id = r.source_id
+			WHERE s.name = ${`Mixed ${tag}`}
+			ORDER BY v.period_start
+		`);
+		expect(res.rows.map((r: any) => r.redistribution_rule)).toEqual([
+			"analysis_only",
+			"redistribute_share_alike",
+		]);
+	});
+
+	it("stores the source rule on every value of a fixed-rule source", async () => {
+		const res = await dr.execute(sql`
+			SELECT DISTINCT v.redistribution_rule FROM ref.value v
+			WHERE v.country_accounts_id = ${t.countryAccountsId}
+				AND v.release_id IN (
+					SELECT r.id FROM ref.release r JOIN ref.source s ON s.id = r.source_id
+					WHERE s.name = ${`WPP ${tag}`})
+		`);
+		expect(res.rows).toEqual([
+			{ redistribution_rule: "display_and_redistribute" },
+		]);
+	});
+
+	it("loads and re-loads the v0.3 columns", async () => {
+		const first = gridRow({
+			source: `Coarse ${tag}`,
+			licence: "CC BY 4.0",
+			redistribution_rule: "display_and_redistribute",
+			grade: "REF-D",
+			quality_flags: "coarse_grid",
+			cell_coverage_sum: "2.5",
+			period_start: "2017-01-01",
+			period_end: "2017-12-31",
+		});
+		expect((await loadReferenceCsv(csv([first]))).inserted).toBe(1);
+		const second = await loadReferenceCsv(
+			csv([{ ...first, cell_coverage_sum: "2.75" }]),
+		);
+		expect(second.updated).toBe(1);
+		const res = await dr.execute(sql`
+			SELECT v.quality_flags, v.cell_coverage_sum, v.is_monetary
+			FROM ref.value v JOIN ref.release r ON r.id = v.release_id
+			JOIN ref.source s ON s.id = r.source_id
+			WHERE s.name = ${`Coarse ${tag}`}
+		`);
+		expect(res.rows).toEqual([
+			{
+				quality_flags: ["coarse_grid"],
+				cell_coverage_sum: 2.75,
+				is_monetary: false,
+			},
+		]);
+	});
 });

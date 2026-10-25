@@ -1,6 +1,7 @@
 // E1 (Enrichment Data Integration, sections 4 and 8): the rules for one
-// reference value, as in delta_reference_value.schema.json v0.2 (JSON Schema
-// 2020-12; expert review amendments DRR-08, GEO-06, GEO-08, CLM-08). The
+// reference value, as in delta_reference_value.schema.json v0.3 (JSON Schema
+// 2020-12; expert review amendments DRR-08, GEO-06, GEO-08, CLM-08, DRR-N04,
+// GEO-N01, GEO-N03). The
 // loader validates every CSV row with these rules before it writes; the
 // ref.value CHECK constraints enforce the row-level rules in the database.
 // Pure module: no database access.
@@ -53,13 +54,36 @@ export const REF_INDEX_METHODS: readonly RefMethod[] = [
 export const REF_GRADES = ["REF-A", "REF-B", "REF-C", "REF-D"] as const;
 export type RefGrade = (typeof REF_GRADES)[number];
 
+/** The rule a value carries: one of the five resolved SEC-19 rules. */
 export const REF_REDISTRIBUTION_RULES = [
 	"display_and_redistribute",
+	"redistribute_share_alike",
 	"display_only",
 	"signed_in_only",
 	"analysis_only",
 ] as const;
 export type RefRedistributionRule = (typeof REF_REDISTRIBUTION_RULES)[number];
+
+/**
+ * The rule a source carries: the five above, per_resource (each value states
+ * its own rule) and excluded (no value is loaded), SEC-19 rules 6 and 7.
+ */
+export const REF_SOURCE_REDISTRIBUTION_RULES = [
+	...REF_REDISTRIBUTION_RULES,
+	"per_resource",
+	"excluded",
+] as const;
+export type RefSourceRedistributionRule =
+	(typeof REF_SOURCE_REDISTRIBUTION_RULES)[number];
+
+export const REF_QUALITY_FLAGS = ["coarse_grid"] as const;
+export type RefQualityFlag = (typeof REF_QUALITY_FLAGS)[number];
+
+/** Methods whose values are graded REF-C or REF-D only (PD-04 rule 5). */
+const INTERPOLATED_METHODS: readonly string[] = [
+	"areal_interpolation",
+	"raked_to_official",
+];
 
 /** In precedence order: official national first (R1, R2). */
 export const REF_SOURCE_STATUSES = [
@@ -114,6 +138,9 @@ export interface ReferenceValueInput {
 	price_basis: RefPriceBasis | null;
 	base_year: number | null;
 	unit_mult: number | null;
+	is_monetary: boolean;
+	quality_flags: RefQualityFlag[];
+	cell_coverage_sum: number | null;
 	index_version: string | null;
 	phase_category: string | null;
 	method: RefMethod;
@@ -150,7 +177,6 @@ export const REQUIRED_FIELDS = [
 const INDICATOR_CODE = /^[A-Z][A-Z0-9_]{2,40}$/;
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const CURRENCY = /^[A-Z]{3}$/;
-const MONEY_UNIT = /^[A-Z]{3}/;
 
 function isIsoDate(s: string): boolean {
 	const m = s.match(ISO_DATE);
@@ -188,11 +214,13 @@ export type ValidationResult =
 
 /**
  * Validates one row given as text cells (a CSV row). Applies every rule of
- * delta_reference_value.schema.json v0.2, including the conditional rules:
+ * delta_reference_value.schema.json v0.3, including the conditional rules:
  * null is not zero, zero_confirmed means 0, REF-A only for official national
  * statistics, modelled values only REF-C or REF-D, indices only as published
- * or joined, lower_bound <= value <= upper_bound, money values state currency
- * and price basis, climate drivers state the index version; and refuses an
+ * or joined, lower_bound <= value <= upper_bound, money values state currency,
+ * price basis and unit multiplier, constant prices state a base year, coarse
+ * grids and interpolation lower the grade, bounds state their interval type,
+ * climate drivers state the index version on the global key; and refuses an
  * unknown boundary vintage.
  */
 export function validateReferenceValueCells(
@@ -311,6 +339,36 @@ export function validateReferenceValueCells(
 		errors.push("currency: must be an ISO 4217 code (three capitals)");
 	}
 
+	const monetaryCell = text("is_monetary").toLowerCase();
+	if (!["", "true", "false"].includes(monetaryCell)) {
+		errors.push("is_monetary: must be true, false or empty");
+	}
+	const is_monetary = monetaryCell === "true";
+
+	// Several flags are separated by semicolons, so a CSV cell stays one cell.
+	const quality_flags = text("quality_flags")
+		.split(";")
+		.map((f) => f.trim())
+		.filter((f) => f !== "");
+	for (const f of quality_flags) {
+		if (!oneOf(REF_QUALITY_FLAGS, f)) {
+			errors.push(
+				`quality_flags: '${f}' is not one of ${REF_QUALITY_FLAGS.join(", ")}`,
+			);
+		}
+	}
+	if (new Set(quality_flags).size !== quality_flags.length) {
+		errors.push("quality_flags: each flag appears once");
+	}
+
+	const cell_coverage_sum = parseNumberCell(cells.cell_coverage_sum);
+	if (
+		cell_coverage_sum === undefined ||
+		(cell_coverage_sum !== null && cell_coverage_sum < 0)
+	) {
+		errors.push("cell_coverage_sum: must be a number of at least 0, or empty");
+	}
+
 	const family = text("family");
 	const unit = text("unit");
 	const value_state = text("value_state");
@@ -358,16 +416,49 @@ export function validateReferenceValueCells(
 			"method: indices are never summed or interpolated (as_published or admin_join only)",
 		);
 	}
-	if (
-		(family === "economic" || family === "valuation_baseline") &&
-		MONEY_UNIT.test(unit)
-	) {
+	// Rule 3: the flag, not the unit, marks a money amount; an exchange rate
+	// carries a currency but is not one.
+	if (is_monetary) {
 		if (!currency) errors.push("currency: required for a money value");
 		if (!optText("price_basis"))
 			errors.push("price_basis: required for a money value");
+		if (unit_mult === null)
+			errors.push("unit_mult: required for a money value");
 	}
-	if (family === "climate_driver" && !optText("index_version")) {
-		errors.push("index_version: required for a climate driver value");
+	if (text("price_basis") === "constant" && base_year === null) {
+		errors.push("base_year: required for constant prices");
+	}
+	if (quality_flags.includes("coarse_grid") && grade && grade !== "REF-D") {
+		errors.push("grade: a coarse_grid value takes REF-D");
+	}
+	if (
+		INTERPOLATED_METHODS.includes(method) &&
+		oneOf(REF_GRADES, grade) &&
+		grade !== "REF-C" &&
+		grade !== "REF-D"
+	) {
+		errors.push(
+			"grade: areal_interpolation and raked_to_official take REF-C or REF-D",
+		);
+	}
+	if (
+		(typeof lower_bound === "number" || typeof upper_bound === "number") &&
+		!optText("interval_type")
+	) {
+		errors.push("interval_type: required when a bound is given");
+	}
+	if (family === "climate_driver") {
+		if (!optText("index_version")) {
+			errors.push("index_version: required for a climate driver value");
+		}
+		if (text("key_scheme") && text("key_scheme") !== "global") {
+			errors.push("key_scheme: a climate driver value uses the global key");
+		}
+		if (boundary_vintage && boundary_vintage !== "not_applicable") {
+			errors.push(
+				"boundary_vintage: a climate driver value carries not_applicable",
+			);
+		}
 	}
 
 	if (errors.length > 0) return { ok: false, errors };
@@ -395,6 +486,9 @@ export function validateReferenceValueCells(
 			price_basis: optText("price_basis") as RefPriceBasis | null,
 			base_year: base_year as number | null,
 			unit_mult: unit_mult as number | null,
+			is_monetary,
+			quality_flags: quality_flags as RefQualityFlag[],
+			cell_coverage_sum: cell_coverage_sum as number | null,
 			index_version: optText("index_version"),
 			phase_category: optText("phase_category"),
 			method: method as RefMethod,

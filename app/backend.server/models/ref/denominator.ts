@@ -343,7 +343,9 @@ export async function readPopulationCandidates(
 			s.name AS "sourceName",
 			s.provider AS "sourceProvider",
 			s.licence AS "licence",
-			s.redistribution_rule AS "redistributionRule",
+			-- The value's resolved rule (SEC-19 rule 6); rows loaded before
+			-- contract v0.3 carry none and take the source's rule.
+			COALESCE(v.redistribution_rule, s.redistribution_rule) AS "redistributionRule",
 			s.attribution_text AS "attributionText",
 			s.rdls_id AS "rdlsId",
 			r.id AS "releaseId",

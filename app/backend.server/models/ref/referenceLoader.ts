@@ -35,6 +35,9 @@ export const SCHEMA_COLUMNS = [
 	"price_basis",
 	"base_year",
 	"unit_mult",
+	"is_monetary",
+	"quality_flags",
+	"cell_coverage_sum",
 	"index_version",
 	"phase_category",
 	"method",
@@ -265,9 +268,18 @@ async function upsertSource(
 		}
 		cache.set(v.source, s);
 	}
-	const diffs = (
-		["licence", "redistribution_rule", "source_status"] as const
-	).filter((k) => s[k] !== v[k]);
+	// SEC-19 rules 6 and 7: an excluded source loads nothing; a per_resource
+	// source takes each row's own rule, which the value then carries.
+	if (s.redistribution_rule === "excluded") {
+		return {
+			error: `source ${v.source}: excluded (SEC-19 rule 7); no value is loaded`,
+		};
+	}
+	const compared =
+		s.redistribution_rule === "per_resource"
+			? (["licence", "source_status"] as const)
+			: (["licence", "redistribution_rule", "source_status"] as const);
+	const diffs = compared.filter((k) => s[k] !== v[k]);
 	if (diffs.length > 0) {
 		return {
 			error: `source ${v.source}: ${diffs
@@ -317,7 +329,8 @@ async function upsertValue(
 			boundary_vintage, indicator_code, quantity_type, release_id, source_status,
 			period_start, period_end, value, value_state, lower_bound, upper_bound,
 			interval_type, currency, price_basis, base_year, unit_mult, index_version,
-			phase_category, method, grade
+			phase_category, method, grade, is_monetary, quality_flags,
+			cell_coverage_sum, redistribution_rule
 		) VALUES (
 			${r.countryAccountsId}, ${r.divisionId}::uuid, ${v.key_scheme},
 			${v.key_valid_from}::date, ${v.key_valid_to}::date,
@@ -327,7 +340,9 @@ async function upsertValue(
 			${v.lower_bound}::double precision, ${v.upper_bound}::double precision,
 			${v.interval_type}, ${v.currency}, ${v.price_basis},
 			${v.base_year}::integer, ${v.unit_mult}::integer, ${v.index_version},
-			${v.phase_category}, ${v.method}, ${v.grade}
+			${v.phase_category}, ${v.method}, ${v.grade}, ${v.is_monetary},
+			COALESCE(string_to_array(${v.quality_flags.join(";")}, ';'), '{}')::text[], ${v.cell_coverage_sum}::double precision,
+			${v.redistribution_rule}
 		)
 		ON CONFLICT (country_accounts_id, COALESCE(division_id, '00000000-0000-0000-0000-000000000000'::uuid), indicator_code, release_id, period_start)
 		DO UPDATE SET
@@ -349,18 +364,25 @@ async function upsertValue(
 			lower_bound = EXCLUDED.lower_bound,
 			upper_bound = EXCLUDED.upper_bound,
 			method = EXCLUDED.method,
-			grade = EXCLUDED.grade
+			grade = EXCLUDED.grade,
+			is_monetary = EXCLUDED.is_monetary,
+			quality_flags = EXCLUDED.quality_flags,
+			cell_coverage_sum = EXCLUDED.cell_coverage_sum,
+			redistribution_rule = EXCLUDED.redistribution_rule
 		WHERE (t.key_scheme, t.key_valid_from, t.key_valid_to, t.boundary_vintage,
 				t.source_status, t.period_end, t.value, t.value_state, t.lower_bound,
 				t.upper_bound, t.interval_type, t.currency, t.price_basis, t.base_year,
-				t.unit_mult, t.index_version, t.phase_category, t.method, t.grade)
+				t.unit_mult, t.index_version, t.phase_category, t.method, t.grade,
+				t.is_monetary, t.quality_flags, t.cell_coverage_sum, t.redistribution_rule)
 			IS DISTINCT FROM
 			(EXCLUDED.key_scheme, EXCLUDED.key_valid_from, EXCLUDED.key_valid_to,
 				EXCLUDED.boundary_vintage, EXCLUDED.source_status, EXCLUDED.period_end,
 				EXCLUDED.value, EXCLUDED.value_state, EXCLUDED.lower_bound, EXCLUDED.upper_bound,
 				EXCLUDED.interval_type, EXCLUDED.currency, EXCLUDED.price_basis,
 				EXCLUDED.base_year, EXCLUDED.unit_mult, EXCLUDED.index_version,
-				EXCLUDED.phase_category, EXCLUDED.method, EXCLUDED.grade)
+				EXCLUDED.phase_category, EXCLUDED.method, EXCLUDED.grade,
+				EXCLUDED.is_monetary, EXCLUDED.quality_flags, EXCLUDED.cell_coverage_sum,
+				EXCLUDED.redistribution_rule)
 		RETURNING (xmax = 0) AS inserted
 	`);
 	if (res.rows.length === 0) return "unchanged";

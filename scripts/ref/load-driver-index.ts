@@ -102,9 +102,10 @@ const SOURCES = {
 	psl: {
 		name: "NOAA Physical Sciences Laboratory Dipole Mode Index",
 		provider: "NOAA PSL",
-		url: "https://psl.noaa.gov/data/timeseries/month/",
-		licence: "Not stated by the provider; NOAA data, licence not confirmed",
-		rule: "display_only",
+		url: "https://psl.noaa.gov/gcos_wgsp/Timeseries/DMI/",
+		// Catalogue CLI-02 (D-BM-07): a US Government work, so public domain.
+		licence: "US Government work, public domain (17 USC 105)",
+		rule: "display_and_redistribute",
 	},
 } as const;
 
@@ -135,8 +136,16 @@ async function main() {
 				const src = await tx.execute(sql`
 					INSERT INTO ref."source" ("name", "provider", "documentation_url", "licence", "redistribution_rule", "source_status")
 					VALUES (${f.src.name}, ${f.src.provider}, ${f.src.url}, ${f.src.licence}, ${f.src.rule}, 'international_official')
-					ON CONFLICT ("name") DO UPDATE SET "licence" = EXCLUDED."licence"
+					ON CONFLICT ("name") DO UPDATE SET "licence" = EXCLUDED."licence", "redistribution_rule" = EXCLUDED."redistribution_rule", "documentation_url" = EXCLUDED."documentation_url"
+					WHERE ref."source"."redistribution_rule" NOT IN ('excluded', 'per_resource')
 					RETURNING "id"`);
+				// An administrator's excluded or per_resource ruling outranks the
+				// rule written here (SEC-19 rules 6 and 7): stop rather than revert it.
+				if (src.rows.length === 0) {
+					throw new Error(
+						`${f.src.name}: the stored source is excluded or per_resource; not reloaded`,
+					);
+				}
 				const sourceId = (src.rows[0] as { id: string }).id;
 				const version = `${f.file} sha256:${checksum.slice(0, 12)}`;
 				const rel = await tx.execute(sql`
