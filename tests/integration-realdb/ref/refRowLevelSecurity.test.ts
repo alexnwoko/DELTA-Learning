@@ -38,10 +38,8 @@ async function asTenant<T>(
 			await tx.execute(
 				sql.raw(`GRANT SELECT, INSERT ON ref.value TO "${role}"`),
 			);
-			// The licence guard trigger reads the source and release as the
-			// calling role, so any role that writes values needs these reads.
 			await tx.execute(
-				sql.raw(`GRANT SELECT ON ref.release, ref.source TO "${role}"`),
+				sql.raw(`GRANT SELECT, UPDATE ON ref.source, ref.release TO "${role}"`),
 			);
 			await tx.execute(sql.raw(`SET LOCAL ROLE "${role}"`));
 			if (tenant !== null) {
@@ -143,10 +141,62 @@ describe("ref.value row-level security", () => {
 		expect(msg).toContain("row-level security");
 	});
 
+	it("lets a non-owner role write its own tenant's value", async () => {
+		const n = await asTenant(a.countryAccountsId, async (tx) => {
+			const res = await tx.execute(sql`
+				INSERT INTO ref.value (
+					country_accounts_id, key_scheme, boundary_vintage, indicator_code,
+					quantity_type, release_id, source_status, period_start, period_end,
+					value, value_state, method, grade
+				)
+				SELECT ${a.countryAccountsId}, 'iso3', 'national', 'POP_TOTAL',
+					'extensive', release_id, 'international_official', '2021-01-01',
+					'2021-12-31', 1, 'reported', 'as_published', 'REF-B'
+				FROM ref.value WHERE country_accounts_id = ${a.countryAccountsId}
+				LIMIT 1
+				RETURNING id
+			`);
+			return res.rows.length;
+		});
+		expect(n).toBe(1);
+	});
+
+	it("keeps the licence guards blind to RLS: another tenant's values still count", async () => {
+		// Only tenant B has values under this source. Tenant A cannot see them,
+		// but the guard must, or A could exclude a source B depends on.
+		const src = await createSourceRelease({
+			name: `Shared ${tag}`,
+			sourceStatus: "international_official",
+		});
+		await insertValue({
+			countryAccountsId: b.countryAccountsId,
+			releaseId: src.releaseId,
+			sourceStatus: "international_official",
+			value: 5,
+			periodStart: "2022-01-01",
+			periodEnd: "2022-12-31",
+		});
+		const msg = await asTenant(a.countryAccountsId, async (tx) => {
+			try {
+				await tx.execute(sql`SAVEPOINT probe`);
+				await tx.execute(sql`
+					UPDATE ref.source SET redistribution_rule = 'excluded'
+					WHERE id = ${src.sourceId}
+				`);
+				return "updated";
+			} catch (e: any) {
+				await tx.execute(sql`ROLLBACK TO SAVEPOINT probe`);
+				return String(e?.cause?.message ?? e?.message ?? e);
+			}
+		});
+		expect(msg).toContain("while values exist");
+	});
+
 	it("does not change what the owning app role sees", async () => {
 		const res = await dr.execute(sql`
 			SELECT count(*)::int AS n FROM ref.value
 			WHERE country_accounts_id IN (${a.countryAccountsId}, ${b.countryAccountsId})
+				AND period_start = '2024-01-01'
 		`);
 		expect(res.rows[0]).toEqual({ n: 2 });
 	});
