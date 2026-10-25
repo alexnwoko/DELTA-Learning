@@ -540,6 +540,13 @@
       "when": 1792335600000,
       "tag": "20261026100000_ref_contract_v0_3_validate",
       "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1792339200000,
+      "tag": "20261026110000_ref_value_rls",
+      "breakpoints": true
     }
   ]
 }
