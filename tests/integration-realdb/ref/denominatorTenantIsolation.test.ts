@@ -137,7 +137,7 @@ describe("getPopulationDenominator on the reference store", () => {
 			year: 2024,
 		});
 		expect(res.ok).toBe(false);
-		if (!res.ok) expect(res.refusal.code).toBe("POPULATION_MISSING_FOR_YEAR");
+		if (!res.ok) expect(res.refusal.code).toBe("DENOMINATOR_MISSING");
 	});
 
 	it("refuses a year with no value, and a year whose only value is not_reported", async () => {
@@ -147,7 +147,7 @@ describe("getPopulationDenominator on the reference store", () => {
 				year,
 			});
 			expect(res.ok).toBe(false);
-			if (!res.ok) expect(res.refusal.code).toBe("POPULATION_MISSING_FOR_YEAR");
+			if (!res.ok) expect(res.refusal.code).toBe("DENOMINATOR_MISSING");
 		}
 	});
 

@@ -136,25 +136,25 @@ describe("choosePopulationDenominator precedence", () => {
 });
 
 describe("choosePopulationDenominator refusals", () => {
-	it("refuses POPULATION_MISSING_FOR_YEAR when no period covers the year", () => {
+	it("refuses DENOMINATOR_MISSING when no period covers the year", () => {
 		const c = cand({ periodStart: "2023-01-01", periodEnd: "2023-12-31" });
 		const res = choosePopulationDenominator([c], TENANT, national);
 		expect(res.ok).toBe(false);
-		if (!res.ok) expect(res.refusal.code).toBe("POPULATION_MISSING_FOR_YEAR");
+		if (!res.ok) expect(res.refusal.code).toBe("DENOMINATOR_MISSING");
 	});
 
 	it("never turns a not_reported value into 0: it refuses", () => {
 		const c = cand({ value: null, valueState: "not_reported" });
 		const res = choosePopulationDenominator([c], TENANT, national);
 		expect(res.ok).toBe(false);
-		if (!res.ok) expect(res.refusal.code).toBe("POPULATION_MISSING_FOR_YEAR");
+		if (!res.ok) expect(res.refusal.code).toBe("DENOMINATOR_MISSING");
 		expect((res as any).value).toBeUndefined();
 	});
 
 	it("refuses an empty candidate list", () => {
 		const res = choosePopulationDenominator([], TENANT, national);
 		expect(res.ok).toBe(false);
-		if (!res.ok) expect(res.refusal.code).toBe("POPULATION_MISSING_FOR_YEAR");
+		if (!res.ok) expect(res.refusal.code).toBe("DENOMINATOR_MISSING");
 	});
 
 	it("ignores another tenant's or another division's value", () => {

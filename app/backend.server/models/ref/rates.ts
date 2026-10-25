@@ -31,6 +31,21 @@ export type RateRefusalCode =
 	| "DENOMINATOR_ZERO"
 	| "NUMERATOR_INVALID";
 
+/**
+ * Every rate refusal code, whether PD-05 reserves it or DELTA extends the
+ * envelope with it (PD-05 says the list is extensible), and the requirement
+ * behind it. Panels and the API show these codes unchanged (FR-BAS-210).
+ */
+export const RATE_REFUSAL_CODES: Record<
+	RateRefusalCode,
+	{ pd05: "reserved" | "extension"; requirement: string }
+> = {
+	DENOMINATOR_MISSING: { pd05: "reserved", requirement: "TR-154" },
+	BOUNDARY_VINTAGE_MISMATCH: { pd05: "extension", requirement: "TR-153" },
+	DENOMINATOR_ZERO: { pd05: "extension", requirement: "FR-BAS-590" },
+	NUMERATOR_INVALID: { pd05: "extension", requirement: "FR-BAS-590" },
+};
+
 export interface RateNumerator {
 	/** null unless the state is reported or zero_confirmed. */
 	value: number | null;

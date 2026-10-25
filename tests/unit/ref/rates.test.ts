@@ -54,7 +54,7 @@ const denom: DenominatorResult = {
 const missingDenom: DenominatorResult = {
 	ok: false,
 	refusal: {
-		code: "POPULATION_MISSING_FOR_YEAR",
+		code: "DENOMINATOR_MISSING",
 		reason: "No population value for 2024 at this geography",
 		countryAccountsId: "t1",
 		divisionId: null,
@@ -111,7 +111,7 @@ describe("ratePer100k", () => {
 		const res = ratePer100k(num(50, "reported"), missingDenom);
 		expect(res.ok).toBe(false);
 		if (!res.ok) {
-			expect(res.refusal.code).toBe("POPULATION_MISSING_FOR_YEAR");
+			expect(res.refusal.code).toBe("DENOMINATOR_MISSING");
 			expect(res.refusal.denominatorRefusal?.year).toBe(2024);
 		}
 		expect((res as any).value).toBeUndefined();

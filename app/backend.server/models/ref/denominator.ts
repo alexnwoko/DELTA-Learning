@@ -18,15 +18,19 @@ import {
 //   estimates (UN WPP, WDI), then modelled values, each labelled.
 // - R3: the reference year is the event start year; the value's period must
 //   cover a date in that year.
-// - R7: null is not zero. A missing denominator is refused with a reason
-//   code; this module never returns 0 for a missing value.
+// - R7: null is not zero. A missing denominator is refused with the PD-05
+//   code DENOMINATOR_MISSING (TR-154); this module never returns 0 for a
+//   missing value.
 // - R9: when the caller states the boundary vintage of its records, a value
 //   on another vintage is refused, not crosswalked.
 
 export const POPULATION_INDICATOR = "POP_TOTAL";
 
+// DENOMINATOR_MISSING is reserved in the PD-05 refusal envelope.
+// BOUNDARY_VINTAGE_MISMATCH is a DELTA extension (TR-153, NFR-111):
+// PD-05 lists no code for a rate whose denominator sits on another vintage.
 export type DenominatorRefusalCode =
-	| "POPULATION_MISSING_FOR_YEAR"
+	| "DENOMINATOR_MISSING"
 	| "BOUNDARY_VINTAGE_MISMATCH";
 
 /** Everything a derived figure must carry about its reference value (R6). */
@@ -248,7 +252,7 @@ export function choosePopulationDenominator(
 	);
 	if (usable.length === 0) {
 		return refuse(
-			"POPULATION_MISSING_FOR_YEAR",
+			"DENOMINATOR_MISSING",
 			`No population value for ${opts.year} at this geography`,
 		);
 	}

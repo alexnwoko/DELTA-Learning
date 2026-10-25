@@ -137,7 +137,7 @@ describe("sendaiRatesForYear", () => {
 		expect(res.a1.ok).toBe(false);
 		expect(res.affected_direct_per_100k.ok).toBe(false);
 		if (!res.a1.ok) {
-			expect(res.a1.refusal.code).toBe("POPULATION_MISSING_FOR_YEAR");
+			expect(res.a1.refusal.code).toBe("DENOMINATOR_MISSING");
 		}
 		expect((res.a1 as any).value).toBeUndefined();
 	});
