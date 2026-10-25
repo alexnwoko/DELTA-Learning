@@ -5745,13 +5745,18 @@
     "description": "Sendai block of the place panel. File: app/frontend/geoportal/GeoSendai.tsx"
   },
   {
+    "id": "geoportal.sendai.rate_no_population",
+    "translation": "Not formed: no population figure for {year}.",
+    "description": "Sendai card of the place panel. File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
     "id": "geoportal.sendai.rate_one_year",
     "translation": "Rates per 100,000 are annual: set From and To to the same year to see them.",
     "description": "Sendai block of the place panel. File: app/frontend/geoportal/GeoSendai.tsx"
   },
   {
     "id": "geoportal.sendai.rate_refused",
-    "translation": "not formed ({reason})",
+    "translation": "Not formed ({reason}).",
     "description": "Sendai block of the place panel. File: app/frontend/geoportal/GeoSendai.tsx"
   },
   {
@@ -5773,6 +5778,11 @@
     "id": "geoportal.sendai.reported_by",
     "translation": "(reported by {n} of {m})",
     "description": "File: app/frontend/geoportal/GeoSendai.tsx"
+  },
+  {
+    "id": "geoportal.sendai.reported_by_short",
+    "translation": "reported by {n} of {m} records",
+    "description": "Sendai card of the place panel. File: app/frontend/geoportal/GeoSendai.tsx"
   },
   {
     "id": "geoportal.sendai.source",

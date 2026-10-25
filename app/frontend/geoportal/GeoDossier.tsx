@@ -2,6 +2,7 @@
 // figures with units, its recurrence with silent years shown as gaps, its
 // hazard mix and attribution grades. A figure no disaster impact reported
 // shows its state name, never 0 (TR-076).
+import { CARD, ROW } from "~/frontend/geoportal/cardStyles";
 import { STATE_ENCODING } from "~/utils/mapState";
 import { dataTokens } from "~/utils/designTokens.generated";
 import { GEO_MEASURE_INFO, type GeoHumanMeasure } from "~/utils/geoMeasures";
@@ -336,8 +337,8 @@ export function GeoDossier(props: {
 			)}
 
 			{ev && ev.records > 0 && (
-				<div>
-					<h3 className="font-semibold">
+				<div className={CARD}>
+					<h3 className="text-sm font-semibold text-data-dashboard-ink">
 						{t({ code: "geoportal.dossier.events", msg: "Disaster events" })}
 					</h3>
 					{ev.events > 0 ? (
@@ -393,9 +394,9 @@ export function GeoDossier(props: {
 						</p>
 					)}
 					{ev.top.length > 0 && (
-						<ul className="text-xs mt-1">
+						<ul className="text-xs pt-1">
 							{ev.top.map((e) => (
-								<li key={e.id} className="flex justify-between gap-2">
+								<li key={e.id} className={ROW}>
 									<span className="min-w-0">
 										<span className="block truncate">
 											{e.name ??
@@ -423,7 +424,9 @@ export function GeoDossier(props: {
 											</span>
 										)}
 									</span>
-									<span className="tabular-nums shrink-0">{fmt(e.records)}</span>
+									<span className="text-right tabular-nums font-semibold">
+										{fmt(e.records)}
+									</span>
 								</li>
 							))}
 						</ul>

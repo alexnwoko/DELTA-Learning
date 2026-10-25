@@ -924,7 +924,7 @@ describe("Sendai Framework block in the place panel (I-5)", () => {
 	it("keeps each figure in its own state and never shows a missing one as zero", () => {
 		const h = html(1);
 		expect(h).toContain("103,894");
-		expect(h).toContain("(reported by 103 of 917)");
+		expect(h).toContain("reported by 103 of 917 records");
 		expect(h).toContain("No data"); // the shared label for not_reported, never 0
 		expect(h).toContain("0 (confirmed)");
 		expect(h).toContain("Directly affected");
