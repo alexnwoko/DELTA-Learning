@@ -91,6 +91,75 @@ describe("data-layer tokens (FE-Tokens-01)", () => {
 	});
 });
 
+describe("base-layer tokens (design schema, Alex 2026-10-25)", () => {
+	const css = () => readFileSync(join(ROOT, "app/styles/tokens/base.css"), "utf8");
+
+	// The base layer codifies current use: no pixel may change when a screen
+	// adopts a token. These are the values the CSS and classes held before.
+	it.each([
+		["type-size-xs", "7.5pt"],
+		["type-size-sm", "0.875rem"],
+		["type-size-brand", "17.75pt"],
+		["type-weight-heavy", "800"],
+		["type-brand-tracking", "0.02em"],
+		["type-brand-leading", "1.15"],
+		["radius-sm", "0.25rem"],
+		["radius-md", "0.5rem"],
+		["radius-lg", "0.857rem"],
+		["elevation-layer", "0 1px 2px rgb(45 51 85 / 6%), 0 2px 8px rgb(45 51 85 / 6%)"],
+		["motion-duration-fast", "150ms"],
+		["motion-duration-medium", "300ms"],
+		["motion-duration-loop", "1.2s"],
+		["motion-duration-roll", "2.4s"],
+		["motion-easing-standard", "ease"],
+		["control-height", "40px"],
+		["control-height-sm", "32px"],
+		["control-rail-item-width", "88px"],
+	])("%s keeps today's value %s", (name, value) => {
+		expect(css()).toContain(`--delta-base-${name}: ${value};`);
+	});
+
+	it("generated base.css agrees with the DTCG source (run yarn build:tokens)", () => {
+		const source = readJson("design-tokens/base/base.json").base;
+		const text = css();
+		let count = 0;
+		const walk = (node: any, path: string[]) => {
+			if (node && typeof node === "object" && "$value" in node) {
+				count++;
+				expect(text, path.join(".")).toMatch(new RegExp(`--delta-base-${path.join("-")}: [^;]+;`));
+				if (typeof node.$value !== "object") {
+					expect(text, path.join(".")).toContain(`--delta-base-${path.join("-")}: ${node.$value};`);
+				}
+				return;
+			}
+			for (const [key, child] of Object.entries(node ?? {})) {
+				if (!key.startsWith("$")) walk(child, [...path, key]);
+			}
+		};
+		walk(source, []);
+		expect(text.match(/--delta-base-/g)).toHaveLength(count);
+	});
+
+	it("is loaded before the stylesheets that read it", () => {
+		const all = readFileSync(join(ROOT, "app/styles/all.css"), "utf8");
+		const at = (f: string) => all.indexOf(`@import "./${f}"`);
+		expect(at("tokens/base.css")).toBeGreaterThan(-1);
+		expect(at("tokens/base.css")).toBeLessThan(at("shell.css"));
+		expect(at("tokens/base.css")).toBeLessThan(at("dashboard.css"));
+	});
+
+	it("replaces the literals in shell.css and dashboard.css", () => {
+		const shell = readFileSync(join(ROOT, "app/styles/shell.css"), "utf8");
+		const dashboard = readFileSync(join(ROOT, "app/styles/dashboard.css"), "utf8");
+		for (const literal of ["0.857rem", "rgb(45 51 85 / 6%), 0", " 300ms", " 1.2s", " 2.4s"]) {
+			expect(dashboard, literal).not.toContain(literal);
+		}
+		expect(shell).not.toMatch(/font-size: 17\.75pt|border-radius: 0\.25rem/);
+		expect(dashboard).toContain("var(--delta-base-elevation-layer)");
+		expect(shell).toContain("var(--delta-base-type-size-brand)");
+	});
+});
+
 describe("brand-layer tokens (Mangrove v2.1.0)", () => {
 	const dir = join(ROOT, "design-tokens/brand/mangrove-v2.1.0");
 	it.each(["neutral", "delta"])("%s matches the pinned Mangrove files", (brand) => {

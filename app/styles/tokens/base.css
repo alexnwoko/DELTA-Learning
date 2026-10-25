@@ -1,0 +1,31 @@
+/**
+ * Do not edit directly, this file was auto-generated.
+ */
+
+:root {
+  --delta-base-type-size-xs: 7.5pt; /** Hazard rail labels (HazardRail.tsx text-[7.5pt]) */
+  --delta-base-type-size-sm: 0.875rem; /** Buttons and filter controls (Tailwind text-sm) */
+  --delta-base-type-size-md: 1rem; /** Body text: the 14px root */
+  --delta-base-type-size-brand: 17.75pt; /** Section page heading .delta-page-brand (Alex, 2026-10-19) */
+  --delta-base-type-weight-semibold: 600; /** Rail labels, skip link */
+  --delta-base-type-weight-bold: 700; /** Buttons, panel titles */
+  --delta-base-type-weight-heavy: 800; /** Page heading, selected rail item */
+  --delta-base-type-brand-tracking: 0.02em; /** Letter spacing of the page heading */
+  --delta-base-type-brand-leading: 1.15; /** Line height of the page heading */
+  --delta-base-space-1: 0.25rem;
+  --delta-base-space-2: 0.5rem;
+  --delta-base-space-3: 0.75rem;
+  --delta-base-space-4: 1rem;
+  --delta-base-radius-sm: 0.25rem; /** Skip link and menu focus (shell.css) */
+  --delta-base-radius-md: 0.5rem; /** Buttons and rail items (Tailwind rounded-lg) */
+  --delta-base-radius-lg: 0.857rem; /** Layers and cards (.delta-layer) */
+  --delta-base-elevation-layer: 0 1px 2px rgb(45 51 85 / 6%), 0 2px 8px rgb(45 51 85 / 6%); /** The one elevation: white layers on the Analysis canvas (FE-Proposal-03) */
+  --delta-base-motion-duration-fast: 150ms; /** Colour change on buttons and rail items (Tailwind duration-150) */
+  --delta-base-motion-duration-medium: 300ms; /** Bars glide to their new length (UX-8) */
+  --delta-base-motion-duration-loop: 1.2s; /** Loader dot fade and the refresh sheen (UX-1) */
+  --delta-base-motion-duration-roll: 2.4s; /** Loader ring roll */
+  --delta-base-motion-easing-standard: ease; /** CSS keyword; DTCG asks for four numbers, so the build passes the keyword through */
+  --delta-base-control-height: 40px; /** Header and panel buttons (buttonStyles.ts SECONDARY_BUTTON) */
+  --delta-base-control-height-sm: 32px; /** Compact buttons inside cards, still past WCAG 2.5.8 (SECONDARY_BUTTON_SM) */
+  --delta-base-control-rail-item-width: 88px; /** One hazard rail square (HazardRail.tsx RAIL_ITEM_BASE) */
+}

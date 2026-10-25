@@ -1,0 +1,124 @@
+{
+	"base": {
+		"$description": "DELTA base layer: type, space, radius, elevation, motion and control sizes (design schema proposal, approved in principle by Alex 2026-10-25). Not themed. Starting values copy current use, so adopting a token changes no pixel. The root font size is 14px (public/assets/css/style-dts.css), so 1rem = 14px.",
+		"type": {
+			"$description": "Type sizes, weights and the page heading.",
+			"size": {
+				"xs": {
+					"$type": "dimension",
+					"$value": { "value": 7.5, "unit": "pt" },
+					"$description": "Hazard rail labels (HazardRail.tsx text-[7.5pt])"
+				},
+				"sm": {
+					"$type": "dimension",
+					"$value": { "value": 0.875, "unit": "rem" },
+					"$description": "Buttons and filter controls (Tailwind text-sm)"
+				},
+				"md": {
+					"$type": "dimension",
+					"$value": { "value": 1, "unit": "rem" },
+					"$description": "Body text: the 14px root"
+				},
+				"brand": {
+					"$type": "dimension",
+					"$value": { "value": 17.75, "unit": "pt" },
+					"$description": "Section page heading .delta-page-brand (Alex, 2026-10-19)"
+				}
+			},
+			"weight": {
+				"semibold": { "$type": "fontWeight", "$value": 600, "$description": "Rail labels, skip link" },
+				"bold": { "$type": "fontWeight", "$value": 700, "$description": "Buttons, panel titles" },
+				"heavy": { "$type": "fontWeight", "$value": 800, "$description": "Page heading, selected rail item" }
+			},
+			"brand-tracking": {
+				"$type": "dimension",
+				"$value": { "value": 0.02, "unit": "em" },
+				"$description": "Letter spacing of the page heading"
+			},
+			"brand-leading": {
+				"$type": "number",
+				"$value": 1.15,
+				"$description": "Line height of the page heading"
+			}
+		},
+		"space": {
+			"$description": "Space steps of 0.25rem, the Tailwind spacing unit.",
+			"1": { "$type": "dimension", "$value": { "value": 0.25, "unit": "rem" } },
+			"2": { "$type": "dimension", "$value": { "value": 0.5, "unit": "rem" } },
+			"3": { "$type": "dimension", "$value": { "value": 0.75, "unit": "rem" } },
+			"4": { "$type": "dimension", "$value": { "value": 1, "unit": "rem" } }
+		},
+		"radius": {
+			"sm": {
+				"$type": "dimension",
+				"$value": { "value": 0.25, "unit": "rem" },
+				"$description": "Skip link and menu focus (shell.css)"
+			},
+			"md": {
+				"$type": "dimension",
+				"$value": { "value": 0.5, "unit": "rem" },
+				"$description": "Buttons and rail items (Tailwind rounded-lg)"
+			},
+			"lg": {
+				"$type": "dimension",
+				"$value": { "value": 0.857, "unit": "rem" },
+				"$description": "Layers and cards (.delta-layer)"
+			}
+		},
+		"elevation": {
+			"layer": {
+				"$type": "shadow",
+				"$value": [
+					{ "color": "rgb(45 51 85 / 6%)", "offsetX": "0", "offsetY": "1px", "blur": "2px" },
+					{ "color": "rgb(45 51 85 / 6%)", "offsetX": "0", "offsetY": "2px", "blur": "8px" }
+				],
+				"$description": "The one elevation: white layers on the Analysis canvas (FE-Proposal-03)"
+			}
+		},
+		"motion": {
+			"$description": "Durations and easing. Every animation stops under prefers-reduced-motion: reduce.",
+			"duration-fast": {
+				"$type": "duration",
+				"$value": { "value": 150, "unit": "ms" },
+				"$description": "Colour change on buttons and rail items (Tailwind duration-150)"
+			},
+			"duration-medium": {
+				"$type": "duration",
+				"$value": { "value": 300, "unit": "ms" },
+				"$description": "Bars glide to their new length (UX-8)"
+			},
+			"duration-loop": {
+				"$type": "duration",
+				"$value": { "value": 1.2, "unit": "s" },
+				"$description": "Loader dot fade and the refresh sheen (UX-1)"
+			},
+			"duration-roll": {
+				"$type": "duration",
+				"$value": { "value": 2.4, "unit": "s" },
+				"$description": "Loader ring roll"
+			},
+			"easing-standard": {
+				"$type": "cubicBezier",
+				"$value": "ease",
+				"$description": "CSS keyword; DTCG asks for four numbers, so the build passes the keyword through"
+			}
+		},
+		"control": {
+			"height": {
+				"$type": "dimension",
+				"$value": { "value": 40, "unit": "px" },
+				"$description": "Header and panel buttons (buttonStyles.ts SECONDARY_BUTTON)"
+			},
+			"height-sm": {
+				"$type": "dimension",
+				"$value": { "value": 32, "unit": "px" },
+				"$description": "Compact buttons inside cards, still past WCAG 2.5.8 (SECONDARY_BUTTON_SM)"
+			},
+			"rail-item-width": {
+				"$type": "dimension",
+				"$value": { "value": 88, "unit": "px" },
+				"$description": "One hazard rail square (HazardRail.tsx RAIL_ITEM_BASE)"
+			}
+		}
+	}
+}

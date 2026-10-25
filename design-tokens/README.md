@@ -1,6 +1,6 @@
 # DELTA design tokens
 
-Design tokens for DELTA's screens, maps and charts (ADR-19, TR-250). Two layers:
+Design tokens for DELTA's screens, maps and charts (ADR-19, TR-250). Three layers:
 
 - **Data layer** (`data/`): value states (TR-076), map states and the measure-family
   ramps. Owned by DELTA. Names and values were agreed with the Analytics and
@@ -12,11 +12,18 @@ Design tokens for DELTA's screens, maps and charts (ADR-19, TR-250). Two layers:
   `[data-brand="delta"]`. Until UNDRR Communications rules on brand use by
   national instances, self-hosted deployments use the neutral layer.
 
-Both are DTCG files. Style Dictionary builds them (`yarn build:tokens`) into:
+- **Base layer** (`base/`): type sizes and weights, space, radius, the one
+  elevation, motion and control sizes. Not themed. Its starting values copy
+  what the screens used before it existed, so adopting a token changes no
+  pixel (design schema, approved in principle by Alex on 2026-10-25). The
+  build emits CSS variables only; Tailwind utilities and the JS module do not
+  read it yet.
+
+All three are DTCG files. Style Dictionary builds them (`yarn build:tokens`) into:
 
 | Output | Used by |
 |---|---|
-| `app/styles/tokens/data.css`, `brand.css` | Every screen, as CSS variables `--delta-*` |
+| `app/styles/tokens/base.css`, `data.css`, `brand.css` | Every screen, as CSS variables `--delta-*` |
 | `app/styles/tokens/theme.css` | Tailwind v4 utilities, for example `bg-brand-interactive` |
 | `app/utils/designTokens.generated.js` and `.d.ts` | `mapState.ts`, OpenLayers and charts, which need plain values |
 

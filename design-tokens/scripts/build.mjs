@@ -1,10 +1,13 @@
 // Builds DELTA's design tokens (ADR-19, TR-250) with Style Dictionary.
 //
-// Sources (DTCG): design-tokens/data/*.json (data layer, owned by DELTA) and
+// Sources (DTCG): design-tokens/data/*.json (data layer, owned by DELTA),
 // design-tokens/brand/{neutral,delta}.json (brand layer, taken from the
-// pinned Mangrove release; see design-tokens/README.md).
+// pinned Mangrove release; see design-tokens/README.md) and
+// design-tokens/base/*.json (base layer: type, space, radius, elevation,
+// motion and control sizes; not themed).
 //
 // Outputs are committed, so building the app never needs Style Dictionary:
+//   app/styles/tokens/base.css           base-layer CSS variables
 //   app/styles/tokens/data.css           data-layer CSS variables
 //   app/styles/tokens/brand.css          brand variables: neutral on :root,
 //                                        DELTA under [data-brand="delta"]
@@ -29,6 +32,19 @@ StyleDictionary.registerTransform({
 	filter: (token) =>
 		typeof token.$value === "object" && token.$value !== null && "unit" in token.$value,
 	transform: (token) => `${token.$value.value}${token.$value.unit}`,
+});
+
+// DTCG shadow values are one layer or a list of layers; CSS wants the
+// box-shadow shorthand, layers joined by commas.
+StyleDictionary.registerTransform({
+	name: "delta/shadow-css",
+	type: "value",
+	filter: (token) => token.$type === "shadow",
+	transform: (token) =>
+		[token.$value]
+			.flat()
+			.map((s) => [s.inset && "inset", s.offsetX, s.offsetY, s.blur, s.spread, s.color].filter(Boolean).join(" "))
+			.join(", "),
 });
 
 // Nested ES module of the data layer. Ramps become ordered arrays so
@@ -101,7 +117,7 @@ StyleDictionary.registerFormat({
 	},
 });
 
-const cssTransforms = ["attribute/cti", "name/kebab", "delta/dimension-object", "color/css"];
+const cssTransforms = ["attribute/cti", "name/kebab", "delta/dimension-object", "delta/shadow-css", "color/css"];
 
 async function build(source, platforms) {
 	const sd = new StyleDictionary({
@@ -114,6 +130,15 @@ async function build(source, platforms) {
 }
 
 mkdirSync(CSS_DIR, { recursive: true });
+
+await build(["design-tokens/base/*.json"], {
+	css: {
+		transforms: cssTransforms,
+		prefix: PREFIX,
+		buildPath: CSS_DIR,
+		files: [{ destination: "base.css", format: "css/variables" }],
+	},
+});
 
 await build(["design-tokens/data/*.json"], {
 	css: {

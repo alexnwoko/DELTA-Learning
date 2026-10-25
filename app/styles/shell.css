@@ -9,8 +9,8 @@
 	padding: 0.5rem 1rem;
 	background: #ffffff;
 	color: var(--delta-brand-interactive, #004f91);
-	font-weight: 600;
-	border-radius: 0.25rem;
+	font-weight: var(--delta-base-type-weight-semibold);
+	border-radius: var(--delta-base-radius-sm);
 	text-decoration: underline;
 }
 .delta-skip-link:focus {
@@ -37,18 +37,18 @@
 .p-menubar .p-submenu-list:focus-visible .p-menuitem.p-focus > .p-menuitem-content {
 	outline: var(--delta-brand-focus-ring-width) solid var(--delta-brand-focus-ring);
 	outline-offset: var(--delta-brand-focus-ring-offset);
-	border-radius: 0.25rem;
+	border-radius: var(--delta-base-radius-sm);
 }
 
 /* Section page headings (Alex, 2026-10-19): capitals, extra bold, 17.75pt
    (the Analysis heading's 15.75pt plus 4pt, then 2pt smaller), in the
    dashboard ink. */
 .delta-page-brand {
-	font-size: 17.75pt;
-	font-weight: 800;
+	font-size: var(--delta-base-type-size-brand);
+	font-weight: var(--delta-base-type-weight-heavy);
 	text-transform: uppercase;
-	letter-spacing: 0.02em;
-	line-height: 1.15;
+	letter-spacing: var(--delta-base-type-brand-tracking);
+	line-height: var(--delta-base-type-brand-leading);
 	color: var(--delta-data-dashboard-ink);
 	/* 2pt above the text and 1pt below (Alex, 2026-10-20). */
 	padding-top: 2pt;

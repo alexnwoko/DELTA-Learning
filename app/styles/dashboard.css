@@ -9,8 +9,8 @@
 	--panel-tint: var(--delta-data-dashboard-tint);
 	--panel-border: var(--delta-data-dashboard-border);
 	--panel-accent: var(--delta-data-dashboard-accent);
-	/* Soft layering (FE-Proposal-03): CSS only, the token build has no shadow type. */
-	--panel-shadow: 0 1px 2px rgb(45 51 85 / 6%), 0 2px 8px rgb(45 51 85 / 6%);
+	/* Soft layering (FE-Proposal-03): base.elevation.layer. */
+	--panel-shadow: var(--delta-base-elevation-layer);
 }
 
 /* The Analysis page sits on a tinted canvas; Data Entry and Geoportal stay
@@ -23,7 +23,7 @@ main:has(.delta-dashboard-canvas) {
 .delta-layer {
 	background-color: var(--delta-data-dashboard-surface);
 	border: 1px solid var(--panel-border);
-	border-radius: 0.857rem;
+	border-radius: var(--delta-base-radius-lg);
 	box-shadow: var(--panel-shadow);
 }
 .delta-sfm {
@@ -64,11 +64,11 @@ main:has(.delta-dashboard-canvas) {
 /* The Analysis waiting screen (Alex, 2026-10-22): blue dots rolling round,
    each fading in turn. */
 .delta-loader-ring {
-	animation: delta-loader-roll 2.4s linear infinite;
+	animation: delta-loader-roll var(--delta-base-motion-duration-roll) linear infinite;
 }
 .delta-loader-dot {
 	fill: var(--delta-data-dashboard-icon);
-	animation: delta-loader-fade 1.2s ease-in-out infinite;
+	animation: delta-loader-fade var(--delta-base-motion-duration-loop) ease-in-out infinite;
 }
 @keyframes delta-loader-roll {
 	to {
@@ -95,7 +95,10 @@ main:has(.delta-dashboard-canvas) {
    changes; none under reduced motion. */
 .delta-anim path,
 .delta-anim rect {
-	transition: d 300ms ease, width 300ms ease, x 300ms ease;
+	transition:
+		d var(--delta-base-motion-duration-medium) var(--delta-base-motion-easing-standard),
+		width var(--delta-base-motion-duration-medium) var(--delta-base-motion-easing-standard),
+		x var(--delta-base-motion-duration-medium) var(--delta-base-motion-easing-standard);
 }
 @media (prefers-reduced-motion: reduce) {
 	.delta-anim path,
@@ -117,7 +120,7 @@ main[data-dashboard-refreshing] .delta-layer::after {
 	pointer-events: none;
 	background: linear-gradient(100deg, rgb(240 246 255 / 70%) 30%, rgb(255 255 255 / 90%) 50%, rgb(240 246 255 / 70%) 70%);
 	background-size: 200% 100%;
-	animation: delta-sheen 1.2s linear infinite;
+	animation: delta-sheen var(--delta-base-motion-duration-loop) linear infinite;
 }
 @keyframes delta-sheen {
 	from {
