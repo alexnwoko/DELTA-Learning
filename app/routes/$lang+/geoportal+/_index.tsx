@@ -611,7 +611,8 @@ export default function GeoportalPage() {
 		let live = true;
 		fetch(`/${lang}/api/geo/place/${dossierKey}/dossier?${search}`)
 			.then((r) => (r.ok ? r.json() : null))
-			.then((d) => live && setDossier(d))
+			// A refusal also comes back 200 (PD-05): only a dossier is drawn.
+			.then((d) => live && setDossier(d && typeof d === "object" && "recurrence" in d ? (d as DossierData) : null))
 			.catch(() => live && setDossier(null));
 		return () => {
 			live = false;
