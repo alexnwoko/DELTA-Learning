@@ -92,6 +92,9 @@ describe("getCostPanels", () => {
 			"one rate only: the World Bank official exchange rate",
 		);
 		expect(p.fxRate.indicator).toBe("PA.NUS.FCRF");
+		expect(p.disclaimer).toContain(
+			"1 record holds the same value in ETB and US dollars; these are read as US dollars.",
+		);
 	});
 
 	it("measures how much is costed and who the uncosted records affected", async () => {
