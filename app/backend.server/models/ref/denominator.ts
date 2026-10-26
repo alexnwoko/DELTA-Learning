@@ -267,13 +267,24 @@ export function choosePopulationDenominator(
 		},
 	});
 
+	// FR-BAS-700: a figure names the current release; a replaced release is
+	// kept for the figures that cited it but never chosen again.
 	const usable = candidates.filter(
 		(c) =>
 			c.countryAccountsId === countryAccountsId &&
 			c.divisionId === opts.divisionId &&
 			periodCoversYear(c, opts.year) &&
-			holdsValue(c),
+			holdsValue(c) &&
+			!c.releaseDeprecatedBy,
 	);
+	// FR-BAS-610: a sub-national rate needs the records' vintage to match.
+	// Without it the match cannot be checked, so the value is refused.
+	if (opts.divisionId !== null && vintage === null) {
+		return refuse(
+			"BOUNDARY_VINTAGE_MISMATCH",
+			"The boundary vintage of the records is not stated; a sub-national denominator needs it",
+		);
+	}
 	if (usable.length === 0) {
 		return refuse(
 			"DENOMINATOR_MISSING",

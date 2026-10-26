@@ -194,3 +194,31 @@ describe("choosePopulationDenominator refusals", () => {
 		expect(res.ok && res.value).toBe(2);
 	});
 });
+
+// SME round 1 (DRR-02, GEO-02): FR-BAS-700 and FR-BAS-610.
+describe("choosePopulationDenominator release and vintage rules", () => {
+	it("never uses a deprecated release, even when it is the only one", () => {
+		const old = cand({ releaseDeprecatedBy: "r-new", value: 900_000 });
+		const res = choosePopulationDenominator([old], TENANT, national);
+		expect(res.ok).toBe(false);
+		if (!res.ok) expect(res.refusal.code).toBe("DENOMINATOR_MISSING");
+	});
+
+	it("uses the current release when a deprecated one also covers the year", () => {
+		const old = cand({ releaseDeprecatedBy: "r-new", value: 900_000 });
+		const cur = cand({ value: 1_000_000 });
+		const res = choosePopulationDenominator([old, cur], TENANT, national);
+		expect(res.ok && res.value).toBe(1_000_000);
+	});
+
+	it("refuses a sub-national denominator when the records' vintage is not stated", () => {
+		const div = "33333333-3333-3333-3333-333333333333";
+		const c = cand({ divisionId: div, boundaryVintage: "AGO-2026" });
+		const res = choosePopulationDenominator([c], TENANT, {
+			divisionId: div,
+			year: 2024,
+		});
+		expect(res.ok).toBe(false);
+		if (!res.ok) expect(res.refusal.code).toBe("BOUNDARY_VINTAGE_MISMATCH");
+	});
+});

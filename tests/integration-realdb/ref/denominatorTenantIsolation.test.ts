@@ -135,6 +135,7 @@ describe("getPopulationDenominator on the reference store", () => {
 		const res = await getPopulationDenominator(b.countryAccountsId, {
 			divisionId: divA,
 			year: 2024,
+			boundaryVintage: "V1",
 		});
 		expect(res.ok).toBe(false);
 		if (!res.ok) expect(res.refusal.code).toBe("DENOMINATOR_MISSING");

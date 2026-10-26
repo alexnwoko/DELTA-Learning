@@ -103,9 +103,12 @@ const SOURCES = {
 		name: "NOAA Physical Sciences Laboratory Dipole Mode Index",
 		provider: "NOAA PSL",
 		url: "https://psl.noaa.gov/gcos_wgsp/Timeseries/DMI/",
-		// Catalogue CLI-02 (D-BM-07): a US Government work, so public domain.
-		licence: "US Government work, public domain (17 USC 105)",
-		rule: "display_and_redistribute",
+		// PD-06 (ED-7): verification code S keeps the current rule until the
+		// provider replies. The index derives from Met Office HadISST, so its
+		// terms are not settled by NOAA's own status (D-BM-11).
+		licence:
+			"NOAA PSL index computed from Met Office HadISST; redistribution terms not confirmed (verification code S)",
+		rule: "display_only",
 	},
 } as const;
 
