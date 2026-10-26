@@ -1,0 +1,515 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://delta.undrr.org/schema/delta-reference-value.schema.json",
+  "title": "DELTA reference value (one row of ref.value)",
+  "description": "v0.3, 10 October 2026 (expert review amendments DRR-08, GEO-06, GEO-08, CLM-08; verification pass GEO-N01, GEO-N03, DRR-N04). One enrichment value for one division and period. Specified in DELTA_Enrichment_Data_Integration.md, section 8. The loader also checks lower_bound <= value <= upper_bound.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "indicator_code",
+    "family",
+    "quantity_type",
+    "unit",
+    "division_key",
+    "key_scheme",
+    "boundary_vintage",
+    "period_start",
+    "period_end",
+    "value",
+    "value_state",
+    "method",
+    "grade",
+    "source",
+    "release",
+    "licence",
+    "redistribution_rule",
+    "source_status"
+  ],
+  "properties": {
+    "indicator_code": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]{2,40}$"
+    },
+    "family": {
+      "enum": [
+        "population",
+        "exposure",
+        "vulnerability",
+        "economic",
+        "valuation_baseline",
+        "climate_driver"
+      ]
+    },
+    "quantity_type": {
+      "enum": [
+        "extensive",
+        "intensive",
+        "index"
+      ]
+    },
+    "unit": {
+      "type": "string",
+      "minLength": 1
+    },
+    "division_key": {
+      "type": "string",
+      "minLength": 1
+    },
+    "key_scheme": {
+      "enum": [
+        "national_id",
+        "pcode",
+        "iso3166_2",
+        "iso3",
+        "global"
+      ]
+    },
+    "key_valid_from": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "key_valid_to": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "boundary_vintage": {
+      "type": "string",
+      "minLength": 1
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "value": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "value_state": {
+      "enum": [
+        "reported",
+        "zero_confirmed",
+        "not_reported",
+        "not_applicable",
+        "suppressed"
+      ]
+    },
+    "lower_bound": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "interval_type": {
+      "enum": [
+        "ci90",
+        "ci95",
+        "min_max",
+        "model_range",
+        null
+      ]
+    },
+    "currency": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[A-Z]{3}$"
+    },
+    "price_basis": {
+      "enum": [
+        "current",
+        "constant",
+        null
+      ]
+    },
+    "base_year": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "unit_mult": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "is_monetary": {
+      "type": "boolean",
+      "description": "True for a money value. It then requires currency, price_basis and unit_mult."
+    },
+    "quality_flags": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "coarse_grid"
+        ]
+      },
+      "description": "coarse_grid: the unit holds fewer than N cells (sum of coverage fractions) of the source grid (ER-8)."
+    },
+    "cell_coverage_sum": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "Sum of the coverage fractions of the source grid cells in the unit (ER-8)."
+    },
+    "index_version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "phase_category": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "upper_bound": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "method": {
+      "enum": [
+        "as_published",
+        "zonal_sum",
+        "weighted_mean_population",
+        "weighted_mean_area",
+        "areal_interpolation",
+        "raked_to_official",
+        "admin_join"
+      ]
+    },
+    "grade": {
+      "enum": [
+        "REF-A",
+        "REF-B",
+        "REF-C",
+        "REF-D"
+      ]
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1
+    },
+    "release": {
+      "type": "string",
+      "minLength": 1
+    },
+    "licence": {
+      "type": "string",
+      "minLength": 1
+    },
+    "redistribution_rule": {
+      "enum": [
+        "display_and_redistribute",
+        "redistribute_share_alike",
+        "display_only",
+        "signed_in_only",
+        "analysis_only"
+      ]
+    },
+    "source_status": {
+      "enum": [
+        "official_national",
+        "international_official",
+        "modelled"
+      ]
+    },
+    "rdls_id": {
+      "type": "string"
+    }
+  },
+  "allOf": [
+    {
+      "description": "Null is not zero: a value exists only for reported or zero_confirmed.",
+      "if": {
+        "properties": {
+          "value_state": {
+            "enum": [
+              "reported",
+              "zero_confirmed"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "value": {
+            "type": "number"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "value": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "value_state": {
+            "const": "zero_confirmed"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "value": {
+            "const": 0
+          }
+        }
+      }
+    },
+    {
+      "description": "Only official national statistics take grade REF-A.",
+      "if": {
+        "properties": {
+          "grade": {
+            "const": "REF-A"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "source_status": {
+            "const": "official_national"
+          }
+        }
+      }
+    },
+    {
+      "description": "Modelled values cannot take grades A or B.",
+      "if": {
+        "properties": {
+          "source_status": {
+            "const": "modelled"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "grade": {
+            "enum": [
+              "REF-C",
+              "REF-D"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "description": "Indices are never summed.",
+      "if": {
+        "properties": {
+          "quantity_type": {
+            "const": "index"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "method": {
+            "enum": [
+              "as_published",
+              "admin_join"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "description": "Money values state currency, price basis and unit multiplier (DRR-N04).",
+      "if": {
+        "properties": {
+          "is_monetary": {
+            "const": true
+          }
+        },
+        "required": [
+          "is_monetary"
+        ]
+      },
+      "then": {
+        "required": [
+          "currency",
+          "price_basis",
+          "unit_mult"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string"
+          },
+          "price_basis": {
+            "enum": [
+              "current",
+              "constant"
+            ]
+          },
+          "unit_mult": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    {
+      "description": "Constant prices state their base year (DRR-N04).",
+      "if": {
+        "properties": {
+          "price_basis": {
+            "const": "constant"
+          }
+        },
+        "required": [
+          "price_basis"
+        ]
+      },
+      "then": {
+        "required": [
+          "base_year"
+        ],
+        "properties": {
+          "base_year": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    {
+      "description": "A value on a coarse grid is graded REF-D (ER-8; GEO-N01).",
+      "if": {
+        "properties": {
+          "quality_flags": {
+            "contains": {
+              "const": "coarse_grid"
+            }
+          }
+        },
+        "required": [
+          "quality_flags"
+        ]
+      },
+      "then": {
+        "properties": {
+          "grade": {
+            "const": "REF-D"
+          }
+        }
+      }
+    },
+    {
+      "description": "Areal interpolation and raking to an official total are graded REF-C or REF-D (ER-9; GEO-N03).",
+      "if": {
+        "properties": {
+          "method": {
+            "enum": [
+              "areal_interpolation",
+              "raked_to_official"
+            ]
+          }
+        },
+        "required": [
+          "method"
+        ]
+      },
+      "then": {
+        "properties": {
+          "grade": {
+            "enum": [
+              "REF-C",
+              "REF-D"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "description": "A lower or upper bound states its interval type (GEO-06).",
+      "if": {
+        "anyOf": [
+          {
+            "required": [
+              "lower_bound"
+            ],
+            "properties": {
+              "lower_bound": {
+                "type": "number"
+              }
+            }
+          },
+          {
+            "required": [
+              "upper_bound"
+            ],
+            "properties": {
+              "upper_bound": {
+                "type": "number"
+              }
+            }
+          }
+        ]
+      },
+      "then": {
+        "required": [
+          "interval_type"
+        ],
+        "properties": {
+          "interval_type": {
+            "enum": [
+              "ci90",
+              "ci95",
+              "min_max",
+              "model_range"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "description": "Climate driver values state the index version, use the global key and carry no boundary vintage (CLM-08).",
+      "if": {
+        "properties": {
+          "family": {
+            "const": "climate_driver"
+          }
+        },
+        "required": [
+          "family"
+        ]
+      },
+      "then": {
+        "required": [
+          "index_version"
+        ],
+        "properties": {
+          "key_scheme": {
+            "const": "global"
+          },
+          "boundary_vintage": {
+            "const": "not_applicable"
+          }
+        }
+      }
+    }
+  ]
+}
