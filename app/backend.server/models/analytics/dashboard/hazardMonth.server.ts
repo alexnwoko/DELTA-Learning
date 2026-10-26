@@ -7,6 +7,7 @@
 // month (a placeholder date or a year-only start) are counted per row, never
 // dropped. People are the chosen human effect, with value states (TR-076).
 
+import { SEASON_RULE, seasonScore } from "~/utils/dashboard/seasonality";
 import { cachedDashboard } from "~/backend.server/models/analytics/dashboard/dashboardCache.server";
 import { sql, type SQL } from "drizzle-orm";
 import { displacedHeadlineSql } from "~/backend.server/models/analytics/displacedHeadline";
@@ -170,6 +171,7 @@ function buildRows(
 	tallies: Tally[],
 	medians: Map<string, { median: number | null; n: number }>,
 	names: HazardNames,
+	yearsByKey: Map<string, number>,
 ): HazardMonthRow[] {
 	const by = new Map<string, Tally[]>();
 	for (const t of tallies) by.set(t.key, [...(by.get(t.key) ?? []), t]);
@@ -235,6 +237,11 @@ function buildRows(
 					zeroConfirmed: sumOf(dated, (t) => t.zero),
 					total: sumOf(dated, (t) => t.total),
 				}),
+				season: seasonScore({
+					counts: cells.map((c) => c.count),
+					all: sumOf(list, (t) => t.total),
+					years: yearsByKey.get(key) ?? 0,
+				}),
 				unplaced: {
 					placeholder: sumOf(
 						list.filter((t) => t.placeholder),
@@ -259,7 +266,7 @@ const methodText = (unit: HazardMonth["unit"], m: ImpactHeadlineMeasure) =>
 		unit === "disaster_event"
 			? "An event takes the hazards of its linked disaster records and counts under each. "
 			: ""
-	}Occurrences with no usable month are counted per hazard, not drawn: placeholder dates (a calendar day with ${PLACEHOLDER_DATE_RULE.minRecords} or more occurrences and ${PLACEHOLDER_DATE_RULE.multiple} times the daily average, such as a source default of 7 September) and year-only starts. Rare severe: at most ${RARE_SEVERE_RULE.maxCount} occurrences in the month and ${m} per reporting occurrence at least ${RARE_SEVERE_RULE.multiple} times the hazard's median, for hazards with ${RARE_SEVERE_RULE.minReporting} or more reporting occurrences; occurrences under review (a plausibility flag or above the ceiling) never make a month rare and are left out of the median. The start month is a reporting date for slow-onset hazards such as drought, a weak guide to onset. More records can reflect more reporting.`;
+	}Occurrences with no usable month are counted per hazard, not drawn: placeholder dates (a calendar day with ${PLACEHOLDER_DATE_RULE.minRecords} or more occurrences and ${PLACEHOLDER_DATE_RULE.multiple} times the daily average, such as a source default of 7 September) and year-only starts. Rare severe: at most ${RARE_SEVERE_RULE.maxCount} occurrences in the month and ${m} per reporting occurrence at least ${RARE_SEVERE_RULE.multiple} times the hazard's median, for hazards with ${RARE_SEVERE_RULE.minReporting} or more reporting occurrences; occurrences under review (a plausibility flag or above the ceiling) never make a month rare and are left out of the median. The start month is a reporting date for slow-onset hazards such as drought, a weak guide to onset. More records can reflect more reporting. Season score per row: peak months (the fewest months holding half the dated occurrences), top-three share, concentration (Gini over the months, chance-adjusted) and a chi-square test against an even spread (p < 0.01); "Weak" when the adjusted concentration is under 0.10. The score is withheld, never the bars, below ${SEASON_RULE.minUsable} dated occurrences, ${SEASON_RULE.minYears} distinct years or half the occurrences dated. For a clear season, the three months before each peak season are the pre-season window: months before the usual impact season, not a forecast.`;
 
 async function computeHazardMonth(
 	query: DeltaQuery,
@@ -278,6 +285,8 @@ async function computeHazardMonth(
 	const medians = new Map<string, { median: number | null; n: number }>();
 	let phDays: Map<string, number>;
 	let years: HazardMonth["years"];
+	// Distinct start years among each row's dated occurrences (seasonality score).
+	const yearsByKey = new Map<string, number>();
 
 	if (unit === "disaster_record") {
 		const fr = humanEffectsFilteredRecords(filters);
@@ -305,7 +314,7 @@ async function computeHazardMonth(
 					CASE WHEN ph.md IS NULL THEN rv0.month0 END AS month
 				FROM rv0 LEFT JOIN ph ON ph.md = rv0.md
 			)`;
-		const [groups, med, span, days] = await Promise.all([
+		const [groups, med, span, days, yrs] = await Promise.all([
 			rows(sql`${base}
 				SELECT k, cl, month, placeholder,
 					(year IS NOT NULL AND month0 IS NULL) AS no_month,
@@ -318,7 +327,11 @@ async function computeHazardMonth(
 				FROM rv WHERE v IS NOT NULL AND NOT fl AND month IS NOT NULL GROUP BY 1`),
 			rows(sql`${base} SELECT MIN(year) AS y0, MAX(year) AS y1 FROM rv`),
 			rows(sql`${base} SELECT md, n FROM ph`),
+			rows(sql`${base}
+				SELECT k, COUNT(DISTINCT year) AS n FROM rv
+				WHERE month IS NOT NULL AND year IS NOT NULL GROUP BY 1`),
 		]);
+		for (const r of yrs) yearsByKey.set(r.k as string, num(r.n));
 		tallies = groups.map((r) => ({
 			key: r.k as string,
 			cluster: (r.cl as string | null) ?? null,
@@ -400,6 +413,15 @@ async function computeHazardMonth(
 				n: s.length,
 			});
 		}
+		const yearSets = new Map<string, Set<number>>();
+		for (const r of perEvent) {
+			if (r.year == null || r.month0 == null) continue;
+			if (phDays.has(calendarDay(r.start_date) ?? "")) continue;
+			const set = yearSets.get(r.k as string) ?? new Set<number>();
+			set.add(num(r.year));
+			yearSets.set(r.k as string, set);
+		}
+		for (const [k, set] of yearSets) yearsByKey.set(k, set.size);
 		const ys = perEvent
 			.map((r) => r.year)
 			.filter((y) => y != null)
@@ -407,7 +429,7 @@ async function computeHazardMonth(
 		years = ys.length ? { from: Math.min(...ys), to: Math.max(...ys) } : null;
 	}
 
-	const rowsOut = buildRows(tallies, medians, names);
+	const rowsOut = buildRows(tallies, medians, names, yearsByKey);
 	return {
 		unit,
 		measure,
