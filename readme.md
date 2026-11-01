@@ -3,7 +3,7 @@
 DELTA Resilience is a comprehensive system, not just an open-source software. Co-developed with data producers and users and building on DesInventar Sendai, DELTA brings together:
 
 - Methodological frameworks
-- Data standards and governance,
+- Data standards and governance
 - Capacity development and technical assistance,
 - Open-source software
 
