@@ -8,6 +8,7 @@ import {
 	cleanupTestUser,
 } from "../test-helpers";
 import { getHazardMonth } from "~/backend.server/models/analytics/dashboard/hazardMonth.server";
+import { getCellRecords } from "~/backend.server/models/analytics/dashboard/cellRecords.server";
 import { DEFAULT_QUERY } from "~/utils/deltaQuery";
 import { clearDashboardCache } from "~/backend.server/models/analytics/dashboard/dashboardCache.server";
 
@@ -131,6 +132,35 @@ describe("getHazardMonth", () => {
 		});
 		const ev = await getHazardMonth(Q, ctx(), "disaster_event");
 		expect(ev.rows.every((x) => x.season.verdict === "too_few")).toBe(true);
+	});
+
+	it("lists the records behind a cell: the same records as the cell, largest first, confirmed zero not shown as a value", async () => {
+		const p = await getCellRecords(Q, ctx(), { key: "cluster:1046", month: 3 });
+		expect(p.total).toBe(2);
+		expect(p.records.map((x) => [x.recordId, x.value, x.valueState])).toEqual([
+			[r.r1, 10, "reported"],
+			[r.r2, null, "zero_confirmed"],
+		]);
+		const month = await getHazardMonth(Q, ctx(), "disaster_record");
+		expect(
+			month.rows.find((x) => x.key === "cluster:1046")!.cells[2].count,
+		).toBe(p.total);
+	});
+
+	it("records behind a cell stay inside the tenant, and refuse a bad month", async () => {
+		const other = { ...ctx(), countryAccountsId: randomUUID() };
+		expect(
+			(await getCellRecords(Q, other, { key: "cluster:1046", month: 3 })).total,
+		).toBe(0);
+		await expect(
+			getCellRecords(Q, ctx(), { key: "cluster:1046", month: 13 }),
+		).rejects.toThrow("invalid month");
+	});
+
+	it("does not call too few day dates weekly reporting dates", async () => {
+		expect(
+			(await getHazardMonth(Q, ctx(), "disaster_record")).weeklyReportingDay,
+		).toBeNull();
 	});
 
 	it("records: flags the month where one occurrence carries a toll far above the hazard's median", async () => {

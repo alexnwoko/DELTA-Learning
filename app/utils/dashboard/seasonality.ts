@@ -206,3 +206,53 @@ export function seasonScore(input: {
 		line: `${half} ${conc} ${word}`,
 	};
 }
+
+/**
+ * Weekly reporting dates (FR-AN-060, second part): day-dated occurrences that
+ * heap on one weekday, more than twice the expected one-in-seven share, are
+ * reporting dates, not onsets. Months stay usable; days, weeks and lags do not.
+ */
+export const WEEKLY_DATE_RULE = { minDated: 100, multiple: 2 } as const;
+
+const WEEKDAYS = [
+	"Sunday",
+	"Monday",
+	"Tuesday",
+	"Wednesday",
+	"Thursday",
+	"Friday",
+	"Saturday",
+];
+
+export interface WeeklyReportingDay {
+	weekday: string;
+	/** Share of the day-dated occurrences on that weekday. */
+	share: number;
+	/** Day-dated occurrences tested (real calendar dates, no placeholder days). */
+	dated: number;
+	line: string;
+}
+
+/** Tests [YYYY-MM-DD, count] pairs; an impossible date (30 February) is not tested. */
+export function weeklyReportingDay(
+	dates: readonly (readonly [string, number])[],
+): WeeklyReportingDay | null {
+	const byDay = Array(7).fill(0) as number[];
+	for (const [ymd, n] of dates) {
+		const [y, m, d] = ymd.split("-").map(Number);
+		const t = new Date(Date.UTC(y, m - 1, d));
+		if (t.getUTCMonth() !== m - 1 || t.getUTCDate() !== d) continue;
+		byDay[t.getUTCDay()] += n;
+	}
+	const dated = byDay.reduce((a, b) => a + b, 0);
+	if (dated < WEEKLY_DATE_RULE.minDated) return null;
+	const top = Math.max(...byDay);
+	const share = top / dated;
+	if (share <= WEEKLY_DATE_RULE.multiple / 7) return null;
+	return {
+		weekday: WEEKDAYS[byDay.indexOf(top)],
+		share: Math.round(share * 1000) / 1000,
+		dated,
+		line: "Day dates here are weekly reporting dates",
+	};
+}

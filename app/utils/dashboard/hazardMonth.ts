@@ -15,7 +15,10 @@ import type {
 	PanelCell,
 	PanelMeta,
 } from "~/utils/dashboard/impactPanels";
-import type { SeasonScore } from "~/utils/dashboard/seasonality";
+import type {
+	SeasonScore,
+	WeeklyReportingDay,
+} from "~/utils/dashboard/seasonality";
 
 export interface HazardMonthRow {
 	/** Row key: the HIPs hazard id, "cluster:<id>" or "none". */
@@ -74,6 +77,8 @@ export interface HazardMonth {
 	placeholderDates: number;
 	/** The calendar days found to be placeholders ("MM-DD"), with their counts. */
 	placeholderDays: { day: string; occurrences: number }[];
+	/** Set when day dates heap on one weekday: reporting dates, not onsets (FR-AN-060). */
+	weeklyReportingDay: WeeklyReportingDay | null;
 	years: { from: number; to: number } | null;
 	meta: PanelMeta;
 }

@@ -6,6 +6,7 @@ import {
 	peakMonths,
 	peakSeasons,
 	seasonScore,
+	weeklyReportingDay,
 } from "~/utils/dashboard/seasonality";
 
 // Month counts Jan..Dec.
@@ -95,5 +96,32 @@ describe("seasonality score", () => {
 		expect(niger.withheld).toBe("few_dated");
 		expect(niger.line).toBe("Too few dated records");
 		expect(niger.peakMonths).toEqual([1, 3, 4]);
+	});
+});
+
+describe("weekly reporting dates", () => {
+	// 2024-01-07 is a Sunday; the next 6 days cover the other weekdays.
+	const week = (ymd: string, n: number) => [ymd, n] as const;
+
+	it("names the weekday when day dates heap on it", () => {
+		const out = weeklyReportingDay([
+			week("2024-01-07", 80),
+			week("2024-01-08", 10),
+			week("2024-01-09", 10),
+		]);
+		expect(out).toMatchObject({ weekday: "Sunday", share: 0.8, dated: 100 });
+		expect(out?.line).toBe("Day dates here are weekly reporting dates");
+	});
+
+	it("stays silent for dates spread across the week, and for too few dates", () => {
+		const even = [7, 8, 9, 10, 11, 12, 13].map((d) =>
+			week(`2024-01-${String(d).padStart(2, "0")}`, 20),
+		);
+		expect(weeklyReportingDay(even)).toBeNull();
+		expect(weeklyReportingDay([week("2024-01-07", 99)])).toBeNull();
+	});
+
+	it("does not test an impossible date", () => {
+		expect(weeklyReportingDay([week("2023-02-30", 500)])).toBeNull();
 	});
 });
