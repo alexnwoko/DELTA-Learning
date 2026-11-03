@@ -10,6 +10,8 @@ import type { EstimatedDisaggregation } from "~/utils/dashboard/estimatedDisaggr
 import { estimatedSplitPanel } from "./EstimatedSplit";
 import type { CostPanels } from "~/utils/dashboard/costPanels";
 import { costSectionPanel } from "./CostSection";
+import type { ReportingEffort } from "~/utils/dashboard/reportingEffort";
+import { reportingEffortPanel } from "./ReportingEffort";
 import { ChartFrame } from "~/frontend/charts/ChartFrame";
 import { cellRow, panelNotes } from "../../panelCell";
 import { RowBars } from "../blocks";
@@ -50,7 +52,7 @@ export function impactDashboardPanels(
 	ctx: ViewContext,
 	data: ImpactPanels1to4,
 	source: string,
-	later?: { data: ImpactPanels5to16; country: string; subnational?: boolean; sources?: ImpactSources | null; hazardMonth?: HazardMonth | null; estimated?: EstimatedDisaggregation | null; cost?: CostPanels | null; provisional?: boolean },
+	later?: { data: ImpactPanels5to16; country: string; subnational?: boolean; sources?: ImpactSources | null; hazardMonth?: HazardMonth | null; estimated?: EstimatedDisaggregation | null; cost?: CostPanels | null; effort?: ReportingEffort | null; provisional?: boolean },
 ): DashboardPanel[] {
 	const t = (code: string, msg: string) => ctx.t({ code, msg });
 	// No record in scope: one frame, never tiles and bars of 0 (Bonn Data Team, 2026-10-17).
@@ -131,7 +133,8 @@ export function impactDashboardPanels(
 	const months = later?.hazardMonth ? [{ ...hazardMonthPanel(ctx, later.hazardMonth, "impact-hazard-month", 28, common), wide: true }] : [];
 	const estimate = later?.estimated ? [estimatedSplitPanel(ctx, later.estimated)] : [];
 	const cost = later?.cost ? [costSectionPanel(ctx, later.cost, later.provisional ?? false)] : [];
-	const built = [...ready, ...rest, ...sources, ...months, ...estimate, ...cost];
+	const effort = later?.effort ? [reportingEffortPanel(ctx, later.effort, common)] : [];
+	const built = [...ready, ...rest, ...sources, ...months, ...estimate, ...cost, ...effort];
 	return arrangeImpactPanels([...built, ...comingSoonPanels(ctx, "impact", IMPACT_LAYOUT, built)]);
 }
 

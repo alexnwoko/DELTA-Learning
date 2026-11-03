@@ -216,7 +216,7 @@ async function computeCostPanels(
 
 	return {
 		currency: { code: currency, name },
-		// MC-7 (Alex, 2026-10-26): a local value equal to the dollar value in a
+		// MC-7 (Bonn Data Team, 2026-10-26): a local value equal to the dollar value in a
 		// non-dollar country is read as US dollars, pending the country's word.
 		disclaimer:
 			num(o.copy) > 0

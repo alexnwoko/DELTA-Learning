@@ -19,6 +19,7 @@ const cells = (over: Record<number, { count: number; people: PanelCell; rare?: b
 	});
 const row = (key: string, label: string, cluster: string, all: number, p: number | null, over: Parameters<typeof cells>[0], unplaced = { placeholder: 0, noMonth: 0 }): HazardMonthRow => ({
 	key, level: "hazard", label, hipHazardId: key, hipClusterId: cluster, clusterLabel: cluster, hipTypeId: "t1",
+	season: { verdict: "too_few", withheld: "few_usable", usable: 0, all: all, years: 0, peakMonths: [], topThreeShare: null, concentration: null, chiSquare: null, windows: [], line: "Too few dated records" },
 	total: all - unplaced.placeholder - unplaced.noMonth, allOccurrences: all,
 	people: p === null ? people(null, "not_reported") : people(p, "reported"), unplaced, cells: cells(over),
 });
@@ -33,6 +34,7 @@ const D: HazardMonth = {
 	withoutMonth: 5,
 	placeholderDates: 7445,
 	placeholderDays: [{ day: "09-07", occurrences: 7445 }],
+	weeklyReportingDay: null,
 	years: { from: 1990, to: 2024 },
 	meta: { method: "Rare: at most 2 occurrences and 5 times the median.", notApplied: [] },
 };
@@ -91,5 +93,40 @@ describe("Hazard by month heatmap", () => {
 		expect(exp.rows.some((r) => r.label === "Drought, Month unknown" && r.value === 3304)).toBe(true);
 		expect(exp.rows.some((r) => r.label === "Drought, Total" && r.value === 4269)).toBe(true);
 		expect(exp.rows.find((r) => r.label === "Flooding, Aug" && r.series !== "Records")!.valueState).toBe("not_reported");
+	});
+});
+
+describe("season, reporting day and records behind a cell", () => {
+	const clear = { verdict: "clear" as const, withheld: null, usable: 40, all: 40, years: 12, peakMonths: [7], topThreeShare: 0.9, concentration: 0.6, chiSquare: 40, windows: [{ season: [7], window: [4, 5, 6] }], line: "Half in Jul, concentration 0.60, clear season" };
+	const flood = { ...row("fl", "Flooding", "Water-related", 40, 5000, { 7: { count: 30, people: people(5000, "reported") } }), season: clear };
+	const flagged = { ...people(90000, "reported"), recordsFlagged: 2 } as PanelCell;
+	const storm = row("tc", "Tropical cyclone", "Wind-related", 3, 90000, { 2: { count: 3, people: flagged } });
+	const rareRow = row("eq", "Earthquake", "Seismic", 1, 90000, { 1: { count: 1, people: people(90000, "reported"), rare: true } });
+	const render = (d: HazardMonth) => renderToString(<>{hazardMonthPanel(ctx, d, "x", 28, common).render!()}</>).replace(/<!-- -->/g, "");
+
+	it("prints each row's season line, and a pre-season window only for a clear season", () => {
+		const html = render({ ...D, rows: [flood, storm] });
+		expect(html).toContain("Half in Jul, concentration 0.60, clear season");
+		expect(html).toContain("Pre-season: Apr, May, Jun");
+		expect(html).toContain("Too few dated records");
+		expect(html.match(/Pre-season: [A-Z][a-z]{2},/g)).toHaveLength(1);
+	});
+
+	it("prints the weekly reporting line when set, and nothing when not", () => {
+		const line = "62% of 400 day-dated records fall on a Monday: these look like reporting dates, not onsets.";
+		expect(render({ ...D, weeklyReportingDay: { weekday: "Monday", share: 0.62, dated: 400, line } })).toContain(line);
+		expect(render(D)).not.toContain("reporting dates");
+	});
+
+	it("offers the list only on a rare or under-review box of the records view", () => {
+		const html = render({ ...D, rows: [flood, storm, rareRow] });
+		expect(html.match(/aria-label="Records behind this cell: /g)).toHaveLength(2);
+		expect(html).toContain('aria-label="Records behind this cell: Tropical cyclone, Feb"');
+		expect(html).toContain('aria-label="Records behind this cell: Earthquake, Jan"');
+		expect(html).toContain("! under review.");
+		expect(html).toContain("Select a marked box to list its records.");
+		const events = render({ ...D, unit: "disaster_event", rows: [storm, rareRow] });
+		expect(events).not.toContain("Records behind this cell");
+		expect(events).not.toContain("Select a marked box");
 	});
 });

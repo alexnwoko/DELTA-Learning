@@ -8,15 +8,17 @@
 // month is blank, never 0. Only hazards with a reported number of people
 // affected, the top 20 by it (Bonn Data Team, 2026-10-19).
 import { useState } from "react";
-import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
+import { Button, ToggleButton, ToggleButtonGroup } from "react-aria-components";
 import { ChartFrame } from "~/frontend/charts/ChartFrame";
 import type { ChartExportRow } from "~/frontend/charts/chartExport";
 import { DASHBOARD_RAMP } from "~/frontend/charts/sectionPalette";
 import type { ViewContext } from "~/frontend/context";
 import type { HazardMonth, HazardMonthRow } from "~/utils/dashboard/hazardMonth";
-import { cellRow, cellText, panelNotes, type PanelExport } from "../panelCell";
+import { cellRow, cellText, flaggedText, panelNotes, type PanelExport } from "../panelCell";
 import type { DashboardPanel } from "../types";
 import { shadeFor } from "./blocks";
+import { CellRecordsPanel } from "./CellRecordsList";
+import { FOCUS_RING } from "~/frontend/buttonStyles";
 import { effectLabel } from "./impact/panels5to16";
 
 type Mode = "count" | "people";
@@ -102,7 +104,9 @@ export function hazardMonthExport(ctx: ViewContext, d: HazardMonth): PanelExport
 				t({ code: "dashboard.placeholder_day", msg: "{n} {what} dated {day}, a source default: month unknown." }, { n: n(p.occurrences), what: occWord, day: dayLabel(ctx.lang, p.day) }),
 			),
 			d.withoutMonth > 0 ? t({ code: "dashboard.without_month", msg: "{n} have no start month: month unknown." }, { n: n(d.withoutMonth) }) : undefined,
+			d.weeklyReportingDay?.line,
 			t({ code: "dashboard.people_dated_only", msg: "People are counted over occurrences with a usable month." }),
+			t({ code: "dashboard.season_note", msg: "Season: how much of a hazard falls in its peak months, withheld when too few occurrences are dated. Pre-season: the months before the usual impact season, not a forecast lead time." }),
 			t({ code: "dashboard.top20_note", msg: "The top {n} hazards by people affected; hazards with no reported figure are left out." }, { n: TOP_ROWS }),
 		]),
 	};
@@ -124,6 +128,13 @@ function HazardMonthView({ ctx, d, title, exp, common }: { ctx: ViewContext; d: 
 	const max = Math.max(0, ...shown.flatMap((r) => [...r.cells.map((c) => value(c) ?? 0), mode === "count" ? unknownMonth(r) : 0]));
 	const maxTotal = Math.max(1, ...shown.map((r) => rowTotal(r) ?? 0));
 	const anyRare = shown.some((r) => r.cells.some((c) => c.rare));
+	// The list reads disaster records, so only the records view offers it.
+	const canList = d.unit === "disaster_record";
+	const listable = (c: Cell) => canList && c.count > 0 && (c.rare || flaggedText(ctx, c.people) !== null);
+	const anyReview = canList && shown.some((r) => r.cells.some((c) => c.count > 0 && flaggedText(ctx, c.people) !== null));
+	const [selected, setSelected] = useState<{ key: string; month: number; heading: string } | null>(null);
+	const seasonWord = t({ code: "dashboard.season", msg: "Season" });
+	const preSeason = t({ code: "dashboard.pre_season", msg: "Pre-season" });
 
 	return (
 		<ChartFrame ctx={ctx} title={title} rows={exp.rows}
@@ -160,6 +171,7 @@ function HazardMonthView({ ctx, d, title, exp, common }: { ctx: ViewContext; d: 
 							{months.map((m) => <th key={m} scope="col" className="px-1 py-1 text-center font-semibold">{m}</th>)}
 							<th scope="col" className="px-1 py-1 text-center font-semibold" title={t({ code: "dashboard.month_unknown_hint", msg: "Source default dates and records without a month" })}>{unknown}</th>
 							<th scope="col" className="px-1 py-1 text-start font-semibold">{t({ code: "dashboard.total", msg: "Total" })}</th>
+							<th scope="col" className="px-1 py-1 text-start font-semibold">{seasonWord}</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -180,8 +192,23 @@ function HazardMonthView({ ctx, d, title, exp, common }: { ctx: ViewContext; d: 
 												outline: c.rare ? `2px solid ${DASHBOARD_RAMP[4]}` : undefined,
 												outlineOffset: c.rare ? "-2px" : undefined,
 											}}>
-											{v !== null ? n(v) : ""}
-											{c.rare && <span aria-hidden="true" className="ms-0.5">◆</span>}
+											{listable(c) ? (
+												<Button
+													aria-label={`${t({ code: "dashboard.cell_records_title", msg: "Records behind this cell" })}: ${r.label}, ${months[c.month - 1]}`}
+													aria-pressed={selected?.key === r.key && selected.month === c.month}
+													onPress={() => setSelected({ key: r.key, month: c.month, heading: `${r.label}, ${months[c.month - 1]}` })}
+													className={`w-full cursor-pointer rounded underline decoration-dotted ${FOCUS_RING}`}
+												>
+													{v !== null ? n(v) : ""}
+													{c.rare && <span aria-hidden="true" className="ms-0.5">◆</span>}
+													{flaggedText(ctx, c.people) && <span aria-hidden="true" className="ms-0.5 font-bold text-data-flag-review-chip-text">!</span>}
+												</Button>
+											) : (
+												<>
+													{v !== null ? n(v) : ""}
+													{c.rare && <span aria-hidden="true" className="ms-0.5">◆</span>}
+												</>
+											)}
 											{c.rare && <span className="sr-only">{rare}</span>}
 										</td>
 									);
@@ -200,6 +227,14 @@ function HazardMonthView({ ctx, d, title, exp, common }: { ctx: ViewContext; d: 
 										<span className="tabular-nums">{tot !== null ? n(tot) : cellText(ctx, r.people)}</span>
 									</span>
 								</td>
+								<td className={`min-w-40 px-1 py-1 ${r.season.verdict === "too_few" ? "italic text-brand-text-muted" : ""}`}>
+									{r.season.line}
+									{r.season.windows.map((w) => (
+										<span key={w.season.join("-")} className="block text-brand-text-muted">
+											{`${preSeason}: ${w.window.map((m) => months[m - 1]).join(", ")}`}
+										</span>
+									))}
+								</td>
 								</tr>
 							);
 						})}
@@ -209,7 +244,11 @@ function HazardMonthView({ ctx, d, title, exp, common }: { ctx: ViewContext; d: 
 			<p className="m-0 text-xs text-brand-text-muted">
 				{t({ code: "dashboard.hazard_month_key", msg: "Blank: none that month, or no figure reported." })}
 				{anyRare && ` ${t({ code: "dashboard.rare_key", msg: "◆ ringed: few occurrences with a high toll, by the rule in the method note." })}`}
+				{anyReview && ` ${t({ code: "dashboard.review_key", msg: "! under review." })}`}
+				{canList && (anyRare || anyReview) && ` ${t({ code: "dashboard.cell_select_key", msg: "Select a marked box to list its records." })}`}
 			</p>
+			{d.weeklyReportingDay && <p className="m-0 text-xs">{d.weeklyReportingDay.line}</p>}
+			{selected && <CellRecordsPanel ctx={ctx} cell={selected} heading={selected.heading} valueLabel={pLabel} onClose={() => setSelected(null)} />}
 		</ChartFrame>
 	);
 }
