@@ -1,4 +1,4 @@
-// The page heading of each main section (Alex, 2026-10-19 and 20): the
+// The page heading of each main section (Bonn Data Team, 2026-10-19 and 20): the
 // section and the country, "Data Analysis | Mozambique", in capitals, extra
 // bold, 17.75pt, with 2pt of padding above the text and 1pt below. The words
 // stay in normal case for screen readers and translation; the capitals are CSS.
@@ -23,7 +23,7 @@ export function useIsDataEntryPage(): boolean {
 
 /**
  * "Data Entry | Mozambique", "Data Analysis | Mozambique", "Geoportal |
- * Mozambique" (Alex, 2026-10-20): the section, then the country; the logo
+ * Mozambique" (Bonn Data Team, 2026-10-20): the section, then the country; the logo
  * above names DELTA Resilience. No country, the section alone.
  */
 export function brandTitle(ctx: Pick<ViewContext, "t">, section: BrandSection, country?: string | null): string {
@@ -33,7 +33,7 @@ export function brandTitle(ctx: Pick<ViewContext, "t">, section: BrandSection, c
 			: section === "analysis"
 				? ctx.t({ code: "brand.data_analysis", msg: "Data Analysis" })
 				: ctx.t({ code: "brand.geoportal", msg: "Geoportal" });
-	// En spaces round the bar, the spacing Alex wrote.
+	// En spaces round the bar, the spacing Bonn Data Team wrote.
 	return country ? `${part}\u2002|\u2002${country}` : part;
 }
 

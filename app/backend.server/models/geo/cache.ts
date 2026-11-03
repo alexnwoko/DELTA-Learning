@@ -1,4 +1,4 @@
-// Result cache for geo reads (I-6, NFR-113; Alex chose option A,
+// Result cache for geo reads (I-6, NFR-113; Bonn Data Team chose option A,
 // 2026-10-18). The read model changes only when geo.refresh_log moves for a
 // tenant, so an answer is valid until that tenant's next refresh: the key
 // carries the tenant, the refresh time and the whole resolved request

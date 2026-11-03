@@ -1,5 +1,5 @@
 // The Analysis maps pass the loader's basemaps and country boundary to
-// MapChart unchanged (Alex, 2026-10-18: basemap on by default, outline and
+// MapChart unchanged (Bonn Data Team, 2026-10-18: basemap on by default, outline and
 // labels in light grey).
 import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
@@ -53,7 +53,7 @@ describe("Analysis map layers", () => {
 	});
 });
 
-describe("Analysis maps take the dashboard palette (Alex, 2026-10-18)", () => {
+describe("Analysis maps take the dashboard palette (Bonn Data Team, 2026-10-18)", () => {
 	it("passes DASHBOARD_RAMP to MapChart on both maps", async () => {
 		const { DASHBOARD_RAMP } = await import("~/frontend/charts/sectionPalette");
 		seen.length = 0;

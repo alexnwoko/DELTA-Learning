@@ -101,7 +101,7 @@ describe("Hazardous events panels 1 to 7", () => {
 	});
 });
 
-describe("Hazardous events layout (FE-Proposal-02, Alex 2026-10-18)", () => {
+describe("Hazardous events layout (FE-Proposal-02, Bonn Data Team 2026-10-18)", () => {
 	it("follows the agreed rows, the rest under Show more", () => {
 		const laid = hazardEventDashboardPanels(ctx, D, { ...opts, signedIn: true });
 		expect(laid.filter((p) => !p.more).map((p) => p.id)).toEqual([
@@ -112,7 +112,7 @@ describe("Hazardous events layout (FE-Proposal-02, Alex 2026-10-18)", () => {
 	});
 });
 
-describe("placeholder description (Alex, 2026-10-19)", () => {
+describe("placeholder description (Bonn Data Team, 2026-10-19)", () => {
 	it("is small print on a grey placeholder, and normal size on a plain gap", async () => {
 		const { PanelGrid } = await import("~/frontend/analytics/dashboard/PanelGrid");
 		const panels = [

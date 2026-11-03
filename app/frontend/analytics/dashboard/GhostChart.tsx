@@ -1,5 +1,5 @@
 // A grey placeholder in the shape a panel's chart will take, for a panel
-// with no data yet (Alex, 2026-10-18: the Hazardous events view shows the
+// with no data yet (Bonn Data Team, 2026-10-18: the Hazardous events view shows the
 // analyses it will carry instead of an empty page). The shapes are fixed
 // drawings, not figures: no axis, no number, no value is implied, and the
 // drawing is hidden from screen readers; the panel's text says why it is

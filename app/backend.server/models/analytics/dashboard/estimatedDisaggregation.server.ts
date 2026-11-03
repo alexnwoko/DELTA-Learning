@@ -1,4 +1,4 @@
-// Estimated sex and age split of people affected (Alex, 2026-10-19): the
+// Estimated sex and age split of people affected (Bonn Data Team, 2026-10-19): the
 // loader behind ~/utils/dashboard/estimatedDisaggregation. For each start
 // year, the reported people affected in the records in scope are split by
 // the country's population structure for that year (UN DESA WPP 2024, five-

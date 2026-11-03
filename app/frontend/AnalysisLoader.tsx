@@ -1,4 +1,4 @@
-// The waiting screen of the Analysis and Geoportal pages (Alex, 2026-10-22): a ring of
+// The waiting screen of the Analysis and Geoportal pages (Bonn Data Team, 2026-10-22): a ring of
 // blue dots that rolls round, each dot fading in turn, with "Hold...
 // putting together your analysis" (or "your map") on three lines inside the
 // ring. It shows while the page loads (opened, or a view or filter changed) and
@@ -54,7 +54,7 @@ export function AnalysisLoader({ ctx, section = "analysis" }: { ctx: Pick<ViewCo
 	);
 }
 
-/** The section whose waiting screen a path shows while it loads: Analysis or Geoportal (Alex, 2026-10-22). */
+/** The section whose waiting screen a path shows while it loads: Analysis or Geoportal (Bonn Data Team, 2026-10-22). */
 export function loaderSection(pathname: string): LoaderSection | null {
 	const m = /^\/[a-z]{2}(?:-debug)?\/(analytics|geoportal)(?:\/|$)/.exec(pathname);
 	return m ? (m[1] === "analytics" ? "analysis" : "geoportal") : null;

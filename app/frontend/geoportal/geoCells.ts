@@ -65,7 +65,7 @@ export interface BarPartInput {
 }
 
 /**
- * Bars mode (Alex 2026-10-17, option B): one cell per area whose parts are
+ * Bars mode (Bonn Data Team 2026-10-17, option B): one cell per area whose parts are
  * the breakdown, for example houses destroyed and damaged. Parts are never
  * added: the cell's value is the largest reported part, used only to decide
  * whether the area carries bars. Record counts come from the first part

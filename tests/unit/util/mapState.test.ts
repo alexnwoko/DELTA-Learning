@@ -595,7 +595,7 @@ describe("underlay under symbols (option D)", () => {
 	});
 });
 
-describe("rounded bars over a choropleth (Alex's choice, 2026-10-17)", () => {
+describe("rounded bars over a choropleth (Bonn Data Team's choice, 2026-10-17)", () => {
 	const deaths = [
 		reported("a", 120),
 		reported("b", 40),

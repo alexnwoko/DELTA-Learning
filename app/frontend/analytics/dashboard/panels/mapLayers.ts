@@ -1,4 +1,4 @@
-// What every Analysis map draws under its data (Alex, 2026-10-18): the
+// What every Analysis map draws under its data (Bonn Data Team, 2026-10-18): the
 // basemap list, the first one on by default (TR-166 amended), and the
 // country outline with area names in light grey. The route loader builds
 // both once; ImpactMap and EventMap pass them to MapChart unchanged.

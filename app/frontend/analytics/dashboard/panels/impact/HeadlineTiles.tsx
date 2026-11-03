@@ -14,12 +14,12 @@ import { cellRow, cellText, coverageText, flaggedText, panelNotes, type PanelExp
 import { impactMeasureLabel } from "./measureLabels";
 import { DASHBOARD_BAR } from "~/frontend/charts/sectionPalette";
 
-// The sparkline stretches to its tile (Alex, 2026-10-18: panel 1 is as
+// The sparkline stretches to its tile (Bonn Data Team, 2026-10-18: panel 1 is as
 // tall as Ranked by divisions beside it); strokes keep their width.
 const SPARK_W = 120;
 const SPARK_H = 48;
 
-/** Column sparkline: a missing year is left vacant, never a 0 bar (Alex, 2026-10-18). */
+/** Column sparkline: a missing year is left vacant, never a 0 bar (Bonn Data Team, 2026-10-18). */
 export function Sparkline({ points }: { points: { year: number; cell: PanelCell }[] }) {
 	if (points.length === 0) return null;
 	const max = Math.max(
@@ -125,7 +125,7 @@ export function HeadlineTiles({ ctx, title, tiles, meta, source, scope, provisio
 							)}
 							{tile.sparkline.length > 0 && (
 								<span className="mt-1 flex flex-1 flex-col gap-0.5">
-									{/* 50% taller bars (Alex, 2026-10-20): 37 px at least, then the tile's free space. */}
+									{/* 50% taller bars (Bonn Data Team, 2026-10-20): 37 px at least, then the tile's free space. */}
 									<span className="relative block min-h-[37px] flex-1">
 										<Sparkline points={tile.sparkline} />
 									</span>

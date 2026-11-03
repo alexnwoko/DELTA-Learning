@@ -163,7 +163,7 @@ describe("dashboardCsv (D1, ruling D6)", () => {
 	});
 });
 
-describe("standaloneChartSvg logo (Alex, 2026-10-19)", () => {
+describe("standaloneChartSvg logo (Bonn Data Team, 2026-10-19)", () => {
 	const chart = '<svg width="400" height="200"><rect width="10" height="10"/></svg>';
 	it("draws the logo top right, 24 px tall, when given one", () => {
 		const svg = standaloneChartSvg(chart, { width: 400, height: 200 }, META, ROWS, undefined, { href: "data:image/png;base64,AAAA", width: 705, height: 130 });
@@ -175,7 +175,7 @@ describe("standaloneChartSvg logo (Alex, 2026-10-19)", () => {
 	});
 });
 
-describe("chart notes small print (Alex, 2026-10-19)", () => {
+describe("chart notes small print (Bonn Data Team, 2026-10-19)", () => {
 	it("finds the bold label of a labelled note, and none in a plain sentence", async () => {
 		const { noteLabel } = await import("~/frontend/charts/ChartFrame");
 		expect(noteLabel("Source: DELTA")).toBe("Source");

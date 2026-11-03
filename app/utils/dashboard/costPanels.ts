@@ -1,4 +1,4 @@
-// Payload type for the cost panels (Alex, 2026-10-22). DELTA's typed money
+// Payload type for the cost panels (Bonn Data Team, 2026-10-22). DELTA's typed money
 // columns are empty; the only money held is the value DesInventar recorded
 // per record (valorloc, valorus), which does not separate damage from
 // losses. Ruling: each country's values are taken to be in its own currency

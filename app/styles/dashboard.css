@@ -1,4 +1,4 @@
-/* Dashboard palette (Alex, 2026-10-18; a trial, may change): the panels read
+/* Dashboard palette (Bonn Data Team, 2026-10-18; a trial, may change): the panels read
    these variables, so one token swap recolours them. The main dashboard
    uses data.dashboard.*; the Sendai section (.delta-sfm) uses data.sfm.*.
    Surfaces, borders, icons and titles only: data series keep their own
@@ -14,7 +14,7 @@
 }
 
 /* The Analysis page sits on a tinted canvas; Data Entry and Geoportal stay
-   white until Alex rules otherwise (FE-Proposal-03, D3). */
+   white until Bonn Data Team rules otherwise (FE-Proposal-03, D3). */
 main:has(.delta-dashboard-canvas) {
 	background-color: var(--delta-data-dashboard-canvas);
 }
@@ -61,7 +61,7 @@ main:has(.delta-dashboard-canvas) {
 	color: var(--delta-data-dashboard-slate);
 }
 
-/* The Analysis waiting screen (Alex, 2026-10-22): blue dots rolling round,
+/* The Analysis waiting screen (Bonn Data Team, 2026-10-22): blue dots rolling round,
    each fading in turn. */
 .delta-loader-ring {
 	animation: delta-loader-roll 2.4s linear infinite;
@@ -91,7 +91,7 @@ main:has(.delta-dashboard-canvas) {
 	}
 }
 
-/* UX-8 (Alex, 2026-10-22): bars glide to their new length when a filter
+/* UX-8 (Bonn Data Team, 2026-10-22): bars glide to their new length when a filter
    changes; none under reduced motion. */
 .delta-anim path,
 .delta-anim rect {
@@ -104,7 +104,7 @@ main:has(.delta-dashboard-canvas) {
 	}
 }
 
-/* UX-1 (Alex, 2026-10-22): while a filter change loads, each card shows a
+/* UX-1 (Bonn Data Team, 2026-10-22): while a filter change loads, each card shows a
    soft moving sheen over its last figures instead of a full-screen wait. */
 main[data-dashboard-refreshing] .delta-layer {
 	position: relative;

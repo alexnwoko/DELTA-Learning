@@ -136,7 +136,7 @@ function PairedColumns({
 								if (c.valueState === "zero_confirmed") {
 									return <rect key={k} x={x} y={base - 2} width={bar - 1} height={2} fill="#fff" stroke={STATE_ENCODING.zero_confirmed.stroke} />;
 								}
-								// Not reported: left vacant, never a drop to 0 (W-7; Alex,
+								// Not reported: left vacant, never a drop to 0 (W-7; Bonn Data Team,
 								// 2026-10-18). An invisible slot keeps the hover text.
 								return (
 									<rect key={k} x={x} y={top} width={bar - 1} height={plot} fill="transparent">
@@ -277,7 +277,7 @@ export function sendaiSectionPanels(ctx: ViewContext, d: SendaiPayload, opts: Se
 		destroyed: tr(t, "dashboard.houses_destroyed", "Dwellings destroyed"),
 		damaged: tr(t, "dashboard.houses_damaged", "Dwellings damaged"),
 	};
-	// The Sendai section's own palette (Alex, 2026-10-18): ink, then accent.
+	// The Sendai section's own palette (Bonn Data Team, 2026-10-18): ink, then accent.
 	const people = SFM_RAMP;
 	const housing = SFM_RAMP;
 
@@ -647,7 +647,7 @@ export function focusSendaiHeading(doc: Pick<Document, "getElementById"> = docum
  * with sfm=1, or reached with Back, moves no focus.
  */
 /**
- * The Sendai toggle. In the rail (Alex, 2026-10-22) it is a square like the
+ * The Sendai toggle. In the rail (Bonn Data Team, 2026-10-22) it is a square like the
  * hazard items, below them, orange when on; it shows the Sendai section.
  */
 export function SendaiToggle({ ctx, on, onChange, rail = false }: { ctx: ViewContext; on: boolean; onChange: (on: boolean) => void; rail?: boolean }) {

@@ -1,5 +1,5 @@
 // Payload type for the hazard-by-month panel on the Disaster impact and
-// Disaster events views (Alex, 2026-10-19): every hazard by calendar month,
+// Disaster events views (Bonn Data Team, 2026-10-19): every hazard by calendar month,
 // years pooled, with a switch between the number of occurrences and the
 // people affected, so that months where few occurrences carry a high human
 // toll stand out (rare severe outliers), as a lead toward cascades and an

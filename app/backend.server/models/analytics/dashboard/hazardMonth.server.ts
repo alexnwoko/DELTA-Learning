@@ -1,4 +1,4 @@
-// Hazard by month, years pooled (Alex, 2026-10-19): the loader behind
+// Hazard by month, years pooled (Bonn Data Team, 2026-10-19): the loader behind
 // ~/utils/dashboard/hazardMonth. On Disaster impact each occurrence is a
 // disaster record (its start month and HIPs hazard); on Disaster events it is
 // a disaster event (the event's start month; the HIPs hazards of its linked
@@ -57,7 +57,7 @@ export const RARE_SEVERE_RULE = {
  */
 export const PLACEHOLDER_DATE_RULE = { minRecords: 10, multiple: 10 } as const;
 
-/** The people measure when the query names none (Alex, 2026-10-19). */
+/** The people measure when the query names none (Bonn Data Team, 2026-10-19). */
 export const HAZARD_MONTH_DEFAULT_MEASURE: ImpactHeadlineMeasure =
 	"affected_direct";
 
@@ -221,7 +221,7 @@ function buildRows(
 						? "Hazard not coded"
 						: level === "hazard"
 							? (hazard?.label ?? `HIPs hazard ${key}`)
-							: // Coded to a cluster only: say so, so the row is never read as a group heading (Alex, 2026-10-19: the direct hazard, not the top grouping).
+							: // Coded to a cluster only: say so, so the row is never read as a group heading (Bonn Data Team, 2026-10-19: the direct hazard, not the top grouping).
 								`${cluster?.label ?? `HIPs cluster ${clusterId}`} (specific hazard not recorded)`,
 				hipHazardId: level === "hazard" ? key : null,
 				hipClusterId: clusterId,
@@ -267,7 +267,7 @@ async function computeHazardMonth(
 	unit: HazardMonth["unit"],
 ): Promise<HazardMonth> {
 	const { filters, notApplied } = impactFiltersFromQuery(query, ctx);
-	// Alex, 2026-10-19: people directly affected by default here (deaths when
+	// Bonn Data Team, 2026-10-19: people directly affected by default here (deaths when
 	// the query asks for them), so the switch shows the breadth of impact.
 	const measure: ImpactHeadlineMeasure = query.measure
 		? chosenMeasure(query)

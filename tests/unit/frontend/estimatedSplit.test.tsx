@@ -1,4 +1,4 @@
-// Estimated sex and age split (Alex, 2026-10-19; Analytics 40a0d72b):
+// Estimated sex and age split (Bonn Data Team, 2026-10-19; Analytics 40a0d72b):
 // estimates are hatched, tagged and footnoted, and never enter the page
 // CSV of reported data.
 import { renderToString } from "react-dom/server";
@@ -25,12 +25,12 @@ const D: EstimatedDisaggregation = {
 		{ group: "0-4", female: e(800), male: e(820) },
 		{ group: "80+", female: e(null), male: e(40) },
 	],
-	// Four named models (Alex, 2026-10-22; Analytics edaa715b), DELTA first.
+	// Four named models (Bonn Data Team, 2026-10-22; Analytics edaa715b), DELTA first.
 	byModel: [
 		{
 			id: "delta",
 			name: "DELTA disaggregation",
-			source: "Alex Nwoko, DELTA product ruling, 2026-10-22",
+			source: "Bonn Data Team, DELTA product ruling, 2026-10-22",
 			bands: [
 				{ key: "0-4", label: "Young children (0-4)", split: false, female: e(800), male: e(820) },
 				{ key: "5-17", label: "Children (5-17)", split: true, female: e(1400), male: e(1480) },
@@ -67,11 +67,11 @@ describe("estimated sex and age split", () => {
 		expect(html).toMatch(/uppercase[^>]*>Estimated<\/span>/);
 	});
 
-	it("opens on the DELTA model, names it, and offers the four models (Alex, 2026-10-22)", () => {
+	it("opens on the DELTA model, names it, and offers the four models (Bonn Data Team, 2026-10-22)", () => {
 		expect(pickModel(D, null)?.id).toBe("delta");
 		expect(pickModel(D, "un")?.id).toBe("un");
 		expect(html).toContain('aria-label="Estimated sex and age split, DELTA disaggregation"');
-		expect(html).toContain("DELTA disaggregation: Alex Nwoko, DELTA product ruling, 2026-10-22.");
+		expect(html).toContain("DELTA disaggregation: Bonn Data Team, DELTA product ruling, 2026-10-22.");
 		expect(html).toContain('aria-label="UN disaggregation"');
 		// The DELTA button is the selected one (a radio in a single-choice group).
 		const delta = html.match(/<button[^>]*aria-label="DELTA disaggregation"[^>]*>/)?.[0] ?? "";

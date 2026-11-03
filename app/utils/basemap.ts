@@ -50,7 +50,7 @@ export type BasemapConfig = {
 } | null;
 
 // ---------------------------------------------------------------------------
-// Basemap switcher (I-3; Alex 2026-10-16: "users should be able to toggle
+// Basemap switcher (I-3; Bonn Data Team 2026-10-16: "users should be able to toggle
 // based on their choice"). One list for GeoMap and MapChart.
 
 /** Basemap layers a map may offer, in switcher order. */
@@ -116,7 +116,7 @@ export function isAllowedThirdPartyUrl(
 
 /**
  * Layers a reader may pick. Public pages offer self-hosted layers only
- * (Geoportal recommendation, pending Alex), so an anonymous visitor's map
+ * (Geoportal recommendation, pending Bonn Data Team), so an anonymous visitor's map
  * views never reach a third party.
  */
 export function selectableBasemaps(

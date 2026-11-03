@@ -114,7 +114,7 @@ describe("panel grid (decision 1)", () => {
 		expect(html).toContain("chart 1");
 	});
 
-	it("lists unbuilt panels in Features Coming Soon on Disaster impact too (Alex, 2026-10-19)", () => {
+	it("lists unbuilt panels in Features Coming Soon on Disaster impact too (Bonn Data Team, 2026-10-19)", () => {
 		const html = text(renderToString(<PanelGrid ctx={ctx} panels={panels} collapseGaps={collapsesGaps("disaster_impact")} />));
 		expect(html).toContain("Features Coming Soon");
 		expect(html).not.toContain('data-panel-state="gap"');
@@ -212,7 +212,7 @@ describe("dashboard shell", () => {
 		return text(renderToString(<Stub />));
 	};
 
-	it("has one h1, the scope line, four buttons in Alex's order and Print", () => {
+	it("has one h1, the scope line, four buttons in Bonn Data Team's order and Print", () => {
 		const html = renderShell("disaster_impact");
 		expect(html.match(/<h1/g)!.length).toBe(1);
 		// The scope line as chips (FE-Proposal-03), the country first and extra bold.
@@ -255,7 +255,7 @@ describe("page-level CSV", () => {
 		const csv = dashboardPanelsCsv(panels, "EXAMPLE DATA · Angola", "EXAMPLE DATA", "provisional", new Date("2026-10-17T00:00:00Z"));
 		const lines = csv.replace(/^\ufeff/, "").trim().split("\r\n");
 		const titles = [...new Set(lines.slice(2).map((l) => l.split(",")[0]))];
-		// Page order (Alex, 2026-10-18): the CSV follows the screen.
+		// Page order (Bonn Data Team, 2026-10-18): the CSV follows the screen.
 		expect(titles).toEqual(["Human effects at a glance", "Hazard ranking by disaster impact", "Human effects by year", "Coverage of the records"]);
 		expect(csv).toContain("Human effects at a glance,Missing,,,not_reported,");
 		expect(csv).toContain("Human effects by year,2023,,,not_reported,");
@@ -273,13 +273,13 @@ describe("page-level CSV", () => {
 	});
 });
 
-describe("Disaster impact layout (Alex, 2026-10-18)", () => {
+describe("Disaster impact layout (Bonn Data Team, 2026-10-18)", () => {
 	const all = impactDashboardPanels(ctx, IMPACT_PANELS_FIXTURE, "EXAMPLE DATA", {
 		data: IMPACT_PANELS_5TO16_FIXTURE,
 		country: "Angola",
 	});
 
-	it("shows the panels in the agreed order (Alex, 2026-10-22: coverage and completeness last)", () => {
+	it("shows the panels in the agreed order (Bonn Data Team, 2026-10-22: coverage and completeness last)", () => {
 		// The fixture has no estimate payload, so row 2 right (Estimated sex and age split) is absent here.
 		const shown = all.filter((p) => !p.more && p.id !== "impact-5");
 		expect(shown.map((p) => p.title)).toEqual([

@@ -1,4 +1,4 @@
-// Alex, 2026-10-17: "no data should be equal to zero" means no data is never shown as 0.
+// Bonn Data Team, 2026-10-17: "no data should be equal to zero" means no data is never shown as 0.
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { PanelGrid } from "~/frontend/analytics/dashboard/PanelGrid";

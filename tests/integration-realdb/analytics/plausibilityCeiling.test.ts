@@ -9,7 +9,7 @@ import { DEFAULT_QUERY } from "~/utils/deltaQuery";
 import { ABOVE_CEILING_CODE, PLAUSIBILITY_CEILINGS } from "~/utils/plausibility";
 
 // One record above the missing-persons ceiling, one below: the total keeps
-// both values, and the figure is marked "Under review" (Alex, 2026-10-18).
+// both values, and the figure is marked "Under review" (Bonn Data Team, 2026-10-18).
 const ids = createTestIds();
 ids.userEmail = ids.userEmail.replace("@", "-ceiling@");
 const rec = { big: randomUUID(), small: randomUUID() };

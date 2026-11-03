@@ -45,7 +45,7 @@ export const OFFICIAL_BASIS_STATUSES: readonly approvalStatusIds[] = [
 
 /**
  * Data viewers see published records only, in lists and detail pages, the
- * same as AB-01 (Alex, 2026-10-15). Before, their lists also showed
+ * same as AB-01 (Bonn Data Team, 2026-10-15). Before, their lists also showed
  * validated records that were not yet published. Held here so no handler
  * hard-codes a status (TR-192).
  */

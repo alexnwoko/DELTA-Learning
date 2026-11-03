@@ -1,4 +1,4 @@
--- World admin-0 reference layer (Alex, 2026-10-18, rulings 1 and 2 on the
+-- World admin-0 reference layer (Bonn Data Team, 2026-10-18, rulings 1 and 2 on the
 -- map payload research). One row per country: a generalised polygon for the
 -- default map background and neighbouring-country outlines, never tenant
 -- data. Loaded by scripts/seed-admin0.ts from a public-domain source

@@ -116,7 +116,7 @@ export async function refreshGeoReadModel(
 						)}]::text[]`
 					: sql`ARRAY[]::text[]`;
 				// Displaced leaves out people relocated after the event (shared
-				// rule, Alex 2026-10-16; same expression as the analytics headline).
+				// rule, Bonn Data Team 2026-10-16; same expression as the analytics headline).
 				const total =
 					m === "displaced"
 						? displacedHeadlineSql("hcp")

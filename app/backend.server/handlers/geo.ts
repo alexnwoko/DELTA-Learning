@@ -262,7 +262,7 @@ async function resolveParsed(
 		query.dimension = "disaster_impact";
 		// The event view's measure (events) has no meaning for disaster
 		// impact: it is named and dropped, never refused, so a disaster
-		// impact view such as the place panel still answers (Alex,
+		// impact view such as the place panel still answers (Bonn Data Team,
 		// 2026-10-26: the event buttons on the Geoportal crashed).
 		if (!opts.requireMeasure && query.measure && !isGeoMeasure(query.measure, "disaster_impact")) {
 			notApplied.push(`measure: ${query.measure} is an event measure`);

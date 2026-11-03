@@ -14,7 +14,7 @@ export function NavSettings({ ctx, userRole = "" }: NavSettingsProps) {
 
     const menu = useMemo(() => {
         // The Analysis pages are one dashboard with its own buttons
-        // (Alex, 2026-10-17), so they have no sub-menu here.
+        // (Bonn Data Team, 2026-10-17), so they have no sub-menu here.
 
         if (location.pathname.includes("/settings")) {
             if (userRole !== "admin") {

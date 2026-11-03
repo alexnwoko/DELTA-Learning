@@ -1,4 +1,4 @@
-// Chart colours by page section (Alex, 2026-10-18: "every chart should use
+// Chart colours by page section (Bonn Data Team, 2026-10-18: "every chart should use
 // the colour scheme assigned to its section"; a trial, may change). Each
 // ramp runs light to dark, index for index with the old data ramps, so a
 // chart's series keep their relative weight. Hex values, not CSS variables,

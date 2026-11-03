@@ -70,7 +70,7 @@ export interface GeoLabel {
 	msg: string;
 }
 
-/** User-facing names of the three dimensions (Alex ruling 2026-10-16). */
+/** User-facing names of the three dimensions (Bonn Data Team ruling 2026-10-16). */
 export const GEO_DIMENSION_LABELS: Record<QueryDimension, GeoLabel> = {
 	hazardous_event: {
 		code: "geoportal.dim.hazardous_event",

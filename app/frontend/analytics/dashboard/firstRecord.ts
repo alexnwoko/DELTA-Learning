@@ -1,4 +1,4 @@
-// Time charts start where the data starts (Alex, 2026-10-18; made general
+// Time charts start where the data starts (Bonn Data Team, 2026-10-18; made general
 // 2026-10-20: "only start every chart from the month where the data
 // starts"): at the first year, or for month grids the first month, holding a
 // reported figure or a confirmed zero in the chart's own scope. Applied once

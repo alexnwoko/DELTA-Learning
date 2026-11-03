@@ -1,17 +1,17 @@
-// Named sex and age disaggregation models (Alex, 2026-10-22). Each model is a
+// Named sex and age disaggregation models (Bonn Data Team, 2026-10-22). Each model is a
 // set of age bands and sex categories that a view can be shown in; the
 // estimate is computed for every model from the same UN DESA WPP 2024
 // five-year groups. Documented in DELTA_Disaggregation_Models.md
 // (60_Analytics_and_Economics).
 //
-// - DELTA disaggregation: Alex's model and the default view.
+// - DELTA disaggregation: Bonn Data Team's model and the default view.
 // - SFM disaggregation: the Sendai Framework Monitor standard (SADDD guidance,
 //   UNDRR, 2021), which is also how DELTA records age (0-14, 15-64, 65+).
 // - UN disaggregation: the UN five-year age groups, as WPP publishes them.
 // - Life-stage disaggregation: the Analytics proposal of 2026-10-22.
 //
 // Where a band edge falls inside a five-year group (18 inside 15-19), the
-// group is split evenly across its five single years (approved by Alex,
+// group is split evenly across its five single years (approved by Bonn Data Team,
 // 2026-10-22) and the band is marked split. Pure module: no database access.
 
 export const DISAGGREGATION_MODEL_IDS = [
@@ -57,7 +57,7 @@ export const DISAGGREGATION_MODELS: readonly DisaggregationModel[] = [
 	{
 		id: "delta",
 		name: "DELTA disaggregation",
-		source: "Alex Nwoko, DELTA product ruling, 2026-10-22",
+		source: "Bonn Data Team, DELTA product ruling, 2026-10-22",
 		sex: ["female", "male"],
 		ageBands: [
 			{ key: "0-4", label: "Young children (0-4)", from: 0, to: 4 },

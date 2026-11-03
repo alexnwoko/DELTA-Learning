@@ -180,7 +180,7 @@ export function standaloneChartSvg(
 		background: "#ffffff",
 	},
 	/**
-	 * The DELTA Resilience logo as a data URI, drawn top right (Alex,
+	 * The DELTA Resilience logo as a data URI, drawn top right (Bonn Data Team,
 	 * 2026-10-19), so the file carries it offline; none when unavailable.
 	 */
 	logo?: { href: string; width: number; height: number },

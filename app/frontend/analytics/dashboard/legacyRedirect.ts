@@ -1,5 +1,5 @@
 // The three old analysis pages now live on the one Analysis dashboard
-// (Alex, 2026-10-17). Each old route redirects there, keeping the filters
+// (Bonn Data Team, 2026-10-17). Each old route redirects there, keeping the filters
 // its link carried, so bookmarks and shared links keep working.
 import { redirect, type LoaderFunctionArgs } from "react-router";
 import { legacyAnalyticsTarget } from "./views";

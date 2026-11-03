@@ -1,4 +1,4 @@
-// Hazard by month (Alex, 2026-10-19; heatmap redesign approved the same
+// Hazard by month (Bonn Data Team, 2026-10-19; heatmap redesign approved the same
 // day): one row per specific HIPs hazard (no cluster headings, 2026-10-20), the 12
 // calendar months with years pooled, a 13th "Month unknown" column so a
 // hazard dated only by a source default (Ethiopia's drought on 7 September)
@@ -6,7 +6,7 @@
 // the number of occurrences and the people affected; rows sort by the
 // switch. Rare severe months (server rule, meta.method) are ringed. An empty
 // month is blank, never 0. Only hazards with a reported number of people
-// affected, the top 20 by it (Alex, 2026-10-19).
+// affected, the top 20 by it (Bonn Data Team, 2026-10-19).
 import { useState } from "react";
 import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
 import { ChartFrame } from "~/frontend/charts/ChartFrame";
@@ -22,7 +22,7 @@ import { effectLabel } from "./impact/panels5to16";
 type Mode = "count" | "people";
 type Cell = HazardMonthRow["cells"][number];
 
-/** The chart keeps the top 20 hazards by people affected (Alex, 2026-10-19). */
+/** The chart keeps the top 20 hazards by people affected (Bonn Data Team, 2026-10-19). */
 export const TOP_ROWS = 20;
 
 const focusRing =
@@ -45,7 +45,7 @@ function dayLabel(lang: string, day: string): string {
 }
 
 /**
- * The hazards the chart keeps (Alex, 2026-10-19): only those with a reported
+ * The hazards the chart keeps (Bonn Data Team, 2026-10-19): only those with a reported
  * number of people affected, the top 20 by that number.
  */
 export function topHazards(rows: HazardMonthRow[]): HazardMonthRow[] {
@@ -57,7 +57,7 @@ export function topHazards(rows: HazardMonthRow[]): HazardMonthRow[] {
 
 /**
  * Rows in display order: the specific hazards themselves, sorted by the
- * switch (Alex, 2026-10-20: the direct hazard, not its grouping; the
+ * switch (Bonn Data Team, 2026-10-20: the direct hazard, not its grouping; the
  * cluster is only a tooltip on the row).
  */
 export function orderRows(rows: HazardMonthRow[], mode: Mode): HazardMonthRow[] {
@@ -66,7 +66,7 @@ export function orderRows(rows: HazardMonthRow[], mode: Mode): HazardMonthRow[] 
 }
 
 function peopleLabel(ctx: ViewContext, d: HazardMonth): string {
-	// The switch names people plainly (Alex, 2026-10-19: directly affected by default).
+	// The switch names people plainly (Bonn Data Team, 2026-10-19: directly affected by default).
 	return d.measure === "affected_direct"
 		? ctx.t({ code: "dashboard.people_directly_affected", msg: "People directly affected" })
 		: effectLabel(ctx.t, d.measure as never);
@@ -128,7 +128,7 @@ function HazardMonthView({ ctx, d, title, exp, common }: { ctx: ViewContext; d: 
 	return (
 		<ChartFrame ctx={ctx} title={title} rows={exp.rows}
 			meta={{ source: common.source, scope: common.scope, method: exp.method, basis: common.provisional ? "provisional" : "published", notes: exp.notes }}>
-			{/* Under the title, small (Alex, 2026-10-19). */}
+			{/* Under the title, small (Bonn Data Team, 2026-10-19). */}
 			<p className="m-0 -mt-1 text-brand-text-muted" style={{ fontSize: "7.5pt" }}>
 				{t({ code: "dashboard.top_n", msg: "Top {n}" }, { n: TOP_ROWS })}
 			</p>

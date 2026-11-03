@@ -1,5 +1,5 @@
 // Loads climate driver series into ref.driver_index (geoportal gap review,
-// CLM-01; Alex approved the downloads 2026-10-19):
+// CLM-01; Bonn Data Team approved the downloads 2026-10-19):
 // - RONI: NOAA CPC Relative Oceanic Nino Index, which CPC uses for official
 //   ENSO monitoring and prediction; three-month running seasons.
 // - ONI: NOAA CPC Oceanic Nino Index, kept for comparison; three-month seasons.

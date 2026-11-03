@@ -40,7 +40,7 @@
 	border-radius: 0.25rem;
 }
 
-/* Section page headings (Alex, 2026-10-19): capitals, extra bold, 17.75pt
+/* Section page headings (Bonn Data Team, 2026-10-19): capitals, extra bold, 17.75pt
    (the Analysis heading's 15.75pt plus 4pt, then 2pt smaller), in the
    dashboard ink. */
 .delta-page-brand {
@@ -50,12 +50,12 @@
 	letter-spacing: 0.02em;
 	line-height: 1.15;
 	color: var(--delta-data-dashboard-ink);
-	/* 2pt above the text and 1pt below (Alex, 2026-10-20). */
+	/* 2pt above the text and 1pt below (Bonn Data Team, 2026-10-20). */
 	padding-top: 2pt;
 	padding-bottom: 1pt;
 }
 
-/* On paper the logo sits 2pt above the page heading (Alex, 2026-10-19):
+/* On paper the logo sits 2pt above the page heading (Bonn Data Team, 2026-10-19):
    the heading keeps no top margin there; root.tsx drops the padding. */
 @media print {
 	.delta-page-brand {

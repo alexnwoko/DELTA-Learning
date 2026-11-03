@@ -136,7 +136,7 @@ describe("Sendai toggle (FR-AN-020 to 023)", () => {
 		expect(searchFor(parseDeltaQuery(params).query, "disaster_impact", false).get("sfm")).toBeNull();
 	});
 
-	it("belongs to Disaster events and Disaster impact only (Alex, 2026-10-18)", () => {
+	it("belongs to Disaster events and Disaster impact only (Bonn Data Team, 2026-10-18)", () => {
 		expect(SENDAI_VIEWS).toEqual(["disaster_event", "disaster_impact"]);
 		expect(hasSendai("disaster_event")).toBe(true);
 		expect(hasSendai("disaster_impact")).toBe(true);

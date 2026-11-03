@@ -139,13 +139,13 @@ type MapChartProps = {
 	onAreaClick?: (index: number, area: MapChartArea) => void;
 	/**
 	 * Basemap layers the reader may pick (selectableBasemaps(basemapLayers(...))
-	 * for the audience). The first is drawn when the map opens (Alex,
+	 * for the audience). The first is drawn when the map opens (Bonn Data Team,
 	 * 2026-10-18: basemap on by default, amending TR-166); "None" turns it off.
 	 * Google needs a tile session and is not offered here yet.
 	 */
 	basemaps?: readonly BasemapLayer[];
 	/**
-	 * The country boundary and labels layer (Alex, 2026-10-18): the tenant's
+	 * The country boundary and labels layer (Bonn Data Team, 2026-10-18): the tenant's
 	 * outline and every area's name at its anchor point, in light grey, as an
 	 * overlay the reader can switch off.
 	 */
@@ -153,7 +153,7 @@ type MapChartProps = {
 		/**
 		 * Neighbouring countries (Geoportal's neighbourOutlines, Natural
 		 * Earth admin-0): drawn as light-grey outlines with their names,
-		 * under the tenant's own outline (Alex, 2026-10-18).
+		 * under the tenant's own outline (Bonn Data Team, 2026-10-18).
 		 */
 		neighbours?: {
 			iso3: string;
@@ -165,7 +165,7 @@ type MapChartProps = {
 		countryName?: string | null;
 		countryLabelPoint?: [number, number] | null;
 		/**
-		 * Every country's border and name (Geoportal /api/geo/world, Alex,
+		 * Every country's border and name (Geoportal /api/geo/world, Bonn Data Team,
 		 * 2026-10-18): lines at every zoom above the shading, names from each
 		 * country's minZoom. The URL is fetched as given (it carries its
 		 * version). The tenant's own name (iso3) is left out of the world
@@ -273,7 +273,7 @@ function loadWorld(url: string): Promise<WorldBoundaries | null> {
 
 /**
  * The UN short-form map disclaimer, word for word, on every map that shows
- * boundaries (Alex, 2026-10-18; UN Geodata). Shown in the map credits.
+ * boundaries (Bonn Data Team, 2026-10-18; UN Geodata). Shown in the map credits.
  */
 export const UN_MAP_DISCLAIMER =
 	"The boundaries and names shown and the designations used on this map do not imply official endorsement or acceptance by the United Nations.";
@@ -431,7 +431,7 @@ function bubbleSvg(
 }
 
 /**
- * A bar standing on a flat baseline with a rounded top (Alex, 2026-10-17:
+ * A bar standing on a flat baseline with a rounded top (Bonn Data Team, 2026-10-17:
  * bars rounded at the value end). The radius shrinks for a short bar.
  */
 function topRoundedBarPath(
@@ -825,7 +825,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 						// drawn, and it keeps the data credit (TR-166).
 						mapRef.current = L.map(componentId, {
 							preferCanvas: false,
-							// Always on: it carries the UN map disclaimer (Alex,
+							// Always on: it carries the UN map disclaimer (Bonn Data Team,
 							// 2026-10-18), with or without a basemap.
 							attributionControl: true,
 						});
@@ -834,7 +834,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 							escapeHtml(UN_MAP_DISCLAIMER),
 						);
 						// The country outline sits above the shading, never filled and
-						// never catching clicks (Alex, 2026-10-18), below the labels
+						// never catching clicks (Bonn Data Team, 2026-10-18), below the labels
 						// and symbols (marker pane).
 						const outlinePane = mapRef.current.createPane("deltaBoundaries");
 						outlinePane.style.zIndex = "450";
@@ -853,7 +853,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 									attribution: b.attribution,
 								});
 								baseLayers[ctx.t(b.label)] = layer;
-								// Basemap on by default (Alex, 2026-10-18).
+								// Basemap on by default (Bonn Data Team, 2026-10-18).
 								if (i === 0) layer.addTo(mapRef.current);
 							});
 						} else if (tiles) {
@@ -977,7 +977,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 						}
 					});
 					// Boundary layer: the country outline and every area's name, in
-					// light grey above the shading (Alex, 2026-10-18).
+					// light grey above the shading (Bonn Data Team, 2026-10-18).
 					if (boundaries && boundaryGroupRef.current) {
 						const group = boundaryGroupRef.current;
 						const map = mapRef.current;
@@ -1167,7 +1167,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 						height: "500px",
 						width: "100%",
 						zIndex: "0",
-						// One canvas with the geoportal (Alex, 2026-10-16): grey, so the
+						// One canvas with the geoportal (Bonn Data Team, 2026-10-16): grey, so the
 						// country has context before the basemap loads (design review R08).
 						backgroundColor: dataTokens.map.canvas.background,
 					}}
@@ -1184,7 +1184,7 @@ const MapChart = forwardRef<MapChartRef, MapChartProps>(
 							padding: "10px",
 							borderRadius: "5px",
 							boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.3)",
-							// Alex: two points smaller on 2026-10-18 (10.5pt to 8.5pt) and
+							// Bonn Data Team: two points smaller on 2026-10-18 (10.5pt to 8.5pt) and
 							// again on 2026-10-19 (6.5pt, about 8.7px).
 							fontSize: "6.5pt",
 							lineHeight: "1.5",

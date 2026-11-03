@@ -1,4 +1,4 @@
-// Hazard by month heatmap (Alex, 2026-10-19): specific hazards under their
+// Hazard by month heatmap (Bonn Data Team, 2026-10-19): specific hazards under their
 // cluster, 12 months plus "Month unknown", a row total, sort by the switch,
 // rare months ringed, blank months never 0, source default days named.
 import { renderToString } from "react-dom/server";

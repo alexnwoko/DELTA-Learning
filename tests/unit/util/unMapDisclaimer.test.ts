@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { UN_MAP_DISCLAIMER } from "~/components/MapChart";
 
-// Alex, 2026-10-18: the UN short-form disclaimer, word for word, on every
+// Bonn Data Team, 2026-10-18: the UN short-form disclaimer, word for word, on every
 // map that shows boundaries (same text as the geoportal's).
 describe("UN map disclaimer", () => {
 	it("keeps the exact wording", () => {

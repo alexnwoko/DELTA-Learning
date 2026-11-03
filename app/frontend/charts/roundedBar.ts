@@ -1,4 +1,4 @@
-// Rounded bar ends (Alex, 2026-10-17: "keep all of them as rounded bar
+// Rounded bar ends (Bonn Data Team, 2026-10-17: "keep all of them as rounded bar
 // graph, at least at the top or right end of the bar"). Only the far end
 // is rounded; the baseline stays flat, so bar lengths stay comparable.
 // Pure module, for hand-drawn SVG bars; Recharts bars use `radius`.

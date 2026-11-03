@@ -1,4 +1,4 @@
-// Disaster cost section (Alex, 2026-10-22; Analytics 4b91b9ad, 183fbf12):
+// Disaster cost section (Bonn Data Team, 2026-10-22; Analytics 4b91b9ad, 183fbf12):
 // a headline, one currency toggle, a 2x2 grid, the disclaimer verbatim; the
 // illustrative projection is never in the page CSV; empty states read as
 // words, never zeros.

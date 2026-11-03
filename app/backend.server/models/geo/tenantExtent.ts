@@ -82,7 +82,7 @@ export interface TenantOutline {
  * The tenant's outer boundary: the union of its coarsest level's z8
  * geometry (no tenant holds a level-0 outline in the read model), with a
  * label point and the country name. Drawn in data.map.country-outline and
- * data.map.area-label on GeoMap and MapChart alike (Alex, 2026-10-18).
+ * data.map.area-label on GeoMap and MapChart alike (Bonn Data Team, 2026-10-18).
  * Never another tenant's geometry (SEC-22). Cached until the next refresh.
  */
 export async function getTenantOutline(
@@ -160,7 +160,7 @@ export interface NeighbourOutline {
 }
 
 /**
- * Countries around the tenant (Alex, 2026-10-18: show the countries around
+ * Countries around the tenant (Bonn Data Team, 2026-10-18: show the countries around
  * the country of focus): every geo.admin0 country whose outline meets the
  * tenant's extent widened by `bboxMarginDeg`, the tenant's own country left
  * out (its outline comes from getTenantOutline). Reference data, drawn in
@@ -276,7 +276,7 @@ export interface WorldBoundaries {
 }
 
 /**
- * The world admin-0 reference layer for the small-scale map (Alex,
+ * The world admin-0 reference layer for the small-scale map (Bonn Data Team,
  * 2026-10-18: every country's boundary visible, light grey, inside
  * transparent, with light grey names), over the shading at every zoom.
  * Borders are drawn as lines, not filled shapes: the layer has nothing to

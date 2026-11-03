@@ -155,7 +155,7 @@ async function totalsForEachTable(
 		totalsTablesAndCols.map((a) => [a.code, measures[a.code].value]),
 	) as Record<HumanEffectCode, number | null>;
 
-	// Total affected = directly affected + indirectly affected (Alex,
+	// Total affected = directly affected + indirectly affected (Bonn Data Team,
 	// 2026-10-15). Injured, missing and displaced are shown on their own and
 	// are not added in. Reported components only; null when neither was
 	// reported, never 0 (TR-076).

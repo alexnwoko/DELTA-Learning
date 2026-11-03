@@ -68,7 +68,7 @@ export const DEFAULT_PANEL_COUNT = 12;
  * impact each empty panel keeps its own frame with its reason.
  */
 export function collapsesGaps(_view: DashboardView): boolean {
-	// Alex, 2026-10-19: every view lists its unbuilt features in Features
+	// Bonn Data Team, 2026-10-19: every view lists its unbuilt features in Features
 	// Coming Soon; grey placeholders keep their own place in the grid.
 	return true;
 }

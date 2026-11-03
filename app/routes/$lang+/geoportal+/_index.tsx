@@ -186,7 +186,7 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 	const levels = await adminLevels(countryAccountsId);
 	// TR-149: refresh the map data in the background when records changed.
 	const freshness = ensureFreshReadModel(countryAccountsId);
-	// The page heading names the country (Alex, 2026-10-20): the instance
+	// The page heading names the country (Bonn Data Team, 2026-10-20): the instance
 	// settings, else the country account's own name, as on Analysis.
 	const settings = await getCountrySettingsFromSession(args.request);
 	const countryName =
@@ -199,12 +199,12 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 		url.searchParams.set("level", String(defaultLevel));
 	}
 	const dim = url.searchParams.get("dim") ?? "disaster_impact";
-	// Alex 2026-10-17: the Disaster impact map opens on the number of deaths.
+	// Bonn Data Team 2026-10-17: the Disaster impact map opens on the number of deaths.
 	if (!url.searchParams.get("measure") && dim === "disaster_impact") {
 		url.searchParams.set("measure", "deaths");
 	}
 	const canReview = await hasPermission(args.request, "ValidateData");
-	// Map style (Alex 2026-10-17). View state, not delta.query.
+	// Map style (Bonn Data Team 2026-10-17). View state, not delta.query.
 	// - Disaster impact default "bars": areas shaded by the selected count
 	//   (deaths by default) with dwellings destroyed and damaged as rounded
 	//   bars on top (resolveLayeredMapState).
@@ -220,7 +220,7 @@ export const loader = authLoaderWithPerm("ViewData", async (args) => {
 				? "bars"
 				: "bubble";
 	if (symbol === "bars" && dim !== "disaster_impact") symbol = "bubble";
-	// Signed-in page: every configured layer (Alex: the reader chooses).
+	// Signed-in page: every configured layer (Bonn Data Team: the reader chooses).
 	const basemaps = selectableBasemaps(
 		basemapLayers(url.origin, lang),
 		"signed-in",
@@ -423,7 +423,7 @@ const UNPLACED_REASONS: Record<string, { code: string; msg: string }> = {
 // An empty collection while the area shapes download. It must say it is a
 // FeatureCollection: OpenLayers reads a bare { features } as one feature
 // with no geometry type and throws ("Unsupported GeoJSON type: undefined"),
-// which broke client-side navigation to the geoportal (Alex, 2026-10-21).
+// which broke client-side navigation to the geoportal (Bonn Data Team, 2026-10-21).
 const EMPTY_BOUNDARIES: BoundaryCollection = {
 	type: "FeatureCollection",
 	features: [],
@@ -445,7 +445,7 @@ export default function GeoportalPage() {
 	const [hoverId, setHoverId] = useState<string | null>(null);
 	const [dossier, setDossier] = useState<DossierData | null>(null);
 	const [copied, setCopied] = useState<string | null>(null);
-	// Basemap ON by default on both maps (Alex, 2026-10-18, amends TR-166):
+	// Basemap ON by default on both maps (Bonn Data Team, 2026-10-18, amends TR-166):
 	// the first selectable layer; the reader can still choose None.
 	const [basemapId, setBasemapId] = useState<BasemapLayerId | null>(
 		data.basemaps[0]?.id ?? null,
@@ -490,7 +490,7 @@ export default function GeoportalPage() {
 	);
 	const mapState = useMemo(() => {
 		if (!choropleth) return null;
-		// Alex 2026-10-17: bubbles carry counts, rounded bars the housing
+		// Bonn Data Team 2026-10-17: bubbles carry counts, rounded bars the housing
 		// breakdown, shading a density per 1,000 km2 of true area (never a
 		// raw count). Null stays null; parts are never added.
 		const scope = {
@@ -505,7 +505,7 @@ export default function GeoportalPage() {
 			provisional: choropleth.meta.provisional,
 		};
 		const housingFamily = measureFamily("houses_destroyed");
-		// Layered (Alex's default): shading by the selected count, housing
+		// Layered (Bonn Data Team's default): shading by the selected count, housing
 		// bars on top, two colour families, never added. A housing measure
 		// cannot shade under housing bars, so it shows the bars alone.
 		if (
@@ -586,7 +586,7 @@ export default function GeoportalPage() {
 		})[0];
 		return first && first.rank !== null ? first.row.id : null;
 	}, [rows]);
-	// Alex, 2026-10-18: the Place panel opens on the whole country and follows
+	// Bonn Data Team, 2026-10-18: the Place panel opens on the whole country and follows
 	// the area chosen on the map or in the pickers. (The earlier default, the
 	// area with the highest value, is gone; topId stays for the list.)
 	void topId;
@@ -720,7 +720,7 @@ export default function GeoportalPage() {
 		<MainContainer title={title} showHeader={false}>
 			<div className="geo-page py-2 print:pt-0">
 				<div className="flex flex-wrap items-center justify-between gap-2">
-					{/* The section heading, shared with Data Entry and Analysis (Alex, 2026-10-19). */}
+					{/* The section heading, shared with Data Entry and Analysis (Bonn Data Team, 2026-10-19). */}
 					<PageBrand ctx={ctx} section="geoportal" country={data.countryName} />
 					<div className="flex items-center gap-2" data-print="hide">
 						<span role="status" className="text-xs text-brand-text-muted">
@@ -910,7 +910,7 @@ export default function GeoportalPage() {
 						)}
 
 						{/* The Place panel floats over the map's right side on wide
-						    screens (Alex, 2026-10-18) and stacks below it on narrow ones. */}
+						    screens (Bonn Data Team, 2026-10-18) and stacks below it on narrow ones. */}
 						<div className="relative flex flex-col gap-3 my-2 print:!block">
 							<div className="relative min-w-0">
 								<ClientOnly

@@ -147,7 +147,7 @@ export const loader = async (
 	// The dictionary loads as a cached, versioned script, not inline data.
 	const translationsSrc = translationsScriptSrc(lang);
 
-	// The country after the Data Entry page title (Alex, 2026-10-20): the
+	// The country after the Data Entry page title (Bonn Data Team, 2026-10-20): the
 	// instance settings, else the country account's own name (cached).
 	let brandCountry: string | null = null;
 	if (!onAdminRoute && isDataEntryPath(new URL(request.url).pathname)) {
@@ -261,7 +261,7 @@ export default function Screen() {
 		return () => window.clearTimeout(showTimer);
 	}, [navigation.state, routeProgressStarted]);
 
-	// The waiting screen for Analysis and Geoportal (Alex, 2026-10-22). UX-1:
+	// The waiting screen for Analysis and Geoportal (Bonn Data Team, 2026-10-22). UX-1:
 	// a change within the same page (a filter or a view) keeps the page and
 	// shows a sheen on each card instead of the full-screen wait.
 	const loadingSection =
@@ -319,7 +319,7 @@ export default function Screen() {
 					ref={toast}
 					position={loaderData.common.lang === "ar" ? "top-left" : "top-right"}
 				/>
-				{/* The waiting screen while Analysis or Geoportal loads (Alex, 2026-10-22). */}
+				{/* The waiting screen while Analysis or Geoportal loads (Bonn Data Team, 2026-10-22). */}
 				{loadingSection && !refreshingInPlace ? <AnalysisLoader ctx={ctx} section={loadingSection} /> : null}
 				{routeProgressVisible ? (
 					<div className="fixed inset-x-0 top-0 z-[9999] h-1 w-full overflow-hidden bg-slate-200">
@@ -373,7 +373,7 @@ export default function Screen() {
 						{/* Main Content */}
 						<main id="main" tabIndex={-1} data-dashboard-refreshing={refreshingInPlace ? "" : undefined} className="flex-1 w-full">
 							{/* On paper the top bar is hidden, so the logo heads every printed page,
-							    twice the screen size, 2pt above the page heading (Alex, 2026-10-19). */}
+							    twice the screen size, 2pt above the page heading (Bonn Data Team, 2026-10-19). */}
 							<div className="delta-print-logo hidden print:block w-full">
 								{/* One level below main, like the heading and content, so on paper
 								    the logo and rule keep mg-container's side padding and line up. */}
@@ -386,11 +386,11 @@ export default function Screen() {
 									// The 2pt gaps are margins: print.css zeroes padding inside main.
 									className="mb-[2pt] h-20 w-auto"
 								/>
-								{/* A rule under the logo on paper (Alex, 2026-10-19). */}
+								{/* A rule under the logo on paper (Bonn Data Team, 2026-10-19). */}
 								<hr className="m-0 mb-[2pt] border-0 border-t border-data-dashboard-ink" />
 								</div>
 							</div>
-							{/* Data Entry pages share one section heading (Alex, 2026-10-19). */}
+							{/* Data Entry pages share one section heading (Bonn Data Team, 2026-10-19). */}
 							{isDataEntryPath(location.pathname) && !hideMainNavigation ? (
 								<div className="w-full">
 									{/* One level below main, as the content is: print.css zeroes the

@@ -1,4 +1,4 @@
-// "Show by" on the Analysis page (Alex, 2026-10-22; Analytics 4a79f16c):
+// "Show by" on the Analysis page (Bonn Data Team, 2026-10-22; Analytics 4a79f16c):
 // titles that name the division level follow the chosen level, and the
 // level travels in the URL.
 import { describe, expect, it } from "vitest";

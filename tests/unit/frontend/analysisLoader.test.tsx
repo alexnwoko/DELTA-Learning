@@ -1,4 +1,4 @@
-// The Analysis and Geoportal waiting screen (Alex, 2026-10-22).
+// The Analysis and Geoportal waiting screen (Bonn Data Team, 2026-10-22).
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { AnalysisLoader, loaderSection } from "~/frontend/AnalysisLoader";

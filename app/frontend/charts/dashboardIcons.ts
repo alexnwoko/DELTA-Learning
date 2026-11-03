@@ -1,4 +1,4 @@
-// Icons beside every data-point title on the Analysis dashboard (Alex,
+// Icons beside every data-point title on the Analysis dashboard (Bonn Data Team,
 // 2026-10-18). Most come from the OCHA Humanitarian Icons v2.1 set
 // (DELTA_Version_2/80_Frontend_and_Design_System/icons; "Source: OCHA"),
 // self-hosted under public/assets/icons/ocha. Eight concepts OCHA does not

@@ -1,4 +1,4 @@
-// Cost panels (Alex, 2026-10-22): the loader behind ~/utils/dashboard/costPanels.
+// Cost panels (Bonn Data Team, 2026-10-22): the loader behind ~/utils/dashboard/costPanels.
 // Source-reported money per disaster record (DesInventar valorloc in the
 // country's currency, valorus in US dollars), the ruling that each country's
 // values are in its own currency, and the World Bank official exchange rate
@@ -33,7 +33,7 @@ const legacyNumber = (key: string) =>
 		`CASE WHEN rec."legacy_data" ->> '${key}' ~ ${NUMERIC} THEN (rec."legacy_data" ->> '${key}')::numeric END`,
 	);
 
-/** The only rate used for US dollars (Alex, 2026-10-22): one source, stated on every view. */
+/** The only rate used for US dollars (Bonn Data Team, 2026-10-22): one source, stated on every view. */
 export const FX_RATE = {
 	source: "World Bank",
 	indicator: "PA.NUS.FCRF",

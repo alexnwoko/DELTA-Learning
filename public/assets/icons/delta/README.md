@@ -1,6 +1,6 @@
 # DELTA icons in OCHA style
 
-Eight icons for dashboard titles that the OCHA Humanitarian Icons set does not cover. The Frontend lane drew them on 2026-10-18 at Alex's request. They follow OCHA's style: solid filled shapes on a 100 by 100 grid, with cut-outs for detail.
+Eight icons for dashboard titles that the OCHA Humanitarian Icons set does not cover. The Frontend lane drew them on 2026-10-18 at Bonn Data Team's request. They follow OCHA's style: solid filled shapes on a 100 by 100 grid, with cut-outs for detail.
 
 | File | Title |
 |---|---|

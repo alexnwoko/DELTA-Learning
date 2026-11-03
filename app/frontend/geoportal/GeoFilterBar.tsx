@@ -140,7 +140,7 @@ export interface GeoFilterBarProps {
 	summary?: boolean;
 	scopeLabel?: string;
 	/**
-	 * "row" (D1, Alex 2026-10-17): one wrapping row of labelled selects in
+	 * "row" (D1, Bonn Data Team 2026-10-17): one wrapping row of labelled selects in
 	 * the order of the Analytics layout mock-up. Default "groups".
 	 */
 	layout?: "groups" | "row";
@@ -366,7 +366,7 @@ function ChipGroup(props: {
 }
 
 /**
- * Plain names for the "Show by" levels (Alex, 2026-10-22): the area type
+ * Plain names for the "Show by" levels (Bonn Data Team, 2026-10-22): the area type
  * first, the admin level in brackets for people who know the term.
  */
 export function showByLabel(level: number, t: GeoT): string {
@@ -386,7 +386,7 @@ export function showByLabel(level: number, t: GeoT): string {
 
 /**
  * The Dimension buttons in the Analysis view-button style (DashboardShell
- * tabClass; Alex, 2026-10-20): bold, 44px tall, 32px side padding; the
+ * tabClass; Bonn Data Team, 2026-10-20): bold, 44px tall, 32px side padding; the
  * selected one in dashboard ink with the accent bar under it.
  */
 const DIMENSION_BUTTON =
@@ -604,7 +604,7 @@ export function GeoFilterBar(props: GeoFilterBarProps) {
 						</>
 					)}
 					{/* One Area picker (provinces, districts, regions), as on the
-					    Geoportal; "Show by" sets the breakdown (Alex, 2026-10-22). */}
+					    Geoportal; "Show by" sets the breakdown (Bonn Data Team, 2026-10-22). */}
 					{props.place && (
 						<PlaceField
 							place={props.place}
@@ -764,7 +764,7 @@ export function GeoFilterBar(props: GeoFilterBarProps) {
 						</div>
 					)}
 			</div>
-			{/* Row 2 (Alex, 2026-10-20): Hazard type, Measure, Map level, Period,
+			{/* Row 2 (Bonn Data Team, 2026-10-20): Hazard type, Measure, Map level, Period,
 			    From, To; controls 10% lower (36px). */}
 			<div className="w-full flex flex-wrap items-end gap-x-6 gap-y-2 [&_.geo-control]:min-h-[36px]">
 				{tree && !locks.has("hazard") && (

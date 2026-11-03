@@ -65,7 +65,7 @@ export interface CoverageRule {
  *
  * The minimum record count is not ruled (PD-04:877; the grading standard
  * proposes 2, OP-18). It stays 1, which adds no test beyond "at least one
- * confirming record", until Alex rules.
+ * confirming record", until Bonn Data Team rules.
  */
 export const PROVISIONAL_ZERO_COVERAGE: CoverageRule = {
 	minCoverage: 0.25,

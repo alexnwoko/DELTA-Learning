@@ -8,7 +8,7 @@ import { isValidUUID } from "~/utils/id";
 
 // G3 (PD-05): recurrence, hazard mix, counts by year and cumulative human
 // effects for one division and its descendants. "country" is the whole
-// tenant (Alex, 2026-10-18: the Place panel opens on the country).
+// tenant (Bonn Data Team, 2026-10-18: the Place panel opens on the country).
 export const loader = geoLoader(async ({ params }, ctx) => {
 	const divisionId = params.divisionId ?? "";
 	if (divisionId === "country") {

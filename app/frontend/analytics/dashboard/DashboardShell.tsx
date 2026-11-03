@@ -41,7 +41,7 @@ export function viewLabel(ctx: ViewContext, view: DashboardView): string {
 
 export interface DashboardShellProps {
 	ctx: ViewContext;
-	/** The view shown: one of the four buttons, in Alex's order. */
+	/** The view shown: one of the four buttons, in Bonn Data Team's order. */
 	view: DashboardView;
 	onViewChange: (view: DashboardView) => void;
 	/** The reviewer queue, for signed-in users who may open it; omitted otherwise. */
@@ -95,10 +95,10 @@ export function DashboardShell({
 	about,
 }: DashboardShellProps) {
 	const t = ctx.t;
-	// The view buttons (FE-Proposal-03, Alex 2026-10-19): bold, 2pt larger,
+	// The view buttons (FE-Proposal-03, Bonn Data Team 2026-10-19): bold, 2pt larger,
 	// at least 44 x 44 px, with distinct hover, pressed, selected, focus and
 	// disabled states; the selected one is filled in the dashboard ink. 32 px
-	// side padding makes each 30% wider than at first (Alex, 2026-10-20: 113-137 px
+	// side padding makes each 30% wider than at first (Bonn Data Team, 2026-10-20: 113-137 px
 	// measured, +36 px each).
 	const tabClass =
 		"group inline-flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center gap-2 rounded-lg px-[32px] text-[1.0625rem] font-bold leading-tight text-data-dashboard-ink outline-none transition-[background-color,color,box-shadow] duration-150 motion-reduce:transition-none data-[hovered]:bg-data-dashboard-border data-[pressed]:bg-data-dashboard-accent data-[selected]:bg-data-dashboard-ink data-[selected]:text-brand-text-on-interactive data-[selected]:shadow-[inset_0_-3px_0_var(--delta-data-dashboard-accent)] data-[selected]:data-[hovered]:bg-data-dashboard-ink data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50";
@@ -172,7 +172,7 @@ export function DashboardShell({
 				data-print="flow"
 				className="flex min-w-0 flex-1 flex-col gap-4"
 			>
-				{/* Frozen while the page scrolls (Alex, 2026-10-22): the views and the
+				{/* Frozen while the page scrolls (Bonn Data Team, 2026-10-22): the views and the
 				    filters stay in sight, so what is selected is always visible. */}
 				<div data-dashboard-sticky="" className="sticky top-0 z-20 -mx-1 flex flex-col gap-2 bg-data-dashboard-canvas px-1 pb-2 pt-1 print:static">
 				<TabList

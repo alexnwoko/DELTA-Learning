@@ -1,4 +1,4 @@
-// Disaster cost (Alex, 2026-10-22; Analytics' getCostPanels, 4b91b9ad and
+// Disaster cost (Bonn Data Team, 2026-10-22; Analytics' getCostPanels, 4b91b9ad and
 // 183fbf12): its own section in the lower part of Disaster impact, above
 // coverage and completeness. A one-line headline, one currency toggle for
 // all four charts, then a 2x2 grid: how much is costed, which hazards cost

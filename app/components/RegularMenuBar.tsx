@@ -112,7 +112,7 @@ export default function RegularMenuBar({
 			{/* <div className="w-8 h-8 md:w-10 md:h-10 bg-[#004F91] rounded-lg flex items-center justify-center shrink-0">
                 <i className="pi pi-globe text-white !text-base md:!text-2xl"></i>
             </div> */}
-			{/* The DELTA Resilience logo (Alex, 2026-10-19), on every page, Data,
+			{/* The DELTA Resilience logo (Bonn Data Team, 2026-10-19), on every page, Data,
 			    Analysis and Geoportal included: option 1 at full quality, from
 			    "DELTA Logo – 1st version – 29 SEP 2026.docx" (705 x 130 px). */}
 			<img
@@ -275,12 +275,12 @@ export default function RegularMenuBar({
 							.t({ code: "nav.analysis", msg: "Analysis" })
 							.toUpperCase(),
 						icon: "pi pi-chart-bar",
-						// One Analysis dashboard with four buttons (Alex, 2026-10-17):
+						// One Analysis dashboard with four buttons (Bonn Data Team, 2026-10-17):
 						// no drop-down. The reviewer queue is linked from its header.
 						command: () => navigate(ctx.url("/analytics")),
 					},
 					{
-						// Beside Analysis, not inside it (Alex, 2026-10-17). Signed-in
+						// Beside Analysis, not inside it (Bonn Data Team, 2026-10-17). Signed-in
 						// only, as the geoportal route (ViewData); a public entry waits
 						// for management clearance.
 						label: ctx.t({ code: "nav.geoportal", msg: "Geoportal" }).toUpperCase(),

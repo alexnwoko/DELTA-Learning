@@ -191,7 +191,7 @@
 				}
 			},
 			"area-boundary": {
-				"$description": "Line between shaded areas on both maps (Alex, 2026-10-16: one map look).",
+				"$description": "Line between shaded areas on both maps (Bonn Data Team, 2026-10-16: one map look).",
 				"stroke": {
 					"$type": "color",
 					"$value": "#ffffff"
@@ -239,14 +239,14 @@
 				}
 			},
 			"canvas": {
-				"$description": "Background behind both maps, the analytics dashboard (MapChart) and the geoportal (GeoMap): one map look, grey canvas with the white data.map.area-boundary between shaded areas (Alex, 2026-10-16). Gives the country context before the basemap loads.",
+				"$description": "Background behind both maps, the analytics dashboard (MapChart) and the geoportal (GeoMap): one map look, grey canvas with the white data.map.area-boundary between shaded areas (Bonn Data Team, 2026-10-16). Gives the country context before the basemap loads.",
 				"background": {
 					"$type": "color",
 					"$value": "#f3f4f6"
 				}
 			},
 			"country-outline": {
-				"$description": "The tenant's outer boundary (union of its level-1 areas), drawn over both maps in light grey (Alex, 2026-10-18). The lightest grey with 3:1 or more against the canvas, white and the lightest ramp class (WCAG 1.4.11).",
+				"$description": "The tenant's outer boundary (union of its level-1 areas), drawn over both maps in light grey (Bonn Data Team, 2026-10-18). The lightest grey with 3:1 or more against the canvas, white and the lightest ramp class (WCAG 1.4.11).",
 				"stroke": {
 					"$type": "color",
 					"$value": "#7b828c"
@@ -257,7 +257,7 @@
 				}
 			},
 			"area-label": {
-				"$description": "Area and country names on both maps in light grey (Alex, 2026-10-18): the lightest grey with 4.5:1 or more against the canvas, white and the lightest ramp class (WCAG 1.4.3), with a white halo over darker classes and the basemap.",
+				"$description": "Area and country names on both maps in light grey (Bonn Data Team, 2026-10-18): the lightest grey with 4.5:1 or more against the canvas, white and the lightest ramp class (WCAG 1.4.3), with a white halo over darker classes and the basemap.",
 				"color": {
 					"$type": "color",
 					"$value": "#5f6670"
@@ -464,10 +464,10 @@
 		"icon": {
 			"$type": "color",
 			"$value": "#6a8bdc",
-			"$description": "Dashboard icons, same as data.dashboard.icon (Alex, 2026-10-18 palette trial). 3.31:1 on white, 3.05:1 on the dashboard tint (WCAG 1.4.11); the title beside each icon carries the meaning."
+			"$description": "Dashboard icons, same as data.dashboard.icon (Bonn Data Team, 2026-10-18 palette trial). 3.31:1 on white, 3.05:1 on the dashboard tint (WCAG 1.4.11); the title beside each icon carries the meaning."
 		},
 		"dashboard": {
-			"$description": "Main dashboard palette, energized and clean (Alex, 2026-10-18; a trial, may change). Surfaces, borders, icons and titles only, never data series.",
+			"$description": "Main dashboard palette, energized and clean (Bonn Data Team, 2026-10-18; a trial, may change). Surfaces, borders, icons and titles only, never data series.",
 			"tint": {
 				"$type": "color",
 				"$value": "#f0f6ff",
@@ -496,12 +496,12 @@
 			"slate": {
 				"$type": "color",
 				"$value": "#4a5a75",
-				"$description": "Grey-blue text for Features Coming Soon (Alex, 2026-10-19): 6.42:1 on the dashboard tint, 6.98:1 on white (WCAG 1.4.3)."
+				"$description": "Grey-blue text for Features Coming Soon (Bonn Data Team, 2026-10-19): 6.42:1 on the dashboard tint, 6.98:1 on white (WCAG 1.4.3)."
 			},
 			"canvas": {
 				"$type": "color",
 				"$value": "#f0f6ff",
-				"$description": "Analysis page background, so the page is not plain white (FE-Proposal-03, Alex 2026-10-19)."
+				"$description": "Analysis page background, so the page is not plain white (FE-Proposal-03, Bonn Data Team 2026-10-19)."
 			},
 			"surface": {
 				"$type": "color",
@@ -511,11 +511,11 @@
 			"hover": {
 				"$type": "color",
 				"$value": "#0095fd",
-				"$description": "Hover border of buttons and filter controls, the same blue in every brand theme (Alex, 2026-10-20). 3.13:1 on white (WCAG 1.4.11); on the hover tint it is 2.88:1, and the fill change also marks hover."
+				"$description": "Hover border of buttons and filter controls, the same blue in every brand theme (Bonn Data Team, 2026-10-20). 3.13:1 on white (WCAG 1.4.11); on the hover tint it is 2.88:1, and the fill change also marks hover."
 			}
 		},
 		"sfm": {
-			"$description": "Sendai Framework Monitoring section palette, fresh and botanical (Alex, 2026-10-18; a trial, may change). Surfaces, borders, icons and titles only.",
+			"$description": "Sendai Framework Monitoring section palette, fresh and botanical (Bonn Data Team, 2026-10-18; a trial, may change). Surfaces, borders, icons and titles only.",
 			"tint": {
 				"$type": "color",
 				"$value": "#f7fbff",
@@ -544,7 +544,7 @@
 			"on": {
 				"$type": "color",
 				"$value": "#c2410c",
-				"$description": "The Sendai rail button when on (Alex, 2026-10-22: orange): fill under white text and icon, 5.18:1."
+				"$description": "The Sendai rail button when on (Bonn Data Team, 2026-10-22: orange): fill under white text and icon, 5.18:1."
 			},
 			"on-tint": {
 				"$type": "color",

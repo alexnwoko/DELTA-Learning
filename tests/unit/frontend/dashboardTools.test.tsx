@@ -1,4 +1,4 @@
-// Analysis trial helpers (Alex, 2026-10-22): UX-6 saved views, UX-7 shortcuts.
+// Analysis trial helpers (Bonn Data Team, 2026-10-22): UX-6 saved views, UX-7 shortcuts.
 import { describe, expect, it } from "vitest";
 import { readSavedViews, saveView, shortcutFor } from "~/frontend/analytics/dashboard/DashboardTools";
 import { UX } from "~/frontend/uxFeatures";

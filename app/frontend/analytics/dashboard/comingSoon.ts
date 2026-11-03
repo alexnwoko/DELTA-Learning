@@ -1,4 +1,4 @@
-// Features Coming Soon (Alex, 2026-10-19): every unbuilt or not-ready
+// Features Coming Soon (Bonn Data Team, 2026-10-19): every unbuilt or not-ready
 // feature per view, from DELTA_Analytics_Full_Design_Reassessment.md
 // section 4 (Analytics, 2026-10-19). "Placeholder" features wait for data
 // or a schema change and say what for; "buildable" ones are being built by
@@ -37,10 +37,10 @@ export const COMING_SOON: Record<"events" | "hazard-events" | "sectors" | "impac
 		soon("events-18", 18, "Onset class and member start-date span", "Rapid or slow onset, and days between member records; coming soon.", "boxplot"),
 		soon("events-19", 19, "Identifiers and cross-references", "Events carrying GLIDE, national and registry identifiers; coming soon.", "tiles"),
 		soon("events-20", 20, "Events with several hazards", "Events that group records of several hazard types; coming soon.", "bars"),
-		// Alex, 2026-10-19: hazards by calendar month, all years pooled, with a
+		// Bonn Data Team, 2026-10-19: hazards by calendar month, all years pooled, with a
 		// people-or-events switch to show rare events of high impact.
 		soon("events-21", 21, "Hazard by month", "Each hazard by calendar month, people affected or events; coming soon.", "heatmap"),
-		// Alex, 2026-10-19: the window to act before recurring hazards and
+		// Bonn Data Team, 2026-10-19: the window to act before recurring hazards and
 		// their cascades, from data evidence and the literature.
 		soon("events-aa", 27, "Anticipatory action window", "Months to act before recurring hazards and their cascades; coming soon.", "line"),
 		soon("events-22", 22, "Response, humanitarian and recovery costs", "Response, humanitarian and recovery costs per event; waits for cost data.", "bars"),

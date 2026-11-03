@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { randomUUID } from "crypto";
 import { resolveGeoRequest, type GeoRequestContext } from "~/backend.server/handlers/geo";
 
-// The Geoportal's event buttons (Alex, 2026-10-26): the page asks every
+// The Geoportal's event buttons (Bonn Data Team, 2026-10-26): the page asks every
 // panel with the event view's query (dim=disaster_event&measure=events).
 // A disaster-impact-only view (the place panel) must answer with the event
 // dimension and its measure named and dropped, not refuse with status 200,
