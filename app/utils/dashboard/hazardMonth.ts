@@ -15,6 +15,10 @@ import type {
 	PanelCell,
 	PanelMeta,
 } from "~/utils/dashboard/impactPanels";
+import type {
+	SeasonScore,
+	WeeklyReportingDay,
+} from "~/utils/dashboard/seasonality";
 
 export interface HazardMonthRow {
 	/** Row key: the HIPs hazard id, "cluster:<id>" or "none". */
@@ -36,6 +40,12 @@ export interface HazardMonthRow {
 	allOccurrences: number;
 	/** People affected over the dated occurrences; value states as everywhere. */
 	people: PanelCell;
+	/**
+	 * Seasonality score of the row's month counts (FR-AN-061) and, for a clear
+	 * season, the pre-season windows (FR-AN-094). Withheld below the
+	 * thresholds; the month bars are always shown.
+	 */
+	season: SeasonScore;
 	/** Occurrences left out of the months, and why. */
 	unplaced: {
 		/** On a placeholder date (a source default such as 7 September). */
@@ -67,6 +77,8 @@ export interface HazardMonth {
 	placeholderDates: number;
 	/** The calendar days found to be placeholders ("MM-DD"), with their counts. */
 	placeholderDays: { day: string; occurrences: number }[];
+	/** Set when day dates heap on one weekday: reporting dates, not onsets (FR-AN-060). */
+	weeklyReportingDay: WeeklyReportingDay | null;
 	years: { from: number; to: number } | null;
 	meta: PanelMeta;
 }

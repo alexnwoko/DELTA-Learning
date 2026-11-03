@@ -216,7 +216,12 @@ async function computeCostPanels(
 
 	return {
 		currency: { code: currency, name },
-		disclaimer: DISCLAIMER(currency, name),
+		// MC-7 (Alex, 2026-10-26): a local value equal to the dollar value in a
+		// non-dollar country is read as US dollars, pending the country's word.
+		disclaimer:
+			num(o.copy) > 0
+				? `${DISCLAIMER(currency, name)} ${num(o.copy) === 1 ? "1 record holds" : `${num(o.copy)} records hold`} the same value in ${currency} and US dollars; these are read as US dollars.`
+				: DISCLAIMER(currency, name),
 		fxRate: {
 			...FX_RATE,
 			release: (fxRelease?.version as string | null) ?? null,

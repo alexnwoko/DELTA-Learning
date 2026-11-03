@@ -2,8 +2,13 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { dr } from "~/db.server";
-import { createTestIds, createTestUser, cleanupTestUser } from "../test-helpers";
+import {
+	createTestIds,
+	createTestUser,
+	cleanupTestUser,
+} from "../test-helpers";
 import { getHazardMonth } from "~/backend.server/models/analytics/dashboard/hazardMonth.server";
+import { getCellRecords } from "~/backend.server/models/analytics/dashboard/cellRecords.server";
 import { DEFAULT_QUERY } from "~/utils/deltaQuery";
 import { clearDashboardCache } from "~/backend.server/models/analytics/dashboard/dashboardCache.server";
 
@@ -13,16 +18,29 @@ import { clearDashboardCache } from "~/backend.server/models/analytics/dashboard
 // Event E1 (2020-03-01) links r1; event E2 starts "2021" (no month), no records.
 const ids = createTestIds();
 ids.userEmail = ids.userEmail.replace("@", "-hazardmonth@");
-const r = { r1: randomUUID(), r2: randomUUID(), r3: randomUUID(), r4: randomUUID() };
+const r = {
+	r1: randomUUID(),
+	r2: randomUUID(),
+	r3: randomUUID(),
+	r4: randomUUID(),
+};
 const monthly = Array.from({ length: 12 }, () => randomUUID());
 const ev = { e1: randomUUID(), e2: randomUUID() };
 const Q = { ...DEFAULT_QUERY, measure: "deaths" as const };
-const ctx = () => ({ countryAccountsId: ids.countryAccountId, audience: "public" as const, tenantName: "Testland", provisional: false });
+const ctx = () => ({
+	countryAccountsId: ids.countryAccountId,
+	audience: "public" as const,
+	tenantName: "Testland",
+	provisional: false,
+});
 
 describe("getHazardMonth", () => {
 	beforeAll(async () => {
 		await createTestUser(ids);
-		for (const [id, start] of [[ev.e1, "2020-03-01"], [ev.e2, "2021"]]) {
+		for (const [id, start] of [
+			[ev.e1, "2020-03-01"],
+			[ev.e2, "2021"],
+		]) {
 			await dr.execute(sql`INSERT INTO event (id) VALUES (${id})`);
 			await dr.execute(sql`
 				INSERT INTO disaster_event (id, country_accounts_id, "approvalStatus", start_date)
@@ -33,24 +51,42 @@ describe("getHazardMonth", () => {
 			[r.r2, "2021-03-01", "1046", null],
 			[r.r3, "2022-07-01", "1046", null],
 			[r.r4, "2023", "1046", null],
-			...monthly.map((id, i): [string, string, string, string | null] => [id, `2019-${String(i + 1).padStart(2, "0")}-10`, "1053", null]),
+			...monthly.map((id, i): [string, string, string, string | null] => [
+				id,
+				`2019-${String(i + 1).padStart(2, "0")}-10`,
+				"1053",
+				null,
+			]),
 		];
 		for (const [id, start, cl, e] of recs) {
 			await dr.execute(sql`
 				INSERT INTO disaster_records (id, country_accounts_id, "approvalStatus", start_date, hip_cluster_id, disaster_event_id)
 				VALUES (${id}, ${ids.countryAccountId}, 'published', ${start}, ${cl}, ${e})`);
 		}
-		await dr.execute(sql`INSERT INTO human_category_presence (record_id, deaths, deaths_total) VALUES (${r.r1}, true, 10), (${r.r2}, true, 0)`);
+		await dr.execute(
+			sql`INSERT INTO human_category_presence (record_id, deaths, deaths_total) VALUES (${r.r1}, true, 10), (${r.r2}, true, 0)`,
+		);
 		for (const [i, id] of monthly.entries()) {
-			await dr.execute(sql`INSERT INTO human_category_presence (record_id, deaths, deaths_total) VALUES (${id}, true, ${i === 11 ? 100 : 2})`);
+			await dr.execute(
+				sql`INSERT INTO human_category_presence (record_id, deaths, deaths_total) VALUES (${id}, true, ${i === 11 ? 100 : 2})`,
+			);
 		}
 	});
 
 	afterAll(async () => {
-		const all = sql.join([...Object.values(r), ...monthly].map((x) => sql`${x}`), sql`, `);
-		await dr.execute(sql`DELETE FROM human_category_presence WHERE record_id IN (${all})`);
-		await dr.execute(sql`DELETE FROM disaster_records WHERE country_accounts_id = ${ids.countryAccountId}`);
-		await dr.execute(sql`DELETE FROM disaster_event WHERE country_accounts_id = ${ids.countryAccountId}`);
+		const all = sql.join(
+			[...Object.values(r), ...monthly].map((x) => sql`${x}`),
+			sql`, `,
+		);
+		await dr.execute(
+			sql`DELETE FROM human_category_presence WHERE record_id IN (${all})`,
+		);
+		await dr.execute(
+			sql`DELETE FROM disaster_records WHERE country_accounts_id = ${ids.countryAccountId}`,
+		);
+		await dr.execute(
+			sql`DELETE FROM disaster_event WHERE country_accounts_id = ${ids.countryAccountId}`,
+		);
 		await dr.execute(sql`DELETE FROM event WHERE id IN (${ev.e1}, ${ev.e2})`);
 		await cleanupTestUser(ids);
 	});
@@ -58,16 +94,73 @@ describe("getHazardMonth", () => {
 	it("records: all 12 months per hazard, value states kept, year-only records counted apart", async () => {
 		const p = await getHazardMonth(Q, ctx(), "disaster_record");
 		expect(p.unit).toBe("disaster_record");
-		expect(p.rows.map((x) => [x.hipClusterId, x.total])).toEqual([["1053", 12], ["1046", 3]]);
+		expect(p.rows.map((x) => [x.hipClusterId, x.total])).toEqual([
+			["1053", 12],
+			["1046", 3],
+		]);
 		const c1046 = p.rows.find((x) => x.hipClusterId === "1046")!;
 		expect(c1046.cells).toHaveLength(12);
 		const mar = c1046.cells[2];
 		expect(mar).toMatchObject({ month: 3, count: 2 });
-		expect(mar.people).toMatchObject({ value: 10, valueState: "reported", recordsZeroConfirmed: 1 });
+		expect(mar.people).toMatchObject({
+			value: 10,
+			valueState: "reported",
+			recordsZeroConfirmed: 1,
+		});
 		expect(c1046.cells[6].people.valueState).toBe("not_reported");
 		expect(c1046.cells[6].people.value).toBeNull();
 		expect(p.withoutMonth).toBe(1);
 		expect(p.years).toEqual({ from: 2019, to: 2023 });
+	});
+
+	it("scores each row's season from its dated occurrences and distinct years, withholding the score below the thresholds", async () => {
+		const p = await getHazardMonth(Q, ctx(), "disaster_record");
+		const c1046 = p.rows.find((x) => x.hipClusterId === "1046")!;
+		expect(c1046.season).toMatchObject({
+			verdict: "too_few",
+			withheld: "few_usable",
+			usable: 3,
+			all: 4,
+			years: 3,
+			line: "Too few dated records",
+		});
+		const c1053 = p.rows.find((x) => x.hipClusterId === "1053")!;
+		expect(c1053.season).toMatchObject({
+			usable: 12,
+			years: 1,
+			verdict: "too_few",
+		});
+		const ev = await getHazardMonth(Q, ctx(), "disaster_event");
+		expect(ev.rows.every((x) => x.season.verdict === "too_few")).toBe(true);
+	});
+
+	it("lists the records behind a cell: the same records as the cell, largest first, confirmed zero not shown as a value", async () => {
+		const p = await getCellRecords(Q, ctx(), { key: "cluster:1046", month: 3 });
+		expect(p.total).toBe(2);
+		expect(p.records.map((x) => [x.recordId, x.value, x.valueState])).toEqual([
+			[r.r1, 10, "reported"],
+			[r.r2, null, "zero_confirmed"],
+		]);
+		const month = await getHazardMonth(Q, ctx(), "disaster_record");
+		expect(
+			month.rows.find((x) => x.key === "cluster:1046")!.cells[2].count,
+		).toBe(p.total);
+	});
+
+	it("records behind a cell stay inside the tenant, and refuse a bad month", async () => {
+		const other = { ...ctx(), countryAccountsId: randomUUID() };
+		expect(
+			(await getCellRecords(Q, other, { key: "cluster:1046", month: 3 })).total,
+		).toBe(0);
+		await expect(
+			getCellRecords(Q, ctx(), { key: "cluster:1046", month: 13 }),
+		).rejects.toThrow("invalid month");
+	});
+
+	it("does not call too few day dates weekly reporting dates", async () => {
+		expect(
+			(await getHazardMonth(Q, ctx(), "disaster_record")).weeklyReportingDay,
+		).toBeNull();
 	});
 
 	it("records: flags the month where one occurrence carries a toll far above the hazard's median", async () => {
@@ -75,7 +168,9 @@ describe("getHazardMonth", () => {
 		const c1053 = p.rows.find((x) => x.hipClusterId === "1053")!;
 		expect(c1053.cells.filter((c) => c.rare).map((c) => c.month)).toEqual([12]);
 		// 1046 has too few reporting records for the rule.
-		expect(p.rows.find((x) => x.hipClusterId === "1046")!.cells.some((c) => c.rare)).toBe(false);
+		expect(
+			p.rows.find((x) => x.hipClusterId === "1046")!.cells.some((c) => c.rare),
+		).toBe(false);
 		expect(p.meta.method).toContain("Rare severe");
 	});
 
@@ -100,10 +195,15 @@ describe("getHazardMonth", () => {
 		try {
 			const p = await getHazardMonth(Q, ctx(), "disaster_record");
 			expect(p.placeholderDates).toBe(10);
-			expect(p.rows.find((x) => x.hipClusterId === "1046")!.cells[0].count).toBe(0);
+			expect(
+				p.rows.find((x) => x.hipClusterId === "1046")!.cells[0].count,
+			).toBe(0);
 			expect(p.meta.method).toContain("placeholder dates");
 		} finally {
-			const all = sql.join(extra.map((x) => sql`${x}`), sql`, `);
+			const all = sql.join(
+				extra.map((x) => sql`${x}`),
+				sql`, `,
+			);
 			await dr.execute(sql`DELETE FROM disaster_records WHERE id IN (${all})`);
 			clearDashboardCache(ids.countryAccountId);
 		}
@@ -122,7 +222,9 @@ describe("getHazardMonth", () => {
 			expect(c1053.cells[11].count).toBe(1);
 			expect(p.meta.method).toContain("under review");
 		} finally {
-			await dr.execute(sql`UPDATE disaster_records SET legacy_data = NULL WHERE id = ${outlier}`);
+			await dr.execute(
+				sql`UPDATE disaster_records SET legacy_data = NULL WHERE id = ${outlier}`,
+			);
 			clearDashboardCache(ids.countryAccountId);
 		}
 	});
@@ -141,13 +243,21 @@ describe("getHazardMonth", () => {
 			await dr.execute(sql`
 				INSERT INTO disaster_records (id, country_accounts_id, "approvalStatus", start_date, hip_cluster_id, hip_hazard_id)
 				VALUES (${id}, ${ids.countryAccountId}, 'published', ${start}, '1076', '78600')`);
-			await dr.execute(sql`INSERT INTO human_category_presence (record_id, affected_direct, affected_direct_total) VALUES (${id}, true, 1000)`);
+			await dr.execute(
+				sql`INSERT INTO human_category_presence (record_id, affected_direct, affected_direct_total) VALUES (${id}, true, 1000)`,
+			);
 		}
 		clearDashboardCache(ids.countryAccountId);
 		try {
 			const p = await getHazardMonth(DEFAULT_QUERY, ctx(), "disaster_record");
 			const d = p.rows.find((x) => x.key === "78600")!;
-			expect(d).toMatchObject({ level: "hazard", label: "Drought", hipClusterId: "1076", total: 2, allOccurrences: 12 });
+			expect(d).toMatchObject({
+				level: "hazard",
+				label: "Drought",
+				hipClusterId: "1076",
+				total: 2,
+				allOccurrences: 12,
+			});
 			expect(d.unplaced).toEqual({ placeholder: 10, noMonth: 0 });
 			expect(d.cells[7]).toMatchObject({ month: 8, count: 2 });
 			expect(d.cells[7].people.value).toBe(2000);
@@ -158,8 +268,13 @@ describe("getHazardMonth", () => {
 			expect(c.level).toBe("cluster");
 			expect(c.label).toContain("(specific hazard not recorded)");
 		} finally {
-			const all = sql.join(drought.map((x) => sql`${x}`), sql`, `);
-			await dr.execute(sql`DELETE FROM human_category_presence WHERE record_id IN (${all})`);
+			const all = sql.join(
+				drought.map((x) => sql`${x}`),
+				sql`, `,
+			);
+			await dr.execute(
+				sql`DELETE FROM human_category_presence WHERE record_id IN (${all})`,
+			);
 			await dr.execute(sql`DELETE FROM disaster_records WHERE id IN (${all})`);
 			clearDashboardCache(ids.countryAccountId);
 		}

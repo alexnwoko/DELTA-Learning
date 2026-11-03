@@ -44,7 +44,11 @@ export interface CostPanels {
 	excluded: {
 		/** Dated before the country's change of currency unit. */
 		beforeCurrencyChange: number;
-		/** Local value equal to the US dollar value in a non-dollar country (a copy). */
+		/**
+		 * Local value equal to the US dollar value in a non-dollar country (a
+		 * copy). The record is kept: its value is read as US dollars (MC-7);
+		 * only its local-currency reading is left out.
+		 */
 		copiedFromUsd: number;
 		/** No exchange rate for the year (before 1960, after the series, no year). */
 		noRate: number;
