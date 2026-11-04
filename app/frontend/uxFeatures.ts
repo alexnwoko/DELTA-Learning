@@ -1,4 +1,4 @@
-// UX trial features (Bonn Data Team, 2026-10-22): the eight improvements are on for
+// UX trial features (UNDRR Bonn Data Team, 2026-10-22): the eight improvements are on for
 // testing, each behind its own switch, so "roll back number 7" is one line
 // here (set it to false). Each also landed as its own commit, "UX-n: ...".
 //   1 Skeleton charts while a filter change loads (no full-screen wait)

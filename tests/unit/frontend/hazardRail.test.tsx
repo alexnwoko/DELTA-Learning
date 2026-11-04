@@ -69,7 +69,7 @@ describe("left hazard rail (mockup option A)", () => {
 	});
 });
 
-describe("Sendai square in the rail (Bonn Data Team, 2026-10-22)", () => {
+describe("Sendai square in the rail (UNDRR Bonn Data Team, 2026-10-22)", () => {
 	const html = (on: boolean) =>
 		text(renderToString(<HazardRail ctx={ctx} tree={TREE} selected={null} onChange={() => {}} showCounts after={<SendaiToggle ctx={ctx} on={on} rail onChange={() => {}} />} />));
 

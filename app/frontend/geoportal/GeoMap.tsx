@@ -91,7 +91,7 @@ export interface GeoMapProps {
 	/**
 	 * Every country's border and name (worldBoundaries), drawn in light grey
 	 * with a transparent inside over the shading and under the bubbles and
-	 * bars, at every zoom (Bonn Data Team, 2026-10-18).
+	 * bars, at every zoom (UNDRR Bonn Data Team, 2026-10-18).
 	 */
 	world?: {
 		lines: { type: string; coordinates: unknown } | null;
@@ -216,7 +216,7 @@ const RING_TRACK = "#d1d5db";
 const SLOT_STROKE = "#9ca3af";
 
 /**
- * Draws one area's symbol on its anchor point (Bonn Data Team 2026-10-17, map symbol
+ * Draws one area's symbol on its anchor point (UNDRR Bonn Data Team 2026-10-17, map symbol
  * research s4 and s5): a bubble whose area carries the value, with a thin
  * ring whose filled arc is the share of records reporting (n of N) and a
  * break mark when drawn at the cap; or rounded bars on one shared scale,
@@ -291,7 +291,7 @@ export function symbolStyle(area: MapArea, color: string): Style | undefined {
 				if (b.ratio === null) {
 					const h = 10;
 					c.beginPath();
-					// Rounded at the value end only, on a flat baseline (Bonn Data Team).
+					// Rounded at the value end only, on a flat baseline (UNDRR Bonn Data Team).
 					c.roundRect(left, y - h * pr, w * pr, h * pr, [
 						(w / 2) * pr,
 						(w / 2) * pr,
@@ -307,7 +307,7 @@ export function symbolStyle(area: MapArea, color: string): Style | undefined {
 				}
 				const h = barLengthPx(b.ratio);
 				c.beginPath();
-				// Rounded at the value end only, on a flat baseline (Bonn Data Team).
+				// Rounded at the value end only, on a flat baseline (UNDRR Bonn Data Team).
 				c.roundRect(left, y - h * pr, w * pr, h * pr, [
 					(w / 2) * pr,
 					(w / 2) * pr,
@@ -384,7 +384,7 @@ export function GeoMap({
 	useEffect(() => {
 		if (!target.current) return;
 		// UN short-form disclaimer in the map credits, always visible, whatever
-		// the basemap (Bonn Data Team, 2026-10-18, decision 4; text as on UN Geodata).
+		// the basemap (UNDRR Bonn Data Team, 2026-10-18, decision 4; text as on UN Geodata).
 		const layer = new VectorLayer({
 			source: new VectorSource({
 				attributions: disclaimerRef.current,
@@ -422,7 +422,7 @@ export function GeoMap({
 		// Symbols are never decluttered: hiding a feature would hide data.
 		const symbols = new VectorLayer({ source: new VectorSource(), zIndex: 2 });
 		symbolLayerRef.current = symbols;
-		// Boundaries and labels (Bonn Data Team, 2026-10-18): light grey outline and names
+		// Boundaries and labels (UNDRR Bonn Data Team, 2026-10-18): light grey outline and names
 		// above the data. Only the label text declutters; data symbols never do.
 		const labels = new VectorLayer({
 			source: new VectorSource(),
@@ -667,7 +667,7 @@ export function GeoMap({
 		}
 	}, [boundaries, outline, world, ownIso3, showLabels]);
 
-	// Country borders (Bonn Data Team, 2026-10-18): every country, light grey, inside
+	// Country borders (UNDRR Bonn Data Team, 2026-10-18): every country, light grey, inside
 	// transparent, over the shading at every zoom. One set of shared lines, so
 	// a border between two countries is drawn once. The neighbour outlines are
 	// only the fallback while geo.admin0 has no world lines.

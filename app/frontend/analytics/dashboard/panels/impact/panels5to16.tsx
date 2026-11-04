@@ -567,7 +567,7 @@ function PeriodView({ common, p, exp }: { common: Common; p: PeriodChange; exp: 
 	const t = ctx.t;
 	const val = (c: PeriodChange["rows"][number]["averageA"]) =>
 		c.valueState === "reported" || c.valueState === "zero_confirmed" ? c.value : null;
-	// Largest first, by the later period (Bonn Data Team, 2026-10-22).
+	// Largest first, by the later period (UNDRR Bonn Data Team, 2026-10-22).
 	const drawn = p.rows
 		.filter((r) => val(r.averageA) !== null && val(r.averageB) !== null)
 		.sort((a, b) => val(b.averageB)! - val(a.averageB)! || val(b.averageA)! - val(a.averageA)!);

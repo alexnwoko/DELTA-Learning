@@ -15,7 +15,7 @@ const ctx = { t: createMockTranslator(), lang: "en", url: (p: string) => `/en/${
 const ROOT = process.cwd();
 const icon = (n: string) => join(ROOT, "public", iconUrl(n as never));
 
-describe("dashboard icons (Bonn Data Team, 2026-10-18)", () => {
+describe("dashboard icons (UNDRR Bonn Data Team, 2026-10-18)", () => {
 	it("every icon the mapping uses is a self-hosted, script-free SVG", () => {
 		const used = new Set<string>([
 			...Object.values(MEASURE_ICONS),
@@ -63,7 +63,7 @@ describe("dashboard icons (Bonn Data Team, 2026-10-18)", () => {
 	});
 });
 
-describe("palette contrast (Bonn Data Team, 2026-10-18 trial)", () => {
+describe("palette contrast (UNDRR Bonn Data Team, 2026-10-18 trial)", () => {
 	it.each(["neutral", "delta"])("reaches 3:1 on the %s surfaces (WCAG 1.4.11)", (brand) => {
 		const lum = (hex: string) => {
 			const [r, g, b] = [1, 3, 5]

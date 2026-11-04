@@ -464,7 +464,7 @@ export function eventDashboardPanels(
 	const divisions = opts.map ? [eventDivisionsPanel(ctx, opts.map, common)] : [];
 	const months = opts.hazardMonth ? [hazardMonthPanel(ctx, opts.hazardMonth, "events-21", 21, opts)] : [];
 	const built = [...drawn, ...divisions, ...(opts.more ? eventPanels8to16(ctx, opts.more, common) : []), ...months];
-	// Unbuilt features (Bonn Data Team, 2026-10-19): a grey placeholder in their slot,
+	// Unbuilt features (UNDRR Bonn Data Team, 2026-10-19): a grey placeholder in their slot,
 	// the rest in Features Coming Soon, official warning included.
 	return arrangeByLayout([...built, ...comingSoonPanels(ctx, "events", EVENTS_LAYOUT, built)], EVENTS_LAYOUT);
 }

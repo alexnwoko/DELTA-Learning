@@ -1,4 +1,4 @@
-// One control style for the Analysis page (FE-Proposal-03, Bonn Data Team 2026-10-19):
+// One control style for the Analysis page (FE-Proposal-03, UNDRR Bonn Data Team 2026-10-19):
 // 8 px radius, 40 px high, bold blue text, a tint fill and a #0095fd
 // border on hover (data.dashboard.hover, the same in every theme), the light blue fill when pressed, and the brand focus ring. The
 // 14 px root makes min-h-10 only 35 px, so heights are in px.

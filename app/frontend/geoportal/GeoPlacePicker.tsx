@@ -1,4 +1,4 @@
-// Place pickers beside the Place tab (Bonn Data Team, 2026-10-18): admin 1, then
+// Place pickers beside the Place tab (UNDRR Bonn Data Team, 2026-10-18): admin 1, then
 // admin 2 scoped to the chosen admin 1. "Whole country" is the default; the
 // Place panel follows whatever is chosen here or clicked on the map.
 import {

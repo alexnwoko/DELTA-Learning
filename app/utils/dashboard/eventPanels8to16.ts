@@ -1,5 +1,5 @@
 // Payload types for the D1 Analysis dashboard, Disaster events view, panels
-// 11, 12, 13 and 16 (reassessment DE-11, DE-12, DE-13, DE-16; Bonn Data Team,
+// 11, 12, 13 and 16 (reassessment DE-11, DE-12, DE-13, DE-16; UNDRR Bonn Data Team,
 // 2026-10-19: build what the data holds). Counts are counts of disaster
 // events or of their linked disaster records, never one for the other.
 

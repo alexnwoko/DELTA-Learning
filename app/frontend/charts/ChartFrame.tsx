@@ -201,7 +201,7 @@ export function ChartFrame({ ctx, title, meta, rows, formatValue, pictures = tru
 				</MenuTrigger>
 			</div>
 			<div ref={chartRef}>{children}</div>
-			{/* Small print, so the chart keeps the reader's eye (Bonn Data Team, 2026-10-19):
+			{/* Small print, so the chart keeps the reader's eye (UNDRR Bonn Data Team, 2026-10-19):
 			    7.5pt, with each note's label ("Source:", "Method:") bold at 8pt. */}
 			<figcaption className="text-brand-text-muted" style={{ fontSize: "7.5pt", lineHeight: 1.35 }}>
 				{notes.map((note) => {

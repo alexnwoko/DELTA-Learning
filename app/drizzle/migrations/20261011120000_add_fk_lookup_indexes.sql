@@ -1,7 +1,7 @@
 -- Foreign-key and import-id columns on the largest record tables had no
 -- leading index, so lookups by disaster event, division, sector and import id
 -- scanned the whole table (audit 11 October 2026, register H-17). The
--- api_import_id indexes are plain, not unique, by Bonn Data Team's ruling of
+-- api_import_id indexes are plain, not unique, by UNDRR Bonn Data Team's ruling of
 -- 11 October 2026.
 CREATE INDEX IF NOT EXISTS "ix_disaster_records_disaster_event_id" ON "disaster_records" ("disaster_event_id");
 --> statement-breakpoint

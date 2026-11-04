@@ -1,4 +1,4 @@
-// Payload type for the estimated sex and age split of people affected (Bonn Data Team,
+// Payload type for the estimated sex and age split of people affected (UNDRR Bonn Data Team,
 // 2026-10-19; DELTA_Estimated_Disaggregation_and_Hazard_Seasonality.md).
 // No disaster record carries a sex or age split, so the country's population
 // structure (UN DESA WPP 2024, held in ref.value) is applied to the reported

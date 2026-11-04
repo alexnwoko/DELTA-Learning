@@ -11,7 +11,7 @@ const run = async (page: "sectors" | "hazards" | "disaster-events", url: string,
 	return { status: res.status, location: res.headers.get("Location") };
 };
 
-describe("old analysis pages redirect to the dashboard (Bonn Data Team, 2026-10-17)", () => {
+describe("old analysis pages redirect to the dashboard (UNDRR Bonn Data Team, 2026-10-17)", () => {
 	it("keep the language and the link's filters", async () => {
 		expect(await run("sectors", "http://x/en/analytics/sectors")).toEqual({ status: 301, location: "/en/analytics?view=sectors" });
 		expect(await run("hazards", "http://x/fr/analytics/hazards?hipType=1042&from=2015", "fr")).toEqual({

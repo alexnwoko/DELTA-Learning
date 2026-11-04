@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { declutterLabels, worldNamesAt, type WorldBoundaries } from "~/components/MapChart";
 
 // Every country's name from its minZoom; never the tenant's own, never one
-// without a point (Bonn Data Team, 2026-10-18; Geoportal /api/geo/world).
+// without a point (UNDRR Bonn Data Team, 2026-10-18; Geoportal /api/geo/world).
 const labels: WorldBoundaries["labels"] = [
 	{ iso3: "AGO", name: "Angola", labelPoint: [17.5, -12.3], minZoom: 2 },
 	{ iso3: "ZMB", name: "Zambia", labelPoint: [27.8, -13.4], minZoom: 3 },

@@ -169,7 +169,7 @@ describe("GeoFilterBar", () => {
 		expect(html).toContain("Dimension");
 		expect(html).toContain('aria-labelledby="geo-dim-label"');
 		expect(html).toContain("Deaths");
-		// "Analysis level" (Bonn Data Team renamed "Show by", 2026-10-22) with plain level names (Bonn Data Team, 2026-10-22).
+		// "Analysis level" (UNDRR Bonn Data Team renamed "Show by", 2026-10-22) with plain level names (UNDRR Bonn Data Team, 2026-10-22).
 		expect(html).toContain("Analysis level");
 		expect(html).toContain("Provinces or states (admin 1)");
 		expect(html).not.toContain("Map level");
@@ -230,7 +230,7 @@ describe("GeoTable number formatting", () => {
 	});
 });
 
-describe("geoportal vocabulary (Bonn Data Team ruling 2026-10-16: Disaster impact only)", () => {
+describe("geoportal vocabulary (UNDRR Bonn Data Team ruling 2026-10-16: Disaster impact only)", () => {
 	it("never shows 'Disaster record' or 'impact record' in the controls, legend or table", () => {
 		const s = state();
 		const html = [
@@ -660,7 +660,7 @@ describe("shared filter bar state (contract v0.1)", () => {
 import { barCells } from "~/frontend/geoportal/geoCells";
 import { symbolStyle } from "~/frontend/geoportal/GeoMap";
 
-describe("bubbles and rounded bars (Bonn Data Team 2026-10-17)", () => {
+describe("bubbles and rounded bars (UNDRR Bonn Data Team 2026-10-17)", () => {
 	const destroyed = [
 		cell("p1", {
 			value: 100,
@@ -753,7 +753,7 @@ describe("bubbles and rounded bars (Bonn Data Team 2026-10-17)", () => {
 
 import { resolveLayeredMapState } from "~/utils/mapState";
 
-describe("Bonn Data Team's default: deaths shading with housing bars on top", () => {
+describe("UNDRR Bonn Data Team's default: deaths shading with housing bars on top", () => {
 	it("shades by deaths and draws housing bars, each with its own unit", () => {
 		const deaths = [
 			cell("p1", {
@@ -942,7 +942,7 @@ describe("Sendai Framework block in the place panel (I-5)", () => {
 
 import { placeLevels, yearOptions } from "~/frontend/geoportal/filterBarState";
 
-describe("filter bar row layout for the Analysis page (Bonn Data Team 2026-10-17)", () => {
+describe("filter bar row layout for the Analysis page (UNDRR Bonn Data Team 2026-10-17)", () => {
 	const divisions = [
 		{ id: "p1", name: "Gaza", level: 1, parentId: null },
 		{ id: "d1", name: "Chokwe", level: 2, parentId: "p1" },
@@ -1004,7 +1004,7 @@ describe("filter bar row layout for the Analysis page (Bonn Data Team 2026-10-17
 		expect([...positions].sort((a, b) => a - b)).toEqual(positions);
 		expect(html).not.toContain("Last 10 years"); // no presets in the row
 		expect(html).not.toContain("Map level");
-		// One Area picker, not "Place, level 1" and "Level 2" (Bonn Data Team, 2026-10-22).
+		// One Area picker, not "Place, level 1" and "Level 2" (UNDRR Bonn Data Team, 2026-10-22).
 		expect(html).not.toContain("Level 2");
 		expect(html).not.toContain("Analysis level"); // levelControl={false}
 	});
@@ -1052,7 +1052,7 @@ describe("region link to Analysis (where.region in the D1 loaders)", () => {
 
 import { UN_MAP_DISCLAIMER } from "~/frontend/geoportal/GeoMap";
 
-describe("UN map disclaimer (Bonn Data Team, 2026-10-18, decision 4)", () => {
+describe("UN map disclaimer (UNDRR Bonn Data Team, 2026-10-18, decision 4)", () => {
 	it("keeps the UN short-form wording exactly, in code and in the locale file", async () => {
 		const exact =
 			"The boundaries and names shown and the designations used on this map do not imply official endorsement or acceptance by the United Nations.";
@@ -1069,7 +1069,7 @@ describe("UN map disclaimer (Bonn Data Team, 2026-10-18, decision 4)", () => {
 
 import { pickerValues } from "~/frontend/geoportal/GeoPlacePicker";
 
-describe("place pickers beside the Place tab (Bonn Data Team, 2026-10-18)", () => {
+describe("place pickers beside the Place tab (UNDRR Bonn Data Team, 2026-10-18)", () => {
 	const opts = [
 		{ id: "p1", name: "Gaza", level: 1, parentId: null },
 		{ id: "d1", name: "Chokwe", level: 2, parentId: "p1" },

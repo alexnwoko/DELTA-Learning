@@ -231,7 +231,7 @@ export function querySummary(
 		.join(" · ");
 }
 
-/** Row layout (D1, Bonn Data Team 2026-10-17): the years a From or To select offers, newest first. */
+/** Row layout (D1, UNDRR Bonn Data Team 2026-10-17): the years a From or To select offers, newest first. */
 export function yearOptions(span: { min: number; max: number }): number[] {
 	const out: number[] = [];
 	for (let y = span.max; y >= span.min; y--) out.push(y);

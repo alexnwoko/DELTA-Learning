@@ -308,7 +308,7 @@ export function sectorDashboardPanels(
 		sectorCompletenessPanel(ctx, d, common),
 		multiSectorPanel(ctx, d, common),
 	];
-	// Unbuilt features (Bonn Data Team, 2026-10-19): Features Coming Soon; a built one drops out.
+	// Unbuilt features (UNDRR Bonn Data Team, 2026-10-19): Features Coming Soon; a built one drops out.
 	return arrangeByLayout([...built, ...comingSoonPanels(ctx, "sectors", SECTORS_LAYOUT, built)], SECTORS_LAYOUT);
 }
 

@@ -1,4 +1,4 @@
-// The four views of the Analysis dashboard (Bonn Data Team, 2026-10-17): one page,
+// The four views of the Analysis dashboard (UNDRR Bonn Data Team, 2026-10-17): one page,
 // four buttons, always visible, in his order. Three are the DELTA
 // dimensions of delta.query/1 (`dim`); Sectors is a page view (`view`),
 // read from disaster records by sector, as `level` is a geo view parameter.
@@ -8,7 +8,7 @@ import { parseDeltaQuery, serializeDeltaQuery, type DeltaQuery, type QueryDimens
 
 export type DashboardView = "sectors" | QueryDimension;
 
-/** Bonn Data Team's order: Sectors, Hazardous events, Disaster events, Disaster impact. */
+/** UNDRR Bonn Data Team's order: Sectors, Hazardous events, Disaster events, Disaster impact. */
 export const DASHBOARD_VIEWS: readonly DashboardView[] = [
 	"sectors",
 	"hazardous_event",
@@ -70,7 +70,7 @@ export const SFM_PARAM = "sfm";
 /**
  * Views that carry the Sendai Framework Monitoring section and its toggle:
  * Disaster events and Disaster impact only, not Hazardous events or Sectors
- * (Bonn Data Team, 2026-10-18; FR-AN-020, FR-AN-024).
+ * (UNDRR Bonn Data Team, 2026-10-18; FR-AN-020, FR-AN-024).
  */
 export const SENDAI_VIEWS: readonly DashboardView[] = ["disaster_event", "disaster_impact"];
 

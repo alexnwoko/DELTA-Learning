@@ -93,7 +93,7 @@ const HorizontalBarChart: React.FC<HorizontalBarChartProps> = ({
 							key={key}
 							dataKey={key}
 							fill={colors[index % colors.length]}
-							// Rounded at the value end (Bonn Data Team, 2026-10-17).
+							// Rounded at the value end (UNDRR Bonn Data Team, 2026-10-17).
 							radius={[0, 6, 6, 0]}
 						/>
 					))}

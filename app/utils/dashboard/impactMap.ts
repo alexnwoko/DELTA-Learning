@@ -1,6 +1,6 @@
 // Payload for the D1 Disaster impact map (slot M0): rounded bars of
 // dwellings destroyed and damaged over areas shaded by the number of deaths
-// (Bonn Data Team, 2026-10-17). Every figure keeps its value state (TR-076). Areas are
+// (UNDRR Bonn Data Team, 2026-10-17). Every figure keeps its value state (TR-076). Areas are
 // sub-national, so no figure carries a Sendai indicator code (TR-060).
 
 import type { PanelCell, PanelMeta } from "~/utils/dashboard/impactPanels";

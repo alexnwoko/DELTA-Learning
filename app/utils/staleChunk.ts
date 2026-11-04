@@ -1,7 +1,7 @@
 // A page opened before the app was redeployed or the dev server restarted
 // asks for route code that no longer exists when the reader clicks to
 // another page; the browser then fails the module import and the reader
-// sees an error (Bonn Data Team, 2026-10-21: Analysis to Geoportal and back). The
+// sees an error (UNDRR Bonn Data Team, 2026-10-21: Analysis to Geoportal and back). The
 // root error boundary reloads the page once when that is the cause.
 // Pure module: safe in server and client code.
 

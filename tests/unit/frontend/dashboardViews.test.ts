@@ -10,8 +10,8 @@ import { parseDeltaQuery } from "~/utils/deltaQuery";
 
 const q = (s: string) => parseDeltaQuery(new URLSearchParams(s)).query;
 
-describe("dashboard views (Bonn Data Team, 2026-10-17)", () => {
-	it("are four, in Bonn Data Team's order", () => {
+describe("dashboard views (UNDRR Bonn Data Team, 2026-10-17)", () => {
+	it("are four, in UNDRR Bonn Data Team's order", () => {
 		expect(DASHBOARD_VIEWS).toEqual(["sectors", "hazardous_event", "disaster_event", "disaster_impact"]);
 	});
 

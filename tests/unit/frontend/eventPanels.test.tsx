@@ -103,7 +103,7 @@ describe("Disaster events panels 1 to 7", () => {
 	});
 });
 
-describe("Disaster events layout (FE-Proposal-02, Bonn Data Team 2026-10-18)", () => {
+describe("Disaster events layout (FE-Proposal-02, UNDRR Bonn Data Team 2026-10-18)", () => {
 	const map = {
 		dimension: "disaster_event" as const,
 		areas: [

@@ -1,4 +1,4 @@
-// Estimated sex and age split of people affected (Bonn Data Team, 2026-10-19;
+// Estimated sex and age split of people affected (UNDRR Bonn Data Team, 2026-10-19;
 // Analytics' getEstimatedDisaggregation). No disaster record carries a sex
 // or age split, so the country's population structure (UN DESA WPP) is
 // applied to the reported people affected. These are estimates, never
@@ -7,7 +7,7 @@
 // and the panel gives the page CSV nothing, so no estimate is ever summed
 // with reported data. Deaths, missing, injured and displaced are refused
 // with the reason.
-// Four named models (Bonn Data Team, 2026-10-22; Analytics edaa715b): DELTA (the
+// Four named models (UNDRR Bonn Data Team, 2026-10-22; Analytics edaa715b): DELTA (the
 // default), SFM, UN five-year groups and life-stage, picked on the panel.
 import { useState } from "react";
 import { Button, ToggleButton, ToggleButtonGroup } from "react-aria-components";
@@ -46,7 +46,7 @@ export const MODEL_SHORT: Record<DisaggregationModelId, [string, string]> = {
 };
 
 /**
- * One fixed axis per model, the same for every country (Bonn Data Team, 2026-10-22):
+ * One fixed axis per model, the same for every country (UNDRR Bonn Data Team, 2026-10-22):
  * each bar is its share of the country's estimated total, so pyramids from
  * different countries compare by shape. Wide bands need a wider axis than
  * five-year groups; a share past the edge is capped and marked.
@@ -88,7 +88,7 @@ function Pyramid({ ctx, model, label }: { ctx: ViewContext; model: Model; label:
 	return (
 		<svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={label} fontSize={9} className="block max-w-full">
 			<defs>
-				{/* Hatching marks every estimated bar (Bonn Data Team: never read as reported). */}
+				{/* Hatching marks every estimated bar (UNDRR Bonn Data Team: never read as reported). */}
 				<pattern id="est-hatch" patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)">
 					<rect width="5" height="5" fill={DASHBOARD_RAMP[2]} />
 					<line x1="0" y1="0" x2="0" y2="5" stroke={DASHBOARD_RAMP[4]} strokeWidth="1.6" />
@@ -173,7 +173,7 @@ function EstimatedSplitView({ ctx, d, title }: { ctx: ViewContext; d: EstimatedD
 				<>
 					{model && (
 						<>
-							{/* The model picker (Bonn Data Team, 2026-10-22): DELTA by default. */}
+							{/* The model picker (UNDRR Bonn Data Team, 2026-10-22): DELTA by default. */}
 							<ToggleButtonGroup
 								aria-label={t("dashboard.model", "Model")}
 								selectionMode="single"
@@ -219,7 +219,7 @@ function EstimatedSplitView({ ctx, d, title }: { ctx: ViewContext; d: EstimatedD
 					)}
 				</>
 			)}
-			{/* Small print (Bonn Data Team, 2026-10-19): the footnote, the basis and what was left out. */}
+			{/* Small print (UNDRR Bonn Data Team, 2026-10-19): the footnote, the basis and what was left out. */}
 			<p className="m-0 text-brand-text-muted" style={{ fontSize: "7.5pt", lineHeight: 1.35 }}>
 				{d.baseTotal !== null && (
 					<span className="block">

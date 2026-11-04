@@ -1,4 +1,4 @@
-// Bonn Data Team, 2026-10-18: year charts start at the first record; a year with no
+// UNDRR Bonn Data Team, 2026-10-18: year charts start at the first record; a year with no
 // record is left vacant (no dotted outline); every chart takes its
 // section's palette.
 import { renderToString } from "react-dom/server";
@@ -42,7 +42,7 @@ describe("year charts start at the first record", () => {
 	});
 });
 
-describe("month grids start at the first month with data (Bonn Data Team, 2026-10-20)", () => {
+describe("month grids start at the first month with data (UNDRR Bonn Data Team, 2026-10-20)", () => {
 	it("drops the empty months before it and keeps later gaps", () => {
 		const cells = [
 			{ year: 2020, month: 11, n: 0 }, { year: 2020, month: 12, n: 0 },

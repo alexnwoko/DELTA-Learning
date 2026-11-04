@@ -1,4 +1,4 @@
-// Map M0 on Disaster impact (Bonn Data Team, 2026-10-17): each level-1 division is
+// Map M0 on Disaster impact (UNDRR Bonn Data Team, 2026-10-17): each level-1 division is
 // shaded by the number of deaths, and two rounded bars stand on it for
 // dwellings destroyed and damaged, never added. MapChart draws it in its
 // layered mode; this component turns the loader's payload into map areas
@@ -75,7 +75,7 @@ export function ImpactMap({ ctx, map, scope, onSelectDivision, layers }: ImpactM
 					dataSource={drawn.map((a) => toMapArea(a, labels))}
 					legendTitle={deathsLabel}
 					measureFamily="people"
-					// The dashboard palette (Bonn Data Team, 2026-10-18), a module-level constant.
+					// The dashboard palette (UNDRR Bonn Data Team, 2026-10-18), a module-level constant.
 					ramp={DASHBOARD_RAMP}
 					layered={{ barsFamily: "housing" }}
 					scope={scope}

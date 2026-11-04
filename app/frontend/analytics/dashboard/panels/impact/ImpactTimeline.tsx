@@ -32,7 +32,7 @@ export function YearColumns({
 	noDataText,
 	fill = DASHBOARD_BAR,
 }: {
-	/** Bar colour: the section palette's bar (Bonn Data Team, 2026-10-18). */
+	/** Bar colour: the section palette's bar (UNDRR Bonn Data Team, 2026-10-18). */
 	fill?: string;
 	years: YearCell[];
 	annotations?: { year: number; label: string }[];
@@ -89,7 +89,7 @@ export function YearColumns({
 					);
 				} else {
 					top = PAD_TOP;
-					// No record that year: left vacant (Bonn Data Team, 2026-10-18), never a 0
+					// No record that year: left vacant (UNDRR Bonn Data Team, 2026-10-18), never a 0
 					// bar. An invisible slot keeps the year's hover text.
 					mark = (
 						<rect x={x} y={PAD_TOP} width={bar} height={plot} fill="transparent">

@@ -1,7 +1,7 @@
 -- E1 population layer: indicator codes for population by sex and five-year
 -- age group (UN DESA WPP 2024 AgeGrp: 0-4 ... 95-99, 100+), so the sex and
 -- age structure of each country can be held in ref.value and the estimated
--- sex and age split of people affected (Bonn Data Team, 2026-10-19) and rates by age
+-- sex and age split of people affected (UNDRR Bonn Data Team, 2026-10-19) and rates by age
 -- can be computed. The groups add up to any band (0-14, 15-64, 65+).
 -- Reference data only: no table changes.
 INSERT INTO "ref"."indicator" ("code", "name", "family", "quantity_type", "unit") VALUES

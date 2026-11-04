@@ -1,4 +1,4 @@
--- Money layer (Bonn Data Team, 2026-10-22): the official exchange rate, local
+-- Money layer (UNDRR Bonn Data Team, 2026-10-22): the official exchange rate, local
 -- currency units per US dollar, period average (World Bank WDI
 -- PA.NUS.FCRF), held per tenant and year in ref.value with the tenant's
 -- currency code, so a source-reported value can be shown in the country's

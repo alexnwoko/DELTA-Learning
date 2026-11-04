@@ -97,7 +97,7 @@ describe("Sectors view panels 1 to 7", () => {
 	});
 });
 
-describe("Sectors layout (FE-Proposal-02, Bonn Data Team 2026-10-18)", () => {
+describe("Sectors layout (FE-Proposal-02, UNDRR Bonn Data Team 2026-10-18)", () => {
 	it("follows the agreed rows; the Sendai C and D inputs wait under Show more", () => {
 		expect(panels.filter((p) => !p.more).map((p) => p.id)).toEqual([
 			"sectors-1", "sectors-divisions", "sectors-2", "sectors-5", "sectors-3", "sectors-4", "sectors-6", "sectors-completeness",

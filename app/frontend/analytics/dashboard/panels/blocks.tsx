@@ -28,7 +28,7 @@ export function shadeFor(value: number | null, max: number, steps: readonly stri
 }
 
 /**
- * Largest first (Bonn Data Team, 2026-10-22): category charts and tables read from
+ * Largest first (UNDRR Bonn Data Team, 2026-10-22): category charts and tables read from
  * the biggest value down. A row with no reported value follows the numbers,
  * and the catch-all rows ("none": no division or hazard recorded; "rest":
  * the n others) stay last, in their own order. Ordered categories (bins,
@@ -182,7 +182,7 @@ export function RowBars({ ctx, label, rows: given, series, notReportedText, orde
 	];
 	const max = Math.max(1, ...rows.flatMap((r) => r.bars.map((b) => reportedValue(b.cell) ?? 0)));
 	const track = WIDTH - LABEL_W - 70;
-	// Rows sit close (Bonn Data Team, 2026-10-20): a single bar takes 18 px, a 6 px gap.
+	// Rows sit close (UNDRR Bonn Data Team, 2026-10-20): a single bar takes 18 px, a 6 px gap.
 	const groupH = (r: RowBarsProps["rows"][number]) =>
 		Math.max(18, r.bars.length * (BAR_H + BAR_GAP) + (r.note ? 14 : 0) + 6);
 	let y = 2;

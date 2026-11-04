@@ -1,4 +1,4 @@
-// The Analysis page's trial helpers (Bonn Data Team, 2026-10-22), each behind its UX
+// The Analysis page's trial helpers (UNDRR Bonn Data Team, 2026-10-22), each behind its UX
 // switch (app/frontend/uxFeatures.ts):
 //   UX-2 Copy link: the address already holds the view and every filter.
 //   UX-5 What changed: after a filter or view change, one line says what

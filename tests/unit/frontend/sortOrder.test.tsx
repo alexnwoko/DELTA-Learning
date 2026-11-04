@@ -1,4 +1,4 @@
-// Largest first (Bonn Data Team, 2026-10-22): category bars and tables read from the
+// Largest first (UNDRR Bonn Data Team, 2026-10-22): category bars and tables read from the
 // biggest value down; catch-all rows stay last; ordered categories keep
 // their order; a row with no value never sorts as 0.
 import { renderToString } from "react-dom/server";

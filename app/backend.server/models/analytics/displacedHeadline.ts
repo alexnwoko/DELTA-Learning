@@ -1,4 +1,4 @@
-// Displaced, without the people relocated afterwards (Bonn Data Team, 2026-10-16;
+// Displaced, without the people relocated afterwards (UNDRR Bonn Data Team, 2026-10-16;
 // contract O-2 with Backend Migration).
 //
 // The platform keeps displaced people as one population split by timing and

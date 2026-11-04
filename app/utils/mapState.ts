@@ -177,7 +177,7 @@ export type AttGrade = "A" | "B" | "C" | "D";
  * v1.0, which grades attribution (ATT, PD-08:84), reference (REF,
  * PD-08:147) and method (TR-071) only. Kept apart from AttGrade so a
  * quality letter is never read as an attribution grade. Lane-internal: no
- * Q letter appears on a public or official view until Bonn Data Team rules (W-04).
+ * Q letter appears on a public or official view until UNDRR Bonn Data Team rules (W-04).
  */
 export type QualityGrade = "A" | "B" | "C" | "D";
 
@@ -233,7 +233,7 @@ export interface NotAppliedInput {
 }
 
 /**
- * How shaded areas are drawn (ruling RV-5, amended by Bonn Data Team 2026-10-17):
+ * How shaded areas are drawn (ruling RV-5, amended by UNDRR Bonn Data Team 2026-10-17):
  * counts as bubbles sized by area with a coverage ring (preview option A),
  * breakdowns as rounded bars (option B), densities and rates as a
  * choropleth. Spikes are removed. Bubbles over density shading (option D)
@@ -305,7 +305,7 @@ export interface ResolveMapOptions {
 	appliedFilters?: readonly string[];
 	/**
 	 * Bubble or bars mode: shade the areas under the symbols by a second
-	 * quantity (option D, Bonn Data Team 2026-10-17). The shading never shows the same
+	 * quantity (option D, UNDRR Bonn Data Team 2026-10-17). The shading never shows the same
 	 * count as the symbols.
 	 */
 	underlay?: MapUnderlayOption;
@@ -1063,7 +1063,7 @@ export interface BarsLayerInput {
 }
 
 /**
- * Rounded bars over a choropleth (options B and D, Bonn Data Team 2026-10-17). The
+ * Rounded bars over a choropleth (options B and D, UNDRR Bonn Data Team 2026-10-17). The
  * areas are shaded by one measure with the full choropleth rules, for
  * example the number of deaths (Sendai A-2); rounded bars of another
  * measure stand on top, for example dwellings damaged and destroyed (inputs

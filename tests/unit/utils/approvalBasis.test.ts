@@ -31,7 +31,7 @@ const migrated = (status: string, extra: Record<string, unknown> = {}) => ({
 describe("approval basis", () => {
 	it("shows published records only to public, signed-in and official views", () => {
 		expect(basisStatuses("public")).toEqual(["published"]);
-		// AB-01 default (PD-08:82, TR-192) until Bonn Data Team rules otherwise.
+		// AB-01 default (PD-08:82, TR-192) until UNDRR Bonn Data Team rules otherwise.
 		expect(SIGNED_IN_BASIS_STATUSES).toEqual(["published"]);
 		expect(basisStatuses("official")).toEqual(["published"]);
 	});
@@ -160,7 +160,7 @@ describe("reconciliation basis is not reachable from routes", () => {
 	});
 });
 
-// AB-01 for data viewers (Bonn Data Team, 2026-10-15): published records only, in
+// AB-01 for data viewers (UNDRR Bonn Data Team, 2026-10-15): published records only, in
 // lists and on detail pages.
 describe("data viewer basis", () => {
 	it("lists published records only", async () => {

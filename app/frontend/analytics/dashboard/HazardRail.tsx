@@ -1,6 +1,6 @@
-// The left hazard rail of the Analysis dashboard (Bonn Data Team, 2026-10-17: the
+// The left hazard rail of the Analysis dashboard (UNDRR Bonn Data Team, 2026-10-17: the
 // "Command Rail" of Geoportal mockup option A). One radio button per HIPs
-// hazard type, with its icon in the type's identity colour (NFR-094; Bonn Data Team
+// hazard type, with its icon in the type's identity colour (NFR-094; UNDRR Bonn Data Team
 // 2026-10-18), a short name and, where it counts records, a count. "All
 // hazards" stays in the dashboard blue.
 // Choosing a type sets the hazard filter for the whole page; "All hazards"
@@ -44,7 +44,7 @@ export interface HazardRailProps {
 	onChange: (typeId: string | null) => void;
 	/** Show the record count per type (record views); false on event views. */
 	showCounts: boolean;
-	/** Below the hazard types: the Sendai square (Bonn Data Team, 2026-10-22). */
+	/** Below the hazard types: the Sendai square (UNDRR Bonn Data Team, 2026-10-22). */
 	after?: React.ReactNode;
 }
 
@@ -92,7 +92,7 @@ export function HazardRail({ ctx, tree, selected, onChange, showCounts, after }:
 					>
 						{/* The count sits at the glyph's top-right corner, as in the mockup. */}
 						<span className="relative inline-flex">
-							{/* Each type in its own identity colour (Bonn Data Team, 2026-10-18), a distinct icon and its name. */}
+							{/* Each type in its own identity colour (UNDRR Bonn Data Team, 2026-10-18), a distinct icon and its name. */}
 							<PanelIcon name={HAZARD_ICONS[identity]} size={26} colour={hazardColourVar(ty.id)} />
 							{showCounts && !empty && (
 								<span

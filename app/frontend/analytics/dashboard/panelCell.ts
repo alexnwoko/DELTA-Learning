@@ -25,7 +25,7 @@ export function recordsAnswering(cell: PanelCell): number {
 
 /** "243 of 534 records report this", the coverage beside every figure (W-8). */
 export function coverageText(ctx: DContext, cell: PanelCell): string {
-	// No record in scope is no data, never "0 of 0" (Bonn Data Team, 2026-10-17).
+	// No record in scope is no data, never "0 of 0" (UNDRR Bonn Data Team, 2026-10-17).
 	if (cell.recordsTotal === 0) return noRecordsText(ctx);
 	return ctx.t(
 		{ code: "dashboard.coverage", msg: "{n} of {total} records report this" },
@@ -89,7 +89,7 @@ export function noRecordsText(ctx: DContext): string {
 	return ctx.t({ code: "dashboard.no_records_in_scope", msg: "No records in scope" });
 }
 
-/** One frame across a view when nothing is in scope (Bonn Data Team, 2026-10-17). */
+/** One frame across a view when nothing is in scope (UNDRR Bonn Data Team, 2026-10-17). */
 export function emptyViewPanel(id: string, title: string, reason: string): DashboardPanel {
 	// Across the view, and never listed as a feature to come: the scope is empty.
 	return { id: `${id}-empty`, n: 1, title, wide: true, gap: { text: reason } };

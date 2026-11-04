@@ -1,4 +1,4 @@
-// Loads the world admin-0 reference layer into geo.admin0 (Bonn Data Team, 2026-10-18,
+// Loads the world admin-0 reference layer into geo.admin0 (UNDRR Bonn Data Team, 2026-10-18,
 // rulings 1 and 2). Input: a GeoJSON FeatureCollection of countries, such as
 // Natural Earth 1:50m admin-0 countries (public domain), kept outside the
 // repository. The whole table is replaced in one transaction.

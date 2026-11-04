@@ -9,7 +9,7 @@ export const QUERY_CONTRACT = "delta.query/1" as const;
 
 /**
  * The three DELTA dimensions. "disaster_impact" is the analysis name of the
- * dimension built on disaster records (Bonn Data Team 2026-10-15); the data-entry
+ * dimension built on disaster records (UNDRR Bonn Data Team 2026-10-15); the data-entry
  * entity and its API keep the name "disaster record".
  */
 export const QUERY_DIMENSIONS = [
@@ -103,7 +103,7 @@ export interface DeltaQuery {
 	/** Attribution grade floor; absent means no floor. */
 	minAttGrade?: AttGradeFloor;
 	/**
-	 * "Show by" (Bonn Data Team, 2026-10-22): the admin level division breakdowns and
+	 * "Show by" (UNDRR Bonn Data Team, 2026-10-22): the admin level division breakdowns and
 	 * maps are computed at. Absent means 1 (provinces or states).
 	 */
 	showBy?: ShowByLevel;

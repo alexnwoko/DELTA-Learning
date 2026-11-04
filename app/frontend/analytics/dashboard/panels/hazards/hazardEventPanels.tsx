@@ -79,7 +79,7 @@ function Frame({ common, exp, pictures = true, children }: { common: Common; exp
 /**
  * The 16 Hazardous events panels (panels paper v0.3, section 4.1): the
  * question each answers and the shape its chart takes. With no hazardous
- * events recorded, each shows that shape in grey (Bonn Data Team, 2026-10-18).
+ * events recorded, each shows that shape in grey (UNDRR Bonn Data Team, 2026-10-18).
  */
 export const HAZARD_EVENT_PANELS: { n: number; title: string; question: string; ghost: GhostShape }[] = [
 	{ n: 1, title: "Hazardous events at a glance", question: "How many hazardous events are recorded, and how many are linked, mapped and fully coded?", ghost: "tiles" },
@@ -342,7 +342,7 @@ export function hazardEventDashboardPanels(
 		exportData: exports[k],
 		render: () => views[k](common(titles[k]), exports[k]),
 	}));
-	// Unbuilt features (Bonn Data Team, 2026-10-19): a grey placeholder in their slot,
+	// Unbuilt features (UNDRR Bonn Data Team, 2026-10-19): a grey placeholder in their slot,
 	// the rest in Features Coming Soon.
 	return arrangeByLayout([...drawn, ...comingSoonPanels(ctx, "hazard-events", HAZARD_EVENTS_LAYOUT, drawn)], HAZARD_EVENTS_LAYOUT);
 }

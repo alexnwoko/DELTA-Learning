@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { isStaleChunkError, shouldReloadForStaleChunk } from "~/utils/staleChunk";
 
-describe("stale code after a redeploy (Bonn Data Team, 2026-10-21)", () => {
+describe("stale code after a redeploy (UNDRR Bonn Data Team, 2026-10-21)", () => {
 	it("recognises a failed module load in Chrome, Firefox and Safari, and nothing else", () => {
 		expect(isStaleChunkError(new TypeError("Failed to fetch dynamically imported module: http://x/assets/route-abc.js"))).toBe(true);
 		expect(isStaleChunkError(new Error("error loading dynamically imported module"))).toBe(true);

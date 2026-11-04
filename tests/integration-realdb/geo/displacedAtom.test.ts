@@ -9,7 +9,7 @@ import {
 } from "../test-helpers";
 import { refreshGeoReadModel } from "~/backend.server/models/geo/refresh";
 
-// Contract O-2 (Bonn Data Team, 2026-10-16): displaced_total holds evacuated plus
+// Contract O-2 (UNDRR Bonn Data Team, 2026-10-16): displaced_total holds evacuated plus
 // relocated; the geoportal's Displaced measure uses the same expression as
 // the analytics headline (displacedHeadlineSql), so evacuated and relocated
 // people are never added together, and nothing reported is never a zero.

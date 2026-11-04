@@ -9,7 +9,7 @@ import {
 } from "../test-helpers";
 import { getAffected } from "~/backend.server/models/analytics/affected-people-by-disaster-event-v2";
 
-// Disaster events screen (Bonn Data Team, 2026-10-15): Total affected is people
+// Disaster events screen (UNDRR Bonn Data Team, 2026-10-15): Total affected is people
 // directly affected plus people indirectly affected. Injured, missing and
 // displaced are shown on their own and are not added in.
 

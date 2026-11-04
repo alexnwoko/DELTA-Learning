@@ -27,20 +27,20 @@ import { impactMeasureLabel } from "./measureLabels";
 import { impactPanels5to16 } from "./panels5to16";
 
 /**
- * The Disaster impact layout (Bonn Data Team, 2026-10-18), two panels a row, left
+ * The Disaster impact layout (UNDRR Bonn Data Team, 2026-10-18), two panels a row, left
  * then right. Panels not listed (largest records, season, period change,
  * extensive and intensive risk) wait under "Show more", in number order.
  * Panel 5 (Sendai counts) is not listed: the Sendai section carries it.
  */
 export const IMPACT_LAYOUT: readonly string[] = [
 	"impact-1", "impact-7", // Human effects at a glance | Ranked by divisions
-	"impact-4", "impact-estimated", // Hazard ranking by disaster impact | Estimated sex and age split (Bonn Data Team, 2026-10-22)
+	"impact-4", "impact-estimated", // Hazard ranking by disaster impact | Estimated sex and age split (UNDRR Bonn Data Team, 2026-10-22)
 	"impact-3", "impact-6", // Human effects by year | Hazard by human effect
 	"impact-8", "impact-10", // Hazard by sector | Houses destroyed and damaged
 	"impact-9", "impact-16", // People displaced, evacuated and relocated | sex and age disaggregation
 	"impact-hazard-month", // Hazard by month, full width (13 columns)
-	"impact-cost", // Disaster cost, full width: a 2x2 grid above coverage (Bonn Data Team, 2026-10-22)
-	"impact-2", "impact-12", // Coverage of the records | Reporting completeness and precision, last before Sendai (Bonn Data Team, 2026-10-22)
+	"impact-cost", // Disaster cost, full width: a 2x2 grid above coverage (UNDRR Bonn Data Team, 2026-10-22)
+	"impact-2", "impact-12", // Coverage of the records | Reporting completeness and precision, last before Sendai (UNDRR Bonn Data Team, 2026-10-22)
 ];
 
 /** Places each panel by IMPACT_LAYOUT; the rest follow, under "Show more". */
@@ -55,7 +55,7 @@ export function impactDashboardPanels(
 	later?: { data: ImpactPanels5to16; country: string; subnational?: boolean; sources?: ImpactSources | null; hazardMonth?: HazardMonth | null; estimated?: EstimatedDisaggregation | null; cost?: CostPanels | null; effort?: ReportingEffort | null; provisional?: boolean },
 ): DashboardPanel[] {
 	const t = (code: string, msg: string) => ctx.t({ code, msg });
-	// No record in scope: one frame, never tiles and bars of 0 (Bonn Data Team, 2026-10-17).
+	// No record in scope: one frame, never tiles and bars of 0 (UNDRR Bonn Data Team, 2026-10-17).
 	if (data.coverage.recordsTotal === 0) {
 		return [emptyViewPanel("impact", t("dashboard.dim_disaster_impact", "Disaster impact"), t("dashboard.impact_empty", "No records in scope for these filters."))];
 	}
@@ -128,7 +128,7 @@ export function impactDashboardPanels(
 				subnational: later.subnational,
 			})
 		: [];
-	// Unbuilt features (Bonn Data Team, 2026-10-19): Features Coming Soon.
+	// Unbuilt features (UNDRR Bonn Data Team, 2026-10-19): Features Coming Soon.
 	const sources = later?.sources ? [impactSourcesPanel(ctx, later.sources, common)] : [];
 	const months = later?.hazardMonth ? [{ ...hazardMonthPanel(ctx, later.hazardMonth, "impact-hazard-month", 28, common), wide: true }] : [];
 	const estimate = later?.estimated ? [estimatedSplitPanel(ctx, later.estimated)] : [];

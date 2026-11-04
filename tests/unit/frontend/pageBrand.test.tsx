@@ -1,4 +1,4 @@
-// Section page headings (Bonn Data Team, 2026-10-19).
+// Section page headings (UNDRR Bonn Data Team, 2026-10-19).
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { brandTitle, isDataEntryPath, PageBrand } from "~/frontend/PageBrand";

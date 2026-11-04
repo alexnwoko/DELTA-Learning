@@ -1,7 +1,7 @@
 // Print view of the Analysis page: sections flow one after another.
 // Chrome does not pass the height that page breaks add inside a nested flex
 // item up to the flex container around it, so in print "About the data" was
-// drawn over the Sendai section (Bonn Data Team, 2026-10-19). The layout columns carry
+// drawn over the Sendai section (UNDRR Bonn Data Team, 2026-10-19). The layout columns carry
 // data-print="flow" and print.css prints them as plain blocks.
 import { readFileSync } from "node:fs";
 import { renderToString } from "react-dom/server";

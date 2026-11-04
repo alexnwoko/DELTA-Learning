@@ -1,5 +1,5 @@
 // /:lang/analytics: the D1 Analysis dashboard (D1 build brief v0.2), one
-// page with four buttons in Bonn Data Team's order (2026-10-17): Sectors, Hazardous
+// page with four buttons in UNDRR Bonn Data Team's order (2026-10-17): Sectors, Hazardous
 // events, Disaster events, Disaster impact. The URL carries delta.query/1
 // (`dim`) plus `view=sectors`, so every view has a shareable link.
 // Each view reads its own Analytics loader, only when it is shown.
@@ -126,11 +126,11 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request, p
 					getImpactMap(query, ctx),
 					// DI-18 Reporting sources (Analytics fe24a633).
 					getImpactSources(query, ctx),
-					// Hazard by month, records (Bonn Data Team, 2026-10-19; Analytics 0071b980).
+					// Hazard by month, records (UNDRR Bonn Data Team, 2026-10-19; Analytics 0071b980).
 					getHazardMonth(query, ctx, "disaster_record"),
 					// Estimated sex and age split (Analytics 40a0d72b).
 					getEstimatedDisaggregation(query, ctx),
-					// Disaster cost (Bonn Data Team, 2026-10-22; Analytics 4b91b9ad, 183fbf12).
+					// Disaster cost (UNDRR Bonn Data Team, 2026-10-22; Analytics 4b91b9ad, 183fbf12).
 					getCostPanels(query, ctx),
 					// Reporting effort per year (Analytics 2155a9f6).
 					getReportingEffort(query, ctx),
@@ -143,16 +143,16 @@ export const loader = authLoaderPublicOrWithPerm("ViewData", async ({ request, p
 	const hazardEvents = view === "hazardous_event" ? await getHazardEventPanels1to7(query, ctx) : null;
 	const sectors = view === "sectors" ? await getSectorPanels1to7(query, ctx) : null;
 	// The Sendai section, the same on Disaster events and Disaster impact, and
-	// absent (no section, no toggle) on the other views (Bonn Data Team, 2026-10-18;
+	// absent (no section, no toggle) on the other views (UNDRR Bonn Data Team, 2026-10-18;
 	// FR-AN-020, FR-AN-024).
 	const sendai = hasSendai(view) ? await getSendaiSection(query, ctx) : null;
-	// Every dimension has a map (Bonn Data Team, 2026-10-17). A view with no hazardous
+	// Every dimension has a map (UNDRR Bonn Data Team, 2026-10-17). A view with no hazardous
 	// event at all (G-01) shows its one frame instead.
 	const eventMap =
 		view === "disaster_event" || (view === "hazardous_event" && !hazardEvents?.empty)
 			? await getEventMap(query, ctx, view)
 			: null;
-	// Under every map (Bonn Data Team, 2026-10-18): the basemaps, the first on by
+	// Under every map (UNDRR Bonn Data Team, 2026-10-18): the basemaps, the first on by
 	// default (TR-166 amended; public pages get self-hosted layers only), and
 	// the country outline with its name and its neighbours. Read only when a
 	// map is drawn.
@@ -241,7 +241,7 @@ export default function AnalysisDashboard() {
 	// Titles that name the division level follow "Show by" ("Ranked by districts").
 	const level = showByLevel(query);
 	const pctx = levelAwareContext(ctx, level);
-	// Every chart starts at its own first period with data (Bonn Data Team, 2026-10-20),
+	// Every chart starts at its own first period with data (UNDRR Bonn Data Team, 2026-10-20),
 	// not at the country's first record year.
 	const firstYear: FirstYear = null;
 	const impact = ld.impact ? impact1to4FromFirstRecord(ld.impact as ImpactPanels1to4, firstYear) : null;
@@ -342,7 +342,7 @@ export default function AnalysisDashboard() {
 						}
 						// The tree counts records: no count on the two event views.
 						showCounts={view === "disaster_impact" || view === "sectors"}
-						// The Sendai square, below the hazard types, orange when on (Bonn Data Team, 2026-10-22).
+						// The Sendai square, below the hazard types, orange when on (UNDRR Bonn Data Team, 2026-10-22).
 						after={sendai ? <SendaiToggle ctx={ctx} on={sfm} rail onChange={(on) => go(query, view, on)} /> : undefined}
 					/>
 				}

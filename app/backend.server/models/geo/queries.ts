@@ -1248,7 +1248,7 @@ async function eventCountsByDivisionUncached(
 	};
 }
 
-// Cached entry points (I-6, Bonn Data Team: option A). Each answer is kept until the
+// Cached entry points (I-6, UNDRR Bonn Data Team: option A). Each answer is kept until the
 // tenant's next read-model refresh; the key includes the whole request.
 
 /** G2. One measure aggregated by division at one admin level. */
@@ -1311,7 +1311,7 @@ export async function eventCountsByDivision(
 }
 
 /**
- * G3 for the whole tenant (Bonn Data Team, 2026-10-18: "Place" summarises the country
+ * G3 for the whole tenant (UNDRR Bonn Data Team, 2026-10-18: "Place" summarises the country
  * by default). Same shape as the place dossier. Every record in scope counts
  * once, including records with no area recorded, so the country figure is
  * never the sum of its areas. Hazard, date, basis and grade filters apply;

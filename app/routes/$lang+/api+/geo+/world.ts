@@ -9,7 +9,7 @@ import {
 	worldBoundaries,
 } from "~/backend.server/models/geo/tenantExtent";
 
-// World admin-0 reference layer (Bonn Data Team, 2026-10-18): every country's border
+// World admin-0 reference layer (UNDRR Bonn Data Team, 2026-10-18): every country's border
 // and name, the same for every tenant. Signed in or API key, like every geo
 // route. Cached for a year on a URL that carries the admin-0 version (`v`),
 // so a browser downloads it once per reload of geo.admin0, not per refresh.

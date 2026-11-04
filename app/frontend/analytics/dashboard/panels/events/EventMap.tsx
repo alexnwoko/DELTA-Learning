@@ -1,4 +1,4 @@
-// Map M0 on the two event views (Bonn Data Team, 2026-10-17: every dimension gets a
+// Map M0 on the two event views (UNDRR Bonn Data Team, 2026-10-17: every dimension gets a
 // map): a bubble per level-1 division sized by the number of events, on the
 // same areas as the Disaster impact map. Counts come from the geoportal's
 // one placement rule, so both surfaces agree. A division with no event
@@ -64,7 +64,7 @@ export function EventMap({
 					dataSource={drawn.map((a) => toEventMapArea(a, words))}
 					legendTitle={legend}
 					measureFamily="events"
-					// The dashboard palette (Bonn Data Team, 2026-10-18), a module-level constant.
+					// The dashboard palette (UNDRR Bonn Data Team, 2026-10-18), a module-level constant.
 					ramp={DASHBOARD_RAMP}
 					symbol="bubble"
 					notReportedLabel={t({ code: "analysis.map_no_events_recorded", msg: "No events recorded" })}

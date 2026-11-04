@@ -35,7 +35,7 @@
 	/* Every level of the dashboard prints as plain blocks (data-print="flow"
 	   on grids, cards and figures), and a scrolling box opens in full, so a
 	   card pushed to the next page pushes "About the data" down with it
-	   instead of being drawn under it (Bonn Data Team, 2026-10-19, second report). */
+	   instead of being drawn under it (UNDRR Bonn Data Team, 2026-10-19, second report). */
 	.delta-dashboard-canvas .overflow-x-auto,
 	.delta-dashboard-canvas .overflow-auto {
 		overflow: visible !important;

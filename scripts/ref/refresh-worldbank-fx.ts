@@ -1,4 +1,4 @@
-// Monthly refresh of the one exchange rate DELTA uses for US dollars (Bonn Data Team,
+// Monthly refresh of the one exchange rate DELTA uses for US dollars (UNDRR Bonn Data Team,
 // 2026-10-22): the World Bank official exchange rate, PA.NUS.FCRF (local
 // currency units per US dollar, annual average). No other rate is loaded.
 //

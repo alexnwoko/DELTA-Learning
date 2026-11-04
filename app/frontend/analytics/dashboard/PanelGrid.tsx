@@ -28,7 +28,7 @@ function gapCountText(ctx: ViewContext, gap: PanelGap): string | null {
 
 function GapBody({ ctx, gap }: { ctx: ViewContext; gap: PanelGap }) {
 	const count = gapCountText(ctx, gap);
-	// A placeholder's one-line description is small print (Bonn Data Team, 2026-10-19).
+	// A placeholder's one-line description is small print (UNDRR Bonn Data Team, 2026-10-19).
 	return (
 		<p className={`m-0 ${gap.ghost ? "text-xs" : "text-sm"} text-brand-text-muted`}>
 			{gap.text}
@@ -94,7 +94,7 @@ export function chartTypeLabel(ctx: ViewContext, gap: PanelGap): string | null {
 }
 
 /**
- * Features Coming Soon (Bonn Data Team, 2026-10-19; once "Not yet available"): every
+ * Features Coming Soon (UNDRR Bonn Data Team, 2026-10-19; once "Not yet available"): every
  * unbuilt feature on the view that has no grey placeholder of its own, with
  * its name, a one-line description and its chart or map type, in grey-blue
  * (data.dashboard.slate, 6.42:1 on the strip).

@@ -14,7 +14,7 @@ import {
 	relocatedSql,
 } from "~/backend.server/models/analytics/displacedHeadline";
 
-// Contract O-2 (Bonn Data Team, 2026-10-16): displaced_total holds evacuated plus
+// Contract O-2 (UNDRR Bonn Data Team, 2026-10-16): displaced_total holds evacuated plus
 // relocated, because the platform keeps one population split by timing and
 // duration. The displaced figure leaves out people relocated after the
 // event (reactive, permanent), so evacuated and relocated are never added.

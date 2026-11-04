@@ -40,7 +40,7 @@ describe("isSelfHostedTileUrl", () => {
 	});
 });
 
-// I-3 switcher (Bonn Data Team 2026-10-16): the reader chooses among configured
+// I-3 switcher (UNDRR Bonn Data Team 2026-10-16): the reader chooses among configured
 // layers; third-party providers are an allow-list pinned to one host each.
 import {
 	isAllowedThirdPartyUrl,
