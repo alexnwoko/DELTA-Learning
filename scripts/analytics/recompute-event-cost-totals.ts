@@ -1,5 +1,5 @@
 // Recomputes the stored cost totals of disaster events that hold a computed 0
-// (Alex approved, 2026-10-26). The totals are rebuilt with the app's own
+// (UNDRR Bonn Data Team approved, 2026-10-26). The totals are rebuilt with the app's own
 // updateTotals, so a total with nothing reported becomes empty (null) and a
 // reported 0 stays 0. No source record is changed; only the four *_calc
 // columns on disaster_event are rewritten.

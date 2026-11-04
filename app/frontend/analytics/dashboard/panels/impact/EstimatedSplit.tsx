@@ -246,6 +246,6 @@ function EstimatedSplitView({ ctx, d, title }: { ctx: ViewContext; d: EstimatedD
  * reported data only, and estimates download from the panel itself.
  */
 export function estimatedSplitPanel(ctx: ViewContext, d: EstimatedDisaggregation): DashboardPanel {
-	const title = ctx.t({ code: "dashboard.estimated_split", msg: "Estimated sex and age split" });
+	const title = ctx.t({ code: "dashboard.estimated_split", msg: "Sex and Age Disaggregation (Estimate)" });
 	return { id: "impact-estimated", n: 30, title, render: () => <EstimatedSplitView ctx={ctx} d={d} title={title} /> };
 }

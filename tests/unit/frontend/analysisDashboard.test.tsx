@@ -280,14 +280,14 @@ describe("Disaster impact layout (UNDRR Bonn Data Team, 2026-10-18)", () => {
 	});
 
 	it("shows the panels in the agreed order (UNDRR Bonn Data Team, 2026-10-22: coverage and completeness last)", () => {
-		// The fixture has no estimate payload, so row 2 right (Estimated sex and age split) is absent here.
+		// The fixture has no estimate payload, so row 2 right (Sex and Age Disaggregation (Estimate)) is absent here.
 		const shown = all.filter((p) => !p.more && p.id !== "impact-5");
 		expect(shown.map((p) => p.title)).toEqual([
 			"Human effects at a glance", "Ranked by divisions",
 			"Hazard ranking by disaster impact", "Human effects by year",
 			"Hazard by human effect", "Hazard by sector",
 			"Houses destroyed and damaged", "People displaced, evacuated and relocated",
-			"Disaster impact by sex and age disaggregation", "Hazard by month",
+			"Hazard by month",
 			"Coverage of the records", "Reporting completeness and precision",
 		]);
 	});
@@ -317,9 +317,9 @@ describe("Disaster impact panels 5 to 16 on the example payload", () => {
 	});
 	const html = (n: number) => text(renderToString(<>{all.find((p) => p.n === n)!.render!()}</>));
 
-	it("number 16 drawn panels with export data", () => {
+	it("number 15 drawn panels with export data", () => {
 		const drawn = all.filter((p) => !p.gap);
-		expect(drawn.map((p) => p.n).sort((a, b) => a - b)).toEqual(Array.from({ length: 16 }, (_, i) => i + 1));
+		expect(drawn.map((p) => p.n).sort((a, b) => a - b)).toEqual(Array.from({ length: 15 }, (_, i) => i + 1));
 		expect(drawn.every((p) => p.render && p.exportData)).toBe(true);
 		// The rest are Features Coming Soon (reassessment 4.4): DI-18 to DI-27.
 		expect(all.filter((p) => p.gap).map((p) => p.id).sort()).toEqual([...Array.from({ length: 10 }, (_, i) => `impact-${i + 18}`), "impact-hazard-month", "impact-aa"].sort());
@@ -380,10 +380,9 @@ describe("Disaster impact panels 5 to 16 on the example payload", () => {
 		expect(h).toContain("Intensive (records at or above the threshold)");
 	});
 
-	it("16: counts records with no breakdown in words, not as a bar", () => {
-		const h = html(16);
-		expect(h).toContain("Not disaggregated: 231 of 243 records");
-		expect(h).toContain("With disability");
+	it("16 is off the page and panel 9 takes its row", () => {
+		expect(all.find((p) => p.n === 16)).toBeUndefined();
+		expect(all.find((p) => p.n === 9)?.wide).toBe(true);
 	});
 });
 

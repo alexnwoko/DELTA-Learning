@@ -70,7 +70,7 @@ describe("estimated sex and age split", () => {
 	it("opens on the DELTA model, names it, and offers the four models (UNDRR Bonn Data Team, 2026-10-22)", () => {
 		expect(pickModel(D, null)?.id).toBe("delta");
 		expect(pickModel(D, "un")?.id).toBe("un");
-		expect(html).toContain('aria-label="Estimated sex and age split, DELTA disaggregation"');
+		expect(html).toContain('aria-label="Sex and Age Disaggregation (Estimate), DELTA disaggregation"');
 		expect(html).toContain("DELTA disaggregation: UNDRR Bonn Data Team, DELTA product ruling, 2026-10-22.");
 		expect(html).toContain('aria-label="UN disaggregation"');
 		// The DELTA button is the selected one (a radio in a single-choice group).

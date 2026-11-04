@@ -34,10 +34,10 @@ import { impactPanels5to16 } from "./panels5to16";
  */
 export const IMPACT_LAYOUT: readonly string[] = [
 	"impact-1", "impact-7", // Human effects at a glance | Ranked by divisions
-	"impact-4", "impact-estimated", // Hazard ranking by disaster impact | Estimated sex and age split (UNDRR Bonn Data Team, 2026-10-22)
+	"impact-4", "impact-estimated", // Hazard ranking by disaster impact | Sex and Age Disaggregation (Estimate) (UNDRR Bonn Data Team, 2026-10-22)
 	"impact-3", "impact-6", // Human effects by year | Hazard by human effect
 	"impact-8", "impact-10", // Hazard by sector | Houses destroyed and damaged
-	"impact-9", "impact-16", // People displaced, evacuated and relocated | sex and age disaggregation
+	"impact-9", // People displaced, evacuated and relocated, full width (UNDRR Bonn Data Team, 2026-11-03)
 	"impact-hazard-month", // Hazard by month, full width (13 columns)
 	"impact-cost", // Disaster cost, full width: a 2x2 grid above coverage (UNDRR Bonn Data Team, 2026-10-22)
 	"impact-2", "impact-12", // Coverage of the records | Reporting completeness and precision, last before Sendai (UNDRR Bonn Data Team, 2026-10-22)
@@ -45,7 +45,8 @@ export const IMPACT_LAYOUT: readonly string[] = [
 
 /** Places each panel by IMPACT_LAYOUT; the rest follow, under "Show more". */
 export function arrangeImpactPanels(panels: DashboardPanel[]): DashboardPanel[] {
-	return arrangeByLayout(panels, IMPACT_LAYOUT);
+	// Panel 16 is off the page; panel 9 takes its row (UNDRR Bonn Data Team, 2026-11-03).
+	return arrangeByLayout(panels, IMPACT_LAYOUT, ["impact-16"]).map((p) => (p.id === "impact-9" ? { ...p, wide: true } : p));
 }
 
 export function impactDashboardPanels(
