@@ -1,4 +1,5 @@
 import { displacedTable } from "~/drizzle/schema/displacedTable";
+import { displacedHeadlineCol } from "~/backend.server/models/analytics/displacedHeadline";
 import { affectedTable } from "~/drizzle/schema/affectedTable";
 import { missingTable } from "~/drizzle/schema/missingTable";
 import { injuredTable } from "~/drizzle/schema/injuredTable";
@@ -46,6 +47,7 @@ export const affectedTablesAndCols = [
 		table: displacedTable,
 		col: displacedTable.displaced,
 		presenceCol: humanCategoryPresenceTable.displaced,
-		presenceTotalCol: humanCategoryPresenceTable.displacedTotal,
+		// Without people relocated after the event (contract O-2).
+		presenceTotalCol: displacedHeadlineCol,
 	},
 ] as const;

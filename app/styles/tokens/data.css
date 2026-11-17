@@ -1,0 +1,100 @@
+/**
+ * Do not edit directly, this file was auto-generated.
+ */
+
+:root {
+  --delta-data-state-zero-confirmed-fill: #ffffff;
+  --delta-data-state-zero-confirmed-stroke: #4b5563;
+  --delta-data-state-zero-confirmed-stroke-width: 1.2; /** Stroke width in CSS pixels */
+  --delta-data-state-zero-confirmed-dash: 4 3; /** SVG stroke-dasharray; 'none' draws a solid line */
+  --delta-data-state-zero-confirmed-pattern: none; /** Pattern drawn over the fill in the stroke colour */
+  --delta-data-state-not-reported-fill: #c9ced6;
+  --delta-data-state-not-reported-stroke: #8a929c;
+  --delta-data-state-not-reported-stroke-width: 1; /** Stroke width in CSS pixels */
+  --delta-data-state-not-reported-dash: none; /** SVG stroke-dasharray; 'none' draws a solid line */
+  --delta-data-state-not-reported-pattern: none; /** Pattern drawn over the fill in the stroke colour */
+  --delta-data-state-insufficient-reporting-fill: #ffffff;
+  --delta-data-state-insufficient-reporting-stroke: #6b7280;
+  --delta-data-state-insufficient-reporting-stroke-width: 1.2; /** Stroke width in CSS pixels */
+  --delta-data-state-insufficient-reporting-dash: 1 3; /** SVG stroke-dasharray; 'none' draws a solid line */
+  --delta-data-state-insufficient-reporting-pattern: hatch; /** Pattern drawn over the fill in the stroke colour */
+  --delta-data-state-not-applicable-fill: #f3f4f6;
+  --delta-data-state-not-applicable-stroke: #6b7280;
+  --delta-data-state-not-applicable-stroke-width: 1; /** Stroke width in CSS pixels */
+  --delta-data-state-not-applicable-dash: 8 3 1 3; /** SVG stroke-dasharray; 'none' draws a solid line */
+  --delta-data-state-not-applicable-pattern: dots; /** Pattern drawn over the fill in the stroke colour */
+  --delta-data-state-suppressed-fill: #e5e7eb;
+  --delta-data-state-suppressed-stroke: #374151;
+  --delta-data-state-suppressed-stroke-width: 2; /** Stroke width in CSS pixels */
+  --delta-data-state-suppressed-dash: none; /** SVG stroke-dasharray; 'none' draws a solid line */
+  --delta-data-state-suppressed-pattern: crosshatch; /** Pattern drawn over the fill in the stroke colour */
+  --delta-data-map-no-records-fill: #f9fafb;
+  --delta-data-map-no-records-stroke: #d1d5db;
+  --delta-data-map-no-records-stroke-width: 0.8;
+  --delta-data-map-area-boundary-stroke: #ffffff;
+  --delta-data-map-area-boundary-stroke-width: 0.8;
+  --delta-data-map-selected-outline-stroke: #111827;
+  --delta-data-map-selected-outline-stroke-width: 2.5;
+  --delta-data-map-plausibility-marker-stroke: #b45309;
+  --delta-data-map-plausibility-marker-stroke-width: 2.5;
+  --delta-data-map-not-applied-note-border: #b45309;
+  --delta-data-map-not-applied-note-border-width: 3;
+  --delta-data-map-not-applied-note-background: #fff7ed;
+  --delta-data-map-canvas-background: #f3f4f6;
+  --delta-data-map-country-outline-stroke: #7b828c;
+  --delta-data-map-country-outline-stroke-width: 1.2;
+  --delta-data-map-area-label-color: #5f6670;
+  --delta-data-map-area-label-halo: #ffffff;
+  --delta-data-map-area-label-size: 12;
+  --delta-data-ramp-people-1: #dbe7f3;
+  --delta-data-ramp-people-2: #a9c8e4;
+  --delta-data-ramp-people-3: #6fa4d0;
+  --delta-data-ramp-people-4: #3d7cb4;
+  --delta-data-ramp-people-5: #1d548f;
+  --delta-data-ramp-housing-1: #fdd0a2;
+  --delta-data-ramp-housing-2: #fdae6b;
+  --delta-data-ramp-housing-3: #fd8d3c;
+  --delta-data-ramp-housing-4: #e6550d;
+  --delta-data-ramp-housing-5: #a63603;
+  --delta-data-ramp-money-1: #c7e9c0;
+  --delta-data-ramp-money-2: #a1d99b;
+  --delta-data-ramp-money-3: #74c476;
+  --delta-data-ramp-money-4: #31a354;
+  --delta-data-ramp-money-5: #006d2c;
+  --delta-data-ramp-events-1: #dadaeb;
+  --delta-data-ramp-events-2: #bcbddc;
+  --delta-data-ramp-events-3: #9e9ac8;
+  --delta-data-ramp-events-4: #756bb1;
+  --delta-data-ramp-events-5: #54278f;
+  --delta-data-flag-review-chip-background: #fef3c7;
+  --delta-data-flag-review-chip-text: #78350f;
+  --delta-data-chart-axis: #6b7280; /** Axis lines and neutral chart ink; also the fallback bar colour, which should never show. */
+  --delta-data-notice-provisional-border: #d97706;
+  --delta-data-notice-provisional-background: #fffbeb;
+  --delta-data-hazard-meteorological-hydrological: #1f6fb2; /** Meteorological and Hydrological */
+  --delta-data-hazard-geological: #8c5a2b; /** Geological */
+  --delta-data-hazard-biological: #2e7d32; /** Biological */
+  --delta-data-hazard-environmental: #6b7a12; /** Environmental */
+  --delta-data-hazard-chemical: #8e3fa8; /** Chemical */
+  --delta-data-hazard-technological: #c2410c; /** Technological */
+  --delta-data-hazard-societal: #b0306a; /** Societal */
+  --delta-data-hazard-extraterrestrial: #0f7c8c; /** Extraterrestrial */
+  --delta-data-hazard-unclassified: #6b7280; /** No HIPs type recorded */
+  --delta-data-icon: #6a8bdc; /** Dashboard icons, same as data.dashboard.icon (Alex, 2026-10-18 palette trial). 3.31:1 on white, 3.05:1 on the dashboard tint (WCAG 1.4.11); the title beside each icon carries the meaning. */
+  --delta-data-dashboard-tint: #f0f6ff; /** Panel and tile background tint. */
+  --delta-data-dashboard-border: #cfe3ff; /** Panel and tile borders. */
+  --delta-data-dashboard-accent: #9dc3ff; /** Decorative accents only (1.8:1 on white): selected-state fills beside a text cue. */
+  --delta-data-dashboard-icon: #6a8bdc; /** Dashboard icons: 3.31:1 on white, 3.05:1 on tint (WCAG 1.4.11). */
+  --delta-data-dashboard-ink: #2d3355; /** Chart titles and subtitles, bold: 12.24:1 on white. */
+  --delta-data-dashboard-slate: #4a5a75; /** Grey-blue text for Features Coming Soon (Alex, 2026-10-19): 6.42:1 on the dashboard tint, 6.98:1 on white (WCAG 1.4.3). */
+  --delta-data-dashboard-canvas: #f0f6ff; /** Analysis page background, so the page is not plain white (FE-Proposal-03, Alex 2026-10-19). */
+  --delta-data-dashboard-surface: #ffffff; /** Layers on the canvas: view bar, rail, filter row, cards (FE-Proposal-03). */
+  --delta-data-dashboard-hover: #0095fd; /** Hover border of buttons and filter controls, the same blue in every brand theme (Alex, 2026-10-20). 3.13:1 on white (WCAG 1.4.11); on the hover tint it is 2.88:1, and the fill change also marks hover. */
+  --delta-data-sfm-tint: #f7fbff; /** Section and panel background tint. */
+  --delta-data-sfm-border: #d6eaf7; /** Section and panel borders. */
+  --delta-data-sfm-accent: #a8cfe3; /** Decorative accents only (1.65:1 on white). */
+  --delta-data-sfm-mark: #76a6c1; /** Decorative rules only: 2.63:1 on white is below 3:1, so never an icon or text. */
+  --delta-data-sfm-ink: #2f4f5f; /** Sendai titles, subtitles and icons: 8.73:1 on white. */
+  --delta-data-sfm-on: #c2410c; /** The Sendai rail button when on (Alex, 2026-10-22: orange): fill under white text and icon, 5.18:1. */
+  --delta-data-sfm-on-tint: #fff4ed; /** The Sendai rail button on hover, a pale orange behind the orange icon. */
+}

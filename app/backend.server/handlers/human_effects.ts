@@ -247,9 +247,9 @@ export async function saveHumanEffectsData(
 			if (!res.ok) {
 				if (res.tableError) {
 					throw res.tableError;
-				} else if (res.groupErrors) {
+				} else if (res.groupErrors?.length) {
 					throw res.groupErrors[0];
-				} else if (res.rowErrors) {
+				} else if (res.rowErrors?.length) {
 					for (let e of res.rowErrors) {
 						let idTemp = idMap.get(e.rowId);
 						if (idTemp) {

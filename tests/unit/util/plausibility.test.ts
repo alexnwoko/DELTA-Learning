@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
 	plausibilitySourceFields,
-	PLAUSIBILITY_FIELD_MEASURE,
+	plausibilityMeasuresForField,
+	PLAUSIBILITY_FIELD_MEASURES,
 } from "~/utils/plausibility";
 
 describe("plausibility field map", () => {
@@ -20,8 +21,18 @@ describe("plausibility field map", () => {
 		expect(plausibilitySourceFields("houses_damaged")).toEqual(["vivafec"]);
 	});
 
+	it("caveats evacuated and relocated on their own as well (TR-204)", () => {
+		expect(plausibilitySourceFields("evacuated")).toEqual(["evacuados"]);
+		expect(plausibilitySourceFields("relocated")).toEqual(["reubicados"]);
+		expect(plausibilityMeasuresForField("evacuados")).toEqual([
+			"displaced",
+			"evacuated",
+		]);
+		expect(plausibilityMeasuresForField("kmvias")).toEqual([]);
+	});
+
 	it("does not map sector fields to people measures", () => {
-		expect(PLAUSIBILITY_FIELD_MEASURE.kmvias).toBeUndefined();
-		expect(PLAUSIBILITY_FIELD_MEASURE.nhectareas).toBeUndefined();
+		expect(PLAUSIBILITY_FIELD_MEASURES.kmvias).toBeUndefined();
+		expect(PLAUSIBILITY_FIELD_MEASURES.nhectareas).toBeUndefined();
 	});
 });

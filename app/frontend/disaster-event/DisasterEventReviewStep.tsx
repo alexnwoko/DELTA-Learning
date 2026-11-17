@@ -5,6 +5,8 @@ import { DataView } from "primereact/dataview";
 import LinkedHazardousEventCard from "~/frontend/disaster-event/LinkedHazardousEventCard";
 import LinkedDisasterRecordCard from "~/frontend/disaster-event/LinkedDisasterRecordCard";
 import { ViewContext } from "~/frontend/context";
+import { dataEntryBasemap } from "~/utils/leafletBasemap";
+import { LEAFLET_CSS, LEAFLET_JS } from "~/utils/leafletAssets";
 
 type LinkedEventOption = {
 	id: string;
@@ -152,8 +154,6 @@ type DisasterEventReviewStepProps = {
 	onSendForValidation: () => void;
 };
 
-const glbMapperJS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-const glbMapperCSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
 
 const ensureLeafletLoaded = (() => {
 	let promise: Promise<any> | null = null;
@@ -171,15 +171,15 @@ const ensureLeafletLoaded = (() => {
 		}
 
 		promise = new Promise((resolve) => {
-			if (!document.querySelector(`link[href="${glbMapperCSS}"]`)) {
+			if (!document.querySelector(`link[href="${LEAFLET_CSS}"]`)) {
 				const leafletCSS = document.createElement("link");
 				leafletCSS.rel = "stylesheet";
-				leafletCSS.href = glbMapperCSS;
+				leafletCSS.href = LEAFLET_CSS;
 				document.head.appendChild(leafletCSS);
 			}
 
 			const script = document.createElement("script");
-			script.src = glbMapperJS;
+			script.src = LEAFLET_JS;
 			script.async = true;
 			script.onload = () => resolve((window as any).L || null);
 			document.head.appendChild(script);
@@ -329,12 +329,14 @@ function ReviewLocationMap({
 			const map = L.map(mapContainerRef.current, { preferCanvas: true });
 			mapRef.current = map;
 
-			L.tileLayer(
-				"https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-				{
-					attribution: "",
-				},
-			).addTo(map);
+			// Self-hosted basemap only, with attribution (SEC-20, TR-166).
+			const basemap = dataEntryBasemap();
+			if (basemap) {
+				L.tileLayer(basemap.url, {
+					attribution: basemap.attribution,
+					maxZoom: basemap.maxZoom,
+				}).addTo(map);
+			}
 
 			const bounds = L.latLngBounds([]);
 
@@ -1106,12 +1108,12 @@ export default function DisasterEventReviewStep({
 				{renderStep4SectionCard(
 					ctx.t({
 						code: "disaster_event.review.linked_disaster_records",
-						msg: "Linked disaster records",
+						msg: "Linked disaster impacts",
 					}),
 					"pi pi-file text-blue-600",
 					ctx.t({
 						code: "disaster_event.review.no_linked_disaster_records",
-						msg: "No disaster records linked yet",
+						msg: "No disaster impacts linked yet",
 					}),
 					<DataView
 						className="linked-disaster-records-grid"

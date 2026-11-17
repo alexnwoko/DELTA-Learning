@@ -20,11 +20,13 @@ import {
 } from "~/drizzle/schema/divisionTable";
 import { createAssessmentMetadata } from "~/backend.server/utils/disasterCalculations";
 import type { DisasterImpactMetadata } from "~/types/disasterCalculations";
+import { approvalBasis, type ApprovalAudience } from "~/utils/approvalBasis";
 import {
 	parseFlexibleDate,
 	createDateCondition,
 	extractYearFromDate,
 } from "~/backend.server/utils/dateFilters";
+import { monetaryValue, type MonetaryValue } from "~/utils/valueState";
 
 export interface GeographicImpactFilters {
 	sectorId?: string;
@@ -81,10 +83,98 @@ interface GeographicFilters {
 }
 
 interface CleanDivisionValues {
+	/** damage.value: null when no record in the division reported a cost. */
 	totalDamage: number | null;
+	/** loss.value: null when no record in the division reported a cost. */
 	totalLoss: number | null;
+	/** Value state and record counts (TR-076, PD-10:62). */
+	damage: MonetaryValue;
+	loss: MonetaryValue;
 	metadata: DisasterImpactMetadata;
+	/** no_data: neither damage nor loss was reported; zero: reported 0. */
 	dataAvailability: "available" | "no_data" | "zero";
+}
+
+/** Aggregated cost over a record set, with the records that reported it. */
+interface CostAggregate {
+	/** Sum over the reported rows; null when no row reported a cost. */
+	total: number | null;
+	/** Records with at least one reported cost row. */
+	recordsReported: number;
+	byYear: Map<number, number>;
+}
+
+const NO_COST: CostAggregate = {
+	total: null,
+	recordsReported: 0,
+	byYear: new Map(),
+};
+
+/**
+ * Division figures from the damage and loss aggregates over recordsTotal
+ * records. Money has no tri-state source, so a summed 0 is a reported 0 and
+ * never zero_confirmed (PD-04:596); a division where no record reported a
+ * cost is null and not_reported, never 0 (TR-076).
+ */
+function divisionValues(
+	damageResult: CostAggregate,
+	lossResult: CostAggregate,
+	recordsTotal: number,
+	metadata: DisasterImpactMetadata,
+): CleanDivisionValues {
+	const damage = monetaryValue({
+		sum: damageResult.total,
+		reported: damageResult.recordsReported,
+		total: recordsTotal,
+	});
+	const loss = monetaryValue({
+		sum: lossResult.total,
+		reported: lossResult.recordsReported,
+		total: recordsTotal,
+	});
+	const anyReported =
+		damage.valueState === "reported" || loss.valueState === "reported";
+	return {
+		totalDamage: damage.value,
+		totalLoss: loss.value,
+		damage,
+		loss,
+		metadata,
+		dataAvailability: !anyReported
+			? "no_data"
+			: (damage.value ?? 0) > 0 || (loss.value ?? 0) > 0
+				? "available"
+				: "zero",
+	};
+}
+
+/**
+ * Folds per-date cost rows into a total and a yearly breakdown. Undated rows
+ * stay in the total but have no year (C09).
+ */
+function foldCostRows(
+	rows: { year: unknown; cost: string | null; reported: unknown }[],
+	into: CostAggregate,
+): CostAggregate {
+	let { total, recordsReported } = into;
+	const byYear = new Map(into.byYear);
+	for (const row of rows) {
+		recordsReported += Number(row.reported) || 0;
+		if (row.cost === null || row.cost === undefined) {
+			continue;
+		}
+		const cost = safeMoneyToNumber(row.cost);
+		total = (total ?? 0) + cost;
+		if (row.year == null) {
+			continue;
+		}
+		const year = Number(row.year);
+		if (isNaN(year)) {
+			continue;
+		}
+		byYear.set(year, (byYear.get(year) || 0) + cost);
+	}
+	return { total, recordsReported, byYear };
 }
 
 interface GeographicImpactResult {
@@ -258,6 +348,7 @@ function isValidGeoJSON(value: any): boolean {
 
 export async function getGeographicImpact(
 	countryAccountsId: string,
+	audience: ApprovalAudience,
 	filters: GeographicImpactFilters,
 ): Promise<GeographicImpactResult> {
 	try {
@@ -350,6 +441,7 @@ export async function getGeographicImpact(
 				try {
 					const disasterRecords = await getDisasterRecordsForDivision(
 						countryAccountsId,
+						audience,
 						division.id,
 						{
 							startDate: filters.fromDate,
@@ -364,13 +456,14 @@ export async function getGeographicImpact(
 						sectorIds,
 					);
 
+					// No record in scope: not reported, never 0 (TR-076, PD-10:62).
 					if (!disasterRecords || disasterRecords.length === 0) {
-						values[division.id.toString()] = {
-							totalDamage: 0,
-							totalLoss: 0,
+						values[division.id.toString()] = divisionValues(
+							NO_COST,
+							NO_COST,
+							0,
 							metadata,
-							dataAvailability: "no_data",
-						};
+						);
 						return;
 					}
 
@@ -379,21 +472,12 @@ export async function getGeographicImpact(
 						aggregateLossesData(disasterRecords, sectorIds),
 					]);
 
-					const totalDamage = damageResult.total;
-					const totalLoss = lossResult.total;
-
-					const byYear: Map<number, number> = new Map(damageResult.byYear);
-					for (const [year, value] of lossResult.byYear) {
-						byYear.set(year, (byYear.get(year) || 0) + value);
-					}
-
-					values[division.id.toString()] = {
-						totalDamage,
-						totalLoss,
+					values[division.id.toString()] = divisionValues(
+						damageResult,
+						lossResult,
+						disasterRecords.length,
 						metadata,
-						dataAvailability:
-							totalDamage > 0 || totalLoss > 0 ? "available" : "zero",
-					};
+					);
 				} catch (error) {
 					console.error(
 						`[DIVISION_PROCESS] Error processing division ${division.id}:`,
@@ -403,12 +487,13 @@ export async function getGeographicImpact(
 							stack: error instanceof Error ? error.stack : undefined,
 						},
 					);
-					values[division.id.toString()] = {
-						totalDamage: 0,
-						totalLoss: 0,
+					// A failed division shows no figure rather than a false 0.
+					values[division.id.toString()] = divisionValues(
+						NO_COST,
+						NO_COST,
+						0,
 						metadata,
-						dataAvailability: "no_data",
-					};
+					);
 				}
 			}),
 		);
@@ -471,20 +556,21 @@ function disasterEventCondition(eventId: string): SQL {
 }
 
 /**
- * Record-level filters shared by every division query: tenant, published
- * status, HIPs classification, sector, date range and disaster event.
+ * Record-level filters shared by every division query: tenant, approval
+ * basis (C23), HIPs classification, sector, date range and disaster event.
  *
  * The hazard classification is read from the record itself, as in
  * hazard-analysis.ts, so records without a linked disaster event still count.
  */
 function buildRecordConditions(
 	countryAccountsId: string,
+	audience: ApprovalAudience,
 	filters: GeographicFilters | undefined,
 	sectorIds: string[],
 ): SQL[] {
 	const conditions: SQL[] = [
 		eq(disasterRecordsTable.countryAccountsId, countryAccountsId),
-		sql`${disasterRecordsTable.approvalStatus} = 'published'`,
+		approvalBasis(audience, disasterRecordsTable),
 	];
 
 	if (filters?.hazardType) {
@@ -553,6 +639,7 @@ function buildRecordConditions(
  */
 async function getDisasterRecordsForDivision(
 	countryAccountsId: string,
+	audience: ApprovalAudience,
 	divisionId: string,
 	filters?: GeographicFilters,
 	sectorIds: string[] = [],
@@ -571,7 +658,12 @@ async function getDisasterRecordsForDivision(
 			.from(disasterRecordsTable)
 			.where(
 				and(
-					...buildRecordConditions(countryAccountsId, filters, sectorIds),
+					...buildRecordConditions(
+						countryAccountsId,
+						audience,
+						filters,
+						sectorIds,
+					),
 					recordInDivisionCondition(
 						disasterRecordsTable,
 						divisionId,
@@ -597,20 +689,22 @@ async function getDisasterRecordsForDivision(
 
 export async function fetchGeographicImpactData(
 	countryAccountsId: string,
+	audience: ApprovalAudience,
 	divisionId: string,
 	filters?: GeographicFilters,
 ): Promise<{
-	totalDamage: number;
-	totalLoss: number;
+	totalDamage: MonetaryValue;
+	totalLoss: MonetaryValue;
 	byYear: Map<number, number>;
 	metadata?: DisasterImpactMetadata;
 }> {
+	const none = monetaryValue({ sum: null, reported: 0, total: 0 });
 	try {
 		// Validate division ID
 		if (!divisionId) {
 			return {
-				totalDamage: 0,
-				totalLoss: 0,
+				totalDamage: none,
+				totalLoss: none,
 				byYear: new Map(),
 				metadata: await createAssessmentMetadata("rapid", "low"),
 			};
@@ -619,14 +713,15 @@ export async function fetchGeographicImpactData(
 		// Get disaster records for the division with improved spatial handling
 		const recordIds = await getDisasterRecordsForDivision(
 			countryAccountsId,
+			audience,
 			divisionId,
 			filters,
 		);
 
 		if (recordIds.length === 0) {
 			return {
-				totalDamage: 0,
-				totalLoss: 0,
+				totalDamage: none,
+				totalLoss: none,
 				byYear: new Map(),
 				metadata: await createAssessmentMetadata("rapid", "low"),
 			};
@@ -636,8 +731,16 @@ export async function fetchGeographicImpactData(
 		const damageResult = await aggregateDamagesData(recordIds, []);
 		const lossResult = await aggregateLossesData(recordIds, []);
 
-		const { total: totalDamage } = damageResult;
-		const { total: totalLoss } = lossResult;
+		const totalDamage = monetaryValue({
+			sum: damageResult.total,
+			reported: damageResult.recordsReported,
+			total: recordIds.length,
+		});
+		const totalLoss = monetaryValue({
+			sum: lossResult.total,
+			reported: lossResult.recordsReported,
+			total: recordIds.length,
+		});
 
 		// Merge the yearly breakdowns
 		const byYear: Map<number, number> = new Map();
@@ -672,8 +775,8 @@ export async function fetchGeographicImpactData(
 			stack: error instanceof Error ? error.stack : undefined,
 		});
 		return {
-			totalDamage: 0,
-			totalLoss: 0,
+			totalDamage: none,
+			totalLoss: none,
 			byYear: new Map(),
 			metadata: await createAssessmentMetadata("rapid", "low"),
 		};
@@ -695,10 +798,10 @@ export async function fetchGeographicImpactData(
 async function aggregateDamagesData(
 	recordIds: string[],
 	sectorIds?: string[],
-): Promise<{ total: number; byYear: Map<number, number> }> {
+): Promise<CostAggregate> {
 	try {
 		if (recordIds.length === 0) {
-			return { total: 0, byYear: new Map() };
+			return NO_COST;
 		}
 
 		const yearExpr = extractYearFromDate(disasterRecordsTable.startDate);
@@ -707,14 +810,16 @@ async function aggregateDamagesData(
 		const sectorOverrides = await dr
 			.select({
 				year: yearExpr.as("year"),
-				totalDamage: sql<string>`COALESCE(SUM(
-                    CASE 
+				// NULL, not 0, when no override reported a cost (TR-076).
+				cost: sql<string | null>`SUM(
+                    CASE
                         WHEN ${sectorDisasterRecordsRelationTable.withDamage} = true AND ${sectorDisasterRecordsRelationTable.damageCost} IS NOT NULL
- THEN
-                            COALESCE(${sectorDisasterRecordsRelationTable.damageCost}, 0)::numeric
-                        ELSE 0
+                        THEN ${sectorDisasterRecordsRelationTable.damageCost}::numeric
                     END
-                ), 0)`,
+                )`,
+				reported: sql<string>`COUNT(DISTINCT ${disasterRecordsTable.id}) FILTER (
+                    WHERE ${sectorDisasterRecordsRelationTable.withDamage} = true AND ${sectorDisasterRecordsRelationTable.damageCost} IS NOT NULL
+                )`,
 			})
 			.from(disasterRecordsTable)
 			.innerJoin(
@@ -739,15 +844,28 @@ async function aggregateDamagesData(
 		const detailedDamages = await dr
 			.select({
 				year: yearExpr.as("year"),
-				totalDamage: sql<string>`COALESCE(SUM(
-                    CASE 
+				// A row counts only when it carries a cost: the override total,
+				// or an amount with its unit cost. NULL otherwise (TR-076).
+				cost: sql<string | null>`SUM(
+                    CASE
                         WHEN ${damagesTable.totalRepairReplacementOverride} = true THEN
-                            COALESCE(${damagesTable.totalRepairReplacement}, 0)::numeric
-                        ELSE
-                            COALESCE(${damagesTable.pdDamageAmount}, 0)::numeric * COALESCE(${damagesTable.pdRepairCostUnit}, 0)::numeric +
-                            COALESCE(${damagesTable.tdDamageAmount}, 0)::numeric * COALESCE(${damagesTable.tdReplacementCostUnit}, 0)::numeric
+                            ${damagesTable.totalRepairReplacement}::numeric
+                        WHEN (${damagesTable.pdDamageAmount} IS NOT NULL AND ${damagesTable.pdRepairCostUnit} IS NOT NULL)
+                            OR (${damagesTable.tdDamageAmount} IS NOT NULL AND ${damagesTable.tdReplacementCostUnit} IS NOT NULL) THEN
+                            COALESCE(${damagesTable.pdDamageAmount}::numeric * ${damagesTable.pdRepairCostUnit}::numeric, 0) +
+                            COALESCE(${damagesTable.tdDamageAmount}::numeric * ${damagesTable.tdReplacementCostUnit}::numeric, 0)
                     END
-                ), 0)`,
+                )`,
+				reported: sql<string>`COUNT(DISTINCT ${disasterRecordsTable.id}) FILTER (
+                    WHERE CASE
+                        WHEN ${damagesTable.totalRepairReplacementOverride} = true THEN
+                            ${damagesTable.totalRepairReplacement}::numeric
+                        WHEN (${damagesTable.pdDamageAmount} IS NOT NULL AND ${damagesTable.pdRepairCostUnit} IS NOT NULL)
+                            OR (${damagesTable.tdDamageAmount} IS NOT NULL AND ${damagesTable.tdReplacementCostUnit} IS NOT NULL) THEN
+                            COALESCE(${damagesTable.pdDamageAmount}::numeric * ${damagesTable.pdRepairCostUnit}::numeric, 0) +
+                            COALESCE(${damagesTable.tdDamageAmount}::numeric * ${damagesTable.tdReplacementCostUnit}::numeric, 0)
+                    END IS NOT NULL
+                )`,
 			})
 			.from(disasterRecordsTable)
 			.innerJoin(
@@ -788,44 +906,12 @@ async function aggregateDamagesData(
 			.groupBy(disasterRecordsTable.startDate)
 			.orderBy(yearExpr);
 
-		// Process results with safe numeric conversion
-		let total = 0;
-		const byYear = new Map<number, number>();
-
-		// Process sector overrides first
-		for (const row of sectorOverrides) {
-			// Undated rows stay in the total but have no year (C09).
-			if (row.year == null) {
-				continue;
-			}
-			const year = Number(row.year);
-			if (isNaN(year)) {
-				continue;
-			}
-
-			const damage = safeMoneyToNumber(row.totalDamage);
-			total += damage;
-			byYear.set(year, (byYear.get(year) || 0) + damage);
-		}
-
-		// Then add detailed damages where there are no overrides
-		for (const row of detailedDamages) {
-			// Undated rows stay in the total but have no year (C09).
-			if (row.year == null) {
-				continue;
-			}
-			const year = Number(row.year);
-			if (isNaN(year)) {
-				continue;
-			}
-
-			const damage = safeMoneyToNumber(row.totalDamage);
-
-			total += damage;
-			byYear.set(year, (byYear.get(year) || 0) + damage);
-		}
-
-		return { total, byYear };
+		// The two paths count disjoint records: the detailed path excludes
+		// records with a reported override, so the counts add.
+		return foldCostRows(
+			detailedDamages,
+			foldCostRows(sectorOverrides, NO_COST),
+		);
 	} catch (error) {
 		console.error("[DAMAGE_AGGREGATION] Error aggregating damages data:", {
 			recordIds: recordIds.slice(0, 5),
@@ -833,7 +919,7 @@ async function aggregateDamagesData(
 			error: error instanceof Error ? error.message : String(error),
 			stack: error instanceof Error ? error.stack : undefined,
 		});
-		return { total: 0, byYear: new Map() };
+		return NO_COST;
 	}
 }
 
@@ -853,10 +939,10 @@ async function aggregateDamagesData(
 async function aggregateLossesData(
 	recordIds: string[],
 	sectorIds?: string[],
-): Promise<{ total: number; byYear: Map<number, number> }> {
+): Promise<CostAggregate> {
 	try {
 		if (recordIds.length === 0) {
-			return { total: 0, byYear: new Map() };
+			return NO_COST;
 		}
 
 		const yearExpr = extractYearFromDate(disasterRecordsTable.startDate);
@@ -865,13 +951,16 @@ async function aggregateLossesData(
 		const sectorOverrides = await dr
 			.select({
 				year: yearExpr.as("year"),
-				totalLoss: sql<string>`COALESCE(SUM(
-                    CASE 
-                        WHEN ${sectorDisasterRecordsRelationTable.withLosses} = true AND ${sectorDisasterRecordsRelationTable.lossesCost} IS NOT NULL THEN
-                            COALESCE(${sectorDisasterRecordsRelationTable.lossesCost}, 0)::numeric
-                        ELSE 0
+				// NULL, not 0, when no override reported a cost (TR-076).
+				cost: sql<string | null>`SUM(
+                    CASE
+                        WHEN ${sectorDisasterRecordsRelationTable.withLosses} = true AND ${sectorDisasterRecordsRelationTable.lossesCost} IS NOT NULL
+                        THEN ${sectorDisasterRecordsRelationTable.lossesCost}::numeric
                     END
-                ), 0)`,
+                )`,
+				reported: sql<string>`COUNT(DISTINCT ${disasterRecordsTable.id}) FILTER (
+                    WHERE ${sectorDisasterRecordsRelationTable.withLosses} = true AND ${sectorDisasterRecordsRelationTable.lossesCost} IS NOT NULL
+                )`,
 			})
 			.from(disasterRecordsTable)
 			.innerJoin(
@@ -896,13 +985,20 @@ async function aggregateLossesData(
 		const detailedLosses = await dr
 			.select({
 				year: yearExpr.as("year"),
-				totalLoss: sql<string>`COALESCE(SUM(
-                    CASE 
+				// A row counts only when it carries a public or private cost; the
+				// per-row arithmetic is unchanged. NULL otherwise (TR-076).
+				cost: sql<string | null>`SUM(
+                    CASE WHEN (
+                        (${lossesTable.publicCostTotalOverride} = true AND ${lossesTable.publicCostTotal} IS NOT NULL)
+                        OR (${lossesTable.publicUnits} IS NOT NULL AND ${lossesTable.publicCostUnit} IS NOT NULL)
+                        OR (${lossesTable.privateCostTotalOverride} = true AND ${lossesTable.privateCostTotal} IS NOT NULL)
+                        OR (${lossesTable.privateUnits} IS NOT NULL AND ${lossesTable.privateCostUnit} IS NOT NULL)
+                    ) THEN
+                    CASE
                         WHEN ${lossesTable.publicCostTotalOverride} = true THEN
                             COALESCE(${lossesTable.publicCostTotal}, 0)::numeric
                         ELSE
-                            COALESCE(${lossesTable.publicUnits}, 0)::numeric * COALESCE(${lossesTable.publicCostUnit}, 0)::numeric +
-                            COALESCE(${lossesTable.privateCostTotal}, 0)::numeric
+                            COALESCE(${lossesTable.publicUnits}, 0)::numeric * COALESCE(${lossesTable.publicCostUnit}, 0)::numeric
                     END +
                     CASE 
                         WHEN ${lossesTable.privateCostTotalOverride} = true THEN
@@ -910,7 +1006,16 @@ async function aggregateLossesData(
                         ELSE
                             COALESCE(${lossesTable.privateUnits}, 0)::numeric * COALESCE(${lossesTable.privateCostUnit}, 0)::numeric
                     END
-                ), 0)`,
+                    END
+                )`,
+				reported: sql<string>`COUNT(DISTINCT ${disasterRecordsTable.id}) FILTER (
+                    WHERE (
+                        (${lossesTable.publicCostTotalOverride} = true AND ${lossesTable.publicCostTotal} IS NOT NULL)
+                        OR (${lossesTable.publicUnits} IS NOT NULL AND ${lossesTable.publicCostUnit} IS NOT NULL)
+                        OR (${lossesTable.privateCostTotalOverride} = true AND ${lossesTable.privateCostTotal} IS NOT NULL)
+                        OR (${lossesTable.privateUnits} IS NOT NULL AND ${lossesTable.privateCostUnit} IS NOT NULL)
+                    )
+                )`,
 			})
 			.from(disasterRecordsTable)
 			.innerJoin(lossesTable, eq(lossesTable.recordId, disasterRecordsTable.id))
@@ -948,45 +1053,8 @@ async function aggregateLossesData(
 			.groupBy(disasterRecordsTable.startDate)
 			.orderBy(yearExpr);
 
-		// Process results with safe numeric conversion
-		let total = 0;
-		const byYear = new Map<number, number>();
-
-		// Process sector overrides first
-		for (const row of sectorOverrides) {
-			// Undated rows stay in the total but have no year (C09).
-			if (row.year == null) {
-				continue;
-			}
-			const year = Number(row.year);
-			if (isNaN(year)) {
-				continue;
-			}
-
-			const loss = safeMoneyToNumber(row.totalLoss);
-
-			total += loss;
-			byYear.set(year, (byYear.get(year) || 0) + loss);
-		}
-
-		// Then add detailed losses where there are no overrides
-		for (const row of detailedLosses) {
-			// Undated rows stay in the total but have no year (C09).
-			if (row.year == null) {
-				continue;
-			}
-			const year = Number(row.year);
-			if (isNaN(year)) {
-				continue;
-			}
-
-			const loss = safeMoneyToNumber(row.totalLoss);
-
-			total += loss;
-			byYear.set(year, (byYear.get(year) || 0) + loss);
-		}
-
-		return { total, byYear };
+		// The two paths count disjoint records, as for damages.
+		return foldCostRows(detailedLosses, foldCostRows(sectorOverrides, NO_COST));
 	} catch (error) {
 		console.error("[LOSS_AGGREGATION] Error aggregating losses data:", {
 			recordIds: recordIds.slice(0, 5),
@@ -994,7 +1062,7 @@ async function aggregateLossesData(
 			error: error instanceof Error ? error.message : String(error),
 			stack: error instanceof Error ? error.stack : undefined,
 		});
-		return { total: 0, byYear: new Map() };
+		return NO_COST;
 	}
 }
 
@@ -1003,11 +1071,12 @@ async function aggregateLossesData(
  */
 export async function getGeographicImpactGeoJSON(
 	countryAccountsId: string,
+	audience: ApprovalAudience,
 	sectorId: string,
 	subSectorId?: string,
 ): Promise<GeoJSONFeatureCollection> {
 	try {
-		const result = await getGeographicImpact(countryAccountsId, {
+		const result = await getGeographicImpact(countryAccountsId, audience, {
 			sectorId,
 			subSectorId,
 		});
@@ -1061,8 +1130,16 @@ export async function getGeographicImpactGeoJSON(
 					name: division.name as Record<string, string>,
 					level: division.level,
 					parentId: division.parentId,
-					totalDamage: result.values[division.id.toString()]?.totalDamage ?? 0,
-					totalLoss: result.values[division.id.toString()]?.totalLoss ?? 0,
+					// null when not reported, never 0 (TR-076).
+					totalDamage:
+						result.values[division.id.toString()]?.totalDamage ?? null,
+					totalLoss: result.values[division.id.toString()]?.totalLoss ?? null,
+					damageValueState:
+						result.values[division.id.toString()]?.damage.valueState ??
+						"not_reported",
+					lossValueState:
+						result.values[division.id.toString()]?.loss.valueState ??
+						"not_reported",
 					dataAvailability:
 						result.values[division.id.toString()]?.dataAvailability ||
 						"no_data",

@@ -22,6 +22,9 @@ const ids = createTestIds();
 ids.userEmail = ids.userEmail.replace("@", "-totals@");
 const recordId = randomUUID();
 const dsgId = randomUUID();
+// Displaced split only by timing and duration, beside its total row.
+const splitRecordId = randomUUID();
+const splitDsgIds = [randomUUID(), randomUUID(), randomUUID()];
 
 describe("human-effect presence totals keep NULL", () => {
 	beforeAll(async () => {
@@ -36,10 +39,44 @@ describe("human-effect presence totals keep NULL", () => {
 		await dr.execute(sql`
 			INSERT INTO affected (dsg_id, direct, indirect) VALUES (${dsgId}, NULL, 5)
 		`);
+		await dr.execute(sql`
+			INSERT INTO disaster_records (id, country_accounts_id, "approvalStatus")
+			VALUES (${splitRecordId}, ${ids.countryAccountId}, 'draft')
+		`);
+		const [totalId, evacId, relocId] = splitDsgIds;
+		for (const id of splitDsgIds) {
+			await dr.execute(sql`
+				INSERT INTO human_dsg (id, record_id) VALUES (${id}, ${splitRecordId})
+			`);
+		}
+		await dr.execute(sql`
+			INSERT INTO displaced (dsg_id, displaced) VALUES (${totalId}, 27)
+		`);
+		await dr.execute(sql`
+			INSERT INTO displaced (dsg_id, displaced, timing)
+			VALUES (${evacId}, 27, 'pre-emptive')
+		`);
+		await dr.execute(sql`
+			INSERT INTO displaced (dsg_id, displaced, timing, duration)
+			VALUES (${relocId}, 27, 'reactive', 'permanent')
+		`);
 	});
 
 	afterAll(async () => {
 		await dr.execute(sql`DELETE FROM affected WHERE dsg_id = ${dsgId}`);
+		await dr.execute(sql`
+			DELETE FROM displaced WHERE dsg_id IN (
+				SELECT id FROM human_dsg WHERE record_id = ${splitRecordId})
+		`);
+		await dr.execute(
+			sql`DELETE FROM human_dsg WHERE record_id = ${splitRecordId}`,
+		);
+		await dr.execute(
+			sql`DELETE FROM human_category_presence WHERE record_id = ${splitRecordId}`,
+		);
+		await dr.execute(
+			sql`DELETE FROM disaster_records WHERE id = ${splitRecordId}`,
+		);
 		await dr.execute(sql`DELETE FROM human_dsg WHERE id = ${dsgId}`);
 		await dr.execute(
 			sql`DELETE FROM human_category_presence WHERE record_id = ${recordId}`,
@@ -70,5 +107,23 @@ describe("human-effect presence totals keep NULL", () => {
 		`);
 		expect(res.rows[0].affected_direct_total).toBeNull();
 		expect(Number(res.rows[0].affected_indirect_total)).toBe(5);
+	});
+
+	it("reads the total row of a record split only by timing and duration", async () => {
+		const defs = await defsForTable(
+			createTestBackendContext(),
+			dr,
+			"Displaced",
+			ids.countryAccountId,
+		);
+		// 27 evacuated and 27 relocated: the total is the all-empty row, 27,
+		// never the 54 of adding the typed rows.
+		const totals = await getTotalDsgTable(
+			dr as any,
+			"Displaced",
+			splitRecordId,
+			defs,
+		);
+		expect(totals).toEqual({ displaced: 27 });
 	});
 });

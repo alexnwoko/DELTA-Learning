@@ -1,4 +1,4 @@
-import { Form, useNavigation } from "react-router";
+import { Form, useNavigation, useSearchParams } from "react-router";
 import { TreeNode } from "primereact/treenode";
 import { TreeSelect, TreeSelectChangeEvent } from "primereact/treeselect";
 import React, { useState, useEffect, useRef } from "react";
@@ -165,6 +165,9 @@ const HazardFilters: React.FC<FiltersProps> = ({
 		? specificHazards.filter((hazard) => hazard.clusterId === hazardClusterId)
 		: [];
 
+	const [searchParams] = useSearchParams();
+	const basisParam = searchParams.get("basis");
+
 	return (
 		<div className="relative">
 			<Toast ref={toast} position="top-center" />
@@ -173,6 +176,12 @@ const HazardFilters: React.FC<FiltersProps> = ({
 				onSubmit={handleApply}
 				className={isSubmitting ? "opacity-60 pointer-events-none" : ""}
 			>
+				{/* Approval basis from the page address (AB-01, ruling D7):
+				    ?basis=provisional asks for the reviewer basis; the server
+				    refuses it (403) for anyone without ValidateData. */}
+				{basisParam === "provisional" && (
+					<input type="hidden" name="basis" value="provisional" />
+				)}
 				{/* First Row */}
 				<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 					<div className="dts-form-component">

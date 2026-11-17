@@ -24,6 +24,7 @@ const rec = { shared: randomUUID(), silent: randomUUID() };
 
 const filters = () => ({
 	countryAccountsId: ids.countryAccountId,
+	audience: "public",
 	hazardTypeId: null,
 	hazardClusterId: null,
 	specificHazardId: null,

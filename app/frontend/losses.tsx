@@ -295,7 +295,7 @@ export function LossesView(props: LossesViewProps) {
 		sectorIsAgriculture: null,
 		recordId: (
 			<p key="recordId">
-				{ctx.t({ code: "disaster_records.id", msg: "Disaster record ID" })}:{" "}
+				{ctx.t({ code: "disaster_records.id", msg: "Disaster impact ID" })}:{" "}
 				{props.item.recordId}
 			</p>
 		),

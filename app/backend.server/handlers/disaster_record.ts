@@ -1,4 +1,9 @@
 import { sectorDisasterRecordsRelationTable } from "~/drizzle/schema/sectorDisasterRecordsRelationTable";
+import {
+	approvalBasis,
+	provisionalSql,
+	dataViewerListBasis,
+} from "~/utils/approvalBasis";
 import { disasterRecordsTable } from "~/drizzle/schema/disasterRecordsTable";
 import { disasterEventTable } from "~/drizzle/schema/disasterEventTable";
 
@@ -97,8 +102,9 @@ export async function disasterRecordLoader(args: disasterRecordLoaderArgs) {
 		countryAccountsId
 			? eq(disasterRecordsTable.countryAccountsId, countryAccountsId)
 			: undefined,
+		// C23: public requests see the public approval basis only.
 		filters.approvalStatus
-			? eq(disasterRecordsTable.approvalStatus, filters.approvalStatus)
+			? approvalBasis("public", disasterRecordsTable)
 			: undefined,
 		filters.disasterEventUUID
 			? eq(disasterRecordsTable.disasterEventId, filters.disasterEventUUID)
@@ -202,12 +208,12 @@ export async function disasterRecordLoader(args: disasterRecordLoaderArgs) {
 				: undefined,
 	);
 
-	// in case of data viewer role, force the filter on approvalStatus to validated and published
-	if (userRole === 'data-viewer') {
-		baseCondition = and(baseCondition, or(
-			eq(disasterRecordsTable.approvalStatus, "validated"),
-			eq(disasterRecordsTable.approvalStatus, "published")
-		));
+	// in case of data viewer role, force the filter on approvalStatus to validated and published (TR-192: list held in approvalBasis)
+	if (userRole === "data-viewer") {
+		baseCondition = and(
+			baseCondition,
+			dataViewerListBasis(disasterRecordsTable.approvalStatus),
+		);
 	}
 
 	// count and select must now join the disasterEventTable
@@ -244,6 +250,8 @@ export async function disasterRecordLoader(args: disasterRecordLoaderArgs) {
 				id: disasterRecordsTable.id,
 				disasterEventId: disasterRecordsTable.disasterEventId,
 				approvalStatus: disasterRecordsTable.approvalStatus,
+				// C23: migrated and not yet published, labelled "Provisional".
+				provisional: provisionalSql(disasterRecordsTable),
 				startDate: disasterRecordsTable.startDate,
 				endDate: disasterRecordsTable.endDate,
 				createdAt: disasterRecordsTable.createdAt,

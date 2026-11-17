@@ -106,6 +106,28 @@ export async function getDescendantDivisionIds(
 }
 
 /**
+ * SQL subquery for a division and all of its descendants within one tenant,
+ * for use as `column IN (...)` inside larger raw queries. Empty when the
+ * division does not belong to the tenant (fails closed).
+ */
+export function divisionAndDescendantsSql(
+	divisionId: string,
+	countryAccountsId: string,
+): SQL {
+	return sql`(
+		WITH RECURSIVE tree AS (
+			SELECT id FROM division
+			WHERE id = ${divisionId}::uuid AND country_accounts_id = ${countryAccountsId}
+			UNION
+			SELECT d.id FROM division d
+			JOIN tree t ON d.parent_id = t.id
+			WHERE d.country_accounts_id = ${countryAccountsId}
+		)
+		SELECT id FROM tree
+	)`;
+}
+
+/**
  * True when a disaster record falls within a division: it is linked to the
  * division or one of its descendants (disaster_records_division), or one of
  * its drawn geometries intersects the division (disaster_records_geom).

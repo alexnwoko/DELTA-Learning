@@ -26,6 +26,10 @@ import { InputTextarea } from "primereact/inputtextarea";
 import { Toast } from "primereact/toast";
 import { TreeSelect } from "primereact/treeselect";
 import { ViewContext } from "~/frontend/context";
+import {
+	UnsavedChangesDialog,
+	useUnsavedChangesGuard,
+} from "~/frontend/form/unsavedChanges";
 import { copyTextToClipboardWithToast } from "~/frontend/utils/clipboard";
 import {
 	normalizeDetailTypeValue,
@@ -667,6 +671,21 @@ function StepperValidation({
 		recordingOrganizationName:
 			eventBasicsInitialValues.recordingOrganizationName,
 	});
+
+	// Ask before leaving with unsaved changes (TR-251). Most fields are
+	// controlled PrimeReact widgets, so "edited" also compares the form
+	// state with how it opened. The dialogs opened as sub-pages of this form
+	// stay inside its scope and never ask.
+	const unsavedFormRef = useRef<HTMLFormElement>(null);
+	const formSnapshot = useMemo(() => JSON.stringify(form), [form]);
+	const initialFormSnapshot = useRef(formSnapshot);
+	const { blocker: unsavedBlocker, allowLeave } = useUnsavedChangesGuard(
+		unsavedFormRef,
+		{
+			isDirty: formSnapshot !== initialFormSnapshot.current,
+			scopeToMountPath: true,
+		},
+	);
 
 	const parseDateWithPrecision = (
 		value: string | null | undefined,
@@ -2106,6 +2125,8 @@ function StepperValidation({
 
 	const discardAndExit = () => {
 		setVisibleExitModal(false);
+		// The user confirmed in the exit dialog: do not ask again.
+		allowLeave();
 		document.location.href = ctx.url("/disaster-event");
 	};
 
@@ -3637,7 +3658,12 @@ function StepperValidation({
 		`}</style>
 			<div className="mg-container">
 				<section className="dts-page-section">
-					<RouterForm id="disaster-event-stepper-form" method="post">
+					<RouterForm
+						ref={unsavedFormRef}
+						id="disaster-event-stepper-form"
+						method="post"
+					>
+						<UnsavedChangesDialog ctx={ctx} blocker={unsavedBlocker} />
 						<input
 							type="hidden"
 							id="tempValidatorUserIds"
@@ -4622,13 +4648,13 @@ function StepperValidation({
 									<h2 className="text-[18px] leading-[24px] font-semibold text-slate-800 tracking-[-0.01em]">
 										{ctx.t({
 											code: "disaster_event.review.linked_disaster_records",
-											msg: "Linked disaster records",
+											msg: "Linked disaster impacts",
 										})}
 									</h2>
 									<p className="mt-2 text-[14px] leading-[22px] text-slate-500">
 										{ctx.t({
 											code: "disaster_event.form.linked_disaster_records_description",
-											msg: "Link this disaster event to related disaster records.",
+											msg: "Link this disaster event to related disaster impacts.",
 										})}
 									</p>
 									<div className="mt-2.5">
@@ -4639,7 +4665,7 @@ function StepperValidation({
 													? ctx.t({ code: "common.opening", msg: "Opening..." })
 													: ctx.t({
 															code: "disaster_event.form.manage_linked_disaster_records",
-															msg: "Manage linked disaster records",
+															msg: "Manage linked disaster impacts",
 														})
 											}
 											outlined
@@ -4652,7 +4678,7 @@ function StepperValidation({
 											{isOpeningLinkedDisasterRecordsModal
 												? ctx.t({
 														code: "disaster_event.form.loading_linked_disaster_records_selector",
-														msg: "Loading linked disaster records selector",
+														msg: "Loading linked disaster impacts selector",
 													})
 												: ""}
 										</span>

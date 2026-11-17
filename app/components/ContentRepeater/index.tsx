@@ -23,6 +23,8 @@ import {
 import "./assets/content-repeater.css";
 import "./assets/mapper.css";
 import { ViewContext } from "~/frontend/context";
+import { dataEntryBasemap } from "~/utils/leafletBasemap";
+import { LEAFLET_CSS, LEAFLET_DRAW_CSS, LEAFLET_DRAW_JS, LEAFLET_JS, MAP_MARKER_ICON, MAP_MARKER_ICON_ANCHOR } from "~/utils/leafletAssets";
 
 declare namespace L {
 	export const map: any;
@@ -47,8 +49,6 @@ declare namespace L {
 }
 
 //Mapper
-const glbMapperJS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-const glbMapperCSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
 const glbColors = {
 	polygon: "#0074D9",
 	line: "#FF851B",
@@ -58,9 +58,9 @@ const glbColors = {
 	geographic_level: "#fc9003",
 };
 const glbMarkerIcon = {
-	iconUrl: "https://maps.google.com/mapfiles/ms/icons/red-dot.png", // Replace with your marker icon if necessary
+	iconUrl: MAP_MARKER_ICON,
 	iconSize: [20, 20],
-	iconAnchor: [5, 20],
+	iconAnchor: MAP_MARKER_ICON_ANCHOR,
 	popupAnchor: [0, -20],
 	shadowUrl: null, // Remove shadow
 	className: "custom-leaflet-marker", // Add a custom class
@@ -139,22 +139,20 @@ const loadLeaflet = (() => {
 		if (!isLoaded) {
 			const leafletCSS = document.createElement("link");
 			leafletCSS.rel = "stylesheet";
-			leafletCSS.href = glbMapperCSS;
+			leafletCSS.href = LEAFLET_CSS;
 			document.head.appendChild(leafletCSS);
 
 			const leafletJS = document.createElement("script");
-			leafletJS.src = glbMapperJS;
+			leafletJS.src = LEAFLET_JS;
 			leafletJS.async = true;
 			leafletJS.onload = () => {
 				const leafletDrawCSS = document.createElement("link");
 				leafletDrawCSS.rel = "stylesheet";
-				leafletDrawCSS.href =
-					"https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css";
+				leafletDrawCSS.href = LEAFLET_DRAW_CSS;
 				document.head.appendChild(leafletDrawCSS);
 
 				const leafletDrawJS = document.createElement("script");
-				leafletDrawJS.src =
-					"https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js";
+				leafletDrawJS.src = LEAFLET_DRAW_JS;
 				leafletDrawJS.async = true;
 				leafletDrawJS.onload = () => {
 					console.log("Leaflet and Leaflet.draw loaded successfully.");
@@ -164,36 +162,65 @@ const loadLeaflet = (() => {
 				const style = document.createElement("style");
 				style.type = "text/css";
 				style.innerHTML = `
-          .leaflet-container svg {
-            width: auto !important;
-            height: auto !important;
-          }
+			.leaflet-container svg {
+				width: auto !important;
+				height: auto !important;
+			}
 
-          .leaflet-marker-icon {
-            width: 10px !important;
-            height: 10px !important;
-            margin-left: -5px !important;
-            margin-top: -5px !important;
-          }
+			.leaflet-marker-icon {
+				width: 10px !important;
+				height: 10px !important;
+				margin-left: -5px !important;
+				margin-top: -5px !important;
+			}
 
-          .custom-leaflet-marker {
-            width: 20px !important;
-            height: 20px !important;
-            margin-left: -5px !important;
-            margin-top: -20px !important;
-          }
+			.custom-leaflet-marker {
+				width: 20px !important;
+				height: 20px !important;
+				margin-left: -5px !important;
+				margin-top: -20px !important;
+			}
 
-          .content-repeater-mapper {
-            position: fixed;
-            width: 100vw !important;
-            height: 100vh !important;
-            margin: 0;
-            border: none;
-            background-color: white;
-            z-index: 9999;
-            max-width: none !important;
-            max-height: none !important;
-          }
+			.content-repeater-mapper {
+				position: fixed;
+				width: 100vw !important;
+				height: 100vh !important;
+				margin: 0;
+				border: none;
+				background-color: white;
+				z-index: 9999;
+				max-width: none !important;
+				max-height: none !important;
+			}
+
+			@media (max-width: 767px) {
+				.content-repeater-mapper .mapper-menu {
+					gap: 8px !important;
+					padding: 8px !important;
+				}
+
+				.content-repeater-mapper .mapper-menu input,
+				.content-repeater-mapper .mapper-menu select {
+					flex: 1 1 100% !important;
+					min-width: 0 !important;
+					width: 100% !important;
+					margin-right: 0 !important;
+				}
+
+				.content-repeater-mapper .mapper-menu > div {
+					display: flex !important;
+					flex-wrap: wrap !important;
+					gap: 8px !important;
+					margin-left: 0 !important;
+					width: 100% !important;
+				}
+
+				.content-repeater-mapper .mapper-menu > div > button {
+					flex: 1 1 calc(33.33% - 6px) !important;
+					min-width: 96px;
+					font-size: 0.95rem !important;
+				}
+			}
         `;
 				document.head.appendChild(style);
 			};
@@ -447,7 +474,7 @@ export const ContentRepeater = forwardRef<HTMLDivElement, ContentRepeaterProps>(
 			bounds?: [[number, number], [number, number]];
 		}> => {
 			const iso3 = ctryIso3; // Default country code
-			const apiUrl = `https://data.undrr.org/api/json/gis/countries/1.0.0/?cca3=${iso3}`;
+			const apiUrl = `https://data.undrr.org/api/json/gis/countries/1.0.0/?cca3=${encodeURIComponent(iso3 ?? "")}`;
 
 			// Default location (Urumqi)
 			const defaultCoords: [number, number] = [43.833, 87.616];
@@ -477,7 +504,7 @@ export const ContentRepeater = forwardRef<HTMLDivElement, ContentRepeaterProps>(
 				if (!cca2) throw new Error(`Country code not found for ${iso3}`);
 
 				// Step 2: Fetch Country Center & Bounds from Nominatim
-				const nominatimUrl = `https://nominatim.openstreetmap.org/search?country=${cca2}&format=json&limit=1&polygon_geojson=1`;
+				const nominatimUrl = `https://nominatim.openstreetmap.org/search?country=${encodeURIComponent(cca2)}&format=json&limit=1&polygon_geojson=1`;
 				const responseNominatim = await fetch(nominatimUrl);
 
 				if (!responseNominatim.ok)
@@ -555,13 +582,14 @@ export const ContentRepeater = forwardRef<HTMLDivElement, ContentRepeaterProps>(
 				// Initialize the map
 				const { coords, bounds } = await defaultMapLocation();
 				mapRef.current = L.map(`${id}_mapper_container`, { dragging: true });
-				L.tileLayer(
-					"https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-					{
-						attribution:
-							'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
-					},
-				).addTo(mapRef.current);
+				// Self-hosted basemap only, with attribution (SEC-20, TR-166).
+				const basemap = dataEntryBasemap();
+				if (basemap) {
+					L.tileLayer(basemap.url, {
+						attribution: basemap.attribution,
+						maxZoom: basemap.maxZoom,
+					}).addTo(mapRef.current);
+				}
 				if (bounds) {
 					mapRef.current.fitBounds(bounds, { padding: [50, 50] });
 				} else {

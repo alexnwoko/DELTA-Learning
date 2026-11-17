@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
+	compositeValue,
 	measureValue,
+	monetaryValue,
 	PROVISIONAL_ZERO_COVERAGE,
 	VALUE_STATES,
 } from "~/utils/valueState";
@@ -124,5 +126,61 @@ describe("valueState", () => {
 				total: 1,
 			} as any),
 		).toMatchObject({ value: null, valueState: "not_reported" });
+	});
+});
+
+describe("monetaryValue (no tri-state source, PD-04:596)", () => {
+	it("returns null and not_reported when no record reported a cost", () => {
+		expect(monetaryValue({ sum: null, reported: 0, total: 3 })).toEqual({
+			value: null,
+			valueState: "not_reported",
+			recordsReported: 0,
+			recordsNotReported: 3,
+			recordsTotal: 3,
+		});
+	});
+
+	it("returns the sum and reported when a record reported a cost", () => {
+		expect(
+			monetaryValue({ sum: "150.5", reported: 2, total: 3 }),
+		).toMatchObject({
+			value: 150.5,
+			valueState: "reported",
+			recordsNotReported: 1,
+		});
+	});
+
+	it("treats a summed 0 as a reported 0, never zero_confirmed", () => {
+		expect(monetaryValue({ sum: 0, reported: 1, total: 1 })).toMatchObject({
+			value: 0,
+			valueState: "reported",
+		});
+	});
+});
+
+describe("compositeValue", () => {
+	const r = (value: number) => ({ value, valueState: "reported" as const });
+	const nr = { value: null, valueState: "not_reported" as const };
+	const z = { value: 0, valueState: "zero_confirmed" as const };
+
+	it("sums reported parts and flags a partial figure", () => {
+		expect(compositeValue([r(3), nr, r(4)])).toEqual({
+			value: 7,
+			valueState: "reported",
+			partial: true,
+		});
+		expect(compositeValue([r(3), z])).toMatchObject({ partial: false });
+	});
+
+	it("is not_reported, never 0, when no part was reported", () => {
+		expect(compositeValue([nr, z])).toEqual({
+			value: null,
+			valueState: "not_reported",
+			partial: false,
+		});
+		expect(compositeValue([z, z])).toMatchObject({
+			value: 0,
+			valueState: "zero_confirmed",
+		});
 	});
 });

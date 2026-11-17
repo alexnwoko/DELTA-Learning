@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import MapChart, { MapChartRef } from "~/components/MapChart";
 import { ViewContext } from "~/frontend/context";
+import type { MapScopeQuery, MeasureFamily } from "~/utils/mapState";
 
 interface HazardImpactMap2Props {
 	ctx: ViewContext;
@@ -12,6 +13,8 @@ interface HazardImpactMap2Props {
 	disasterEventGeoData: any[];
 	affectedPeopleGeoData: any[];
 	deathsGeoData: any[];
+	/** The query behind the figures, for the map scope label. */
+	scope?: MapScopeQuery;
 }
 
 const HazardImpactMap2: React.FC<HazardImpactMap2Props> = ({
@@ -24,9 +27,12 @@ const HazardImpactMap2: React.FC<HazardImpactMap2Props> = ({
 	disasterEventGeoData,
 	affectedPeopleGeoData,
 	deathsGeoData,
+	scope,
 }) => {
 	const mapChartRef = useRef<MapChartRef>(null);
 	const [activeData, setActiveData] = useState(damagesGeoData);
+	// Ramp per measure family (V-2).
+	const [family, setFamily] = useState<MeasureFamily>("money");
 
 	// Update map data and tab states when geo-data props change (e.g., after applying filters)
 	useEffect(() => {
@@ -35,6 +41,7 @@ const HazardImpactMap2: React.FC<HazardImpactMap2Props> = ({
 		mapChartRef.current?.setDataSource(damagesGeoData);
 		mapChartRef.current?.setLegendTitle(`Total damages in ${localCurrency}`);
 		mapChartRef.current?.setLegendMaxColor("#208f04");
+		setFamily("money");
 
 		// Set "Total damages" tab as selected
 		document.getElementById("tab01")?.setAttribute("aria-selected", "true");
@@ -55,6 +62,7 @@ const HazardImpactMap2: React.FC<HazardImpactMap2Props> = ({
 		e: React.MouseEvent<HTMLButtonElement>,
 		data: any,
 		legendMaxColor: string,
+		measureFamily: MeasureFamily,
 	) => {
 		if (!e || !e.currentTarget) {
 			console.error("Event is undefined or does not have a target.");
@@ -74,6 +82,7 @@ const HazardImpactMap2: React.FC<HazardImpactMap2Props> = ({
 		mapChartRef.current?.setDataSource(data);
 		mapChartRef.current?.setLegendTitle(buttonText);
 		mapChartRef.current?.setLegendMaxColor(legendMaxColor);
+		setFamily(measureFamily);
 
 		// Update aria-selected state for tabs
 		document
@@ -144,7 +153,9 @@ const HazardImpactMap2: React.FC<HazardImpactMap2Props> = ({
 				<ul className="dts-tablist" role="tablist" aria-labelledby="tablist01">
 					<li role="presentation">
 						<button
-							onClick={(e) => handleSwitchMapData(e, damagesGeoData, "#208f04")}
+							onClick={(e) =>
+								handleSwitchMapData(e, damagesGeoData, "#208f04", "money")
+							}
 							type="button"
 							className="dts-tablist__button"
 							role="tab"
@@ -166,7 +177,9 @@ const HazardImpactMap2: React.FC<HazardImpactMap2Props> = ({
 					</li>
 					<li role="presentation">
 						<button
-							onClick={(e) => handleSwitchMapData(e, lossesGeoData, "#ff1010")}
+							onClick={(e) =>
+								handleSwitchMapData(e, lossesGeoData, "#ff1010", "money")
+							}
 							type="button"
 							className="dts-tablist__button"
 							role="tab"
@@ -189,7 +202,12 @@ const HazardImpactMap2: React.FC<HazardImpactMap2Props> = ({
 					<li role="presentation">
 						<button
 							onClick={(e) =>
-								handleSwitchMapData(e, disasterEventGeoData, "#58508d")
+								handleSwitchMapData(
+									e,
+									disasterEventGeoData,
+									"#58508d",
+									"events",
+								)
 							}
 							type="button"
 							className="dts-tablist__button"
@@ -211,7 +229,12 @@ const HazardImpactMap2: React.FC<HazardImpactMap2Props> = ({
 					<li role="presentation">
 						<button
 							onClick={(e) =>
-								handleSwitchMapData(e, affectedPeopleGeoData, "#208f04")
+								handleSwitchMapData(
+									e,
+									affectedPeopleGeoData,
+									"#208f04",
+									"people",
+								)
 							}
 							type="button"
 							className="dts-tablist__button"
@@ -232,7 +255,9 @@ const HazardImpactMap2: React.FC<HazardImpactMap2Props> = ({
 					</li>
 					<li role="presentation">
 						<button
-							onClick={(e) => handleSwitchMapData(e, deathsGeoData, "#ff1010")}
+							onClick={(e) =>
+								handleSwitchMapData(e, deathsGeoData, "#ff1010", "people")
+							}
 							type="button"
 							className="dts-tablist__button"
 							role="tab"
@@ -264,6 +289,8 @@ const HazardImpactMap2: React.FC<HazardImpactMap2Props> = ({
 								id="map_viewer"
 								dataSource={activeData}
 								legendMaxColor="#208f04"
+								measureFamily={family}
+								scope={scope}
 							/>
 						</div>
 					</div>

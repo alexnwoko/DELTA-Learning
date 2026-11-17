@@ -1,0 +1,104 @@
+/*
+ * Print view (TR-246). Printing a page, or saving it as PDF from the
+ * browser, keeps the content and its notes and drops the site chrome.
+ *
+ * The site header is the <header> just before <main> and the footer the
+ * <footer> just after it (root.tsx), so page-level headers such as the
+ * page title or a dossier heading are kept. Anything marked
+ * data-print="hide" (buttons, filters, menus) is dropped.
+ */
+@media print {
+	@page {
+		margin: 15mm 12mm;
+	}
+
+	/* Keep map, chart and state colours: they carry meaning (TR-076). */
+	* {
+		-webkit-print-color-adjust: exact;
+		print-color-adjust: exact;
+	}
+
+	html,
+	body {
+		background: var(--delta-brand-surface) !important;
+		color: var(--delta-brand-text) !important;
+	}
+
+	/* Paper is white: no canvas tint, no layer shadows (FE-Proposal-03). */
+	main {
+		background: none !important;
+	}
+	.delta-layer {
+		box-shadow: none !important;
+	}
+
+	/* Every level of the dashboard prints as plain blocks (data-print="flow"
+	   on grids, cards and figures), and a scrolling box opens in full, so a
+	   card pushed to the next page pushes "About the data" down with it
+	   instead of being drawn under it (Alex, 2026-10-19, second report). */
+	.delta-dashboard-canvas .overflow-x-auto,
+	.delta-dashboard-canvas .overflow-auto {
+		overflow: visible !important;
+		max-height: none !important;
+	}
+
+	header:has(~ main),
+	main ~ footer,
+	nav,
+	[role="navigation"],
+	[data-print="hide"],
+	.p-menubar,
+	.p-toast,
+	.p-dialog-mask,
+	.p-tooltip {
+		display: none !important;
+	}
+
+	main > div {
+		padding: 0 !important;
+	}
+
+	/* Layout columns print as plain blocks, one section after another.
+	   Chrome does not pass the height that page breaks add inside a nested
+	   flex item (a card pushed to the next page) up to the flex container
+	   around it, so the next section was drawn over the one before it:
+	   "About the data" over the Sendai section. The margin stands in for
+	   the flex gap. */
+	[data-print="flow"] {
+		display: block !important;
+	}
+
+	[data-print="flow"] > * + * {
+		margin-top: 1rem;
+	}
+
+	/* A section's own header prints whole and stays with what follows it. */
+	[data-print="flow"] > header:first-child {
+		break-inside: avoid;
+		break-after: avoid;
+	}
+
+	/* Do not split a figure, a table row or a report section mid-way. */
+	figure,
+	tr,
+	[data-print="keep"] {
+		break-inside: avoid;
+	}
+
+	h1,
+	h2,
+	h3 {
+		break-after: avoid;
+	}
+
+	/* Disclosed data tables print open, so the numbers are on paper too. */
+	[data-print="expand"] [hidden] {
+		display: block !important;
+	}
+
+	a[href^="http"]::after {
+		content: " (" attr(href) ")";
+		font-size: 0.85em;
+		word-break: break-all;
+	}
+}

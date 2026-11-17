@@ -239,7 +239,7 @@ export default function LinkedDisasterRecordsModalRoute() {
 					<h3 className="text-[18px] font-semibold text-slate-800">
 						{ctx.t({
 							code: "disaster_event.form.manage_linked_disaster_records",
-							msg: "Manage linked disaster records",
+							msg: "Manage linked disaster impacts",
 						})}
 					</h3>
 					<Button
@@ -256,7 +256,7 @@ export default function LinkedDisasterRecordsModalRoute() {
 				<p className="mb-4 text-[13px] text-slate-500">
 					{ctx.t({
 						code: "disaster_event.form.linked_records_search_description",
-						msg: "Search and select disaster records to link this disaster event.",
+						msg: "Search and select disaster impacts to link this disaster event.",
 					})}
 				</p>
 

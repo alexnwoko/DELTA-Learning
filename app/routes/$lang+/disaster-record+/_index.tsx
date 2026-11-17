@@ -1,4 +1,5 @@
 import { disasterRecordLoader } from "~/backend.server/handlers/disaster_record";
+import { ProvisionalBadge } from "~/frontend/analytics/ProvisionalFiguresNotice";
 
 import { DataScreen } from "~/frontend/data_screen";
 
@@ -47,7 +48,7 @@ export const meta: MetaFunction = ({ params }) => {
 				ctx,
 				ctx.t({
 					code: "disaster_records",
-					msg: "Disaster records",
+					msg: "Disaster impacts",
 				}),
 			),
 		},
@@ -55,7 +56,7 @@ export const meta: MetaFunction = ({ params }) => {
 			name: "description",
 			content: ctx.t({
 				code: "disaster_records",
-				msg: "Disaster records",
+				msg: "Disaster impacts",
 			}),
 		},
 	];
@@ -117,13 +118,13 @@ export default function Data() {
 		isPublic: ld.isPublic,
 		title: ctx.t({
 			code: "disaster_records",
-			msg: "Disaster records",
+			msg: "Disaster impacts",
 		}),
 		countHeader: ctx.t(
 			{
 				code: "disaster_record.count_header",
-				desc: "Header text showing total number of disaster records and instance name. {total_items} is the number of records, {instance_name} is the name of the current instance.",
-				msg: "{total_items} disaster records in {instance_name}",
+				desc: "Header text showing total number of disaster impacts and instance name. {total_items} is the number of records, {instance_name} is the name of the current instance.",
+				msg: "{total_items} disaster impacts in {instance_name}",
 			},
 			{
 				total_items: pagination.totalItems,
@@ -132,7 +133,7 @@ export default function Data() {
 		),
 		addNewLabel: ctx.t({
 			code: "disaster_record.add_new",
-			msg: "Add new disaster record",
+			msg: "Add new disaster impact",
 		}),
 		baseRoute: route,
 		columns: columns,
@@ -164,8 +165,8 @@ export default function Data() {
 									{ctx.t(
 										{
 											code: "disaster_records.showing_filtered_of_total",
-											desc: "Shows how many disaster events are displayed. {filtered} is the number of matching events, {total} is the total number of events.",
-											msg: "Showing {filtered} of {total} disaster record(s)",
+											desc: "Shows how many disaster impacts are displayed. {filtered} is the number of matching disaster impacts, {total} is the total number of disaster impacts.",
+											msg: "Showing {filtered} of {total} disaster impact(s)",
 										},
 										{
 											filtered:
@@ -204,6 +205,7 @@ export default function Data() {
 							data-pr-position="top"
 						></span>
 						{} {approvalStatusKeyToLabel(ctx, item.approvalStatus)}
+						<ProvisionalBadge ctx={ctx} show={item.provisional} />
 					</td>
 				)}
 				<td>

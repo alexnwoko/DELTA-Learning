@@ -89,7 +89,13 @@ const HorizontalBarChart: React.FC<HorizontalBarChartProps> = ({
 					<YAxis type="category" dataKey="name" />
 					<Legend align="left" />
 					{dataKeys.map((key, index) => (
-						<Bar key={key} dataKey={key} fill={colors[index % colors.length]} />
+						<Bar
+							key={key}
+							dataKey={key}
+							fill={colors[index % colors.length]}
+							// Rounded at the value end (Alex, 2026-10-17).
+							radius={[0, 6, 6, 0]}
+						/>
 					))}
 				</BarChart>
 			</ResponsiveContainer>

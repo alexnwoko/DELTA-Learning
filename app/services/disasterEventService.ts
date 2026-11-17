@@ -77,7 +77,7 @@ export async function updateDisasterEventStatusService({
 			ok: false,
 			message: ctx.t({
 				code: "common_err_msg.event_requires_linked_record",
-				msg: "A validated or published disaster event must have at least one associated published or validated disaster record.",
+				msg: "A validated or published disaster event must have at least one associated published or validated disaster impact.",
 			}),
 		};
 	}

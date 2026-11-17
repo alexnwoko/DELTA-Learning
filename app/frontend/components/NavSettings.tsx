@@ -13,22 +13,8 @@ export function NavSettings({ ctx, userRole = "" }: NavSettingsProps) {
     const navigate = useNavigate();
 
     const menu = useMemo(() => {
-        if (location.pathname.includes("/analytics")) {
-            return [
-                {
-                    link: "analytics/sectors",
-                    text: ctx.t({ code: "nav.sectors", msg: "Sectors" }),
-                },
-                {
-                    link: "analytics/hazards",
-                    text: ctx.t({ code: "nav.hazards", msg: "Hazards" }),
-                },
-                {
-                    link: "analytics/disaster-events",
-                    text: ctx.t({ code: "nav.disaster_events", msg: "Disaster events" }),
-                },
-            ];
-        }
+        // The Analysis pages are one dashboard with its own buttons
+        // (Alex, 2026-10-17), so they have no sub-menu here.
 
         if (location.pathname.includes("/settings")) {
             if (userRole !== "admin") {

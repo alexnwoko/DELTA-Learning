@@ -1,14 +1,25 @@
 // Review queue for records whose source values were flagged as implausible
 // during migration (solution pack C30). Values are never changed here: the
 // national focal point reviews each record and corrects it through the normal
-// record screens if needed.
+// record screens if needed. React Aria components (TR-249, D-06 Type C).
 import { useMemo, useState } from "react";
 import { useLoaderData } from "react-router";
-import { DataTable } from "primereact/datatable";
-import { Column } from "primereact/column";
-import { Dropdown } from "primereact/dropdown";
-import { Paginator } from "primereact/paginator";
-import { Tag } from "primereact/tag";
+import {
+	Button,
+	Cell,
+	Column,
+	Key,
+	Label,
+	ListBox,
+	ListBoxItem,
+	Popover,
+	Row,
+	Select,
+	SelectValue,
+	Table,
+	TableBody,
+	TableHeader,
+} from "react-aria-components";
 
 import { MainContainer } from "~/frontend/container";
 import { ViewContext } from "~/frontend/context";
@@ -78,6 +89,16 @@ export default function PlausibilityReviewPage() {
 					code: "plausibility.measure.displaced",
 					msg: "Displaced",
 				});
+			case "evacuated":
+				return ctx.t({
+					code: "plausibility.measure.evacuated",
+					msg: "Evacuated",
+				});
+			case "relocated":
+				return ctx.t({
+					code: "plausibility.measure.relocated",
+					msg: "Relocated",
+				});
 			case "affected_direct":
 				return ctx.t({
 					code: "plausibility.measure.affected_direct",
@@ -136,9 +157,12 @@ export default function PlausibilityReviewPage() {
 	);
 	const page = filtered.slice(first, first + rows);
 
-	const headerClass =
-		"bg-gray-100 px-2 py-3 text-left font-medium border-b border-gray-200";
-	const bodyClass = "px-2 py-3 border-b border-gray-200 align-top";
+	const pageCount = Math.max(1, Math.ceil(filtered.length / rows));
+	const pageIndex = Math.floor(first / rows);
+
+	const cellClass = "px-2 py-3 border-b border-brand-border align-top";
+	const colClass =
+		"bg-brand-surface-subtle px-2 py-3 text-left font-medium border-b border-brand-border";
 
 	return (
 		<MainContainer
@@ -151,63 +175,47 @@ export default function PlausibilityReviewPage() {
 				<p className="mb-4 max-w-3xl">
 					{ctx.t({
 						code: "plausibility.intro",
-						msg: "These records carry source values that look implausible, for example the same large number in two unrelated fields. The values have not been changed. Figures that include them are marked 'flagged for review'. Check each record against its source and correct it through the record screens where needed.",
+						msg: "These disaster impacts carry source values that look implausible, for example the same large number in two unrelated fields. The values have not been changed. Figures that include them are marked 'flagged for review'. Check each record against its source and correct it through the disaster impact screens where needed.",
 					})}
 				</p>
 
 				<div className="mb-4 flex flex-wrap items-end gap-4">
-					<div>
-						<label className="mb-1 block text-sm font-medium" htmlFor="pr-code">
-							{ctx.t({ code: "plausibility.filter.flag", msg: "Flag type" })}
-						</label>
-						<Dropdown
-							inputId="pr-code"
-							value={codeFilter}
-							onChange={(e) => {
-								setCodeFilter(e.value);
-								setFirst(0);
-							}}
-							options={[
-								{
-									label: ctx.t({ code: "common.all", msg: "All" }),
-									value: ALL,
-								},
-								...codeCounts.map(([code, n]) => ({
-									label: `${codeLabel(code)} (${n})`,
-									value: code,
-								})),
-							]}
-						/>
-					</div>
-					<div>
-						<label
-							className="mb-1 block text-sm font-medium"
-							htmlFor="pr-measure"
-						>
-							{ctx.t({
-								code: "plausibility.filter.figure",
-								msg: "Figure affected",
-							})}
-						</label>
-						<Dropdown
-							inputId="pr-measure"
-							value={measureFilter}
-							onChange={(e) => {
-								setMeasureFilter(e.value);
-								setFirst(0);
-							}}
-							options={[
-								{
-									label: ctx.t({ code: "common.all", msg: "All" }),
-									value: ALL,
-								},
-								...measureCounts.map(([m, n]) => ({
-									label: `${measureLabel(m)} (${n})`,
-									value: m,
-								})),
-							]}
-						/>
-					</div>
+					<FilterSelect
+						label={ctx.t({
+							code: "plausibility.filter.flag",
+							msg: "Flag type",
+						})}
+						value={codeFilter}
+						onChange={(v) => {
+							setCodeFilter(v);
+							setFirst(0);
+						}}
+						options={[
+							{ id: ALL, label: ctx.t({ code: "common.all", msg: "All" }) },
+							...codeCounts.map(([code, n]) => ({
+								id: code,
+								label: `${codeLabel(code)} (${n})`,
+							})),
+						]}
+					/>
+					<FilterSelect
+						label={ctx.t({
+							code: "plausibility.filter.figure",
+							msg: "Figure affected",
+						})}
+						value={measureFilter}
+						onChange={(v) => {
+							setMeasureFilter(v);
+							setFirst(0);
+						}}
+						options={[
+							{ id: ALL, label: ctx.t({ code: "common.all", msg: "All" }) },
+							...measureCounts.map(([m, n]) => ({
+								id: m,
+								label: `${measureLabel(m)} (${n})`,
+							})),
+						]}
+					/>
 					<p className="text-sm" aria-live="polite">
 						{ctx.t(
 							{
@@ -219,114 +227,193 @@ export default function PlausibilityReviewPage() {
 					</p>
 				</div>
 
-				<section className="w-full overflow-x-auto [&_.p-datatable-wrapper]:overflow-visible">
-					<DataTable
-						value={page}
-						dataKey="recordId"
-						className="w-full"
-						tableClassName="!table min-w-[720px] border-collapse text-sm md:text-base"
-						emptyMessage={ctx.t({
-							code: "plausibility.empty",
-							msg: "No record in this instance carries a plausibility flag.",
+				<section className="w-full overflow-x-auto">
+					<Table
+						aria-label={ctx.t({
+							code: "plausibility.title",
+							msg: "Data quality review",
 						})}
+						className="w-full min-w-[720px] border-collapse text-sm md:text-base"
 					>
-						<Column
-							header={ctx.t({ code: "plausibility.col.record", msg: "Record" })}
-							body={(it: PlausibilityReviewItem) => (
-								<LangLink
-									lang={ctx.lang}
-									to={`/disaster-record/${it.recordId}`}
-								>
-									{it.apiImportId ?? it.recordId.slice(0, 8)}
-								</LangLink>
-							)}
-							headerClassName={headerClass}
-							bodyClassName={bodyClass}
-						/>
-						<Column
-							header={ctx.t({ code: "plausibility.col.date", msg: "Date" })}
-							body={(it: PlausibilityReviewItem) => it.startDate ?? "-"}
-							headerClassName={headerClass}
-							bodyClassName={bodyClass}
-						/>
-						<Column
-							header={ctx.t({
-								code: "plausibility.col.location",
-								msg: "Location",
-							})}
-							body={(it: PlausibilityReviewItem) => it.locationDesc ?? "-"}
-							headerClassName={headerClass}
-							bodyClassName={bodyClass}
-						/>
-						<Column
-							header={ctx.t({ code: "plausibility.col.status", msg: "Status" })}
-							body={(it: PlausibilityReviewItem) => it.approvalStatus}
-							headerClassName={headerClass}
-							bodyClassName={bodyClass}
-						/>
-						<Column
-							header={ctx.t({ code: "plausibility.col.flags", msg: "Flags" })}
-							body={(it: PlausibilityReviewItem) => (
-								<ul className="m-0 list-none p-0">
-									{it.flags.map((f, i) => (
-										<li key={i} className="mb-1">
-											<strong>{codeLabel(f.code)}</strong>
-											{f.fields.length > 0 && (
-												<span className="text-gray-700">
-													{" "}
-													({f.fields.join(", ")})
-												</span>
-											)}
-											{f.note && (
-												<span className="block text-gray-700">{f.note}</span>
-											)}
-										</li>
-									))}
-								</ul>
-							)}
-							headerClassName={headerClass}
-							bodyClassName={bodyClass}
-						/>
-						<Column
-							header={ctx.t({
-								code: "plausibility.col.figures",
-								msg: "Figures affected",
-							})}
-							body={(it: PlausibilityReviewItem) =>
-								it.measures.length ? (
-									<span className="flex flex-wrap gap-1">
-										{it.measures.map((m) => (
-											<Tag key={m} value={measureLabel(m)} severity="warning" />
-										))}
-									</span>
-								) : (
-									<span className="text-gray-700">
-										{ctx.t({
-											code: "plausibility.no_people_figure",
-											msg: "No people or housing figure",
-										})}
-									</span>
-								)
+						<TableHeader>
+							<Column isRowHeader className={colClass}>
+								{ctx.t({ code: "plausibility.col.record", msg: "Record" })}
+							</Column>
+							<Column className={colClass}>
+								{ctx.t({ code: "plausibility.col.date", msg: "Date" })}
+							</Column>
+							<Column className={colClass}>
+								{ctx.t({
+									code: "plausibility.col.location",
+									msg: "Location",
+								})}
+							</Column>
+							<Column className={colClass}>
+								{ctx.t({ code: "plausibility.col.status", msg: "Status" })}
+							</Column>
+							<Column className={colClass}>
+								{ctx.t({ code: "plausibility.col.flags", msg: "Flags" })}
+							</Column>
+							<Column className={colClass}>
+								{ctx.t({
+									code: "plausibility.col.figures",
+									msg: "Figures affected",
+								})}
+							</Column>
+						</TableHeader>
+						<TableBody
+							items={page.map((it) => ({ ...it, id: it.recordId }))}
+							renderEmptyState={() =>
+								ctx.t({
+									code: "plausibility.empty",
+									msg: "No record in this instance carries a plausibility flag.",
+								})
 							}
-							headerClassName={headerClass}
-							bodyClassName={bodyClass}
-						/>
-					</DataTable>
+						>
+							{(it: PlausibilityReviewItem & { id: string }) => (
+								<Row id={it.id}>
+									<Cell className={cellClass}>
+										<LangLink
+											lang={ctx.lang}
+											to={`/disaster-record/${it.recordId}`}
+										>
+											{it.apiImportId ?? it.recordId.slice(0, 8)}
+										</LangLink>
+									</Cell>
+									<Cell className={cellClass}>{it.startDate ?? "-"}</Cell>
+									<Cell className={cellClass}>{it.locationDesc ?? "-"}</Cell>
+									<Cell className={cellClass}>{it.approvalStatus}</Cell>
+									<Cell className={cellClass}>
+										<ul className="m-0 list-none p-0">
+											{it.flags.map((f, i) => (
+												<li key={i} className="mb-1">
+													<strong>{codeLabel(f.code)}</strong>
+													{f.fields.length > 0 && (
+														<span className="text-brand-text-muted">
+															{" "}
+															({f.fields.join(", ")})
+														</span>
+													)}
+													{f.note && (
+														<span className="block text-brand-text-muted">
+															{f.note}
+														</span>
+													)}
+												</li>
+											))}
+										</ul>
+									</Cell>
+									<Cell className={cellClass}>
+										{it.measures.length ? (
+											<span className="flex flex-wrap gap-1">
+												{it.measures.map((m) => (
+													<span
+														key={m}
+														className="rounded bg-data-flag-review-chip-background px-2 py-0.5 text-data-flag-review-chip-text"
+													>
+														{measureLabel(m)}
+													</span>
+												))}
+											</span>
+										) : (
+											<span className="text-brand-text-muted">
+												{ctx.t({
+													code: "plausibility.no_people_figure",
+													msg: "No people or housing figure",
+												})}
+											</span>
+										)}
+									</Cell>
+								</Row>
+							)}
+						</TableBody>
+					</Table>
+
 					{filtered.length > rows && (
-						<Paginator
-							first={first}
-							rows={rows}
-							totalRecords={filtered.length}
-							rowsPerPageOptions={[20, 50, 100]}
-							onPageChange={(e) => {
-								setFirst(e.first);
-								setRows(e.rows);
-							}}
-							className="mt-4 !justify-end"
-						/>
+						<nav
+							className="mt-4 flex items-center justify-end gap-3"
+							aria-label={ctx.t({
+								code: "plausibility.pages",
+								msg: "Pages",
+							})}
+						>
+							<Button
+								className="rounded border border-brand-border-control px-3 py-1 disabled:opacity-40 data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
+								isDisabled={pageIndex === 0}
+								onPress={() => setFirst(Math.max(0, first - rows))}
+							>
+								{ctx.t({ code: "common.previous", msg: "Previous" })}
+							</Button>
+							<span className="text-sm">
+								{ctx.t(
+									{
+										code: "plausibility.page_of",
+										msg: "Page {page} of {pages}",
+									},
+									{ page: pageIndex + 1, pages: pageCount },
+								)}
+							</span>
+							<Button
+								className="rounded border border-brand-border-control px-3 py-1 disabled:opacity-40 data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring"
+								isDisabled={pageIndex >= pageCount - 1}
+								onPress={() => setFirst(first + rows)}
+							>
+								{ctx.t({ code: "common.next", msg: "Next" })}
+							</Button>
+							<FilterSelect
+								label={ctx.t({
+									code: "plausibility.rows_per_page",
+									msg: "Rows per page",
+								})}
+								value={String(rows)}
+								onChange={(v) => {
+									setRows(Number(v));
+									setFirst(0);
+								}}
+								options={[20, 50, 100].map((n) => ({
+									id: String(n),
+									label: String(n),
+								}))}
+							/>
+						</nav>
 					)}
 				</section>
 			</>
 		</MainContainer>
+	);
+}
+
+/** A labelled single-choice select (React Aria, TR-249). */
+function FilterSelect(props: {
+	label: string;
+	value: string;
+	onChange: (value: string) => void;
+	options: { id: string; label: string }[];
+}) {
+	return (
+		<Select
+			selectedKey={props.value}
+			onSelectionChange={(k: Key | null) => {
+				if (k !== null) props.onChange(String(k));
+			}}
+			className="flex flex-col gap-1"
+		>
+			<Label className="text-sm font-medium">{props.label}</Label>
+			<Button className="min-w-40 rounded border border-brand-border-control px-2 py-1 text-left data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2 data-[focus-visible]:outline-brand-focus-ring">
+				<SelectValue />
+			</Button>
+			<Popover className="rounded border border-brand-border-control bg-brand-surface shadow">
+				<ListBox items={props.options} className="max-h-72 overflow-auto">
+					{(o) => (
+						<ListBoxItem
+							id={o.id}
+							className="cursor-pointer px-2 py-1 data-[focused]:bg-brand-surface-subtle data-[focus-visible]:outline data-[focus-visible]:outline-2 data-[focus-visible]:-outline-offset-2 data-[focus-visible]:outline-brand-focus-ring data-[selected]:font-semibold"
+						>
+							{o.label}
+						</ListBoxItem>
+					)}
+				</ListBox>
+			</Popover>
+		</Select>
 	);
 }

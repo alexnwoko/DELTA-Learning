@@ -35,7 +35,7 @@ function translateAuditLogAction(ctx: ViewContext, eventName: string) {
 		case "disaster record":
 			translatedObj = ctx.t({
 				code: "disaster_record",
-				msg: "Disaster record",
+				msg: "Disaster impact",
 			});
 			break;
 		default:

@@ -48,6 +48,8 @@ export default function CustomStackedBarChart({
 						dataKey="losses"
 						stackId="a"
 						fill="#22aa9d"
+						// Rounded at the top of the stack (Alex, 2026-10-17).
+						radius={[6, 6, 0, 0]}
 						name={ctx.t({ code: "common.losses", msg: "Losses" })}
 					/>
 				</BarChart>

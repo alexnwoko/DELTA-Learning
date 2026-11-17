@@ -32,9 +32,9 @@ export interface GeoFeatureProperties {
 	level: number;
 	parentId: number | null;
 	values: {
-		// Monetary values
-		totalDamage?: number;
-		totalLoss?: number;
+		// Monetary values; null when no record reported a cost (TR-076).
+		totalDamage?: number | null;
+		totalLoss?: number | null;
 
 		// Quantitative values
 		deaths?: number;
@@ -45,7 +45,7 @@ export interface GeoFeatureProperties {
 		numberOfEvents?: number;
 
 		// Custom metrics (flexible for future extensions)
-		[key: string]: number | string | object | undefined;
+		[key: string]: number | string | object | null | undefined;
 
 		// Metadata
 		metadata?: {
@@ -440,7 +440,12 @@ const ExtendedCustomMap: React.FC<CustomMapProps> = ({
 			const values = f.properties?.values?.[selectedMetric];
 			const dataAvailability = f.properties?.values?.dataAvailability;
 
-			if (dataAvailability === "no_data") {
+			// A null figure is not reported, never 0 (TR-076).
+			if (
+				dataAvailability === "no_data" ||
+				values === null ||
+				values === undefined
+			) {
 				categorizedData.hasNoData = true;
 			} else if (values === 0) {
 				categorizedData.hasZeroValues = true;
@@ -477,7 +482,15 @@ const ExtendedCustomMap: React.FC<CustomMapProps> = ({
 				min: 0,
 				max: 0,
 				color: "rgba(255, 255, 255, 0.9)",
-				label: "Zero Impact (Confirmed)",
+				// Money has no tri-state source: a 0 is reported, not confirmed
+				// (PD-04:596).
+				label:
+					currentMetricConfig.type === "monetary"
+						? ctx.t({ code: "analysis.reported_as_zero", msg: "Reported as 0" })
+						: ctx.t({
+								code: "analysis.zero_impact_confirmed",
+								msg: "Zero Impact (Confirmed)",
+							}),
 			});
 		}
 
@@ -486,7 +499,7 @@ const ExtendedCustomMap: React.FC<CustomMapProps> = ({
 				min: -1,
 				max: -1,
 				color: "rgba(200, 200, 200, 0.9)",
-				label: "No data available",
+				label: ctx.t({ code: "analysis.not_reported", msg: "Not reported" }),
 			});
 		}
 
@@ -570,11 +583,26 @@ const ExtendedCustomMap: React.FC<CustomMapProps> = ({
 				: "#EEEEEE";
 
 			let displayValue: string;
-			if (dataAvailability === "no_data") {
+			if (
+				dataAvailability === "no_data" ||
+				value === null ||
+				value === undefined
+			) {
+				// Not reported, never 0 (TR-076).
 				displayValue = ctx.t({
-					code: "common.no_data_available",
-					msg: "No data available",
+					code: "analysis.not_reported",
+					msg: "Not reported",
 				});
+			} else if (value === 0 && currentMetricConfig.type === "monetary") {
+				// A reported 0: money has no confirmed zero (PD-04:596).
+				displayValue = formatValue(
+					ctx,
+					value,
+					selectedMetric,
+					currentMetricConfig,
+					valueFormatter,
+					currency,
+				);
 			} else if (value === 0) {
 				displayValue =
 					currentMetricConfig.type === "count"

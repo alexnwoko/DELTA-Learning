@@ -23,8 +23,9 @@ interface MostDamagingEventsProps {
 interface DisasterEvent {
 	eventId: string;
 	eventName: string;
-	totalDamages: number;
-	totalLosses: number;
+	/** null when no record of the event reported a cost (TR-076). */
+	totalDamages: number | null;
+	totalLosses: number | null;
 	createdAt: string;
 }
 
@@ -191,7 +192,11 @@ const MostDamagingEvents = memo(function MostDamagingEvents({
 
 	// Memoized currency formatting function to prevent recreation on each render
 	const formatCurrencyValue = useCallback(
-		(amount: number) => {
+		(amount: number | null) => {
+			// Not reported, never 0 (TR-076).
+			if (amount === null) {
+				return ctx.t({ code: "analysis.not_reported", msg: "Not reported" });
+			}
 			try {
 				const scale =
 					amount >= 1_000_000_000
@@ -208,7 +213,7 @@ const MostDamagingEvents = memo(function MostDamagingEvents({
 				return `${amount} ${currency}`; // Fallback formatting
 			}
 		},
-		[currency],
+		[currency, ctx],
 	);
 
 	// Memoized sort handler to prevent recreation on each render

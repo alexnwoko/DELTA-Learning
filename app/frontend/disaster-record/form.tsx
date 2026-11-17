@@ -4,6 +4,7 @@ import {
 } from "~/backend.server/models/disaster_record";
 
 import { formatDate } from "~/utils/date";
+import { ProvisionalBadge } from "~/frontend/analytics/ProvisionalFiguresNotice";
 
 import {
 	UserFormProps,
@@ -553,14 +554,14 @@ export function DisasterRecordsForm(props: DisasterRecordsFormProps) {
 				errors={props.errors}
 				fields={props.fields}
 				fieldsDef={fieldsDef(ctx)}
-				title={ctx.t({ code: "disaster_records", msg: "Disaster records" })}
+				title={ctx.t({ code: "disaster_records", msg: "Disaster impacts" })}
 				editLabel={ctx.t({
 					code: "disaster_records.edit",
-					msg: "Edit disaster record",
+					msg: "Edit disaster impact",
 				})}
 				addLabel={ctx.t({
 					code: "disaster_records.add",
-					msg: "Add disaster record",
+					msg: "Add disaster impact",
 				})}
 				hiddenFields={
 					<>
@@ -693,6 +694,8 @@ type DisasterRecordsViewItem = DisasterRecordsViewModel & {
 	hipHazard?: HipInfo | null;
 	hipCluster?: HipInfo | null;
 	hipType?: HipInfo | null;
+	/** C23: migrated record not yet published. */
+	provisional?: boolean;
 };
 
 interface DisasterRecordsViewProps {
@@ -714,9 +717,13 @@ export function DisasterRecordsView(props: DisasterRecordsViewProps) {
 			returnAssigneeOptions={(item as any).returnAssignees}
 			title={ctx.t({
 				code: "disaster_records",
-				msg: "Disaster records",
+				msg: "Disaster impacts",
 			})}
 		>
+			<ProvisionalBadge
+				ctx={ctx}
+				show={!props.isPublic && item?.provisional}
+			/>
 			<FieldsView
 				def={fieldsDefView(ctx)}
 				fields={item}

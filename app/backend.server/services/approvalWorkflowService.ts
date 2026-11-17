@@ -33,7 +33,7 @@ async function ensureDisasterEventHasApprovedDisasterRecords(
 
 	if (rows.length === 0) {
 		throw new Error(
-			"A validated or published disaster event must have at least one associated published or validated disaster record.",
+			"A validated or published disaster event must have at least one associated published or validated disaster impact.",
 		);
 	}
 }

@@ -334,7 +334,7 @@ export default function FaqPage() {
 											action, rapid assessments, and response operations. In
 											addition, the disaster event section provides a summary of
 											aggregated figures and values drawn from all associated
-											disaster records (e.g., deaths, injuries, missing
+											disaster impacts (e.g., deaths, injuries, missing
 											persons), as well as damages and losses expressed in
 											monetary terms.
 										</p>
@@ -717,7 +717,7 @@ export default function FaqPage() {
 										<p>
 											In the system, records of hazardous events can be linked
 											to disaster events, which serve as containers for disaster
-											records (equivalent to the former DesInventar datacards ).
+											impacts (equivalent to the former DesInventar datacards ).
 											Disaster events capture the effects of a hazard on
 											specific locations, assets, or other exposed elements.
 											Linkages are established using the system's linking
@@ -809,7 +809,7 @@ export default function FaqPage() {
 								<AccordionTab header="Question 9: How interoperable is the DELTA Resilience system with DesInventar?">
 									<div className="space-y-3 px-1 text-[15px] leading-7 text-slate-800">
 										<p>
-											DesInventar‑based databases contain disaster records only,
+											DesInventar‑based databases contain disaster impacts only,
 											representing local observations of losses and damages (
 											datacards ), rather than explicit disaster events as
 											analytical constructs. To support the transition to the
@@ -1696,7 +1696,7 @@ export default function FaqPage() {
 												operations, or assessment methodologies applied.
 											</li>
 											<li>
-												Disaster records (losses and damages): particularly in
+												Disaster impacts (losses and damages): particularly in
 												relation to non-economic losses, where quantitative data
 												may be limited but qualitative insights are valuable to
 												capture the lived experience, for example, on impacts

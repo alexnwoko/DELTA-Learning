@@ -81,6 +81,7 @@ describe("getEffectDetails", () => {
 		const res = await getEffectDetails(
 			createTestBackendContext(),
 			ids.countryAccountId,
+			"public",
 			noFilters,
 		);
 		expect(res.losses).toHaveLength(1);
@@ -91,6 +92,7 @@ describe("getEffectDetails", () => {
 		const match = await getEffectDetails(
 			createTestBackendContext(),
 			ids.countryAccountId,
+			"public",
 			{ ...noFilters, hazardTypeId: hipTypeId, specificHazardId: hipHazardId },
 		);
 		expect(match.losses).toHaveLength(1);
@@ -98,6 +100,7 @@ describe("getEffectDetails", () => {
 		const other = await getEffectDetails(
 			createTestBackendContext(),
 			ids.countryAccountId,
+			"public",
 			{ ...noFilters, specificHazardId: otherHipHazardId },
 		);
 		expect(other.losses).toHaveLength(0);
@@ -107,6 +110,7 @@ describe("getEffectDetails", () => {
 		const res = await getEffectDetails(
 			createTestBackendContext(),
 			ids.countryAccountId,
+			"public",
 			{ ...noFilters, geographicLevelId: randomUUID() },
 		);
 		expect(res.losses).toHaveLength(0);

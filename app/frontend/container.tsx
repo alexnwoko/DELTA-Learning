@@ -1,4 +1,5 @@
 import React from "react";
+import { useIsDataEntryPage } from "./PageBrand";
 
 interface MainContainerProps {
 	title: string;
@@ -10,6 +11,9 @@ interface MainContainerProps {
 
 export function MainContainer(props: MainContainerProps) {
 	const { showHeader = true } = props;
+	// On Data Entry pages the section heading is the h1 (root layout), so the
+	// page's own title is the second level.
+	const Title = useIsDataEntryPage() ? "h2" : "h1";
 
 	return (
 		<>
@@ -17,7 +21,7 @@ export function MainContainer(props: MainContainerProps) {
 				<div className="mg-container dts-page-header">
 					<header className="dts-page-title">
 						<div className="mg-container">
-							<h1 className="dts-heading-1">{props.title}</h1>
+							<Title className="dts-heading-1">{props.title}</Title>
 						</div>
 					</header>
 					{props.headerExtra}

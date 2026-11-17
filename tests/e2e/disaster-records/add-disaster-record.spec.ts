@@ -92,7 +92,7 @@ test.describe("Add disaster record page", () => {
 
 		await page.goto("/en/disaster-record");
 
-		await page.getByRole("button", { name: "Add new disaster record" }).click();
+		await page.getByRole("button", { name: "Add new disaster impact" }).click();
 
 		// Wait for the form element specifically
 		await page.waitForSelector('select[name="hipTypeId"]', {
