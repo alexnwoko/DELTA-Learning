@@ -1,3 +1,5 @@
+import { createHash } from "crypto";
+
 /**
  * Security utility functions for input sanitization and validation
  */
@@ -23,43 +25,112 @@ export function sanitizeInput(input: string | null): string | null {
 }
 
 /**
- * Rate limiting middleware using the native Request object
- * Since we're not using Express directly, we'll implement a simple in-memory rate limiter
+ * In-process fixed-window rate limiter, applied by securityHeadersMiddleware.
+ * It is a second line behind the edge (Cloudflare or Azure Front Door); each
+ * app instance keeps its own counts.
+ *
+ * Environment (all optional; the limiter is off unless enabled):
+ * - RATE_LIMIT_ENABLED=true
+ * - RATE_LIMIT_MAX: requests per window per client (default 300)
+ * - RATE_LIMIT_WINDOW_MS: window length (default 60000)
+ * - RATE_LIMIT_CLIENT_IP_HEADER: header the trusted proxy sets, for example
+ *   cf-connecting-ip or x-forwarded-for. Without it, only API-key requests are
+ *   limited, because any client can forge a forwarding header.
+ * - RATE_LIMIT_TRUSTED_PROXY_HOPS: for x-forwarded-for, how many trusted
+ *   proxies append to it (default 1). The client is that many entries from the right.
  */
-const ipRequests = new Map<string, { count: number; resetTime: number }>();
+export interface RateLimitConfig {
+	enabled: boolean;
+	max: number;
+	windowMs: number;
+	clientIpHeader?: string;
+	trustedProxyHops: number;
+}
+
+export interface RateLimitResult {
+	allowed: boolean;
+	retryAfterSeconds: number;
+}
+
+function positiveInt(value: string | undefined, fallback: number): number {
+	const n = Number(value);
+	return Number.isInteger(n) && n > 0 ? n : fallback;
+}
+
+export function rateLimitConfigFromEnv(
+	env: Record<string, string | undefined> = process.env,
+): RateLimitConfig {
+	return {
+		enabled: env.RATE_LIMIT_ENABLED === "true",
+		max: positiveInt(env.RATE_LIMIT_MAX, 300),
+		windowMs: positiveInt(env.RATE_LIMIT_WINDOW_MS, 60_000),
+		clientIpHeader: env.RATE_LIMIT_CLIENT_IP_HEADER?.toLowerCase() || undefined,
+		trustedProxyHops: positiveInt(env.RATE_LIMIT_TRUSTED_PROXY_HOPS, 1),
+	};
+}
+
+// Paths worth protecting: the API and the sign-in and password flows.
+export function isRateLimitedPath(pathname: string): boolean {
+	return (
+		/^\/[^/]+\/api(\/|$)/.test(pathname) ||
+		/\/user\/(login|forgot-password|reset-password|verify-email)/.test(pathname)
+	);
+}
+
+export function rateLimitKey(
+	request: Request,
+	config: RateLimitConfig,
+): string | null {
+	const apiKey = request.headers.get("X-Auth");
+	if (apiKey) {
+		// Never keep the raw key in memory longer than needed.
+		return "key:" + createHash("sha256").update(apiKey).digest("hex");
+	}
+	if (!config.clientIpHeader) return null;
+	const raw = request.headers.get(config.clientIpHeader);
+	if (!raw) return null;
+	if (config.clientIpHeader === "x-forwarded-for") {
+		const hops = raw.split(",").map((part) => part.trim()).filter(Boolean);
+		const ip = hops[hops.length - config.trustedProxyHops];
+		return ip ? "ip:" + ip : null;
+	}
+	return "ip:" + raw.trim();
+}
+
+const buckets = new Map<string, { count: number; resetTime: number }>();
+
+export function resetRateLimitForTest(): void {
+	buckets.clear();
+}
 
 export function checkRateLimit(
 	request: Request,
-	limit: number = 100,
-	windowMs: number = 15 * 60 * 1000,
-): boolean {
-	const ip = request.headers.get("x-forwarded-for") || "unknown";
-	const now = Date.now();
+	config: RateLimitConfig,
+	now: number = Date.now(),
+): RateLimitResult {
+	const allowed = { allowed: true, retryAfterSeconds: 0 };
+	if (!config.enabled) return allowed;
+	if (!isRateLimitedPath(new URL(request.url).pathname)) return allowed;
+	const key = rateLimitKey(request, config);
+	if (!key) return allowed;
 
-	const userRequests = ipRequests.get(ip) || {
-		count: 0,
-		resetTime: now + windowMs,
-	};
-
-	// Reset if window has expired
-	if (now > userRequests.resetTime) {
-		userRequests.count = 1;
-		userRequests.resetTime = now + windowMs;
-	} else {
-		userRequests.count++;
+	let bucket = buckets.get(key);
+	if (!bucket || now >= bucket.resetTime) {
+		bucket = { count: 0, resetTime: now + config.windowMs };
+		buckets.set(key, bucket);
 	}
+	bucket.count++;
 
-	ipRequests.set(ip, userRequests);
-
-	// Clean up old entries periodically
-	if (Math.random() < 0.01) {
-		// 1% chance to clean up on each request
-		for (const [key, value] of ipRequests.entries()) {
-			if (now > value.resetTime) {
-				ipRequests.delete(key);
-			}
+	// Drop expired buckets now and then so memory stays bounded.
+	if (buckets.size > 10_000) {
+		for (const [k, v] of buckets) {
+			if (now >= v.resetTime) buckets.delete(k);
 		}
 	}
 
-	return userRequests.count <= limit;
+	if (bucket.count <= config.max) return allowed;
+	return {
+		allowed: false,
+		retryAfterSeconds: Math.max(1, Math.ceil((bucket.resetTime - now) / 1000)),
+	};
 }

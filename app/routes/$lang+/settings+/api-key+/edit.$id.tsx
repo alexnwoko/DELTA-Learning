@@ -19,8 +19,14 @@ import {
 import { ViewContext } from "~/frontend/context";
 
 export const loader = authLoaderWithPerm("EditAPIKeys", async (args) => {
-	const { params } = args;
-	const item = params.id ? await ApiKeyRepository.getById(params.id) : null;
+	const { request, params } = args;
+	const countryAccountsId = await getCountryAccountsIdFromSession(request);
+	const item = params.id
+		? await ApiKeyRepository.getByIdForTenant(params.id, countryAccountsId)
+		: null;
+	if (!item) {
+		throw new Response("Not Found", { status: 404 });
+	}
 	return { item };
 });
 
@@ -39,8 +45,11 @@ export const action = authActionWithPerm("EditAPIKeys", async (actionArgs) => {
 		return { ok: false, error: "Missing ID" };
 	}
 
-	const existing = await ApiKeyRepository.getById(params.id);
-	if (!existing || existing.countryAccountsId !== countryAccountsId) {
+	const existing = await ApiKeyRepository.getByIdForTenant(
+		params.id,
+		countryAccountsId,
+	);
+	if (!existing) {
 		throw new Response("Not Found", { status: 404 });
 	}
 

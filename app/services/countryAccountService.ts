@@ -794,22 +794,7 @@ export const CountryAccountService = {
 				);
 			}
 
-			const apiKeys = await ApiKeyRepository.getByCountryAccountsId(
-				countryAccountId,
-				tx,
-			);
-			const apiKeyIdMap = createIdMap(apiKeys.map((row) => row.id));
-			if (apiKeys.length > 0) {
-				await ApiKeyRepository.createMany(
-					apiKeys.map((row) => ({
-						...row,
-						id: getMappedId(apiKeyIdMap, row.id, "api key"),
-						secret: randomBytes(32).toString("hex"),
-						countryAccountsId: newCountryAccountId,
-					})),
-					tx,
-				);
-			}
+			// API keys are credentials, not data: a clone starts with none.
 
 			const hazardousEvents =
 				await HazardousEventRepository.getByCountryAccountsId(

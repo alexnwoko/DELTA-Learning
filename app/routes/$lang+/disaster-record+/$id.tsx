@@ -60,25 +60,26 @@ export const loader = async (args: LoaderFunctionArgs) => {
 		throw new Response("Unauthorized, no selected instance", { status: 401 });
 	}
 
-	// Create a wrapper function that includes tenant context
-	const getByIdWithTenant = async (_ctx: BackendContext, idStr: string) => {
-		return disasterRecordsById(idStr, countryAccountsId);
+	const getByIdForTenant = async (
+		_ctx: BackendContext,
+		idStr: string,
+		tenantId: string,
+	) => {
+		return disasterRecordsById(idStr, tenantId);
 	};
 
 	const loaderFunction = userSession
 		? createViewLoaderPublicApprovedWithAuditLog({
-				getById: getByIdWithTenant,
+				getByIdForTenant,
 				recordId: id,
 				tableName: getTableName(disasterRecordsTable),
 			})
 		: createViewLoaderPublicApproved({
-				getById: getByIdWithTenant,
+				getByIdForTenant,
 			});
 
+	// The loader reads through the tenant-scoped getter; another tenant's item is 404.
 	const result = await loaderFunction(args);
-	if (result.item.countryAccountsId !== countryAccountsId) {
-		throw new Response("Unauthorized access", { status: 403 });
-	}
 
 	const cpDisplayName =
 		(await contentPickerConfig(ctx).selectedDisplay(
